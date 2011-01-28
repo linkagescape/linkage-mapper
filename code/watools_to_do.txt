@@ -6,6 +6,7 @@
 6 *add error/warning log- log file of messages written to screen, particularly errors or warnings.
 7 *Raise custom exceptions
 8 *Read core and raster files from TOC in ArcMap?
+9 **Import module 
 11 **dictionaries- use dot notation?  Desirable, but some have cautioned against this.
 11 *keepLinkCriteria- convert to a couple of booleans instead of a long string
 11 *Line wrapping- limit to 79 characters?
