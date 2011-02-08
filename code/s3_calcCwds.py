@@ -443,16 +443,16 @@ def step3_calc_cwds(gp,Version,options):
                                 linkTable[rows,linkTypeCol]=3 #  disable link
                             # ---------------------------------------------------------
 
-                            # Create lcp shapefile.  lcploop just keeps track of whether this is first time function is called.                            
-                            lcpLoop = create_lcp_shapefile(projectDir,linkTable,sourceCore,targetCore,lcpLoop,SR)
+                        # Create lcp shapefile.  lcploop just keeps track of whether this is first time function is called.                            
+                        lcpLoop = create_lcp_shapefile(projectDir,linkTable,sourceCore,targetCore,lcpLoop,SR)
             
-                    endTime = time.clock()
-                    processTime = round((endTime - startTime), 2)
-                    gp.addmessage('Intermediate core checks and LCP shapefiles for core #' + str(sourceCore) + ' took '+str(processTime)+' seconds.')
+                endTime = time.clock()
+                processTime = round((endTime - startTime), 2)
+                gp.addmessage('Intermediate core checks and LCP shapefiles for core #' + str(sourceCore) + ' took '+str(processTime)+' seconds.')
                 # -----------------------------------------------------------
                 
                 
-                gp.addmessage('\nDone with all calculations for core #' + str(sourceCore) + '.')
+                gp.addmessage('Done with all calculations for core #' + str(sourceCore) + '.')
                 startTime,hours,mins,secs = elapsed_time(startTime1)
             # -----------------------------------------------------------
          
