@@ -47,7 +47,7 @@ def get_link_type_desc(linkTypeCode):
     activeLink = '0'
     if linkTypeCode == -2:
         linkTypeDesc = "Not_nearest_N_neighbors"
-    if linkTypeCode == -20:
+    elif linkTypeCode == -20:
         linkTypeDesc = "User_removed"        
     elif linkTypeCode == 1:
         linkTypeDesc = "Within-core"
