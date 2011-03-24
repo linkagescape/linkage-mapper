@@ -9,22 +9,22 @@ import os.path as path
 import sys
 
 import arcgisscripting
-
+    
 def str2bool(pstr):
-        return pstr == 'true'
-
+        return pstr == 'true'    
+    
 def setadjmeth(inparam):
     if inparam == "Cost-Weighted":
         meth_cw = True
-        meth_eu = False
+        meth_eu = False        
     elif inparam == "Euclidean":
         meth_cw = False
-        meth_eu = True
-    else:
+        meth_eu = True        
+    else:   
         meth_cw = True
         meth_eu = True
     return meth_cw, meth_eu
-
+    
 def nullfloat(innum):
     if innum == '#':
         nfloat = None
@@ -35,13 +35,13 @@ def nullfloat(innum):
 if len(sys.argv) == 20:
     PROJECTDIR = sys.argv[1]            # Project directory
     COREFC = sys.argv[2]                # Core area feature class
-    COREFN = sys.argv[3]                # Core area field name
+    COREFN = sys.argv[3]                # Core area field name    
     RESRAST = sys.argv[4]               # Resistance raster
-
+        
     STEP1 = str2bool(sys.argv[5])
     S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
-
-    STEP2 = str2bool(sys.argv[7])
+            
+    STEP2 = str2bool(sys.argv[7])    
     S2EUCDISTFILE = sys.argv[8]
     S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[9])
 
@@ -51,12 +51,12 @@ if len(sys.argv) == 20:
     STEP4 = str2bool(sys.argv[12])
     S4MAXNN = int(sys.argv[13])           # No of connected nearest neighbors
     # Nearest neighbor measurement unit
-    S4DISTTYPE_CW, S4DISTTYPE_EU  = setadjmeth(sys.argv[14])
+    S4DISTTYPE_CW, S4DISTTYPE_EU  = setadjmeth(sys.argv[14])    
     S4CONNECT = str2bool(sys.argv[15])
-
+      
     STEP5 = str2bool(sys.argv[16])
-
-    BUFFERDIST = nullfloat(sys.argv[17])
+        
+    BUFFERDIST = nullfloat(sys.argv[17])        
     MAXCOSTDIST = nullfloat(sys.argv[18])
     MAXEUCDIST = nullfloat(sys.argv[19])
 
@@ -75,21 +75,21 @@ if len(sys.argv) == 20:
     LCCNLCDIR_NAME = "nlc"
     LCCMOSAICDIR = path.join(LCCBASEDIR, "mosaic")
 
-    OUTPUTGDB = path.join(OUTPUTDIR, "linkages.gdb")
+    OUTPUTGDB = path.join(OUTPUTDIR, "linkages.gdb")    
 
-    # This is how "wide" corridors will be (measured in cost-weighted
-    # distances) in a truncated raster
-    CWDTHRESH = 100000
+    # This is how "wide" corridors will be (measured in cost-weighted distances) 
+    # in a truncated raster    
+    CWDTHRESH = 100000              
     if MAXCOSTDIST is None:
         TMAXCWDIST = None
-    else:
+    else:          
         TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # This will limit cw calcs
-
+    
     SAVENORMLCCS = False  # Set to True to save individual normalized LCC grids
     FCORES = "fcores"
-    BNDCIRCEN = "boundingCircleCenter.shp"
-    BNDCIR = "boundingCircle.shp"
-
+    BNDCIRCEN = "boundingCircleCenter.shp"    
+    BNDCIR = "boundingCircle.shp"    
+    
     GP = arcgisscripting.create(9.3)
     GP.CheckOutExtension("Spatial")
     GP.OverwriteOutput = True
