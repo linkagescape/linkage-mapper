@@ -1,3 +1,5 @@
+#!/usr/bin/env python2.5
+
 """Linkage Mapper configuration module
 
 Assigns input parameter from ToolBox to variables and reads defaults from
@@ -32,7 +34,7 @@ def nullfloat(innum):
         nfloat=float(innum)
     return nfloat
 
-if len(sys.argv) == 20:
+class Config():
     PROJECTDIR = sys.argv[1]            # Project directory
     COREFC = sys.argv[2]                # Core area feature class
     COREFN = sys.argv[3]                # Core area field name
@@ -70,9 +72,9 @@ if len(sys.argv) == 20:
     DATAPASSARCHDIR = path.join(PROJECTDIR, "datapass_archive")
     ADJACENCYDIR = path.join(PROJECTDIR, "adj")
     CWDBASEDIR = path.join(PROJECTDIR, "cwd")
-    CWDSUBDIR_MAME = "cw"
+    CWDSUBDIR_NM = "cw"
     LCCBASEDIR = path.join(PROJECTDIR, "nlcc")
-    LCCNLCDIR_NAME = "nlc"
+    LCCNLCDIR_NM = "nlc"
     LCCMOSAICDIR = path.join(LCCBASEDIR, "mosaic")
 
     OUTPUTGDB = path.join(OUTPUTDIR, "linkages.gdb")
@@ -90,7 +92,35 @@ if len(sys.argv) == 20:
     BNDCIRCEN = "boundingCircleCenter.shp"
     BNDCIR = "boundingCircle.shp"
 
-    GP = arcgisscripting.create(9.3)
-    GP.CheckOutExtension("Spatial")
-    GP.OverwriteOutput = True
-    GP.SnapRaster = RESRAST
+    # Link table column numbers
+    LTB_LINKID = 0  # Link ID
+    LTB_CORE1 = 1  # Core ID of 1st core area link connects
+    LTB_CORE2 = 2  # Core ID of 2nd core area link connects
+    LTB_CLUST1 = 3  # Component ID of 1st core area link connects
+    LTB_CLUST2 = 4  # Component ID of 2nd core area link connects
+    LTB_LINKTYPE = 5
+    LTB_EUCDIST = 6
+    LTB_CWDIST = 7
+    LTB_EUCADJ = 8
+    LTB_CWDADJ = 9
+    LTB_LCPLEN = 10
+    LTB_CWDEUCR = 11
+    LTB_CWDPATHR = 12
+
+    # Linkage type column values
+    LT_CPLK = -2  # Not_nearest N neighbors
+    LT_NONLK = 0  # No link
+    LT_CORE = 1  # Witin core
+    LT_CORR = 2  # Connects cores (corridor)
+    LT_INT = 3  # Intermediate corea area detected
+    LT_TLEC = 4  # Too long Euclidean distance
+    LT_TLLC = 5  # Too long Cost-Weighted distance
+    LT_TSEC = 6  # Too short Euclidean distance
+    LT_TSLC = 7  # Too short Cost-Weighted distance
+    LT_CLU = 10  # Connects_constellations
+    LT_NNC = 20  #
+
+    gp = arcgisscripting.create(9.3)
+    gp.CheckOutExtension("Spatial")
+    gp.OverwriteOutput = True
+    gp.SnapRaster = RESRAST

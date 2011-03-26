@@ -1,3 +1,5 @@
+#!/usr/bin/env python2.5
+
 ##*****************************************************************
 ## 2011_0128
 ## NAME: s4_refineNetwork.py
@@ -23,111 +25,93 @@ import time
 import arcgisscripting
 from numpy import *
 
-import lm_config
+from lm_config import Config as Cfg
 import lm_util as lu
 
-OUTPUTDIR = lm_config.OUTPUTDIR
-LOGDIR = lm_config.LOGDIR
-STEP3 = lm_config.STEP3
-S4CONNECT = lm_config.S4CONNECT
-S4DISTTYPE_EU = lm_config.S4DISTTYPE_EU
-S4MAXNN = lm_config.S4MAXNN
-MAXEUCDIST = lm_config.MAXEUCDIST
-MINEUCDIST = lm_config.MINEUCDIST
-GP = lm_config.GP
-
-def step4_refine_network():
+def STEP4_refine_network():
     """Allows user to only connect each core area to its N
     nearest neighbors, then connect any disjunct clusters ('constellations')
     of core areas to their nearest neighboring cluster
 
     """
     try:
-        global GP
-        GP.Workspace = OUTPUTDIR
+        Cfg.gp.Workspace = Cfg.OUTPUTDIR
 
         linkTableFile = lu.get_prev_step_link_table(step=4)
-
-        ## linkTable column numbers
-        linkIdCol = 0 # Link ID
-        core1Col = 1 # core ID of 1st core area link connects
-        core2Col = 2 # core ID of 2nd core area link connects
-        cluster1Col = 3 # component ID of 1st core area link connects
-        cluster2Col = 4 # component ID of 2nd core area link connects
-        # 0 = no link. 2 = corridor, 3 = intermediate core area detected,
-        # 4 = too long EucDist, 5 = too long lcDist
-        linkTypeCol = 5
-        eucDistCol = 6
-        cwDistCol = 7
 
         linkTable = lu.load_link_table(linkTableFile)
         numLinks = linkTable.shape[0]
         lu.report_links(linkTable)
 
-        if not STEP3:
+        if not Cfg.STEP3:
             # re-check for links that are too long in case script run out of
             # sequence with more stringent settings
-            GP.addmessage('Double-checking for corridors that are too long or '
-                          'too short to map.')
+            Cfg.gp.addmessage('Double-checking for corridors that are too long'
+                              ' or too short to map.')
             disableLeastCostNoVal = True
-            linkTable,numDroppedLinks = lu.drop_links(linkTable, MAXEUCDIST,
-                                                   0, MINEUCDIST, 0,
-                                                   disableLeastCostNoVal)
+            linkTable,numDroppedLinks = lu.drop_links(
+                linkTable, Cfg.MAXEUCDIST, 0, Cfg.MINEUCDIST, 0,
+                disableLeastCostNoVal)
 
-        rows,cols = where(linkTable[:,linkTypeCol:linkTypeCol+1] == 2)
+        rows,cols = where(linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
+                          Cfg.LT_CORR)
         corridorLinks=linkTable[rows,:]
-        coresToProcess = unique(corridorLinks[:,core1Col:core2Col+1])
+        coresToProcess = unique(corridorLinks[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1])
 
-        if S4DISTTYPE_EU:
-            distCol = eucDistCol
+        if Cfg.S4DISTTYPE_EU:
+            distCol = Cfg.LTB_EUCDIST
         else:
-            distCol = cwDistCol
+            distCol = Cfg.LTB_CWDIST
 
         # Flag links that do not connect any core areas to their nearest
-        # N neighbors. (N = S4MAXNN)
+        # N neighbors. (N = Cfg.S4MAXNN)
         lu.dashline(1)
-        GP.addmessage('Connecting each core area to its nearest ' +
-                      str(S4MAXNN) + ' nearest neighbors.')
+        Cfg.gp.addmessage('Connecting each core area to its nearest ' +
+                          str(Cfg.S4MAXNN) + ' nearest neighbors.')
 
         # Code written assuming NO duplicate core pairs
         for core in coresToProcess:
-            rows,cols = where(corridorLinks[:,core1Col:core2Col+1] == core)
-            distsFromCore=corridorLinks[rows,:]
+            rows,cols = where(
+                corridorLinks[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1] == core)
+            distsFromCore = corridorLinks[rows,:]
 
             # Sort by distance from target core
             ind = argsort(distsFromCore[:,distCol])
             distsFromCore = distsFromCore[ind]
 
             # Set N nearest neighbor connections to 20
-            maxRange = min(len(rows), S4MAXNN)
+            maxRange = min(len(rows), Cfg.S4MAXNN)
             for link in range (0,maxRange):
-                linkId = distsFromCore[link,linkIdCol]
+                linkId = distsFromCore[link,Cfg.LTB_LINKID]
                 # assumes linktable sequentially numbered with no gaps
-                linkTable[linkId-1,linkTypeCol] = 20
+                linkTable[linkId-1,Cfg.LTB_LINKTYPE] = Cfg.LT_NNC
 
         # Connect constellations (aka compoments or clusters)
         # Fixme: needs testing.  Move to function.
-        if S4CONNECT:
+        if Cfg.S4CONNECT:
             lu.dashline(1)
-            GP.addmessage('Connecting constellations')
+            Cfg.gp.addmessage('Connecting constellations')
 
             # linkTableComp has 4 extra cols to track COMPONENTS
             numLinks = linkTable.shape[0]
-            compCols=zeros((numLinks,4),dtype="int32") # g1' g2' THEN c1 c2
-            linkTableComp = append(linkTable,compCols,axis=1)
+            compCols = zeros((numLinks,4), dtype="int32") # g1' g2' THEN c1 c2
+            linkTableComp = append(linkTable, compCols, axis=1)
             del compCols
 
             # renumber cores to save memory for this next step.  Place in
             # columns 10 and 11
             for coreInd in range(0, len(coresToProcess)):
-                # here, cols are 0 for core1Col and 1 for core2Col
-                rows,cols=where(linkTableComp[:,core1Col:core2Col+1] ==
-                                coresToProcess[coreInd])
+                # here, cols are 0 for Cfg.LTB_CORE1 and 1 for Cfg.LTB_CORE2
+                rows, cols = where(
+                    linkTableComp[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1] ==
+                    coresToProcess[coreInd])
                 # want results in cols 10 and 11- These are NEW core numbers
                 # (0-numcores)
                 linkTableComp[rows,cols+10] = coreInd
 
-            rows,cols = where(linkTableComp[:,linkTypeCol:linkTypeCol+1] == 20)
+            rows, cols = where(
+                linkTableComp[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
+                Cfg.LT_NNC)
             # The new, improved corridorLinks- only "20" links
             corridorLinksComp=linkTableComp[rows,:]
             # These are NEW core numbers (range from 0 to numcores)
@@ -139,9 +123,10 @@ def step4_refine_network():
             rows = corridorLinksComp[:,10].astype('int32')
             cols = corridorLinksComp[:,11].astype('int32')
             # But aren't these all 1?
-            vals = where(corridorLinksComp[:,linkTypeCol] == 20, 1,0)
-            Graph[rows,cols]=vals # why not just 1?
-            Graph=Graph+Graph.T
+            vals = where(corridorLinksComp[:,Cfg.LTB_LINKTYPE] ==
+                         Cfg.LT_NNC, Cfg.LT_CORR, Cfg.LT_NONLK)
+            Graph[rows,cols] = vals # why not just 1?
+            Graph = Graph + Graph.T
 
             # Use graph to identify components (disconnected sub-groups) in
             # core area network
@@ -149,18 +134,19 @@ def step4_refine_network():
             numComponents = len(unique(components))
 
             for coreInd in range(0,len(coresToProcess)):
-                # In resulting cols, cols are 0 for core1Col and 1 for core2Col
+                # In resulting cols, cols are 0 for LTB_CORE1 and 1 for
+                # LTB_CORE2
                 rows, cols = (where(linkTableComp[:,10:12] ==
                               coresToProcess[coreInd]))
                 # want results in cols 12 and 13  Note: we've replaced new core
                 # numbers with COMPONENT numbers.
-                linkTableComp[rows,cols+12]=components[coreInd]
+                linkTableComp[rows,cols+12] = components[coreInd]
 
             # Additional column indexes for linkTableComp
             component1Col = 12
             component2Col = 13
-            linkTableComp[:,cluster1Col] = linkTableComp[:,component1Col]
-            linkTableComp[:,cluster2Col] = linkTableComp[:,component2Col]
+            linkTableComp[:,Cfg.LTB_CLUST1] = linkTableComp[:,component1Col]
+            linkTableComp[:,Cfg.LTB_CLUST2] = linkTableComp[:,component2Col]
 
             # Sort by distance
             ind = argsort(linkTableComp[:,distCol])
@@ -170,11 +156,11 @@ def step4_refine_network():
             # until all constellations connected.
             for row in range(0,numLinks):
                 if ((linkTableComp[row,distCol] > 0) and
-                    (linkTableComp[row,linkTypeCol] == 2) and
+                    (linkTableComp[row,Cfg.LTB_LINKTYPE] == Cfg.LT_CORR) and
                     (linkTableComp[row,component1Col] !=
                      linkTableComp[row,component2Col])):
                     # Make this an inter-component link
-                    linkTableComp[row,linkTypeCol] = 10
+                    linkTableComp[row,Cfg.LTB_LINKTYPE] = Cfg.LT_CLU
                     newComp = min(linkTableComp
                                   [row,component1Col:component2Col+1])
                     oldComp = max(linkTableComp
@@ -190,24 +176,24 @@ def step4_refine_network():
             linkTable = lu.delete_col(linkTableComp,[10, 11, 12, 13])
 
             # Re-sort link table by link ID
-            ind = argsort(linkTable[:,linkIdCol])
+            ind = argsort(linkTable[:,Cfg.LTB_LINKID])
             linkTable= linkTable[ind]
 
         # At end, any non-comp links that are 2 get assigned -2
-        # (too long to be in S4MAXNN, not a component link)
-        rows = where(linkTable[:,linkTypeCol] == 2)
-        linkTable[rows,linkTypeCol] = -2
+        # (too long to be in Cfg.S4MAXNN, not a component link)
+        rows = where(linkTable[:,Cfg.LTB_LINKTYPE] == Cfg.LT_CORR)
+        linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_CPLK
 
         # set 20 links back to 2, get rid of extra columns, re-sort linktable
-        rows = where(linkTable[:,linkTypeCol] == 20)
-        linkTable[rows,linkTypeCol] = 2
+        rows = where(linkTable[:,Cfg.LTB_LINKTYPE] == linkTableComp)
+        linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_CORR
 
         # Write linkTable to disk
         outlinkTableFile = lu.get_this_step_link_table(step=4)
         lu.dashline(2)
-        GP.addmessage('\nWriting ' + outlinkTableFile)
+        Cfg.gp.addmessage('\nWriting ' + outlinkTableFile)
         lu.write_link_table(linkTable, outlinkTableFile)
-        linkTableLogFile = path.join(LOGDIR, "linkTable_step4.csv")
+        linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_STEP4.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
         startTime = time.clock()
@@ -215,18 +201,18 @@ def step4_refine_network():
         startTime, hours, mins, secs = lu.elapsed_time(startTime)
 
         lu.dashline()
-        GP.addmessage('\nCreating shapefiles with linework for links.')
+        Cfg.gp.addmessage('\nCreating shapefiles with linework for links.')
         lu.write_link_maps(linkTableFile, step=4)
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        GP.addmessage('****Failed in step 4. Details follow.****')
+        Cfg.gp.addmessage('****Failed in step 4. Details follow.****')
         filename =  __file__
         lu.raise_geoproc_error(filename)
 
     # Return any PYTHON or system specific errors
     except:
-        GP.addmessage('****Failed in step 4. Details follow.****')
+        Cfg.gp.addmessage('****Failed in step 4. Details follow.****')
         filename =  __file__
         lu.raise_python_error(filename)
 
