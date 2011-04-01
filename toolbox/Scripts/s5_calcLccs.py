@@ -263,9 +263,9 @@ def STEP5_calc_lccs():
                                                      thisStep=5)
             startTime, hours, mins, secs = lu.elapsed_time(startTime)
 
-        linkTableFile = lu.get_this_step_link_table(step=5)
-        Cfg.gp.addmessage('Updating ' + linkTableFile)
-        lu.write_link_table(linkTable, linkTableFile)
+        outlinkTableFile = lu.get_this_step_link_table(step=5)
+        Cfg.gp.addmessage('Updating ' + outlinkTableFile)
+        lu.write_link_table(linkTable, outlinkTableFile)
 
         linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s5.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
@@ -301,7 +301,7 @@ def STEP5_calc_lccs():
 
         # lu.dashline(1)
         Cfg.gp.addmessage('Creating shapefiles with linework for links.')
-        lu.write_link_maps(linkTableFile, step=5)
+        lu.write_link_maps(outlinkTableFile, step=5)
 
         # Create final linkmap files in output directory, and remove files from
         # scratch.

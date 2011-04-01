@@ -561,15 +561,15 @@ def STEP3_calc_cwds():
                                                disableLeastCostNoVal)
 
         # Write link table file
-        linkTableFile = lu.get_this_step_link_table(step=3)
-        Cfg.gp.addmessage('Updating ' + linkTableFile)
-        lu.write_link_table(linkTable, linkTableFile)
+        outlinkTableFile = lu.get_this_step_link_table(step=3)
+        Cfg.gp.addmessage('Updating ' + outlinkTableFile)
+        lu.write_link_table(linkTable, outlinkTableFile)
         linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s3.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
         # lu.dashline()
         Cfg.gp.addmessage('Creating shapefiles with linework for links...')
-        lu.write_link_maps(linkTableFile, step=3)
+        lu.write_link_maps(outlinkTableFile, step=3)
 
         startTime = time.clock()
         dummy = lu.update_lcp_shapefile(linkTable, lastStep=3, thisStep=3)
@@ -578,7 +578,7 @@ def STEP3_calc_cwds():
         Cfg.gp.addmessage('\nIndividual cost-weighted distance layers written '
                           'to "cwd" directory. \n')
         Cfg.gp.addmessage(
-            linkTableFile + '\n updated with cost-weighted distances between '
+            outlinkTableFile + '\n updated with cost-weighted distances between '
             'core areas.')
 
     # Return GEOPROCESSING specific errors
