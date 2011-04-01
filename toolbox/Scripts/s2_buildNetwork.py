@@ -71,11 +71,11 @@ def STEP2_build_network():
         # Load eucDists matrix from file and sort
         eucDists = loadtxt(Cfg.S2EUCDISTFILE, dtype = 'Float64', comments='#')
         numDists = eucDists.shape[0]
-        lu.dashline(1)
+        # lu.dashline()
         Cfg.gp.addmessage('Core area distance list from Conefor Sensinode '
                           'loaded. \n')
         Cfg.gp.addmessage('number of pairwise distances = ' + str(numDists))
-        lu.dashline(2)
+        # lu.dashline(2)
         eucDists[:,0:2]=sort(eucDists[:,0:2])
 
         # sort eucDists by 1st column then by 2nd then by 3rd
@@ -106,7 +106,7 @@ def STEP2_build_network():
                           ' maximum, \nthere are ' + str(numDists) +
                           ' pairwise distances.  Max core ID number is ' +
                           str(int(maxeudistid)) + '.')
-        lu.dashline(2)
+        # lu.dashline(2)
 
         # Begin creating and manipulating linktables
         # zeros and many other array functions are imported from numpy
@@ -152,7 +152,7 @@ def STEP2_build_network():
                 maxEucAdjCoreID = max(eucAdjList[:,1])
             else:
                 maxEucAdjCoreID=0
-            lu.dashline(2)
+            # lu.dashline(2)
 
             maxCoreId = max(maxEucAdjCoreID, maxCwdAdjCoreID, maxeudistid)
 
@@ -248,7 +248,7 @@ def STEP2_build_network():
                           'because there was no Euclidean ')
             Cfg.gp.addmessage('distance value in the input distance file from '
                           'Conefor extension.')
-            lu.dashline(2)
+            # lu.dashline(2)
 
         # Get list of core IDs, based on core area shapefile.
         coreList = lu.get_core_list()
@@ -278,11 +278,8 @@ def STEP2_build_network():
                     linkTable[:,Cfg.LTB_CORE2] == coreList[core,0],
                     coreList[core,1], linkTable[:,Cfg.LTB_CORE2])
 
-        # Set Cfg.LTB_LINKTYPE to 2 for all valid corridors (those not yet
-        # grouped, i.e. not assigned value of 1)
-        linkTable[:,Cfg.LTB_LINKTYPE] = where(
-            linkTable[:,Cfg.LTB_LINKTYPE] == Cfg.LT_NONLK, Cfg.LT_CORR,
-            Cfg.LT_CORE)
+        # Set Cfg.LTB_LINKTYPE to valid corridor code
+        linkTable[:,Cfg.LTB_LINKTYPE] = Cfg.LT_CORR
         # Make sure linkTable is sorted
         ind = lexsort((linkTable[:,Cfg.LTB_CORE2],linkTable[:,Cfg.LTB_CORE1]))
         linkTable = linkTable[ind]
@@ -309,14 +306,14 @@ def STEP2_build_network():
             Cfg.gp.addmessage('Removed ' + str(numDroppedLinks) +
                               ' links that were too long in Euclidean '
                               'distance.')
-            lu.dashline(2)
+            # lu.dashline(2)
 
         #Write linkTable to disk
-        Cfg.gp.addmessage('\nWriting ' + outlinkTableFile)
+        Cfg.gp.addmessage('Writing ' + outlinkTableFile)
         lu.write_link_table(linkTable, outlinkTableFile)
-        linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_STEP2.csv")
+        linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s2.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
-        lu.report_links(linkTable)
+        numCorridorLinks = lu.report_links(linkTable)
 
         Cfg.gp.addmessage ('Creating shapefiles with linework for links.\n')
         lu.write_link_maps(outlinkTableFile, step=2)

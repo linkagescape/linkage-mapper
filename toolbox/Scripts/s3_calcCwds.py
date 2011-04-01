@@ -48,9 +48,9 @@ def STEP3_calc_cwds():
 
         # FIXME: because it's integer, it fills in 0 if not entered.
         if (Cfg.BUFFERDIST) is not None:
-            Cfg.gp.addmessage('\nBounding circles plus a buffer of ' +
-                              str(float(Cfg.BUFFERDIST)/1000) + ' km will be '
-                              'used \n to limit extent of cost distance '
+            Cfg.gp.addmessage('Bounding circles plus a buffer of ' +
+                              str(float(Cfg.BUFFERDIST)) + ' map units will '
+                              'be used \n to limit extent of cost distance '
                               'calculations.')
         else:
             Cfg.gp.addmessage('NOT using bounding circles in cost distance '
@@ -70,7 +70,7 @@ def STEP3_calc_cwds():
 
         # Load linkTable (created in previous script)
         linkTable = lu.load_link_table(linkTableFile)
-        lu.report_links(linkTable)
+        numCorridorLinks = lu.report_links(linkTable)
 
         rows,cols = where(
             linkTable[:, Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] == Cfg.LT_CORR)
@@ -86,8 +86,8 @@ def STEP3_calc_cwds():
         # etc.
         if path.exists(Cfg.CWDBASEDIR):
             shutil.rmtree(Cfg.CWDBASEDIR)
-        lu.dashline(1)
-        Cfg.gp.addmessage("Creating cost-weighted distance grid output folders"
+        # lu.dashline(1)
+        Cfg.gp.addmessage("\nCreating cost-weighted distance grid output folders"
                           ":")
         Cfg.gp.addmessage(path.join(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM))
         Cfg.gp.CreateFolder_management(path.dirname(Cfg.CWDBASEDIR),
@@ -99,7 +99,7 @@ def STEP3_calc_cwds():
                 ccwdir = Cfg.CWDSUBDIR_NM + str(dirCount)
                 Cfg.gp.addmessage(ccwdir)
                 Cfg.gp.CreateFolder_management(Cfg.CWDBASEDIR, ccwdir)
-        lu.dashline(2)
+        # lu.dashline(2)
 
         # make a feature layer for input cores to select from
         Cfg.gp.MakeFeatureLayer(Cfg.COREFC, Cfg.FCORES)
@@ -131,8 +131,8 @@ def STEP3_calc_cwds():
         if (Cfg.BUFFERDIST) is not None:
             # create bounding boxes around cores
             startTime = time.clock()
-            lu.dashline(1)
-            Cfg.gp.addmessage('Calculating bounding boxes for core areas....')
+            # lu.dashline(1)
+            Cfg.gp.addmessage('Calculating bounding boxes for core areas.')
             extentBoxList = zeros((0,5), dtype='float32')
             for x in range(len(coresToMap)):
                 core = coresToMap[x]
@@ -142,13 +142,13 @@ def STEP3_calc_cwds():
                 extentBoxList = append(extentBoxList, boxCoords, axis=0)
             Cfg.gp.addmessage('\nDone calculating bounding boxes.')
             startTime, hours, mins, secs = lu.elapsed_time(startTime)
-            lu.dashline()
+            # lu.dashline()
 
         # Bounding circle code
         if Cfg.BUFFERDIST is not None:
             # Make a set of circles encompassing core areas we'll be connecting
             startTime = time.clock()
-            Cfg.gp.addmessage('\nCalculating bounding circles around potential'
+            Cfg.gp.addmessage('Calculating bounding circles around potential'
                           ' corridors.')
 
             # x y corex corey radius- stores data for bounding circle centroids
@@ -201,12 +201,12 @@ def STEP3_calc_cwds():
 
             Cfg.gp.addmessage('Successfully created bounding circles around '
                               'potential corridors using \na buffer of ' +
-                              str(float(Cfg.BUFFERDIST)/1000) + ' km.')
+                              str(float(Cfg.BUFFERDIST)) + ' map units.')
             startTime, hours, mins, secs = lu.elapsed_time(startTime)
 
             Cfg.gp.addmessage('Reducing global processing area using bounding '
                               'circle plus buffer of ' +
-                              str(float(Cfg.BUFFERDIST)/1000) + ' km.\n')
+                              str(float(Cfg.BUFFERDIST)) + ' map units.\n')
             startTime = time.clock()
 
             extentBoxList = zeros((0,5),dtype='float32')
@@ -247,7 +247,7 @@ def STEP3_calc_cwds():
 
         # ---------------------------------------------------------------------
         # Rasterize core areas to speed cost distance calcs
-        lu.dashline(1)
+        # lu.dashline(1)
         Cfg.gp.addmessage("Creating core area raster.")
         s3core_ras="s3core_ras"
         Cfg.gp.SelectLayerByAttribute(Cfg.FCORES, "CLEAR_SELECTION")
@@ -268,7 +268,7 @@ def STEP3_calc_cwds():
 
         #----------------------------------------------------------------------
         # Loop through cores, do cwd calcs for each
-        Cfg.gp.addmessage("Starting cost distance calculations.")
+        Cfg.gp.addmessage("\nStarting cost distance calculations.\n")
         lcpLoop = 0
         for x in range(len(coresToMap)):
             startTime1 = time.clock()
@@ -287,7 +287,7 @@ def STEP3_calc_cwds():
             del linkTableTemp
 
             if len(targetCores)>0:
-                lu.dashline(1)
+                lu.dashline(0)
                 Cfg.gp.addmessage('Target core areas for core area #' +
                                   str(sourceCore) + ' = ' + str(targetCores))
 
@@ -347,7 +347,8 @@ def STEP3_calc_cwds():
                     Cfg.gp.addmessage('Successfully extracted a reduced '
                                       ' resistance raster using')
                     Cfg.gp.addmessage('bounding circles plus a buffer of ' +
-                                      str(float(Cfg.BUFFERDIST)/1000) + ' km.')
+                                      str(float(Cfg.BUFFERDIST)) + ' map '
+                                      'units.')
                     startTime, hours, mins, secs = lu.elapsed_time(startTime)
                 else:
                     bResistance = boundResis
@@ -516,7 +517,7 @@ def STEP3_calc_cwds():
                             coreMin = lu.get_zonal_minimum(ZNSTATS)
                             #  Found a valid value, indicating overlap
                             if coreMin != 'Failed':
-                                lu.dashline(1)
+                                lu.dashline()
                                 Cfg.gp.addmessage(
                                     "Found an intermediate core in the "
                                     "least-cost path between cores " +
@@ -561,13 +562,13 @@ def STEP3_calc_cwds():
 
         # Write link table file
         linkTableFile = lu.get_this_step_link_table(step=3)
-        Cfg.gp.addmessage('\nUpdating ' + linkTableFile)
+        Cfg.gp.addmessage('Updating ' + linkTableFile)
         lu.write_link_table(linkTable, linkTableFile)
-        linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_STEP3.csv")
+        linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s3.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
-        lu.dashline()
-        Cfg.gp.addmessage('\nCreating shapefiles with linework for links...')
+        # lu.dashline()
+        Cfg.gp.addmessage('Creating shapefiles with linework for links...')
         lu.write_link_maps(linkTableFile, step=3)
 
         startTime = time.clock()
@@ -578,7 +579,7 @@ def STEP3_calc_cwds():
                           'to "cwd" directory. \n')
         Cfg.gp.addmessage(
             linkTableFile + '\n updated with cost-weighted distances between '
-            'core areas\n')
+            'core areas.')
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
