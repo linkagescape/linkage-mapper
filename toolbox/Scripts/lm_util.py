@@ -806,7 +806,8 @@ def create_lcp_shapefile(linkTable, sourceCore, targetCore, lcpLoop, SR):
                 except:
                     dashline(1)
                     msg = ('ERROR: Could not remove LCP shapefile ' +
-                           lcpShapefile + '. Is it open in ArcMap?')
+                           lcpShapefile + '. Was it open in ArcMap?\n You may '
+                           'need to re-start ArcMap to release the file lock.')
                     Cfg.gp.AddError(msg)
                     exit(1)
 
@@ -874,7 +875,8 @@ def update_lcp_shapefile(linkTable, lastStep, thisStep):
                 except:
                     dashline(1)
                     msg = ('ERROR: Could not remove LCP shapefile ' +
-                           lcpShapefile + '. Is it open in ArcMap?')
+                           lcpShapefile + '. Is it open in ArcMap?\n You may '
+                           'need to re-start ArcMap to release the file lock.')
                     Cfg.gp.AddError(msg)
                     exit(1)
             Cfg.gp.copy_management(oldLcpShapefile,lcpShapefile)
@@ -926,7 +928,8 @@ def update_lcp_shapefile(linkTable, lastStep, thisStep):
                 dashline(1)
                 msg = ('ERROR: Could not remove lcp shapefile from output '
                        'directory: ' + outputLcpShapefile +
-                       '. Is it open in ArcMap?')
+                       '. Is it open in ArcMap?\n You may '
+                       'need to re-start ArcMap to release the file lock.')
                 Cfg.gp.AddError(msg)
                 exit(1)
         Cfg.gp.copy_management(lcpShapefile, outputLcpShapefile)
@@ -992,25 +995,32 @@ def components_no_sparse(G):
     """Returns components of a graph while avoiding use of sparse matrices"""
     #from gapdt.py by Viral Shah
     try:
-        #G = sparse.coo_matrix(G) ############        
         U,V= where(G)
         n = G.shape[0]
         D = arange (0, n, dtype='int32')
+        star = zeros(n, 'int32')
 
+        all_stars = False
         while True:
-            D = conditional_hooking(D, U, V)
-            star = check_stars (D)
-            if (sum(star) == n):
-                return relabel(D, 1)
-                break
+            star = check_stars (D, star)
+            D = conditional_hooking(D, star, U, V)
 
-            D = pointer_jumping(D)
+            star = check_stars (D, star)
+            D = unconditional_hooking (D, star, U, V)
+
+            # pointer jumping
+            D = D[D]
+
+            if all_stars == True:
+                return relabel(D, 1)
+            
+            if sum(star) == n:
+                all_stars = True
     except:
         raise_python_error('lm_util')               
         
         
 def relabel( oldlabel, offset=0):#from gapdt.py by Viral Shah
-    """Relabels components"""
     newlabel = zeros(size(oldlabel), dtype='int32')
     s = sort(oldlabel)
     perm = argsort(oldlabel)
@@ -1021,7 +1031,7 @@ def relabel( oldlabel, offset=0):#from gapdt.py by Viral Shah
     return newlabel-1+offset
 
 
-def conditional_hooking (D, u, v):#from gapdt.py by Viral Shah
+def conditional_hooking (D, star, u, v):#from gapdt.py by Viral Shah
     """Utility for components code"""
     Du = D[u]
     Dv = D[v]
@@ -1033,18 +1043,21 @@ def conditional_hooking (D, u, v):#from gapdt.py by Viral Shah
     D[Du] = Dv
     return D
 
+def unconditional_hooking (D, star, u, v):
+    Du = D[u]
+    Dv = D[v]
+    
+    hook = where((star[u] == 1) & (Du != Dv))
+    D[Du[hook]] = Dv[hook]
 
-def check_stars (D):#from gapdt.py by Viral Shah
+    return D
+    
+def check_stars (D, star):#from gapdt.py by Viral Shah
     """Utility for components code"""
-    n = D.size
-    star = ones (n, dtype='int32')
-
+    star[:] = 1
     notstars = where (D != D[D])
     star[notstars] = 0
-    Dnotstars = D[notstars]
-    star[Dnotstars] = 0
-    star[D[Dnotstars]] = 0
-
+    star[D[D[notstars]]] = 0
     star = star[D]
     return star
     

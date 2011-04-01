@@ -88,7 +88,8 @@ def lm_master():
                 except:
                     lu.dashline(1)
                     msg = ('ERROR: Could not remove geodatabase ' +
-                           Cfg.OUTPUTGDB + '. Is it open in ArcMap?')
+                           Cfg.OUTPUTGDB + '. Is it open in ArcMap?\n You may '
+                           'need to re-start ArcMap to release the file lock.')
                     Cfg.gp.AddError(msg)
                     exit(1)
 

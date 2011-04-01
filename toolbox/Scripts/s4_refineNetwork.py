@@ -202,7 +202,7 @@ def STEP4_refine_network():
 
         # lu.dashline()
         Cfg.gp.addmessage('Creating shapefiles with linework for links.')
-        lu.write_link_maps(linkTableFile, step=4)
+        lu.write_link_maps(outlinkTableFile, step=4)
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
