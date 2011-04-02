@@ -410,15 +410,16 @@ def STEP3_calc_cwds():
                         link = lu.get_links_from_core_pairs(linkTable,
                                                             sourceCore,
                                                             tableRow.Value)
-                        linkTable[link,Cfg.LTB_CWDIST] = tableRow.Min
-                        if Cfg.MAXCOSTDIST is not None:
-                            if tableRow.Min > Cfg.MAXCOSTDIST:
-                                 # Disable link, it's too long
-                                linkTable[link,Cfg.LTB_LINKTYPE] = Cfg.LT_TLLC
-                        if Cfg.MINCOSTDIST is not None:
-                            if tableRow.Min < Cfg.MINCOSTDIST:
-                                # Disable link, it's too short
-                                linkTable[link,Cfg.LTB_LINKTYPE] = Cfg.LT_TSLC
+                        if linkTable[link,Cfg.LTB_LINKTYPE] > 0: # valid link
+                            linkTable[link,Cfg.LTB_CWDIST] = tableRow.Min
+                            if Cfg.MAXCOSTDIST is not None:
+                                if tableRow.Min > Cfg.MAXCOSTDIST:
+                                     # Disable link, it's too long
+                                    linkTable[link,Cfg.LTB_LINKTYPE] = Cfg.LT_TLLC
+                            if Cfg.MINCOSTDIST is not None:
+                                if tableRow.Min < Cfg.MINCOSTDIST:
+                                    # Disable link, it's too short
+                                    linkTable[link,Cfg.LTB_LINKTYPE] = Cfg.LT_TSLC
                     tableRow = tableRows.next()
                 del tableRow, tableRows
                 startTime, hours, mins, secs = lu.elapsed_time(startTime)
@@ -431,7 +432,8 @@ def STEP3_calc_cwds():
                                                         targetCore)
                     # Map all links for which above code successfully extracted
                     #  cwds in above code
-                    if (linkTable[rows[0],Cfg.LTB_LINKTYPE] < 100 and
+                    if (linkTable[rows[0],Cfg.LTB_LINKTYPE] > 0 and
+                        linkTable[rows[0],Cfg.LTB_LINKTYPE] < 100 and
                         linkTable[rows[0],Cfg.LTB_CWDIST] != -1):
                         # Flag so that we only evaluate this pair once
                         linkTable[rows,Cfg.LTB_LINKTYPE] = (linkTable

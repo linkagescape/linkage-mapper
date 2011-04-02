@@ -1126,7 +1126,7 @@ def write_link_table(linkTable, outlinkTableFile):
                 outFile.write (str(linkTable[x,12]))
                 outFile.write ("\n")
 
-        outFile.write ("\n# Linkage Mapper Version " + __version__)
+        outFile.write ("# Linkage Mapper Version " + __version__)
         outFile.write ("\n# ---Run Settings---") 
         outFile.write ("\n# Project Directory: " + Cfg.PROJECTDIR)
         outFile.write ("\n# Core Area Feature Class: " + Cfg.COREFC)

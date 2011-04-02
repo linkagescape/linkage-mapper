@@ -282,6 +282,13 @@ def STEP2_build_network():
         linkTable[:,Cfg.LTB_LINKTYPE] = Cfg.LT_CORR
         # Make sure linkTable is sorted
         ind = lexsort((linkTable[:,Cfg.LTB_CORE2],linkTable[:,Cfg.LTB_CORE1]))
+        if len(linkTable) == 0:
+            Cfg.gp.Adderror('\nERROR: There are no valid core area '
+                            'pairs. This can happen when core area numbers in '
+                            'your Conefor distances text file do not match '
+                            'those in your core area feature class.')
+            exit(0)
+        
         linkTable = linkTable[ind]
 
         # Assign link IDs in order
@@ -289,9 +296,10 @@ def STEP2_build_network():
             linkTable[x,Cfg.LTB_LINKID] = x + 1
 
         if len(unique(coreList[:,1])) < 2:
-            Cfg.gp.addmessage('\n***WARNING: There are less than two core '
+            Cfg.gp.addmessage('\nERROR: There are less than two core '
                               'areas.\nThis means there is nothing to connect '
-                              'with linkages.')
+                              'with linkages. Bailing.')
+            exit(0)
         #----------------------------------------------------------------------
 
 
