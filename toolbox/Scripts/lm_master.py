@@ -75,7 +75,7 @@ def lm_master():
 
         # Make a backup copy of datapass directory.
         # This will have lcp maps and link tables from previous run.
-        lu.archive_datapass()
+        #lu.archive_datapass() #DISABLED
 
         lu.clean_up_link_tables(firststep)
 
