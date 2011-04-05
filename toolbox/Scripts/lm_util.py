@@ -21,7 +21,7 @@ import traceback
 
 import arcgisscripting
 from numpy import *
-from scipy import sparse
+
 
 from lm_config import Config as Cfg
 
