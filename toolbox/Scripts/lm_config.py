@@ -12,10 +12,14 @@ import sys
 
 import arcgisscripting
 
+
 def str2bool(pstr):
-        return pstr == 'true'
+    """Convert ESRI boolean string to Python boolean type"""
+    return pstr == 'true'
+
 
 def setadjmeth(inparam):
+    """Return boolean variables for distance methods"""
     if inparam == "Cost-Weighted":
         meth_cw = True
         meth_eu = False
@@ -27,49 +31,48 @@ def setadjmeth(inparam):
         meth_eu = True
     return meth_cw, meth_eu
 
+
 def nullfloat(innum):
+    """Convert ESRI float or null to Python float"""
     if innum == '#':
         nfloat = None
     else:
-        nfloat=float(innum)
+        nfloat = float(innum)
     return nfloat
 
-class Config():
-    PROJECTDIR = sys.argv[1]            # Project directory
-    COREFC = sys.argv[2]                # Core area feature class
-    COREFN = sys.argv[3]                # Core area field name
-    RESRAST = sys.argv[4]               # Resistance raster
 
+class Config():
+    """Class to enscapulate all global constants"""
+    # Model inputs from ArcGIS tool 
+    PROJECTDIR = sys.argv[1]  # Project directory
+    COREFC = sys.argv[2]  # Core area feature class
+    COREFN = sys.argv[3]  # Core area field name
+    RESRAST = sys.argv[4]  # Resistance raster
+
+    # Processing steps inputs
     STEP1 = str2bool(sys.argv[5])
     S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
-
     STEP2 = str2bool(sys.argv[7])
     S2EUCDISTFILE = sys.argv[8]
     S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[9])
-
     STEP3 = str2bool(sys.argv[10])
-    S3DROPLCCS = sys.argv[11]             # Drop LCC's with intermediate cores
-
+    S3DROPLCCS = sys.argv[11]  # Drop LCC's with intermediate cores
     STEP4 = str2bool(sys.argv[12])
-    S4MAXNN = int(sys.argv[13])           # No of connected nearest neighbors
-    # Nearest neighbor measurement unit
-    S4DISTTYPE_CW, S4DISTTYPE_EU  = setadjmeth(sys.argv[14])
+    S4MAXNN = int(sys.argv[13])  # No of connected nearest neighbors
+    S4DISTTYPE_CW, S4DISTTYPE_EU = setadjmeth(sys.argv[14]) # NN Unit
     S4CONNECT = str2bool(sys.argv[15])
-
     STEP5 = str2bool(sys.argv[16])
 
+    # Optional input parameters
     BUFFERDIST = nullfloat(sys.argv[17])
     MAXCOSTDIST = nullfloat(sys.argv[18])
     MAXEUCDIST = nullfloat(sys.argv[19])
-
-    MINCOSTDIST = None
-    MINEUCDIST = None
-
+   
+    # Ouput directory paths & folder names
     OUTPUTDIR = path.join(PROJECTDIR, "output")
     SCRATCHDIR = path.join(PROJECTDIR, "scratch")
     LOGDIR = path.join(PROJECTDIR, "log")
-    DATAPASSDIR = path.join(PROJECTDIR, "datapass")
-    DATAPASSARCHDIR = path.join(PROJECTDIR, "datapass_archive")
+    DATAPASSDIR = path.join(PROJECTDIR, "datapass")  
     ADJACENCYDIR = path.join(PROJECTDIR, "adj")
     CWDBASEDIR = path.join(PROJECTDIR, "cwd")
     CWDSUBDIR_NM = "cw"
@@ -77,20 +80,20 @@ class Config():
     LCCNLCDIR_NM = "nlc"
     LCCMOSAICDIR = path.join(LCCBASEDIR, "mosaic")
 
-    OUTPUTGDB = path.join(OUTPUTDIR, "linkages.gdb")
-
-    # This is how "wide" corridors will be (measured in cost-weighted
-    # distances) in a truncated raster
-    CWDTHRESH = 100000
+    # Other global constants
+    MINCOSTDIST = None
+    MINEUCDIST = None    
+    SAVENORMLCCS = False  # Set to True to save individual normalized LCC grids
+    FCORES = "fcores"
+    OUTPUTGDB = path.join(OUTPUTDIR, "linkages.gdb")   
+    BNDCIRCEN = "boundingCircleCenter.shp"
+    BNDCIR = "boundingCircle.shp"
+    
+    CWDTHRESH = 100000 # CWD corridor width in a truncated raster
     if MAXCOSTDIST is None:
         TMAXCWDIST = None
     else:
         TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # This will limit cw calcs
-
-    SAVENORMLCCS = False  # Set to True to save individual normalized LCC grids
-    FCORES = "fcores"
-    BNDCIRCEN = "boundingCircleCenter.shp"
-    BNDCIR = "boundingCircle.shp"
 
     # Link table column numbers
     LTB_LINKID = 0  # Link ID
@@ -128,6 +131,7 @@ class Config():
 # 30 temp saved nnconstel.  maybe able to get rid fo this
 
    
+    # Create single geoprocessor object to be used throughout
     gp = arcgisscripting.create(9.3)
     gp.CheckOutExtension("Spatial")
     gp.OverwriteOutput = True
