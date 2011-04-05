@@ -41,7 +41,7 @@ def STEP4_refine_network():
 
         linkTable = lu.load_link_table(linkTableFile)
         numLinks = linkTable.shape[0]
-        lu.report_links(linkTable)
+        numCorridorLinks = lu.report_links(linkTable)
 
         if not Cfg.STEP3:
             # re-check for links that are too long in case script run out of
@@ -79,12 +79,12 @@ def STEP4_refine_network():
             ind = argsort(distsFromCore[:,distCol])
             distsFromCore = distsFromCore[ind]
 
-            # Set N nearest neighbor connections to 20
+            # Set N nearest neighbor connections to Nearest Neighbor (NNCT) 
             maxRange = min(len(rows), Cfg.S4MAXNN)
             for link in range (0,maxRange):
                 linkId = distsFromCore[link,Cfg.LTB_LINKID]
                 # assumes linktable sequentially numbered with no gaps
-                linkTable[linkId-1,Cfg.LTB_LINKTYPE] = Cfg.LT_NNC
+                linkTable[linkId-1,Cfg.LTB_LINKTYPE] = Cfg.LT_NNCT 
 
         # Connect constellations (aka compoments or clusters)
         # Fixme: needs testing.  Move to function.
@@ -111,8 +111,8 @@ def STEP4_refine_network():
 
             rows, cols = where(
                 linkTableComp[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
-                Cfg.LT_NNC)
-            # The new, improved corridorLinks- only "20" links
+                Cfg.LT_NNCT)
+            # The new, improved corridorLinks- only NN links
             corridorLinksComp=linkTableComp[rows,:]
             # These are NEW core numbers (range from 0 to numcores)
             coresToProcess = unique(linkTableComp[:,10:12])
@@ -122,17 +122,17 @@ def STEP4_refine_network():
                           dtype="int32")
             rows = corridorLinksComp[:,10].astype('int32')
             cols = corridorLinksComp[:,11].astype('int32')
-            # But aren't these all 1?
             vals = where(corridorLinksComp[:,Cfg.LTB_LINKTYPE] ==
-                         Cfg.LT_NNC, Cfg.LT_CORR, Cfg.LT_NONLK)
-            Graph[rows,cols] = vals # why not just 1?
+                         Cfg.LT_NNCT, Cfg.LT_CORR, 0)
+                         
+            Graph[rows,cols] = vals 
             Graph = Graph + Graph.T
 
             # Use graph to identify components (disconnected sub-groups) in
             # core area network
             components = lu.components_no_sparse(Graph)
             numComponents = len(unique(components))
-
+            
             for coreInd in range(0,len(coresToProcess)):
                 # In resulting cols, cols are 0 for LTB_CORE1 and 1 for
                 # LTB_CORE2
@@ -141,7 +141,6 @@ def STEP4_refine_network():
                 # want results in cols 12 and 13  Note: we've replaced new core
                 # numbers with COMPONENT numbers.
                 linkTableComp[rows,cols+12] = components[coreInd]
-
             # Additional column indexes for linkTableComp
             component1Col = 12
             component2Col = 13
@@ -179,30 +178,31 @@ def STEP4_refine_network():
             ind = argsort(linkTable[:,Cfg.LTB_LINKID])
             linkTable= linkTable[ind]
 
-        # At end, any non-comp links that are 2 get assigned -2
+        # At end, any non-constellation links that are not NN's get dropped
         # (too long to be in Cfg.S4MAXNN, not a component link)
         rows = where(linkTable[:,Cfg.LTB_LINKTYPE] == Cfg.LT_CORR)
         linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_CPLK
 
-        # set 20 links back to 2, get rid of extra columns, re-sort linktable
-        rows = where(linkTable[:,Cfg.LTB_LINKTYPE] == linkTableComp)
-        linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_CORR
+        # set NNCT links to NN corridor links (NNC), get rid 
+        # of extra columns, re-sort linktable
+        rows = where(linkTable[:,Cfg.LTB_LINKTYPE] == Cfg.LT_NNCT)
+        linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_NNC
 
         # Write linkTable to disk
         outlinkTableFile = lu.get_this_step_link_table(step=4)
-        lu.dashline(2)
+        # lu.dashline(1)
         Cfg.gp.addmessage('\nWriting ' + outlinkTableFile)
         lu.write_link_table(linkTable, outlinkTableFile)
-        linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_STEP4.csv")
+        linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s4.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
         startTime = time.clock()
         dummy = lu.update_lcp_shapefile(linkTable, lastStep=3, thisStep=4)
         startTime, hours, mins, secs = lu.elapsed_time(startTime)
 
-        lu.dashline()
-        Cfg.gp.addmessage('\nCreating shapefiles with linework for links.')
-        lu.write_link_maps(linkTableFile, step=4)
+        # lu.dashline()
+        Cfg.gp.addmessage('Creating shapefiles with linework for links.')
+        lu.write_link_maps(outlinkTableFile, step=4)
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:

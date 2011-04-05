@@ -56,7 +56,7 @@ def STEP1_get_adjacencies():
         if Cfg.BUFFERDIST is not None:
             Cfg.gp.addmessage('Reducing processing area using bounding circle '
                               'plus buffer of ' +
-                              str(float(Cfg.BUFFERDIST)/1000) + ' km.')
+                              str(float(Cfg.BUFFERDIST)) + ' map units')
             startTime = time.clock()
             Cfg.gp.MakeFeatureLayer(Cfg.COREFC, Cfg.FCORES)
 
@@ -210,7 +210,8 @@ def euadjacency():
     """
     try:
         alloc_rasFN = "Euc_alloc_ras"
-        Cfg.gp.addmessage('\nCalculating Euclidean adjacency')
+        lu.dashline()
+        Cfg.gp.addmessage('Calculating Euclidean adjacency')
         outcsvfile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
         outcsvLogfile = path.join(Cfg.LOGDIR, "eucAdj_STEP1.csv")
 
@@ -222,9 +223,9 @@ def euadjacency():
         Cfg.gp.addmessage ('Starting Euclidean adjacency processing...')
         # Euclidean cell size
         cellSizeEuclidean = Cfg.gp.Describe(Cfg.RESRAST).MeanCellHeight
-        Cfg.gp.addmessage('Euclidean cell size set equal to resistance '
-                      'raster cell size (' +
-                      str(cellSizeEuclidean) + ').')
+        # Cfg.gp.addmessage('Euclidean cell size set equal to resistance '
+                      # 'raster cell size (' +
+                      # str(cellSizeEuclidean) + ').')
 
         oldextent = Cfg.gp.extent
         if Cfg.BUFFERDIST is not None:

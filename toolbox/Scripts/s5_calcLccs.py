@@ -58,8 +58,14 @@ def STEP5_calc_lccs():
 
         linkTable = lu.load_link_table(linkTableFile)
         numLinks = linkTable.shape[0]
-        lu.report_links(linkTable)
-
+        numCorridorLinks = lu.report_links(linkTable)
+        if numCorridorLinks == 0:
+            lu.dashline()
+            Cfg.gp.addmessage('\nThere are no corridors to map. Bailing.')
+            time.sleep(5)
+            return
+            
+            
         if not Cfg.STEP3 and not Cfg.STEP4:
             # re-check for links that are too long or in case script run out of
             # sequence with more stringent settings
@@ -97,8 +103,7 @@ def STEP5_calc_lccs():
         for x in range(0,numLinks):
             linkId = str(int(linkTable[x,Cfg.LTB_LINKID]))
 
-            if (linkTable[x,Cfg.LTB_LINKTYPE] == Cfg.LT_CORR or
-                linkTable[x,Cfg.LTB_LINKTYPE] == Cfg.LT_CLU):
+            if (linkTable[x,Cfg.LTB_LINKTYPE] > 0):
                 # source and target cores
                 corex=int(coreList[x,0])
                 corey=int(coreList[x,1])
@@ -195,7 +200,7 @@ def STEP5_calc_lccs():
         Cfg.gp.workspace = Cfg.OUTPUTGDB
 
         # Copy mosaic raster to output geodatabase
-        mosRaster = "lcc_mos"
+        mosRaster = "lcc_mosaic"
         count = 0
         statement = 'Cfg.gp.CopyRaster_management(mosaicRaster, mosRaster)'
         while True:
@@ -211,7 +216,7 @@ def STEP5_calc_lccs():
         # ---------------------------------------------------------------------
         # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
         # to NODATA.
-        truncRaster = "lcc_mosaic_meters_100000_max"
+        truncRaster = "lcc_mosaic_100k_max"
         expression = ("(" + mosaicRaster + " * (con(" + mosaicRaster + "<= " +
                       str(Cfg.CWDTHRESH) + ",1)))")
         count = 0
@@ -222,10 +227,10 @@ def STEP5_calc_lccs():
                 count,tryAgain = lu.hiccup_test(count,statement)
                 if not tryAgain: exec statement
             else: break
-        kmRaster = "lcc_mosaic_km_100_max"
-        expression = "float(int((" + truncRaster + ") / 10)) / 100"
+        intRaster = "lcc_mosaic_100k_max_int"
+        expression = "int(" + truncRaster + ")"
         count = 0
-        statement = 'Cfg.gp.SingleOutputMapAlgebra_sa(expression, kmRaster)'
+        statement = 'Cfg.gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
         while True:
             try: exec statement
             except:
@@ -237,7 +242,6 @@ def STEP5_calc_lccs():
         except:
             pass
         # ---------------------------------------------------------------------
-
 
         startTime = time.clock()
 
@@ -259,11 +263,11 @@ def STEP5_calc_lccs():
                                                      thisStep=5)
             startTime, hours, mins, secs = lu.elapsed_time(startTime)
 
-        linkTableFile = lu.get_this_step_link_table(step=5)
-        Cfg.gp.addmessage('\nUpdating ' + linkTableFile)
-        lu.write_link_table(linkTable, linkTableFile)
+        outlinkTableFile = lu.get_this_step_link_table(step=5)
+        Cfg.gp.addmessage('Updating ' + outlinkTableFile)
+        lu.write_link_table(linkTable, outlinkTableFile)
 
-        linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_STEP5.csv")
+        linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s5.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
         linkTableFinalFile = path.join(Cfg.OUTPUTDIR, "linkTable_Final.csv")
@@ -271,33 +275,33 @@ def STEP5_calc_lccs():
         Cfg.gp.addmessage('Copy of final linkTable written to '+
                           linkTableFinalFile)
 
-        # Pull out active corridor and constellation links
-        numLinks=finalLinkTable.shape[0]
-        rows, cols = where(
-            finalLinkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
-            Cfg.LT_CORR)
-        coreLinks = finalLinkTable[rows,:]
-        rows, cols = where(
-            finalLinkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
-            Cfg.LT_CLU)
-        componentLinks = finalLinkTable[rows,:]
-        activeLinkTable = append(coreLinks, componentLinks, axis=0)
-        del componentLinks
-        del coreLinks
+        # # Pull out active corridor and constellation links
+        # numLinks=finalLinkTable.shape[0]
+        # rows, cols = where(
+            # finalLinkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
+            # Cfg.LT_CORR)
+        # coreLinks = finalLinkTable[rows,:]
+        # rows, cols = where(
+            # finalLinkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
+            # Cfg.LT_CLU)
+        # componentLinks = finalLinkTable[rows,:]
+        # activeLinkTable = append(coreLinks, componentLinks, axis=0)
+        # del componentLinks
+        # del coreLinks
 
-        # sort by Cfg.LTB_LINKID
-        ind = argsort((activeLinkTable[:,Cfg.LTB_LINKID]))
-        activeLinkTable = activeLinkTable[ind]
+        # # sort by Cfg.LTB_LINKID
+        # ind = argsort((activeLinkTable[:,Cfg.LTB_LINKID]))
+        # activeLinkTable = activeLinkTable[ind]
 
-        activeLinkTableFile = path.join(
-            Cfg.OUTPUTDIR, "linkTable_Final_Active_Links_Only.csv")
-        lu.write_link_table(activeLinkTable, activeLinkTableFile)
-        Cfg.gp.addmessage('Table of active links written to ' +
-                          activeLinkTableFile)
+        # activeLinkTableFile = path.join(
+            # Cfg.OUTPUTDIR, "linkTable_.csv")
+        # lu.write_link_table(activeLinkTable, activeLinkTableFile)
+        # Cfg.gp.addmessage('Table of active links written to ' +
+                          # activeLinkTableFile)
 
-        lu.dashline()
-        Cfg.gp.addmessage('\nCreating shapefiles with linework for links.')
-        lu.write_link_maps(linkTableFile, step=5)
+        # lu.dashline(1)
+        Cfg.gp.addmessage('Creating shapefiles with linework for links.')
+        lu.write_link_maps(outlinkTableFile, step=5)
 
         # Create final linkmap files in output directory, and remove files from
         # scratch.

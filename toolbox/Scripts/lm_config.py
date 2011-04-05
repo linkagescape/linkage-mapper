@@ -110,19 +110,27 @@ class Config():
     LTB_CWDEUCR = 11
     LTB_CWDPATHR = 12
 
-    # Linkage type column values
-    LT_CPLK = -2  # Not_nearest N neighbors
-    LT_NONLK = 0  # No link
-    LT_CORE = 1  # Witin core
-    LT_CORR = 2  # Connects cores (corridor)
-    LT_INT = 3  # Intermediate corea area detected
-    LT_TLEC = 4  # Too long Euclidean distance
-    LT_TLLC = 5  # Too long Cost-Weighted distance
-    LT_TSEC = 6  # Too short Euclidean distance
-    LT_TSLC = 7  # Too short Cost-Weighted distance
-    LT_CLU = 10  # Connects_constellations
-    LT_NNC = 20
+    # Linkage type values (NOTE- these map to codes in get_linktype_desc)
+    LT_CPLK = -1  # Not_nearest N neighbors
+    LT_TLEC = -11  # Too long Euclidean distance
+    LT_TLLC = -12  # Too long Cost-Weighted distance
+    LT_TSEC = -13  # Too short Euclidean distance
+    LT_TSLC = -14  # Too short Cost-Weighted distance
+    LT_INT = -15  # Intermediate corea area detected
+    LT_CORR = 1  # Connects cores (corridor)
+    LT_NNC = 10 # Corridor connecting N Nearest Neighbors
+    LT_CLU = 20  # Connects_constellations (corridor)
+    LT_NNCT = 30  # TEMP NN corridor links (s4), may be able to get rid of this
+# 1 corridor
+# 10 NN corridor
+# 11 1st nn (future)
+# 12 2nd nn etc (future)
+# 20 constel
+# 21 1st nn constel (future)
+# 22 2nd nn constel etc (future)
+# 30 temp saved nnconstel.  maybe able to get rid fo this
 
+   
     # Create single geoprocessor object to be used throughout
     gp = arcgisscripting.create(9.3)
     gp.CheckOutExtension("Spatial")

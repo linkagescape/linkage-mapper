@@ -35,15 +35,15 @@ def lm_master():
     """
     try:       
         # Delete final ouptut geodatabase
-        if Cfg.gp.Exists(Cfg.OUTPUTGDB) and Cfg.STEP5:
+        if Cfg.gp.Exists(Cfg.OUTPUTGDB) and Cfg.STEP5:           
             Cfg.gp.addmessage('Deleting geodatabase ' + Cfg.OUTPUTGDB)
-            Cfg.gp.delete_management(Cfg.OUTPUTGDB)        
+            Cfg.gp.delete_management(Cfg.OUTPUTGDB)                    
         
         def createfolder(lmfolder):
             """Creates folder if it doesn't exist."""
             if not path.exists(lmfolder):
                 Cfg.gp.CreateFolder_management(path.dirname(lmfolder),
-                                               path.basename(lmfolder))
+                                               path.basename(lmfolder))                                                                       
         createfolder(Cfg.OUTPUTDIR)
         createfolder(Cfg.LOGDIR)
         createfolder(Cfg.SCRATCHDIR)
@@ -59,7 +59,7 @@ def lm_master():
         elif Cfg.STEP4:
             firststep = 4
         elif Cfg.STEP5:
-            firststep = 5 
+            firststep = 5
         lu.clean_up_link_tables(firststep)            
         
         # Run linkage mapper processing steps
