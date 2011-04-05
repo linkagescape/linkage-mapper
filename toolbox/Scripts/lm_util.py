@@ -1355,16 +1355,6 @@ def write_link_maps(linkTableFile, step):
 ############################################################################
 ## File and Path Management Functions ######################################
 ############################################################################
-
-
-def archive_datapass():
-    if os.path.exists(Cfg.DATAPASSARCHDIR):
-        shutil.rmtree(Cfg.DATAPASSARCHDIR)
-    if os.path.exists(Cfg.DATAPASSDIR):
-        shutil.copytree(Cfg.DATAPASSDIR, Cfg.DATAPASSARCHDIR)
-    return
-
-
 def get_cwd_path(core):
     """Returns the path for the cwd raster corresponding to a core area """
     dirCount = int(core / 100)
