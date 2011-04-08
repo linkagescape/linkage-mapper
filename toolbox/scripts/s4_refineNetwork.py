@@ -1,23 +1,17 @@
 #!/usr/bin/env python2.5
 
-##*****************************************************************
-## 2011_0128
-## NAME: s4_refineNetwork.py
-##
-## SUMMARY: Allows user to only connect each core area to its N
-## nearest neighbors, then connect any disjunct clusters ('constellations')
-## of core areas to their nearest neighboring cluster
-##
-## SOFTWARE: ArcGIS 9.3 (requires Spatial Analyst extension)
-##           Python 2.5
-##
-##*****************************************************************
-#
+"""Step 4: Refine network.
+
+ Allows user to only connect each core area to its N nearest neighbors, then
+ connect any disjunct clusters ('constellations') of core areas to their
+ nearest neighboring cluster
+
+ """
+
 # Note: because cwds calculated in step 3, constellation links just connect
 # core pairs, not all cores in 1 constellation to all cores in another.
 # Could use previous (now discarded) combo code to mosaic CWDS if wanted.
 
-# Import required modules
 import sys
 import os.path as path
 import time
@@ -35,6 +29,8 @@ def STEP4_refine_network():
 
     """
     try:
+        lu.dashline(1)
+        Cfg.gp.addmessage('Running script s4_refineNetwork.py')
         Cfg.gp.Workspace = Cfg.OUTPUTDIR
 
         linkTableFile = lu.get_prev_step_link_table(step=4)
@@ -79,12 +75,12 @@ def STEP4_refine_network():
             ind = argsort(distsFromCore[:,distCol])
             distsFromCore = distsFromCore[ind]
 
-            # Set N nearest neighbor connections to Nearest Neighbor (NNCT) 
+            # Set N nearest neighbor connections to Nearest Neighbor (NNCT)
             maxRange = min(len(rows), Cfg.S4MAXNN)
             for link in range (0,maxRange):
                 linkId = distsFromCore[link,Cfg.LTB_LINKID]
                 # assumes linktable sequentially numbered with no gaps
-                linkTable[linkId-1,Cfg.LTB_LINKTYPE] = Cfg.LT_NNCT 
+                linkTable[linkId-1,Cfg.LTB_LINKTYPE] = Cfg.LT_NNCT
 
         # Connect constellations (aka compoments or clusters)
         # Fixme: needs testing.  Move to function.
@@ -124,15 +120,15 @@ def STEP4_refine_network():
             cols = corridorLinksComp[:,11].astype('int32')
             vals = where(corridorLinksComp[:,Cfg.LTB_LINKTYPE] ==
                          Cfg.LT_NNCT, Cfg.LT_CORR, 0)
-                         
-            Graph[rows,cols] = vals 
+
+            Graph[rows,cols] = vals
             Graph = Graph + Graph.T
 
             # Use graph to identify components (disconnected sub-groups) in
             # core area network
             components = lu.components_no_sparse(Graph)
             numComponents = len(unique(components))
-            
+
             for coreInd in range(0,len(coresToProcess)):
                 # In resulting cols, cols are 0 for LTB_CORE1 and 1 for
                 # LTB_CORE2
@@ -183,7 +179,7 @@ def STEP4_refine_network():
         rows = where(linkTable[:,Cfg.LTB_LINKTYPE] == Cfg.LT_CORR)
         linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_CPLK
 
-        # set NNCT links to NN corridor links (NNC), get rid 
+        # set NNCT links to NN corridor links (NNC), get rid
         # of extra columns, re-sort linktable
         rows = where(linkTable[:,Cfg.LTB_LINKTYPE] == Cfg.LT_NNCT)
         linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_NNC

@@ -1,25 +1,23 @@
 #!/usr/bin/env python2.5
 
-##*****************************************************************
-## 2011_0128
-## NAME: s1_getAdjacencies.py
-##
-## SUMMARY: Determines adjacencies between core areas in either or both
-## Euclidean and cost-weighted distance space
-##
-## SOFTWARE: ArcGIS 9.3 (requires Spatial Analyst extension)
-##           Python 2.5
-##
-##*****************************************************************
+""" Step 1: Get adjacencies.
+
+Determines adjacencies between core areas in either or both Euclidean and
+cost-weighted distance space
+
+"""
 
 import shutil
-import arcgisscripting, sys, time
-from time import localtime, strftime
+import sys
+import time
+import string
+import csv
 import os.path as path
-import string,csv
+
 from numpy import *
 from string import split
-from numpy import loadtxt, where, delete, arange
+
+import arcgisscripting
 
 from lm_config import Config as Cfg
 import lm_util as lu
@@ -35,9 +33,11 @@ def STEP1_get_adjacencies():
 
     """
     try:
+        lu.dashline(1)
+        Cfg.gp.addmessage('Running script s1_getAdjacencies.py')
+
         # Default behavior is to use same cell size as resistance raster,
         # but this can be changed here.
-
         Cfg.gp.scratchWorkspace = Cfg.SCRATCHDIR
         Cfg.gp.workspace = Cfg.PROJECTDIR
 
@@ -215,7 +215,7 @@ def euadjacency():
         outcsvfile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
         outcsvLogfile = path.join(Cfg.LOGDIR, "eucAdj_STEP1.csv")
 
-        # FIXME- would be good to have bounding circle affect euclidean calcs 
+        # FIXME- would be good to have bounding circle affect euclidean calcs
         # too
         # ----------------------------------------------
         # Euclidean allocation code

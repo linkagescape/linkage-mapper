@@ -1,18 +1,12 @@
 #!/usr/bin/env python2.5
 
-##*****************************************************************
-## 2011_0128
-## NAME: s2_buildNetwork.py
-##
-## SUMMARY: Generates initial version of linkTable.csv based on euclidean
-##          distances and adjacencies of core areas
-##
-## SOFTWARE: ArcGIS 9.3 (requires Spatial Analyst extension)
-##           Python 2.5
-##
-##*****************************************************************
+"""Step 2: Build network.
 
-# import required modules
+Generates initial version of linkTable.csv based on euclidean distances and
+adjacencies of core areas
+
+"""
+
 import os.path as path
 import sys
 import time
@@ -30,6 +24,8 @@ def STEP2_build_network():
 
     """
     try:
+        lu.dashline(1)
+        Cfg.gp.addmessage('Running script s2_buildNetwork.py')
         outlinkTableFile = lu.get_this_step_link_table(step=2)
 
         # This is a warning flag if distances are mising in conefor
@@ -288,7 +284,7 @@ def STEP2_build_network():
                             'your Conefor distances text file do not match '
                             'those in your core area feature class.')
             exit(0)
-        
+
         linkTable = linkTable[ind]
 
         # Assign link IDs in order

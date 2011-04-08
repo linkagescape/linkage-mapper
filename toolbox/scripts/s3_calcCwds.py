@@ -1,19 +1,13 @@
 #!/usr/bin/env python2.5
 
-##*****************************************************************
-## 2011_0128
-## NAME: s3_calcCwds.py
-##
-## SUMMARY: Calculates cost-weighted distances from each core area.
-## Uses bounding circles around source and target cores to limit
-## extent of cwd calculations and speed computation.
-##
-## SOFTWARE: ArcGIS 9.3 (requires Spatial Analyst extension)
-##           Python 2.5
-##
-##*****************************************************************
+"""Step 3: Calculate cost-weighted distances.
 
-# import required modules
+Calculates cost-weighted distances from each core area.
+Uses bounding circles around source and target cores to limit
+extent of cwd calculations and speed computation.
+
+"""
+
 import sys
 import os.path as path
 import shutil
@@ -37,6 +31,8 @@ def STEP3_calc_cwds():
 
     """
     try:
+        lu.dashline(1)
+        Cfg.gp.addmessage('Running script s3_calcCwds.py')
         Cfg.gp.scratchWorkspace = Cfg.SCRATCHDIR
         linkTableFile = lu.get_prev_step_link_table(step=3)
 
