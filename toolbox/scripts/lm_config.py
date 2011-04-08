@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.5
 
-"""Linkage Mapper configuration module
+"""Linkage Mapper configuration module.
 
 Assigns input parameter from ToolBox to variables and reads defaults from
 linkage_mapper.ini
@@ -43,7 +43,7 @@ def nullfloat(innum):
 
 class Config():
     """Class to enscapulate all global constants"""
-    # Model inputs from ArcGIS tool 
+    # Model inputs from ArcGIS tool
     PROJECTDIR = sys.argv[1]  # Project directory
     COREFC = sys.argv[2]  # Core area feature class
     COREFN = sys.argv[3]  # Core area field name
@@ -59,7 +59,7 @@ class Config():
     S3DROPLCCS = sys.argv[11]  # Drop LCC's with intermediate cores
     STEP4 = str2bool(sys.argv[12])
     S4MAXNN = int(sys.argv[13])  # No of connected nearest neighbors
-    S4DISTTYPE_CW, S4DISTTYPE_EU = setadjmeth(sys.argv[14]) # NN Unit
+    S4DISTTYPE_CW, S4DISTTYPE_EU = setadjmeth(sys.argv[14])  # NN Unit
     S4CONNECT = str2bool(sys.argv[15])
     STEP5 = str2bool(sys.argv[16])
 
@@ -67,12 +67,12 @@ class Config():
     BUFFERDIST = nullfloat(sys.argv[17])
     MAXCOSTDIST = nullfloat(sys.argv[18])
     MAXEUCDIST = nullfloat(sys.argv[19])
-   
+
     # Ouput directory paths & folder names
     OUTPUTDIR = path.join(PROJECTDIR, "output")
     SCRATCHDIR = path.join(PROJECTDIR, "scratch")
     LOGDIR = path.join(PROJECTDIR, "log")
-    DATAPASSDIR = path.join(PROJECTDIR, "datapass")  
+    DATAPASSDIR = path.join(PROJECTDIR, "datapass")
     ADJACENCYDIR = path.join(PROJECTDIR, "adj")
     CWDBASEDIR = path.join(PROJECTDIR, "cwd")
     CWDSUBDIR_NM = "cw"
@@ -82,14 +82,14 @@ class Config():
 
     # Other global constants
     MINCOSTDIST = None
-    MINEUCDIST = None    
+    MINEUCDIST = None
     SAVENORMLCCS = False  # Set to True to save individual normalized LCC grids
     FCORES = "fcores"
-    OUTPUTGDB = path.join(OUTPUTDIR, "linkages.gdb")   
+    OUTPUTGDB = path.join(OUTPUTDIR, "linkages.gdb")
     BNDCIRCEN = "boundingCircleCenter.shp"
     BNDCIR = "boundingCircle.shp"
-    
-    CWDTHRESH = 100000 # CWD corridor width in a truncated raster
+
+    CWDTHRESH = 100000  # CWD corridor width in a truncated raster
     if MAXCOSTDIST is None:
         TMAXCWDIST = None
     else:
@@ -118,19 +118,18 @@ class Config():
     LT_TSLC = -14  # Too short Cost-Weighted distance
     LT_INT = -15  # Intermediate corea area detected
     LT_CORR = 1  # Connects cores (corridor)
-    LT_NNC = 10 # Corridor connecting N Nearest Neighbors
+    LT_NNC = 10  # Corridor connecting N Nearest Neighbors
     LT_CLU = 20  # Connects_constellations (corridor)
     LT_NNCT = 30  # TEMP NN corridor links (s4), may be able to get rid of this
-# 1 corridor
-# 10 NN corridor
-# 11 1st nn (future)
-# 12 2nd nn etc (future)
-# 20 constel
-# 21 1st nn constel (future)
-# 22 2nd nn constel etc (future)
-# 30 temp saved nnconstel.  maybe able to get rid fo this
+    # 1 corridor
+    # 10 NN corridor
+    # 11 1st nn (future)
+    # 12 2nd nn etc (future)
+    # 20 constel
+    # 21 1st nn constel (future)
+    # 22 2nd nn constel etc (future)
+    # 30 temp saved nnconstel.  maybe able to get rid fo this
 
-   
     # Create single geoprocessor object to be used throughout
     gp = arcgisscripting.create(9.3)
     gp.CheckOutExtension("Spatial")

@@ -1,15 +1,6 @@
 #!/usr/bin/env python2.5
 
-##*****************************************************************
-## 2011_0128
-## NAME: lm_util.py
-##
-## SUMMARY: Contains functions called by linkage mapper scripts
-##
-## SOFTWARE: ArcGIS 9.3 (requires Spatial Analyst extension)
-##           Python 2.5
-##
-##*****************************************************************
+"""Contains functions called by linkage mapper scripts."""
 
 import os
 import sys
@@ -25,33 +16,34 @@ from numpy import *
 
 from lm_config import Config as Cfg
 
+
 def get_linktable_row(linkId, linkTable):
     try:
         # Most likely.  linkTables tend to be in order with no skipped links.
-        if linkTable[linkId-1,Cfg.LTB_LINKID] == linkId:
-            linkTableRow = linkId-1
+        if linkTable[linkId - 1, Cfg.LTB_LINKID] == linkId:
+            linkTableRow = linkId - 1
             return linkTableRow
         else:
             numLinks = linkTable.shape[0]
-            for linkTableRow in range (0,numLinks):
-                if linkTable[linkTableRow,Cfg.LTB_LINKID]==linkId:
+            for linkTableRow in range(0, numLinks):
+                if linkTable[linkTableRow, Cfg.LTB_LINKID] == linkId:
                     return linkTableRow
-        return -1 # Not found
+        return -1  # Not found
     except:
         raise_python_error('lm_util')
 
+
 def get_link_type_desc(linkTypeCode):
-    Cfg.gp.addmessage('linktype',str(linkTypeCode))
     """For a linkType code returns description to attribute link and link maps.
 
     NOTE: These must map to LT codes in lm_config (eg LT_CPLK)
 
     """
-    
-    if linkTypeCode < 0: #These are dropped links
+    Cfg.gp.addmessage('linktype', str(linkTypeCode))
+    if linkTypeCode < 0:  # These are dropped links
         activeLink = '0'
         if linkTypeCode == -1:
-            linkTypeDesc ='"Not_nearest_neighbors"'
+            linkTypeDesc = '"Not_nearest_neighbors"'
 #        elif linkTypeCode == -2:
 #            linkTypeDesc = '"Not_2nd_nearest_neighbors"'
 #        elif linkTypeCode == -3:
@@ -59,21 +51,21 @@ def get_link_type_desc(linkTypeCode):
 #        elif linkTypeCode == -4:
 #            linkTypeCodes='"Not_4th_nearest_neighbors"'
         elif linkTypeCode == -11:
-            linkTypeDesc = '"Too_long_Euclidean_distance"'  
+            linkTypeDesc = '"Too_long_Euclidean_distance"'
         elif linkTypeCode == -12:
-            linkTypeDesc = '"Too_long_CWD"'        
+            linkTypeDesc = '"Too_long_CWD"'
         elif linkTypeCode == -13:
-            linkTypeDesc = '"Too_short_Euclidean_distance"'        
+            linkTypeDesc = '"Too_short_Euclidean_distance"'
         elif linkTypeCode == -14:
-            linkTypeDesc = '"Too_short_CWD"' 
+            linkTypeDesc = '"Too_short_CWD"'
         elif linkTypeCode == -15:
-            linkTypeDesc = '"Intermediate_core"'        
+            linkTypeDesc = '"Intermediate_core"'
         elif linkTypeCode == -100:
-            linkTypeDesc = '"User_removed"'  
+            linkTypeDesc = '"User_removed"'
         else:
-            linkTypeDesc='"Unknown_inactive"'
-    else: #These are active links
-        activeLink = '1'        
+            linkTypeDesc = '"Unknown_inactive"'
+    else:  # These are active links
+        activeLink = '1'
         if linkTypeCode == 1:
             linkTypeDesc = '"Connects_cores"'
         elif linkTypeCode == 10:
@@ -86,25 +78,26 @@ def get_link_type_desc(linkTypeCode):
            # linkTypeDesc = '"3rd_nearest_neighbors"'
        # elif linkTypeCode == 14:
            # linkTypeDesc = '"4th_nearest_neighbors"'
-        elif linkTypeCode == 20:        
+        elif linkTypeCode == 20:
             linkTypeDesc = '"Connects_constellations"'
         else:
-            linkTypeDesc='"Unknown_active"'
+            linkTypeDesc = '"Unknown_active"'
         #Add user retained?
-    return activeLink, linkTypeDesc       
+    return activeLink, linkTypeDesc
 
-  
+
 def get_links_from_core_pairs(linkTable, firstCore, secondCore):
     """Given two cores, finds their matching row in the link table"""
     try:
         rows = zeros((0), dtype="int32")
         numLinks = linkTable.shape[0]
-        for link in range (0,numLinks):
-            corex = int(linkTable[link,Cfg.LTB_CORE1])
-            corey = int(linkTable[link,Cfg.LTB_CORE2])
-            if int(corex) == int(firstCore) and int(corey)==int(secondCore):
+        for link in range(0, numLinks):
+            corex = int(linkTable[link, Cfg.LTB_CORE1])
+            corey = int(linkTable[link, Cfg.LTB_CORE2])
+            if int(corex) == int(firstCore) and int(corey) == int(secondCore):
                 rows = append(rows, link)
-            elif int(corex) == int(secondCore) and int(corey)==int(firstCore):
+            elif (int(corex) == int(secondCore) and int(corey) ==
+                  int(firstCore)):
                 rows = append(rows, link)
         return rows
     except:
@@ -118,18 +111,18 @@ def drop_links(linkTable, maxeud, mineud, maxcwd, mincwd,
         # dashline(1)
         numLinks = linkTable.shape[0]
         numDroppedLinks = 0
-        coreList=linkTable[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1]
-        coreList=sort(coreList)
+        coreList = linkTable[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1]
+        coreList = sort(coreList)
         if disableLeastCostNoVal:
-            for x in range(0,numLinks):
-                linkId = str(int(linkTable[x,Cfg.LTB_LINKID]))
-                if linkTable[x,Cfg.LTB_CWDIST] == -1:
+            for x in range(0, numLinks):
+                linkId = str(int(linkTable[x, Cfg.LTB_LINKID]))
+                if linkTable[x, Cfg.LTB_CWDIST] == -1:
                     #Check only enabled corridor links
                     if (linkTable[x,Cfg.LTB_LINKTYPE] > 0):
-                        corex=str(int(linkTable[x,Cfg.LTB_CORE1]))
-                        corey=str(int(linkTable[x,Cfg.LTB_CORE2]))
+                        corex = str(int(linkTable[x, Cfg.LTB_CORE1]))
+                        corey = str(int(linkTable[x, Cfg.LTB_CORE2]))
                         Cfg.gp.addmessage(
-                            "The least-cost corridor between " + str(corex) + 
+                            "The least-cost corridor between " + str(corex) +
                             " and " + str(corey) + " (link #" + linkId + ") "
                             "has an unknown length in cost distance units. "
                             "This means it is longer than the max "
@@ -137,24 +130,24 @@ def drop_links(linkTable, maxeud, mineud, maxcwd, mincwd,
                             "CWDs' script OR it passes through NODATA cells "
                             "and will be dropped.\n")
                         # Disable link
-                        linkTable[x,Cfg.LTB_LINKTYPE] = Cfg.LT_TLLC
+                        linkTable[x, Cfg.LTB_LINKTYPE] = Cfg.LT_TLLC
                         numDroppedLinks = numDroppedLinks + 1
 
         # Check for corridors that are too long in Euclidean or cost-weighted
         # distance
         if maxeud is not None or maxcwd is not None:
             for x in range(0,numLinks):
-                linkId = str(int(linkTable[x,Cfg.LTB_LINKID]))
+                linkId = str(int(linkTable[x, Cfg.LTB_LINKID]))
                 if maxeud is not None:
                     if linkTable[x,Cfg.LTB_EUCDIST] > maxeud:
                         # Check only enabled corridor links
-                        if (linkTable[x,Cfg.LTB_LINKTYPE] > 0):
-                            corex=str(int(coreList[x,0]))
-                            corey=str(int(coreList[x,1]))
+                        if (linkTable[x, Cfg.LTB_LINKTYPE] > 0):
+                            corex = str(int(coreList[x,0]))
+                            corey = str(int(coreList[x,1]))
                             Cfg.gp.addmessage("Link #" + linkId +
                                           " connecting cores " + str(corex) +
                                           " and " + str(corey) + " is  " +
-                                          str(linkTable[x,Cfg.LTB_EUCDIST]) +
+                                          str(linkTable[x, Cfg.LTB_EUCDIST]) +
                                           " units long- too long in "
                                           "Euclidean distance.")
                             # Disable link
@@ -169,8 +162,8 @@ def drop_links(linkTable, maxeud, mineud, maxcwd, mincwd,
                                 corex=str(int(linkTable[x,Cfg.LTB_CORE1]))
                                 corey=str(int(linkTable[x,Cfg.LTB_CORE2]))
                                 Cfg.gp.addmessage(
-                                    "Link #" + linkId + " connecting cores " + 
-                                    str(corex) + " and " + str(corey) + 
+                                    "Link #" + linkId + " connecting cores " +
+                                    str(corex) + " and " + str(corey) +
                                     " is " + str(linkTable[x,Cfg.LTB_CWDIST]) +
                                     " units long- too long in cost-distance "
                                     "units.")
@@ -185,12 +178,12 @@ def drop_links(linkTable, maxeud, mineud, maxcwd, mincwd,
                 if (linkTable[x,Cfg.LTB_LINKTYPE] > 0):
                     if mineud is not None:
                         if linkTable[x,Cfg.LTB_EUCDIST] < mineud:
-                            corex=str(int(coreList[x,0]))
-                            corey=str(int(coreList[x,1]))
+                            corex = str(int(coreList[x,0]))
+                            corey = str(int(coreList[x,1]))
                             Cfg.gp.addmessage(
-                                "Link #" + linkId + " connecting cores " + 
+                                "Link #" + linkId + " connecting cores " +
                                 str(corex) + " and " + str(corey) + " is "
-                                "only " + str(linkTable[x,Cfg.LTB_EUCDIST]) + 
+                                "only " + str(linkTable[x,Cfg.LTB_EUCDIST]) +
                                 " units long- too short in Euclidean "
                                 "distance.")
                             # Disable link
@@ -273,7 +266,7 @@ def get_core_targets(core, linkTable):
         # possible targets 2nd column = Cfg.LTB_CORE2
         targetList[:,1] = linkTable[:,Cfg.LTB_CORE2]
         # Copy of Cfg.LTB_LINKTYPE column
-        validPair = linkTable[:,Cfg.LTB_LINKTYPE] 
+        validPair = linkTable[:,Cfg.LTB_LINKTYPE]
         validPair = where(validPair==Cfg.LT_CORR,1,0)  # map corridor.
         targetList[:,0] = multiply(targetList[:,0],validPair)
         targetList[:,1] = multiply(targetList[:,1],validPair)
@@ -304,8 +297,8 @@ def elapsed_time(startTime):
             Cfg.gp.addmessage('That took ' + str(mins) + ' minutes and ' +
                               str(secs) + ' seconds.\n')
         else:
-            Cfg.gp.addmessage('That took ' + str(hours) + ' hours ' + 
-                              str(mins) + ' minutes and ' + str(secs) + 
+            Cfg.gp.addmessage('That took ' + str(hours) + ' hours ' +
+                              str(mins) + ' minutes and ' + str(secs) +
                               ' seconds.\n')
         return now, hours, mins, secs
     except:
@@ -331,9 +324,10 @@ def report_links(linkTable):
         numLinks = linkTable.shape[0]
         Cfg.gp.addmessage('There are ' + str(numLinks) + ' links in the '
                           'table.')
-        linkTypes = linkTable[:,Cfg.LTB_LINKTYPE]
-        numCorridorLinks = sum(linkTypes==Cfg.LT_CORR) + sum(linkTypes==Cfg.LT_NNC) 
-        numComponentLinks = sum(linkTypes==Cfg.LT_CLU)
+        linkTypes = linkTable[:, Cfg.LTB_LINKTYPE]
+        numCorridorLinks = sum(linkTypes == Cfg.LT_CORR) + sum(linkTypes ==
+                                                               Cfg.LT_NNC)
+        numComponentLinks = sum(linkTypes == Cfg.LT_CLU)
         if numComponentLinks  > 0:
             Cfg.gp.addmessage('This includes ' + str(numCorridorLinks) +
                               ' potential corridor links and ' +
@@ -520,7 +514,7 @@ def new_extent(fc, field, value):
     try:
         shapeFieldName = Cfg.gp.describe(fc).shapefieldname
 
-        # searchRows = Cfg.gp.searchcursor(fc, " "'"core_ID"'" = " + 
+        # searchRows = Cfg.gp.searchcursor(fc, " "'"core_ID"'" = " +
         #                                  str(currentID))
         searchRows = Cfg.gp.searchcursor(fc, field + ' = ' + str(value))
         searchRow = searchRows.next()
@@ -532,16 +526,16 @@ def new_extent(fc, field, value):
         yMax = extentObj.yMax
         searchRow = searchRows.next()# now move on to the other features
         while searchRow:
-           extentObj = searchRow.getvalue(shapeFieldName).extent
-           if extentObj.xmin < xMin:
-              xMin = extentObj.xmin
-           if extentObj.ymin < yMin:
-              yMin = extentObj.ymin
-           if extentObj.xmax > xMax:
-              xMax = extentObj.xmax
-           if extentObj.ymax > yMax:
-              yMax = extentObj.ymax
-           searchRow = searchRows.next()
+            extentObj = searchRow.getvalue(shapeFieldName).extent
+            if extentObj.xmin < xMin:
+                xMin = extentObj.xmin
+            if extentObj.ymin < yMin:
+                yMin = extentObj.ymin
+            if extentObj.xmax > xMax:
+                xMax = extentObj.xmax
+            if extentObj.ymax > yMax:
+                yMax = extentObj.ymax
+            searchRow = searchRows.next()
         del searchRow
         del searchRows
     except arcgisscripting.ExecuteError:
@@ -755,17 +749,17 @@ def create_lcp_shapefile(linkTable, sourceCore, targetCore, lcpLoop, SR):
         Cfg.gp.CalculateField_management(lcplineDslv, "Active", activeLink)
 
         Cfg.gp.AddField_management(lcplineDslv, "Link_Info", "TEXT")
-        Cfg.gp.CalculateField_management(lcplineDslv, "Link_Info", 
+        Cfg.gp.CalculateField_management(lcplineDslv, "Link_Info",
                                          linkTypeDesc)
 
         Cfg.gp.AddField_management(lcplineDslv, "From_Core", "SHORT", "5")
-        Cfg.gp.CalculateField_management(lcplineDslv, "From_Core", 
+        Cfg.gp.CalculateField_management(lcplineDslv, "From_Core",
                                          int(sourceCore))
         Cfg.gp.AddField_management(lcplineDslv, "To_Core", "SHORT", "5")
-        Cfg.gp.CalculateField_management(lcplineDslv, "To_Core", 
+        Cfg.gp.CalculateField_management(lcplineDslv, "To_Core",
                                          int(targetCore))
 
-        Cfg.gp.AddField_management(lcplineDslv, "Euc_Dist", "DOUBLE", "10", 
+        Cfg.gp.AddField_management(lcplineDslv, "Euc_Dist", "DOUBLE", "10",
                                    "2")
         Cfg.gp.CalculateField_management(lcplineDslv, "Euc_Dist",
                                          linkTable[link,Cfg.LTB_EUCDIST])
@@ -773,7 +767,7 @@ def create_lcp_shapefile(linkTable, sourceCore, targetCore, lcpLoop, SR):
         Cfg.gp.AddField_management(lcplineDslv, "CW_Dist", "DOUBLE", "10", "2")
         Cfg.gp.CalculateField_management(lcplineDslv, "CW_Dist",
                                          linkTable[link,Cfg.LTB_CWDIST])
-        Cfg.gp.AddField_management(lcplineDslv, "LCP_Length", "DOUBLE", "10", 
+        Cfg.gp.AddField_management(lcplineDslv, "LCP_Length", "DOUBLE", "10",
                                    "2")
 
         rows=Cfg.gp.UpdateCursor(lcplineDslv)
@@ -854,7 +848,7 @@ def update_lcp_shapefile(linkTable, lastStep, thisStep):
 
         lcpShapefile = os.path.join(Cfg.DATAPASSDIR, "lcpLines_s" +
                                     str(thisStep) + ".shp")
-                                    
+
         if lastStep != thisStep:
             if thisStep == 5:
                 oldLcpShapefile = os.path.join(
@@ -863,7 +857,7 @@ def update_lcp_shapefile(linkTable, lastStep, thisStep):
                 if not Cfg.gp.exists(oldLcpShapefile):
                     # step 3
                     oldLcpShapefile = os.path.join(
-                        Cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep-1) + 
+                        Cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep-1) +
                         ".shp")
             else:
                 oldLcpShapefile = os.path.join(
@@ -1013,13 +1007,13 @@ def components_no_sparse(G):
 
             if all_stars == True:
                 return relabel(D, 1)
-            
+
             if sum(star) == n:
                 all_stars = True
     except:
-        raise_python_error('lm_util')               
-        
-        
+        raise_python_error('lm_util')
+
+
 def relabel( oldlabel, offset=0):#from gapdt.py by Viral Shah
     newlabel = zeros(size(oldlabel), dtype='int32')
     s = sort(oldlabel)
@@ -1046,12 +1040,12 @@ def conditional_hooking (D, star, u, v):#from gapdt.py by Viral Shah
 def unconditional_hooking (D, star, u, v):
     Du = D[u]
     Dv = D[v]
-    
+
     hook = where((star[u] == 1) & (Du != Dv))
     D[Du[hook]] = Dv[hook]
 
     return D
-    
+
 def check_stars (D, star):#from gapdt.py by Viral Shah
     """Utility for components code"""
     star[:] = 1
@@ -1060,7 +1054,7 @@ def check_stars (D, star):#from gapdt.py by Viral Shah
     star[D[D[notstars]]] = 0
     star = star[D]
     return star
-    
+
 
 def pointer_jumping (D):#from gapdt.py by Viral Shah
     """Utility for components code"""
@@ -1127,18 +1121,18 @@ def write_link_table(linkTable, outlinkTableFile):
                 outFile.write ("\n")
 
         outFile.write ("# Linkage Mapper Version " + __version__)
-        outFile.write ("\n# ---Run Settings---") 
+        outFile.write ("\n# ---Run Settings---")
         outFile.write ("\n# Project Directory: " + Cfg.PROJECTDIR)
         outFile.write ("\n# Core Area Feature Class: " + Cfg.COREFC)
         outFile.write ("\n# Core Area Field Name: " + Cfg.COREFN)
         outFile.write ("\n# Resistance Raster: " + Cfg.RESRAST)
-        outFile.write ("\n# Step 1 - Identify Adjacent Core Areas: " + 
+        outFile.write ("\n# Step 1 - Identify Adjacent Core Areas: " +
                        str(Cfg.STEP1))
         outFile.write ("\n# Step 1 Adjacency Method Includes Cost-Weighted "
                        "Distance: " + str(Cfg.S1ADJMETH_CW))
         outFile.write ("\n# Step 1 Adjacency Method Includes Euclidean "
                        "Distance: " + str(Cfg.S1ADJMETH_EU))
-        outFile.write ("\n# Step 2 - Construct a Network of Core Areas: " + 
+        outFile.write ("\n# Step 2 - Construct a Network of Core Areas: " +
                        str(Cfg.STEP2))
         outFile.write ("\n# Conefor Distances Text File: " + Cfg.S2EUCDISTFILE)
         outFile.write ("\n# Network Adjacency Method Includes Cost-Weighted "
@@ -1154,21 +1148,21 @@ def write_link_table(linkTable, outlinkTableFile):
                        + str(Cfg.S4MAXNN))
         outFile.write ("\n# Option B - Nearest Neighbor Measurement Unit is "
                        "Cost-Weighted Distance: " + str(Cfg.S4DISTTYPE_CW))
-        outFile.write ("\n# Option C - Connect Neighboring Constellations : " 
+        outFile.write ("\n# Option C - Connect Neighboring Constellations : "
                        + str(Cfg.S4CONNECT))
         outFile.write ("\n# Step 5 - Calculate Normalize and Mosaic "
                        "Corridors: " + str(Cfg.STEP5))
-        outFile.write ("\n# Bounding Circles Buffer Distance: " 
+        outFile.write ("\n# Bounding Circles Buffer Distance: "
                        + str(Cfg.BUFFERDIST))
-        outFile.write ("\n# Maximum Cost-Weighted Corridor Distance: " 
+        outFile.write ("\n# Maximum Cost-Weighted Corridor Distance: "
                        + str(Cfg.MAXCOSTDIST))
-        outFile.write ("\n# Maximum Euclidean Corridor Distance: " 
+        outFile.write ("\n# Maximum Euclidean Corridor Distance: "
                        + str(Cfg.MAXEUCDIST))
-        outFile.write ("\n# Minimum Cost-Weighted Corridor Distance: " 
+        outFile.write ("\n# Minimum Cost-Weighted Corridor Distance: "
                        + str(Cfg.MINCOSTDIST))
-        outFile.write ("\n# Minimum Euclidean Corridor Distance: " 
+        outFile.write ("\n# Minimum Euclidean Corridor Distance: "
                        + str(Cfg.MINEUCDIST))
-    
+
         outFile.close()
     except arcgisscripting.ExecuteError:
         raise_geoproc_error('lm_util')
@@ -1176,18 +1170,18 @@ def write_link_table(linkTable, outlinkTableFile):
         raise_python_error('lm_util')
     return
 
-    
+
 def write_adj_file(outcsvfile, adjTable):
     """Outputs adjacent core areas to pass adjacency info between steps"""
     outfile = open(outcsvfile, "w")
-    outfile.write("#Edge" + "," + str(Cfg.COREFN) + "," + str(Cfg.COREFN) + 
+    outfile.write("#Edge" + "," + str(Cfg.COREFN) + "," + str(Cfg.COREFN) +
                   "_1" + "\n")
     for x in range(0,len(adjTable)):
         outfile.write(str(x) + "," + str(adjTable[x,0]) + "," +
                       str(adjTable[x,1]) + "\n" )
     outfile.close()
 
-    
+
 def write_link_maps(linkTableFile, step):
     """Writes stick maps (aka link maps)
 
@@ -1320,7 +1314,7 @@ def write_link_maps(linkTableFile, step):
             if linkCoords[line,9] == 2:
                 row.SetValue("Link_Info", "Group_Pair")
             linkTypeCode = linkCoords[line,9]
-            activeLink, linkTypeDesc = get_link_type_desc(linkTypeCode) 
+            activeLink, linkTypeDesc = get_link_type_desc(linkTypeCode)
             row.SetValue("Active", activeLink)
             row.SetValue("Link_Info", linkTypeDesc)
 
@@ -1391,8 +1385,8 @@ def get_prev_step_link_table(step):
             prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
                                              'linkTable_s4.csv')
             Cfg.gp.addmessage('\nLooking for '+ Cfg.DATAPASSDIR +
-                              '\linkTable_s4.csv')                             
-                              
+                              '\linkTable_s4.csv')
+
             if os.path.exists(prevStepLinkTable):
                 return prevStepLinkTable
             else:
@@ -1400,7 +1394,7 @@ def get_prev_step_link_table(step):
 
         prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR, 'linkTable_s' +
                                          str(prevStep) + '.csv')
-        Cfg.gp.addmessage('\nLooking for '+ Cfg.DATAPASSDIR + 
+        Cfg.gp.addmessage('\nLooking for '+ Cfg.DATAPASSDIR +
                           '\linkTable_s' + str(prevStep) + '.csv')
         if os.path.exists(prevStepLinkTable):
             return prevStepLinkTable
@@ -1453,62 +1447,61 @@ def clean_up_link_tables(step):
 
 
 def copy_final_link_maps():
-    """Copies final link maps from datapass to the output directory """
+    """Copies final link maps from datapass to the output directory"""
     try:
-        step = 5 #This is the number of the final step
+        step = 5  # This is the number of the final step
 
         coreLinksShapefile = os.path.join(Cfg.OUTPUTDIR, 'sticks_s'
                                           + str(step) + '.shp')
-        lcpShapefile = os.path.join(Cfg.DATAPASSDIR, "lcpLines_s" + 
+        lcpShapefile = os.path.join(Cfg.DATAPASSDIR, "lcpLines_s" +
                                     str(step) + ".shp")
 
         if Cfg.gp.exists(coreLinksShapefile):
             Cfg.gp.MakeFeatureLayer(coreLinksShapefile, "flinks")
             field = "Active"
             expression = field + " = " + str(1)
-            Cfg.gp.selectlayerbyattribute("flinks", "NEW_SELECTION", 
+            Cfg.gp.selectlayerbyattribute("flinks", "NEW_SELECTION",
                                           expression)
 
-            activeLinksShapefile= os.path.join(Cfg.OUTPUTGDB,
+            activeLinksShapefile = os.path.join(Cfg.OUTPUTGDB,
                                                'Active_Sticks')
             Cfg.gp.CopyFeatures_management("flinks", activeLinksShapefile)
 
             expression = field + " = " + str(0)
-            Cfg.gp.selectlayerbyattribute("flinks", "NEW_SELECTION", 
+            Cfg.gp.selectlayerbyattribute("flinks", "NEW_SELECTION",
                                           expression)
-            inActiveLinksShapefile= os.path.join(Cfg.OUTPUTGDB,
+            inActiveLinksShapefile = os.path.join(Cfg.OUTPUTGDB,
                                                  'Inactive_Sticks')
             Cfg.gp.CopyFeatures_management("flinks", inActiveLinksShapefile)
 
             #move_map(coreLinksShapefile,activeLinksShapefile)
             #copy_map(activeLinksShapefile,inActiveLinksShapefile)
 
-
         if Cfg.gp.exists(lcpShapefile):
-            Cfg.gp.MakeFeatureLayer(lcpShapefile,"flcp")
+            Cfg.gp.MakeFeatureLayer(lcpShapefile, "flcp")
             field = "Active"
             expression = field + " = " + str(1)
             Cfg.gp.selectlayerbyattribute("flcp", "NEW_SELECTION", expression)
 
-            activeLcpShapefile= os.path.join(Cfg.OUTPUTGDB, 'Active_LCPs')
+            activeLcpShapefile = os.path.join(Cfg.OUTPUTGDB, 'Active_LCPs')
             Cfg.gp.CopyFeatures_management("flcp", activeLcpShapefile)
 
             expression = field + " = " + str(0)
             Cfg.gp.selectlayerbyattribute("flcp", "NEW_SELECTION", expression)
-            inActiveLcpShapefile= os.path.join(Cfg.OUTPUTGDB,
+            inActiveLcpShapefile = os.path.join(Cfg.OUTPUTGDB,
                                                'Inactive_LCPs')
-            Cfg.gp.CopyFeatures_management("flcp",inActiveLcpShapefile)
+            Cfg.gp.CopyFeatures_management("flcp", inActiveLcpShapefile)
 
         # Move stick and lcp maps for each step to log directory to reduce
         # clutter in output
-        for i in range(2,6):
+        for i in range(2, 6):
             oldLinkFile = os.path.join(Cfg.OUTPUTDIR, 'sticks_s' + str(i) +
                                        '.shp')
             logLinkFile = os.path.join(Cfg.LOGDIR, 'sticks_s' + str(i) +
                                        '.shp')
             if Cfg.gp.exists(oldLinkFile):
                 try:
-                    move_map(oldLinkFile,logLinkFile)
+                    move_map(oldLinkFile, logLinkFile)
                 except:
                     pass
             oldLcpShapeFile = os.path.join(Cfg.OUTPUTDIR, 'lcpLines_s'
@@ -1536,7 +1529,7 @@ def move_map(oldMap, newMap):
             except:
                 pass
         try:
-            Cfg.gp.CopyFeatures_management (oldMap, newMap)
+            Cfg.gp.CopyFeatures_management(oldMap, newMap)
             Cfg.gp.delete_management(oldMap)
         except:
             pass
@@ -1546,7 +1539,6 @@ def move_map(oldMap, newMap):
 ############################################################################
 ##Error Checking and Handling Functions ####################################
 ############################################################################
-
 def print_conefor_warning():
     Cfg.gp.addmessage('\nWARNING: At least one potential link was dropped '
                       'because')
@@ -1630,9 +1622,9 @@ def hiccup_test(count, statement):
                                   'for error description.')
 
                 Cfg.gp.addmessage('---------Trying again in ' +
-                                  str(sleepTime) +' seconds---------\n')
+                                  str(sleepTime) + ' seconds---------\n')
             time.sleep(sleepTime)
-            return count,True
+            return count, True
         else:
             sleepTime = 300
             count = count + 1
@@ -1641,11 +1633,11 @@ def hiccup_test(count, statement):
                           str(count) + '.\n Could be an ArcGIS hiccup.  Trying'
                           'again in 5 minutes.\n')
             time.sleep(sleepTime)
-            return count,True
+            return count, True
     except:
         raise_python_error('lm_util')
 
-        
+
 def raise_geoproc_error(filename):
     """Handle geoprocessor errors and provide details to user"""
     dashline(1)
@@ -1667,7 +1659,7 @@ def raise_geoproc_error(filename):
         # dashline(2)
     exit(0)
 
-    
+
 def raise_python_error(filename):
     """Handle python errors and provide details to user"""
     dashline(1)
@@ -1683,7 +1675,7 @@ def raise_python_error(filename):
     # dashline(2)
     exit(0)
 
-    
+
 def dashline(lspace=0):
     """Output dashed line in tool output dialog.
 

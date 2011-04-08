@@ -1,19 +1,12 @@
 #!/usr/bin/env python2.5
 
-##*****************************************************************
-## 2011_0128
-## NAME: s5_calcLccs.py
-##
-## SUMMARY: Creates and mosaics normalized least-cost corridors
-## using connected core area pairs specified in linkTable and
-## cwd layers
-##
-## SOFTWARE: ArcGIS 9.3 (requires Spatial Analyst extension)
-##           Python 2.5
-##
-##*****************************************************************
+"""Step 5: Calculate least cost corridors.
 
-# import required modules
+Creates and mosaics normalized least-cost corridors using connected core area
+pairs specified in linkTable and cwd layers
+
+"""
+
 import sys
 import os.path as path
 import time
@@ -34,6 +27,8 @@ def STEP5_calc_lccs():
 
 # Fixme: add option to saveRawLccs? Or mosaicLccs that already exist?
     try:
+        lu.dashline(1)
+        Cfg.gp.addmessage('Running script s5_calcLccs.py')
         linkTableFile = lu.get_prev_step_link_table(step=5)
         Cfg.gp.workspace = Cfg.SCRATCHDIR
 
@@ -64,8 +59,8 @@ def STEP5_calc_lccs():
             Cfg.gp.addmessage('\nThere are no corridors to map. Bailing.')
             time.sleep(5)
             return
-            
-            
+
+
         if not Cfg.STEP3 and not Cfg.STEP4:
             # re-check for links that are too long or in case script run out of
             # sequence with more stringent settings
