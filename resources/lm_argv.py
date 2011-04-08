@@ -4,7 +4,7 @@
 import sys
 
 sys.argv = ("lm_master", "project", "/data/Cores.shp", "core_ID",
-    "/data/resistances", "true", "Cost-Weighted & Euclidean", "false",
+    "/data/resistances", "true", "Cost-Weighted & Euclidean", "true",
     "C:/lm_test/project/distances_Cores.txt", "Cost-Weighted & Euclidean",
-    "false", "false", "false", "4", "Cost-Weighted", "false", "false",
+    "true", "true", "false", "4", "Cost-Weighted", "false", "true",
     "100000", "100000", "100000")
