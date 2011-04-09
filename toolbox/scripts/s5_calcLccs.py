@@ -301,8 +301,11 @@ def STEP5_calc_lccs():
         # Create final linkmap files in output directory, and remove files from
         # scratch.
         lu.copy_final_link_maps()
-        shutil.rmtree(Cfg.SCRATCHDIR)
-
+        try:
+            Cfg.gp.delete_management(Cfg.SCRATCHDIR)
+        except:
+            pass
+            
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
