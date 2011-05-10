@@ -8,7 +8,7 @@ cost-weighted distance space
 """
 
 __filename__ = "s1_getAdjacencies.py"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
 import shutil
 import time

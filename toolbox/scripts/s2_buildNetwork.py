@@ -8,7 +8,7 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
 import os.path as path
 
