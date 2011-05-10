@@ -9,7 +9,7 @@ extent of cwd calculations and speed computation.
 """
 
 __filename__ = "s3_calcCwds.py"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
 import os.path as path
 import shutil
