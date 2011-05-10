@@ -8,13 +8,15 @@ extent of cwd calculations and speed computation.
 
 """
 
-import sys
+__filename__ = "s3_calcCwds.py"
+__version__ = "0.6.2"
+
 import os.path as path
 import shutil
 import time
 
 import arcgisscripting
-from numpy import *
+import numpy as npy
 
 from lm_config import Config as Cfg
 import lm_util as lu
@@ -32,7 +34,7 @@ def STEP3_calc_cwds():
     """
     try:
         lu.dashline(1)
-        Cfg.gp.addmessage('Running script s3_calcCwds.py')
+        Cfg.gp.addmessage('Running script ' + __filename__)
         Cfg.gp.scratchWorkspace = Cfg.SCRATCHDIR
         linkTableFile = lu.get_prev_step_link_table(step=3)
 
@@ -52,9 +54,6 @@ def STEP3_calc_cwds():
             Cfg.gp.addmessage('NOT using bounding circles in cost distance '
                               'calculations.')
 
-        # get the number of cores
-        coreCount = int(Cfg.gp.GetCount_management(Cfg.COREFC).GetOutput(0))
-
         # set the analysis extent and cell size
         Cfg.gp.CellSize = Cfg.gp.Describe(Cfg.RESRAST).MeanCellHeight
         # So we don't extract rasters that go beyond extent of original raster
@@ -66,11 +65,11 @@ def STEP3_calc_cwds():
 
         # Load linkTable (created in previous script)
         linkTable = lu.load_link_table(linkTableFile)
-        numCorridorLinks = lu.report_links(linkTable)
+        lu.report_links(linkTable)
 
-        rows,cols = where(
+        rows,cols = npy.where(
             linkTable[:, Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] == Cfg.LT_CORR)
-        coresToProcess = unique(linkTable[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1])
+        coresToProcess = npy.unique(linkTable[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1])
         maxCoreNum = max(coresToProcess)
         del rows, cols, coresToProcess
 
@@ -101,9 +100,9 @@ def STEP3_calc_cwds():
         Cfg.gp.MakeFeatureLayer(Cfg.COREFC, Cfg.FCORES)
 
         # Identify cores to map from LinkTable
-        rows,cols = where(linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
+        rows,cols = npy.where(linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
                           Cfg.LT_CORR)
-        coresToMap = unique(linkTable[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1])
+        coresToMap = npy.unique(linkTable[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1])
         numCoresToMap = len(coresToMap)
         del rows,cols
         if numCoresToMap < 3:
@@ -126,42 +125,42 @@ def STEP3_calc_cwds():
         # Bounding boxes
         if (Cfg.BUFFERDIST) is not None:
             # create bounding boxes around cores
-            startTime = time.clock()
+            start_time = time.clock()
             # lu.dashline(1)
             Cfg.gp.addmessage('Calculating bounding boxes for core areas.')
-            extentBoxList = zeros((0,5), dtype='float32')
+            extentBoxList = npy.zeros((0,5), dtype='float32')
             for x in range(len(coresToMap)):
                 core = coresToMap[x]
                 if len(coresToMap) > 20:
-                    report_pct_done(x, len(coresToMap))
+                    lu.report_pct_done(x, len(coresToMap))
                 boxCoords = lu.get_extent_box_coords(core)
-                extentBoxList = append(extentBoxList, boxCoords, axis=0)
+                extentBoxList = npy.append(extentBoxList, boxCoords, axis=0)
             Cfg.gp.addmessage('\nDone calculating bounding boxes.')
-            startTime, hours, mins, secs = lu.elapsed_time(startTime)
+            start_time = lu.elapsed_time(start_time)
             # lu.dashline()
 
         # Bounding circle code
         if Cfg.BUFFERDIST is not None:
             # Make a set of circles encompassing core areas we'll be connecting
-            startTime = time.clock()
+            start_time = time.clock()
             Cfg.gp.addmessage('Calculating bounding circles around potential'
                           ' corridors.')
 
             # x y corex corey radius- stores data for bounding circle centroids
-            boundingCirclePointArray  = zeros((0,5), dtype='float32')
+            boundingCirclePointArray  = npy.zeros((0,5), dtype='float32')
 
-            circleList = zeros((0,3), dtype='int32')
+            circleList = npy.zeros((0,3), dtype='int32')
 
             numLinks = linkTable.shape[0]
             for x in range(0, numLinks):
                 if numLinks > 20:
-                    report_pct_done(x, numLinks)
+                    lu.report_pct_done(x, numLinks)
                 if linkTable[x,Cfg.LTB_LINKTYPE] == Cfg.LT_CORR:
                     # if it's a valid corridor link
                     linkId = int(linkTable[x,Cfg.LTB_LINKID])
                     # fixme- this code is clumsy- can trim down
-                    cores = zeros((1,3), dtype='int32')
-                    cores[0,:] = sort([0, linkTable[x,Cfg.LTB_CORE1],
+                    cores = npy.zeros((1,3), dtype='int32')
+                    cores[0,:] = npy.sort([0, linkTable[x,Cfg.LTB_CORE1],
                                       linkTable[x,Cfg.LTB_CORE2]])
                     corex = cores[0,1]
                     corey = cores[0,2]
@@ -178,11 +177,11 @@ def STEP3_calc_cwds():
                             lu.get_bounding_circle_data(extentBoxList,
                             corex, corey, Cfg.BUFFERDIST))
                         boundingCirclePointArray = (
-                            append(boundingCirclePointArray,circlePointData,
+                            npy.append(boundingCirclePointArray,circlePointData,
                             axis=0))
                         # keep track of which cores we draw bounding circles
                         # around
-                        circleList = append(circleList, cores, axis=0)
+                        circleList = npy.append(circleList, cores, axis=0)
 
             Cfg.gp.addmessage('\nCreating bounding circles using buffer '
                               'analysis.')
@@ -198,19 +197,19 @@ def STEP3_calc_cwds():
             Cfg.gp.addmessage('Successfully created bounding circles around '
                               'potential corridors using \na buffer of ' +
                               str(float(Cfg.BUFFERDIST)) + ' map units.')
-            startTime, hours, mins, secs = lu.elapsed_time(startTime)
+            start_time = lu.elapsed_time(start_time)
 
             Cfg.gp.addmessage('Reducing global processing area using bounding '
                               'circle plus buffer of ' +
                               str(float(Cfg.BUFFERDIST)) + ' map units.\n')
-            startTime = time.clock()
+            start_time = time.clock()
 
-            extentBoxList = zeros((0,5),dtype='float32')
+            extentBoxList = npy.zeros((0,5),dtype='float32')
             boxCoords = lu.get_extent_box_coords()
-            extentBoxList = append(extentBoxList,boxCoords,axis=0)
+            extentBoxList = npy.append(extentBoxList,boxCoords,axis=0)
             extentBoxList[0,0] = 0
 
-            boundingCirclePointArray  = zeros((0,5),dtype='float32')
+            boundingCirclePointArray  = npy.zeros((0,5),dtype='float32')
             circlePointData=lu.get_bounding_circle_data(extentBoxList, 0,
                                                         0, Cfg.BUFFERDIST)
 
@@ -236,7 +235,7 @@ def STEP3_calc_cwds():
                 else: break
             Cfg.gp.addmessage('\nReduced resistance raster extracted using '
                               'bounding circle.')
-            startTime, hours, mins, secs = lu.elapsed_time(startTime)
+            start_time = lu.elapsed_time(start_time)
 
         else: #if not using bounding circles, just go with resistance raster.
             boundResis = Cfg.RESRAST
@@ -275,7 +274,7 @@ def STEP3_calc_cwds():
             # (we temporarily disable them below by adding 100)
             linkTableTemp = linkTable.copy()
             # reinstate temporarily disabled links
-            rows = where(linkTableTemp[:,Cfg.LTB_LINKTYPE] > 100)
+            rows = npy.where(linkTableTemp[:,Cfg.LTB_LINKTYPE] > 100)
             linkTableTemp[rows,Cfg.LTB_LINKTYPE] = (
                 linkTableTemp[rows,Cfg.LTB_LINKTYPE] - 100)
             # get core areas to be connected to focal core
@@ -297,7 +296,7 @@ def STEP3_calc_cwds():
                         path.join(Cfg.gp.workspace, BNDCIRS),
                         "fGlobalBoundingFeat")
 
-                    startTime = time.clock()
+                    start_time = time.clock()
                     # loop through targets and get bounding circles that
                     # contain focal core and target cores
                     Cfg.gp.AddMessage("\nAdding up bounding circles for source"
@@ -316,7 +315,7 @@ def STEP3_calc_cwds():
 
                         cores_x_y = str(int(corex))+'_'+str(int(corey))
                         field = "cores_x_y"
-                        # fixme:need to check for case where link is not found.
+                        # fixme: need to check for case where link is not found.
                         Cfg.gp.SelectLayerByAttribute(
                             "fGlobalBoundingFeat", "ADD_TO_SELECTION", field +
                             " = '" + cores_x_y + "'")
@@ -345,14 +344,14 @@ def STEP3_calc_cwds():
                     Cfg.gp.addmessage('bounding circles plus a buffer of ' +
                                       str(float(Cfg.BUFFERDIST)) + ' map '
                                       'units.')
-                    startTime, hours, mins, secs = lu.elapsed_time(startTime)
+                    start_time = lu.elapsed_time(start_time)
                 else:
                     bResistance = boundResis
 
                 # ---------------------------------------------------------
                 # CWD Calculations
                 outDistanceRaster = lu.get_cwd_path(sourceCore)
-                startTime = time.clock()
+                start_time = time.clock()
 
                 # Create raster that just has source core in it
                 # Note: this seems faster than setnull with LI grid.
@@ -381,7 +380,7 @@ def STEP3_calc_cwds():
                     else: break
                 Cfg.gp.addmessage('Cost distances for source core ' +
                               str(int(sourceCore)) + ' calculated.')
-                startTime, hours, mins, secs = lu.elapsed_time(startTime)
+                start_time = lu.elapsed_time(start_time)
 
                 # Extract cost distances from source core to target cores
                 # Fixme: there will be redundant calls to b-a when already
@@ -418,7 +417,7 @@ def STEP3_calc_cwds():
                                     linkTable[link,Cfg.LTB_LINKTYPE] = Cfg.LT_TSLC
                     tableRow = tableRows.next()
                 del tableRow, tableRows
-                startTime, hours, mins, secs = lu.elapsed_time(startTime)
+                start_time = lu.elapsed_time(start_time)
 
                 # ---------------------------------------------------------
                 # Check for intermediate cores AND map LCP lines
@@ -514,7 +513,7 @@ def STEP3_calc_cwds():
                                                                 targetCore)
                             coreMin = lu.get_zonal_minimum(ZNSTATS)
                             #  Found a valid value, indicating overlap
-                            if coreMin != 'Failed':
+                            if coreMin:
                                 lu.dashline()
                                 Cfg.gp.addmessage(
                                     "Found an intermediate core in the "
@@ -534,7 +533,7 @@ def STEP3_calc_cwds():
                                                           lcpLoop, SR)
 
                 endTime = time.clock()
-                processTime = round((endTime - startTime), 2)
+                processTime = round((endTime - start_time), 2)
                 Cfg.gp.addmessage('Intermediate core checks and LCP shapefiles'
                                   'for core #' + str(sourceCore) + ' took ' +
                                   str(processTime) + ' seconds.')
@@ -543,11 +542,11 @@ def STEP3_calc_cwds():
 
                 Cfg.gp.addmessage('Done with all calculations for core #' +
                                   str(sourceCore) + '.')
-                startTime,hours,mins,secs = lu.elapsed_time(startTime1)
+                start_time = lu.elapsed_time(startTime1)
             # -----------------------------------------------------------
 
         # reinstate temporarily disabled links
-        rows = where(linkTable[:,Cfg.LTB_LINKTYPE] > 100)
+        rows = npy.where(linkTable[:,Cfg.LTB_LINKTYPE] > 100)
         linkTable[rows,Cfg.LTB_LINKTYPE] = (linkTable[rows,Cfg.LTB_LINKTYPE] -
                                             100)
 
@@ -566,12 +565,10 @@ def STEP3_calc_cwds():
         lu.write_link_table(linkTable, linkTableLogFile)
 
         # lu.dashline()
+        start_time = time.clock()
         Cfg.gp.addmessage('Creating shapefiles with linework for links...')
         lu.write_link_maps(outlinkTableFile, step=3)
-
-        startTime = time.clock()
-        dummy = lu.update_lcp_shapefile(linkTable, lastStep=3, thisStep=3)
-        startTime, hours, mins, secs = lu.elapsed_time(startTime)
+        start_time = lu.elapsed_time(start_time)
 
         Cfg.gp.addmessage('\nIndividual cost-weighted distance layers written '
                           'to "cwd" directory. \n')
@@ -583,14 +580,12 @@ def STEP3_calc_cwds():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         Cfg.gp.addmessage('****Failed in step 3. Details follow.****')
-        filename =  __file__
-        lu.raise_geoproc_error(filename)
+        lu.raise_python_error(__filename__)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         Cfg.gp.addmessage('****Failed in step 3. Details follow.****')
-        filename =  __file__
-        lu.raise_python_error(filename)
+        lu.raise_python_error(__filename__)
 
     return
