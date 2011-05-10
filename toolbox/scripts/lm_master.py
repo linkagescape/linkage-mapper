@@ -9,9 +9,9 @@ Numpy
 
 """
 
+__filename__ = "lm_master.py"
 __version__ = "0.6.2"
 
-import sys
 import os.path as path
 
 import arcgisscripting
@@ -86,13 +86,11 @@ def lm_master():
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        filename = __file__
-        lu.raise_geoproc_error(filename)
+        lu.raise_geoproc_error(__filename__)
 
     # Return any PYTHON or system specific errors
     except:
-        filename = __file__
-        lu.raise_python_error(filename)
+        lu.raise_python_error(__filename__)
 
 if __name__ == "__main__":
     lm_master()

@@ -7,15 +7,14 @@ cost-weighted distance space
 
 """
 
+__filename__ = "s1_getAdjacencies.py"
+__version__ = "0.6.2"
+
 import shutil
-import sys
 import time
-import string
-import csv
 import os.path as path
 
-from numpy import *
-from string import split
+import numpy as npy
 
 import arcgisscripting
 
@@ -23,9 +22,13 @@ from lm_config import Config as Cfg
 import lm_util as lu
 
 BNDCIRCENWD = path.join(Cfg.SCRATCHDIR, Cfg.BNDCIRCEN)
-BNDCIRWD  = path.join(Cfg.SCRATCHDIR, Cfg.BNDCIR)
-BNDCIR = "eucBoundingCircle.shp"
+BNDCIRWD = path.join(Cfg.SCRATCHDIR, Cfg.BNDCIR)
+EUC_BNDCIRCEN = "euc" + Cfg.BNDCIRCEN
+EUC_BNDCIRCENWD = path.join(Cfg.SCRATCHDIR, EUC_BNDCIRCEN)
+EUC_BNDCIR = "euc" + Cfg.BNDCIR
+EUC_BNDCIRWD = path.join(Cfg.SCRATCHDIR, EUC_BNDCIR)
 S1CORE_RAS = "s1core_ras"
+
 
 def STEP1_get_adjacencies():
     """Determines adjacencies between core areas in either or both
@@ -34,7 +37,7 @@ def STEP1_get_adjacencies():
     """
     try:
         lu.dashline(1)
-        Cfg.gp.addmessage('Running script s1_getAdjacencies.py')
+        Cfg.gp.addmessage('Running script ' + __filename__)
 
         # Default behavior is to use same cell size as resistance raster,
         # but this can be changed here.
@@ -57,17 +60,17 @@ def STEP1_get_adjacencies():
             Cfg.gp.addmessage('Reducing processing area using bounding circle '
                               'plus buffer of ' +
                               str(float(Cfg.BUFFERDIST)) + ' map units')
-            startTime = time.clock()
+
             Cfg.gp.MakeFeatureLayer(Cfg.COREFC, Cfg.FCORES)
 
-            extentBoxList = zeros((0,5),dtype='float32')
+            extentBoxList = npy.zeros((0, 5), dtype='float32')
             boxCoords = lu.get_extent_box_coords()
-            extentBoxList = append(extentBoxList, boxCoords, axis=0)
-            extentBoxList[0,0] = 0
+            extentBoxList = npy.append(extentBoxList, boxCoords, axis=0)
+            extentBoxList[0, 0] = 0
 
             # cwd bounding circle- used to clip raster to limit cwd
             # calculations
-            boundingCirclePointArray  = zeros((0,5), dtype='float32')
+            boundingCirclePointArray = npy.zeros((0, 5), dtype='float32')
             circlePointData = lu.get_bounding_circle_data(extentBoxList, 0, 0,
                                                           Cfg.BUFFERDIST)
             lu.make_points(Cfg.SCRATCHDIR, circlePointData, Cfg.BNDCIRCEN)
@@ -78,21 +81,22 @@ def STEP1_get_adjacencies():
             Cfg.gp.buffer_analysis(path.join(Cfg.SCRATCHDIR, Cfg.BNDCIRCEN),
                                              BNDCIRWD, "radius")
             Cfg.gp.defineprojection(BNDCIRWD, SR)
-            # boundingCirclePointArray  = zeros((0,5),dtype='float32')
+            # boundingCirclePointArray  = npy.zeros((0, 5),dtype='float32')
             # circlePointData = lu.get_bounding_circle_data(extentBoxList, 0,
             #                                               0, Cfg.BUFFERDIST)
 
             # euc bounding circle- at the moment just limits extent of
             # euclidean allocation calculations
-            boundingCirclePointArray  = zeros((0,5),dtype='float32')
-            circlePointData = lu.get_bounding_circle_data(extentBoxList, 0, 0,
-                                                          0) # no buffer needed
-            lu.make_points(Cfg.SCRATCHDIR, circlePointData, Cfg.BNDCIRCEN)
-            Cfg.gp.defineprojection(BNDCIRCENWD, SR)
-            if Cfg.gp.Exists(BNDCIRWD):
-                Cfg.gp.delete_management(BNDCIRWD)
-            Cfg.gp.buffer_analysis(BNDCIRCENWD, BNDCIRWD, "radius")
-            Cfg.gp.defineprojection(BNDCIRWD, SR)
+            boundingCirclePointArray = npy.zeros((0, 5), dtype='float32')
+            # no buffer needed
+            circlePointData = lu.get_bounding_circle_data(
+                extentBoxList, 0, 0, 0)
+            lu.make_points(Cfg.SCRATCHDIR, circlePointData, EUC_BNDCIRCEN)
+            Cfg.gp.defineprojection(EUC_BNDCIRCENWD, SR)
+            if Cfg.gp.Exists(EUC_BNDCIRWD):
+                Cfg.gp.delete_management(EUC_BNDCIRWD)
+            Cfg.gp.buffer_analysis(EUC_BNDCIRCENWD, EUC_BNDCIRWD, "radius")
+            Cfg.gp.defineprojection(EUC_BNDCIRWD, SR)
 
             del boundingCirclePointArray
 
@@ -107,18 +111,17 @@ def STEP1_get_adjacencies():
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-       lu.dashline(1)
-       Cfg.gp.addmessage('****Failed in step 1. Details follow.****')
-       filename =  __file__
-       lu.raise_geoproc_error(filename)
+        lu.dashline(1)
+        Cfg.gp.addmessage('****Failed in step 1. Details follow.****')
+        lu.raise_geoproc_error(__filename__)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         Cfg.gp.addmessage('****Failed in step 1. Details follow.****')
-        filename =  __file__
-        lu.raise_python_error(filename)
+        lu.raise_python_error(__filename__)
     return
+
 
 def cwadjacency():
     """Calculate cost-weighted adjacency
@@ -136,17 +139,17 @@ def cwadjacency():
         # Cost-weighted allocation code
         if Cfg.BUFFERDIST is not None:
             # Clip resistance raster using bounding circle
-            startTime = time.clock()
+            start_time = time.clock()
             bResistance = path.join(Cfg.SCRATCHDIR, "bResistance")
             Cfg.gp.ExtractByMask_sa(Cfg.RESRAST, BNDCIRWD,
                                     bResistance)
             Cfg.gp.addmessage('\nReduced resistance raster extracted using '
                               'bounding circle.')
-            startTime, hours, mins, secs = lu.elapsed_time(startTime)
+            start_time = lu.elapsed_time(start_time)
         else:
             bResistance = Cfg.RESRAST
 
-        startTime = time.clock()
+        start_time = time.clock()
         Cfg.gp.addmessage('Starting cost weighted distance allocation...')
 
         if Cfg.TMAXCWDIST is not None:
@@ -159,11 +162,14 @@ def cwadjacency():
         statement = ('Cfg.gp.FeatureToRaster_conversion(Cfg.COREFC, '
                      'Cfg.COREFN, S1CORE_RAS, Cfg.gp.Cellsize)')
         while True:
-            try: exec statement
+            try:
+                exec statement
             except:
                 count, tryAgain = lu.hiccup_test(count, statement)
-                if not tryAgain: exec statement
-            else: break
+                if not tryAgain:
+                    exec statement
+            else:
+                break
 
         Cfg.gp.workspace = Cfg.ADJACENCYDIR
         Cfg.gp.scratchworkspace = Cfg.gp.workspace
@@ -177,30 +183,32 @@ def cwadjacency():
                      'alloc_ras, Cfg.TMAXCWDIST, s1core_ras_path, "VALUE", '
                      'outDistanceRaster, "")')
         while True:
-            try: exec statement
+            try:
+                exec statement
             except:
                 count, tryAgain = lu.hiccup_test(count, statement)
-                if not tryAgain: exec statement
-            else: break
+                if not tryAgain:
+                    exec statement
+            else:
+                break
 
         Cfg.gp.scratchworkspace = Cfg.SCRATCHDIR
         Cfg.gp.addmessage('\nCost-weighted distance allocation done.')
-        startTime, hours, mins, secs = lu.elapsed_time(startTime)
+        start_time = lu.elapsed_time(start_time)
         adjshiftwrite(alloc_ras, outcsvfile, outcsvLogfile)
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-       lu.dashline(1)
-       Cfg.gp.addmessage('****Failed in step 1. Details follow.****')
-       filename =  __file__
-       lu.raise_geoproc_error(filename)
+        lu.dashline(1)
+        Cfg.gp.addmessage('****Failed in step 1. Details follow.****')
+        lu.raise_python_error(__filename__)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         Cfg.gp.addmessage('****Failed in step 1. Details follow.****')
-        filename =  __file__
-        lu.raise_python_error(filename)
+        lu.raise_python_error(__filename__)
+
 
 def euadjacency():
     """Calculate Euclidean adjacency
@@ -215,12 +223,12 @@ def euadjacency():
         outcsvfile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
         outcsvLogfile = path.join(Cfg.LOGDIR, "eucAdj_STEP1.csv")
 
-        # FIXME- would be good to have bounding circle affect euclidean calcs
+        # FIXME - would be good to have bounding circle affect euclidean calcs
         # too
         # ----------------------------------------------
         # Euclidean allocation code
         Cfg.gp.workspace = Cfg.ADJACENCYDIR
-        Cfg.gp.addmessage ('Starting Euclidean adjacency processing...')
+        Cfg.gp.addmessage('Starting Euclidean adjacency processing...')
         # Euclidean cell size
         cellSizeEuclidean = Cfg.gp.Describe(Cfg.RESRAST).MeanCellHeight
         # Cfg.gp.addmessage('Euclidean cell size set equal to resistance '
@@ -234,13 +242,16 @@ def euadjacency():
         statement = ('Cfg.gp.FeatureToRaster_conversion(Cfg.COREFC, '
                      'Cfg.COREFN, S1CORE_RAS, cellSizeEuclidean)')
         while True:
-            try: exec statement
+            try:
+                exec statement
             except:
-                count,tryAgain = lu.hiccup_test(count,statement)
-                if not tryAgain: exec statement
-            else: break
+                count, tryAgain = lu.hiccup_test(count, statement)
+                if not tryAgain:
+                    exec statement
+            else:
+                break
 
-        startTime=time.clock()
+        start_time = time.clock()
 
         Cfg.gp.scratchworkspace = Cfg.gp.workspace
         outDistanceRaster = path.join(Cfg.ADJACENCYDIR, "euc")
@@ -249,31 +260,35 @@ def euadjacency():
         statement = ('Cfg.gp.EucAllocation_sa(S1CORE_RAS, alloc_ras, "","", '
                      'cellSizeEuclidean, "", outDistanceRaster, "")')
         while True:
-            try: exec statement
+            try:
+                exec statement
             except:
-                count,tryAgain = lu.hiccup_test(count,statement)
-                if not tryAgain: exec statement
-            else: break
+                count, tryAgain = lu.hiccup_test(count, statement)
+                if not tryAgain:
+                    exec statement
+            else:
+                break
 
         Cfg.gp.scratchworkspace = Cfg.SCRATCHDIR
         Cfg.gp.addmessage('\nEuclidean distance allocation done.')
-        startTime, hours, mins, secs = lu.elapsed_time(startTime)
+        start_time = lu.elapsed_time(start_time)
         Cfg.gp.extent = oldextent
         adjshiftwrite(alloc_ras, outcsvfile, outcsvLogfile)
 
      # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-       lu.dashline(1)
-       Cfg.gp.addmessage('****Failed in step 1. Details follow.****')
-       filename =  __file__
-       lu.raise_geoproc_error(filename)
+        lu.dashline(1)
+        Cfg.gp.addmessage('****Failed in step 1. Details follow.****')
+
+        lu.raise_python_error(__filename__)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         Cfg.gp.addmessage('****Failed in step 1. Details follow.****')
-        filename =  __file__
-        lu.raise_python_error(filename)
+
+        lu.raise_python_error(__filename__)
+
 
 def adjshiftwrite(araster, csvfile, logfile):
     """Get adjacencies using shift method and write to disk"""

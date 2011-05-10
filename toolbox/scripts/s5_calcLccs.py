@@ -7,13 +7,15 @@ pairs specified in linkTable and cwd layers
 
 """
 
-import sys
+__filename__ = "s5_calcLccs.py"
+__version__ = "0.6.2"
+
 import os.path as path
 import time
 import shutil
 
 import arcgisscripting
-from numpy import *
+import numpy as npy
 
 from lm_config import Config as Cfg
 import lm_util as lu
@@ -28,7 +30,7 @@ def STEP5_calc_lccs():
 # Fixme: add option to saveRawLccs? Or mosaicLccs that already exist?
     try:
         lu.dashline(1)
-        Cfg.gp.addmessage('Running script s5_calcLccs.py')
+        Cfg.gp.addmessage('Running script' + __filename__)
         linkTableFile = lu.get_prev_step_link_table(step=5)
         Cfg.gp.workspace = Cfg.SCRATCHDIR
 
@@ -93,7 +95,7 @@ def STEP5_calc_lccs():
         # Add CWD layers for core area pairs to produce NORMALIZED LCC layers
         numGridsWritten = 0
         coreList = linkTable[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1]
-        coreList = sort(coreList)
+        coreList = npy.sort(coreList)
 
         for x in range(0,numLinks):
             linkId = str(int(linkTable[x,Cfg.LTB_LINKID]))
@@ -124,7 +126,7 @@ def STEP5_calc_lccs():
                 count = 0
                 statement = ('Cfg.gp.SingleOutputMapAlgebra_sa(expression, '
                             'lccNormRaster)')
-                startTime = time.clock()
+                start_time = time.clock()
                 while True:
                     try: exec statement
                     except:
@@ -150,7 +152,7 @@ def STEP5_calc_lccs():
                         else: break
 
                 endTime = time.clock()
-                processTime = round((endTime - startTime), 2)
+                processTime = round((endTime - start_time), 2)
                 Cfg.gp.addmessage("Normalized and mosaicked corridor for link "
                                   "#" + str(linkId)
                                   + " connecting core areas " + str(corex) +
@@ -185,7 +187,7 @@ def STEP5_calc_lccs():
                         Cfg.gp.CreateFolder_management(Cfg.LCCBASEDIR,
                                                        path.basename(clccdir))
         #rows that were temporarily disabled
-        rows = where(linkTable[:,Cfg.LTB_LINKTYPE]>100)
+        rows = npy.where(linkTable[:,Cfg.LTB_LINKTYPE]>100)
         linkTable[rows,Cfg.LTB_LINKTYPE] = (
             linkTable[rows,Cfg.LTB_LINKTYPE] - 100)
         # ---------------------------------------------------------------------
@@ -202,7 +204,8 @@ def STEP5_calc_lccs():
             try: exec statement
             except:
                 count,tryAgain = lu.hiccup_test(count,statement)
-                if not tryAgain: exec statement
+                if not tryAgain:
+                    exec statement
             else: break
 
         Cfg.gp.pyramid = "PYRAMIDS 2"
@@ -238,16 +241,16 @@ def STEP5_calc_lccs():
             pass
         # ---------------------------------------------------------------------
 
-        startTime = time.clock()
+        start_time = time.clock()
 
         if Cfg.STEP4:
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=4,
                                                      thisStep=5)
-            startTime, hours, mins, secs = lu.elapsed_time(startTime)
+            start_time = lu.elapsed_time(start_time)
         elif Cfg.STEP3:
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=3,
                                                      thisStep=5)
-            startTime, hours, mins, secs = lu.elapsed_time(startTime)
+            start_time = lu.elapsed_time(start_time)
         else:
             # Don't know if step 4 was run, since this is started at step 5.
             # Will look for step 4 lcp file, then step 3.  FIXME: this is one
@@ -256,7 +259,7 @@ def STEP5_calc_lccs():
             # new run superceded it.
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=4,
                                                      thisStep=5)
-            startTime, hours, mins, secs = lu.elapsed_time(startTime)
+            start_time = lu.elapsed_time(start_time)
 
         outlinkTableFile = lu.get_this_step_link_table(step=5)
         Cfg.gp.addmessage('Updating ' + outlinkTableFile)
@@ -271,16 +274,16 @@ def STEP5_calc_lccs():
                           linkTableFinalFile)
 
         # # Pull out active corridor and constellation links
-        # numLinks=finalLinkTable.shape[0]
-        # rows, cols = where(
+        # numLinks = finalLinkTable.shape[0]
+        # rows, cols = npy.where(
             # finalLinkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
             # Cfg.LT_CORR)
         # coreLinks = finalLinkTable[rows,:]
-        # rows, cols = where(
+        # rows, cols = npy.where(
             # finalLinkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
             # Cfg.LT_CLU)
         # componentLinks = finalLinkTable[rows,:]
-        # activeLinkTable = append(coreLinks, componentLinks, axis=0)
+        # activeLinkTable = npy.append(coreLinks, componentLinks, axis=0)
         # del componentLinks
         # del coreLinks
 
@@ -305,19 +308,17 @@ def STEP5_calc_lccs():
             Cfg.gp.delete_management(Cfg.SCRATCHDIR)
         except:
             pass
-            
+
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         Cfg.gp.addmessage('****Failed in step 5. Details follow.****')
-        filename =  __file__
-        lu.raise_geoproc_error(filename)
+        lu.raise_python_error(__filename__)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         Cfg.gp.addmessage('****Failed in step 5. Details follow.****')
-        filename =  __file__
-        lu.raise_python_error(filename)
+        lu.raise_python_error(__filename__)
 
     return

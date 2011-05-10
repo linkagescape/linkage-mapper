@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python2.
 
 """Linkage Mapper configuration module.
 
@@ -6,6 +6,9 @@ Assigns input parameter from ToolBox to variables and reads defaults from
 linkage_mapper.ini
 
 """
+
+__filename__ = "lm_config.py"
+__version__ = "0.6.2"
 
 import os.path as path
 import sys
