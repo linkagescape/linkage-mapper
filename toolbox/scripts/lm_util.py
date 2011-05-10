@@ -3,7 +3,7 @@
 """Contains functions called by linkage mapper scripts."""
 
 __filename__ = "lm_util.py"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
 import os
 import sys

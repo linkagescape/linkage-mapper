@@ -10,7 +10,7 @@ Numpy
 """
 
 __filename__ = "lm_master.py"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
 import os.path as path
 

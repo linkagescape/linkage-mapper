@@ -9,7 +9,7 @@ nearest neighboring cluster
 """
 
 __filename__ = "s4_refineNetwork.py"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
 # Note: because cwds calculated in step 3, constellation links just connect
 # core pairs, not all cores in 1 constellation to all cores in another.

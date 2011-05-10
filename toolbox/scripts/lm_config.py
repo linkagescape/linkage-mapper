@@ -8,7 +8,7 @@ linkage_mapper.ini
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
 import os.path as path
 import sys
