@@ -535,7 +535,7 @@ def STEP3_calc_cwds():
                 endTime = time.clock()
                 processTime = round((endTime - start_time), 2)
                 Cfg.gp.addmessage('Intermediate core checks and LCP shapefiles'
-                                  'for core #' + str(sourceCore) + ' took ' +
+                                  ' for core #' + str(sourceCore) + ' took ' +
                                   str(processTime) + ' seconds.')
                 # -----------------------------------------------------------
 
