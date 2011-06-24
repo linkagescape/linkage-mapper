@@ -9,7 +9,7 @@ nearest neighboring cluster
 """
 
 __filename__ = "s4_refineNetwork.py"
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 
 # Note: because cwds calculated in step 3, constellation links just connect
 # core pairs, not all cores in 1 constellation to all cores in another.
@@ -206,7 +206,7 @@ def STEP4_refine_network():
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         Cfg.gp.addmessage('****Failed in step 4. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.raise_geoproc_error(__filename__)
 
     # Return any PYTHON or system specific errors
     except:

@@ -10,7 +10,7 @@ Numpy
 """
 
 __filename__ = "lm_master.py"
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 
 import os.path as path
 
@@ -34,6 +34,9 @@ def lm_master():
 
     """
     try:
+        if Cfg.gp.Exists(Cfg.OUTPUTDIR):
+            Cfg.gp.RefreshCatalog(Cfg.OUTPUTDIR)
+        
         # Delete final ouptut geodatabase
         if Cfg.gp.Exists(Cfg.OUTPUTGDB) and Cfg.STEP5:
             Cfg.gp.addmessage('Deleting geodatabase ' + Cfg.OUTPUTGDB)

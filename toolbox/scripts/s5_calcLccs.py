@@ -8,7 +8,7 @@ pairs specified in linkTable and cwd layers
 """
 
 __filename__ = "s5_calcLccs.py"
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 
 import os.path as path
 import time
@@ -20,6 +20,10 @@ import numpy as npy
 from lm_config import Config as Cfg
 import lm_util as lu
 
+gp = Cfg.gp
+gprint = gp.addmessage
+
+
 def STEP5_calc_lccs():
     """Creates and mosaics normalized least-cost corridors
     using connected core area pairs specified in linkTable and
@@ -30,35 +34,35 @@ def STEP5_calc_lccs():
 # Fixme: add option to saveRawLccs? Or mosaicLccs that already exist?
     try:
         lu.dashline(1)
-        Cfg.gp.addmessage('Running script' + __filename__)
+        gprint('Running script' + __filename__)
         linkTableFile = lu.get_prev_step_link_table(step=5)
-        Cfg.gp.workspace = Cfg.SCRATCHDIR
+        gp.workspace = Cfg.SCRATCHDIR
 
         if Cfg.MAXEUCDIST is not None:
-            Cfg.gp.addmessage('Max Euclidean distance between cores')
-            Cfg.gp.addmessage('for linkage mapping set to ' +
+            gprint('Max Euclidean distance between cores')
+            gprint('for linkage mapping set to ' +
                               str(Cfg.MAXEUCDIST))
 
         if Cfg.MAXCOSTDIST is not None:
-            Cfg.gp.addmessage('Max cost-weighted distance between cores')
-            Cfg.gp.addmessage('for linkage mapping set to ' +
+            gprint('Max cost-weighted distance between cores')
+            gprint('for linkage mapping set to ' +
                               str(Cfg.MAXCOSTDIST))
 
 
         # set the analysis extent and cell size to that of the resistance
         # surface
-        Cfg.gp.Extent = Cfg.gp.Describe(Cfg.RESRAST).Extent
-        Cfg.gp.CellSize = Cfg.gp.Describe(Cfg.RESRAST).MeanCellHeight
-        Cfg.gp.Extent = "MINOF"
-        Cfg.gp.mask = Cfg.RESRAST
-        Cfg.gp.snapraster = Cfg.RESRAST
+        gp.Extent = gp.Describe(Cfg.RESRAST).Extent
+        gp.CellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight
+        gp.Extent = "MINOF"
+        gp.mask = Cfg.RESRAST
+        gp.snapraster = Cfg.RESRAST
 
         linkTable = lu.load_link_table(linkTableFile)
         numLinks = linkTable.shape[0]
         numCorridorLinks = lu.report_links(linkTable)
         if numCorridorLinks == 0:
             lu.dashline()
-            Cfg.gp.addmessage('\nThere are no corridors to map. Bailing.')
+            gprint('\nThere are no corridors to map. Bailing.')
             time.sleep(5)
             return
 
@@ -66,7 +70,7 @@ def STEP5_calc_lccs():
         if not Cfg.STEP3 and not Cfg.STEP4:
             # re-check for links that are too long or in case script run out of
             # sequence with more stringent settings
-            Cfg.gp.addmessage('Double-checking for corridors that are too long'
+            gprint('Double-checking for corridors that are too long'
                               ' to map.')
             disableLeastCostNoVal = True
             linkTable,numDroppedLinks = lu.drop_links(
@@ -74,24 +78,25 @@ def STEP5_calc_lccs():
                 Cfg.MINCOSTDIST, disableLeastCostNoVal)
 
         # Added to try to speed up:
-        Cfg.gp.pyramid = "NONE"
-        Cfg.gp.rasterstatistics = "NONE"
+        gp.pyramid = "NONE"
+        gp.rasterstatistics = "NONE"
 
         # set up directories for normalized lcc and mosaic grids
         dirCount = 0
-        Cfg.gp.addmessage("Creating output folder: " + Cfg.LCCBASEDIR)
+        gprint("Creating output folder: " + Cfg.LCCBASEDIR)
         if path.exists(Cfg.LCCBASEDIR):
             shutil.rmtree(Cfg.LCCBASEDIR)
-        Cfg.gp.CreateFolder_management(path.dirname(Cfg.LCCBASEDIR),
+        gp.CreateFolder_management(path.dirname(Cfg.LCCBASEDIR),
                                        path.basename(Cfg.LCCBASEDIR))
-        Cfg.gp.CreateFolder_management(Cfg.LCCBASEDIR, Cfg.LCCNLCDIR_NM)
+        gp.CreateFolder_management(Cfg.LCCBASEDIR, Cfg.LCCNLCDIR_NM)
         clccdir = path.join(Cfg.LCCBASEDIR, Cfg.LCCNLCDIR_NM)
-        Cfg.gp.CreateFolder_management(Cfg.LCCBASEDIR,
+        gp.CreateFolder_management(Cfg.LCCBASEDIR,
                                        path.basename(Cfg.LCCMOSAICDIR))
         mosaicRaster = path.join(Cfg.LCCMOSAICDIR, "nlcc_mos")
-        Cfg.gp.addmessage('\nNormalized Least-cost corridors will be written '
+        gprint('\nNormalized Least-cost corridors will be written '
                           'to ' + clccdir + '\n')
-
+        prefix = path.basename(Cfg.PROJECTDIR)
+        
         # Add CWD layers for core area pairs to produce NORMALIZED LCC layers
         numGridsWritten = 0
         coreList = linkTable[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1]
@@ -111,11 +116,11 @@ def STEP5_calc_lccs():
 
                 lccNormRaster = path.join(clccdir, str(corex) + "_" +
                                           str(corey))
-                Cfg.gp.Extent = "MINOF"
+                gp.Extent = "MINOF"
 
                 # FIXME: need to check for this?:
                 # if exists already, don't re-create
-                #if not Cfg.gp.Exists(lccRaster):
+                #if not gp.Exists(lccRaster):
 
                 link = lu.get_links_from_core_pairs(linkTable, corex, corey)
                 lcDist = str(linkTable[link,Cfg.LTB_CWDIST])
@@ -124,7 +129,7 @@ def STEP5_calc_lccs():
                 # subtracting the least cost distance between them.
                 expression = cwdRaster1 + " + " + cwdRaster2 + " - " + lcDist
                 count = 0
-                statement = ('Cfg.gp.SingleOutputMapAlgebra_sa(expression, '
+                statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
                             'lccNormRaster)')
                 start_time = time.clock()
                 while True:
@@ -134,15 +139,15 @@ def STEP5_calc_lccs():
                         if not tryAgain: exec statement
                     else: break
 
-                Cfg.gp.Extent = "MAXOF"
+                gp.Extent = "MAXOF"
                 if numGridsWritten == 0 and dirCount == 0:
                     #If this is the first grid then copy rather than mosaic
-                    Cfg.gp.CopyRaster_management(lccNormRaster, mosaicRaster)
+                    gp.CopyRaster_management(lccNormRaster, mosaicRaster)
                 else:
                     # Note: cannot use SOMA to mosaic. It is a different
                     # process entirely.
                     count = 0
-                    statement = ('Cfg.gp.Mosaic_management(lccNormRaster, '
+                    statement = ('gp.Mosaic_management(lccNormRaster, '
                                  'mosaicRaster, "MINIMUM", "MATCH")')
                     while True:
                         try: exec statement
@@ -153,14 +158,14 @@ def STEP5_calc_lccs():
 
                 endTime = time.clock()
                 processTime = round((endTime - start_time), 2)
-                Cfg.gp.addmessage("Normalized and mosaicked corridor for link "
+                gprint("Normalized and mosaicked corridor for link "
                                   "#" + str(linkId)
                                   + " connecting core areas " + str(corex) +
                                   " and " + str(corey)+ " in " +
                                   str(processTime) + " seconds.")
 
                 if not Cfg.SAVENORMLCCS:
-                    Cfg.gp.delete_management(lccNormRaster)
+                    gp.delete_management(lccNormRaster)
 
                 # temporarily disable links in linktable - don't want to mosaic
                 # them twice
@@ -183,8 +188,8 @@ def STEP5_calc_lccs():
                         dirCount = dirCount + 1
                         numGridsWritten = 0
                         clccdir = path.join(clccdir, str(dirCount))
-                        Cfg.gp.addmessage("Creating output folder: " + clccdir)
-                        Cfg.gp.CreateFolder_management(Cfg.LCCBASEDIR,
+                        gprint("Creating output folder: " + clccdir)
+                        gp.CreateFolder_management(Cfg.LCCBASEDIR,
                                                        path.basename(clccdir))
         #rows that were temporarily disabled
         rows = npy.where(linkTable[:,Cfg.LTB_LINKTYPE]>100)
@@ -193,13 +198,13 @@ def STEP5_calc_lccs():
         # ---------------------------------------------------------------------
 
         # Create output geodatabase
-        Cfg.gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.OUTPUTGDB))
-        Cfg.gp.workspace = Cfg.OUTPUTGDB
-
+        gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.OUTPUTGDB))
+        gp.workspace = Cfg.OUTPUTGDB
+        
         # Copy mosaic raster to output geodatabase
-        mosRaster = "lcc_mosaic"
+        mosRaster = prefix + "_lcc_mosaic"
         count = 0
-        statement = 'Cfg.gp.CopyRaster_management(mosaicRaster, mosRaster)'
+        statement = 'gp.CopyRaster_management(mosaicRaster, mosRaster)'
         while True:
             try: exec statement
             except:
@@ -208,8 +213,8 @@ def STEP5_calc_lccs():
                     exec statement
             else: break
 
-        Cfg.gp.pyramid = "PYRAMIDS 2"
-        Cfg.gp.rasterStatistics = "STATISTICS 10 10"
+        gp.pyramid = "PYRAMIDS 2"
+        gp.rasterStatistics = "STATISTICS 10 10"
 
         # ---------------------------------------------------------------------
         # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
@@ -218,17 +223,17 @@ def STEP5_calc_lccs():
         expression = ("(" + mosaicRaster + " * (con(" + mosaicRaster + "<= " +
                       str(Cfg.CWDTHRESH) + ",1)))")
         count = 0
-        statement = 'Cfg.gp.SingleOutputMapAlgebra_sa(expression, truncRaster)'
+        statement = 'gp.SingleOutputMapAlgebra_sa(expression, truncRaster)'
         while True:
             try: exec statement
             except:
                 count,tryAgain = lu.hiccup_test(count,statement)
                 if not tryAgain: exec statement
             else: break
-        intRaster = "lcc_mosaic_100k_max_int"
+        intRaster = prefix + "_lcc_mosaic_100k_max_int"
         expression = "int(" + truncRaster + ")"
         count = 0
-        statement = 'Cfg.gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
+        statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
         while True:
             try: exec statement
             except:
@@ -236,7 +241,7 @@ def STEP5_calc_lccs():
                 if not tryAgain: exec statement
             else: break
         try:
-            Cfg.gp.delete_management(truncRaster)
+            gp.delete_management(truncRaster)
         except:
             pass
         # ---------------------------------------------------------------------
@@ -262,15 +267,15 @@ def STEP5_calc_lccs():
             start_time = lu.elapsed_time(start_time)
 
         outlinkTableFile = lu.get_this_step_link_table(step=5)
-        Cfg.gp.addmessage('Updating ' + outlinkTableFile)
+        gprint('Updating ' + outlinkTableFile)
         lu.write_link_table(linkTable, outlinkTableFile)
 
         linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s5.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
-        linkTableFinalFile = path.join(Cfg.OUTPUTDIR, "linkTable_Final.csv")
+        linkTableFinalFile = path.join(Cfg.OUTPUTDIR, prefix + "_linkTable_Final.csv")
         lu.write_link_table(finalLinkTable, linkTableFinalFile)
-        Cfg.gp.addmessage('Copy of final linkTable written to '+
+        gprint('Copy of final linkTable written to '+
                           linkTableFinalFile)
 
         # # Pull out active corridor and constellation links
@@ -294,31 +299,33 @@ def STEP5_calc_lccs():
         # activeLinkTableFile = path.join(
             # Cfg.OUTPUTDIR, "linkTable_.csv")
         # lu.write_link_table(activeLinkTable, activeLinkTableFile)
-        # Cfg.gp.addmessage('Table of active links written to ' +
+        # gprint('Table of active links written to ' +
                           # activeLinkTableFile)
 
         # lu.dashline(1)
-        Cfg.gp.addmessage('Creating shapefiles with linework for links.')
+        gprint('Creating shapefiles with linework for links.')
         lu.write_link_maps(outlinkTableFile, step=5)
 
         # Create final linkmap files in output directory, and remove files from
         # scratch.
         lu.copy_final_link_maps()
-        try:
-            Cfg.gp.delete_management(Cfg.SCRATCHDIR)
-        except:
-            pass
 
+        # Clean up
+        lu.delete_dir(Cfg.SCRATCHDIR)
+        if not Cfg.SAVENORMLCCS:
+            lu.delete_dir(Cfg.LCCBASEDIR)
+
+            
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
-        Cfg.gp.addmessage('****Failed in step 5. Details follow.****')
+        gprint('****Failed in step 5. Details follow.****')
         lu.raise_python_error(__filename__)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
-        Cfg.gp.addmessage('****Failed in step 5. Details follow.****')
+        gprint('****Failed in step 5. Details follow.****')
         lu.raise_python_error(__filename__)
 
     return
