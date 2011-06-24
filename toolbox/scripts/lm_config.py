@@ -2,13 +2,12 @@
 
 """Linkage Mapper configuration module.
 
-Assigns input parameter from ToolBox to variables and reads defaults from
-linkage_mapper.ini
+Assigns input parameters from ToolBox to variables, and sets constants
 
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 
 import os.path as path
 import sys
@@ -44,33 +43,62 @@ def nullfloat(innum):
     return nfloat
 
 
+
 class Config():
     """Class to enscapulate all global constants"""
+
     # Model inputs from ArcGIS tool
-    PROJECTDIR = sys.argv[1]  # Project directory
-    COREFC = sys.argv[2]  # Core area feature class
-    COREFN = sys.argv[3]  # Core area field name
-    RESRAST = sys.argv[4]  # Resistance raster
+    scriptDir, script = path.split(str(sys.argv[0]))
+    if script == "lm_master.py":
+        TOOL = 'linkage_mapper'
+        PROJECTDIR = sys.argv[1]  # Project directory
+        COREFC = sys.argv[2]  # Core area feature class
+        COREFN = sys.argv[3]  # Core area field name
+        RESRAST = sys.argv[4]  # Resistance raster
 
-    # Processing steps inputs
-    STEP1 = str2bool(sys.argv[5])
-    S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
-    STEP2 = str2bool(sys.argv[7])
-    S2EUCDISTFILE = sys.argv[8]
-    S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[9])
-    STEP3 = str2bool(sys.argv[10])
-    S3DROPLCCS = sys.argv[11]  # Drop LCC's with intermediate cores
-    STEP4 = str2bool(sys.argv[12])
-    S4MAXNN = int(sys.argv[13])  # No of connected nearest neighbors
-    S4DISTTYPE_CW, S4DISTTYPE_EU = setadjmeth(sys.argv[14])  # NN Unit
-    S4CONNECT = str2bool(sys.argv[15])
-    STEP5 = str2bool(sys.argv[16])
+        # Processing steps inputs
+        STEP1 = str2bool(sys.argv[5])
+        S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
+        STEP2 = str2bool(sys.argv[7])
+        S2EUCDISTFILE = sys.argv[8]
+        S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[9])
+        STEP3 = str2bool(sys.argv[10])
+        S3DROPLCCS = sys.argv[11]  # Drop LCC's with intermediate cores
+        STEP4 = str2bool(sys.argv[12])
+        S4MAXNN = int(sys.argv[13])  # No of connected nearest neighbors
+        S4DISTTYPE_CW, S4DISTTYPE_EU = setadjmeth(sys.argv[14])  # NN Unit
+        S4CONNECT = str2bool(sys.argv[15])
+        STEP5 = str2bool(sys.argv[16])
 
-    # Optional input parameters
-    BUFFERDIST = nullfloat(sys.argv[17])
-    MAXCOSTDIST = nullfloat(sys.argv[18])
-    MAXEUCDIST = nullfloat(sys.argv[19])
+        # Optional input parameters
+        BUFFERDIST = nullfloat(sys.argv[17])
+        MAXCOSTDIST = nullfloat(sys.argv[18])
+        MAXEUCDIST = nullfloat(sys.argv[19])
 
+        CWDTHRESH = 100000  # CWD corridor width in a truncated raster
+        if MAXCOSTDIST is None:
+            TMAXCWDIST = None
+        else:
+            TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # This will limit cw calcs
+       
+    elif script == "barrier_master.py":  #Barrier Mapper    
+        TOOL = 'barrier_mapper'
+        PROJECTDIR = sys.argv[1]  # Project directory
+        RESRAST = sys.argv[2]
+        STARTRADIUS = sys.argv[3]  # 
+        ENDRADIUS = sys.argv[4]  # 
+        RADIUSSTEP = sys.argv[5]  # 
+    
+    else:
+        TOOL = 'pinchpoint_mapper'
+        PROJECTDIR = sys.argv[1]  # Project directory
+        DOPINCH = str2bool(sys.argv[2])
+        RESRAST = sys.argv[3]
+        CWDCUTOFF = sys.argv[4] # To clip resistance rasters for Circuitscape
+        SQUARERESISTANCES = str2bool(sys.argv[5]) # Square resistance values 
+        DOCENTRALITY = str2bool(sys.argv[6])
+        COREFC = sys.argv[7]
+        COREFN = sys.argv[8]
     # Ouput directory paths & folder names
     OUTPUTDIR = path.join(PROJECTDIR, "output")
     SCRATCHDIR = path.join(PROJECTDIR, "scratch")
@@ -82,22 +110,35 @@ class Config():
     LCCBASEDIR = path.join(PROJECTDIR, "nlcc")
     LCCNLCDIR_NM = "nlc"
     LCCMOSAICDIR = path.join(LCCBASEDIR, "mosaic")
-
+    FOCALSUBDIR1_NM = "focalr"
+    FOCALSUBDIR2_NM = "f"
+    FOCALGRID_NM = "focal"
+    BARRIERBASEDIR = path.join(PROJECTDIR, "barrier")
+    BARRIERDIR_NM = "bar"
+    BARRIERMOSAICDIR = "mosaic"
+    CIRCUITBASEDIR = path.join(PROJECTDIR, "pinchpoints")
+    CENTRALITYBASEDIR = path.join(PROJECTDIR, "centrality")
+    CIRCUITCONFIGDIR_NM = "config"
+    CIRCUITOUTPUTDIR_NM =  "output"
+        
+    
     # Other global constants
     MINCOSTDIST = None
     MINEUCDIST = None
     SAVENORMLCCS = False  # Set to True to save individual normalized LCC grids
+    SAVEFOCALRASTERS = False # Save individual focal grids for barrier analysis
+    SAVEBARRIERRASTERS = False # Save individual barrier grids
+    SAVECURRENTMAPS = False# Save individual current maps from Circuitscape
     FCORES = "fcores"
     OUTPUTGDB = path.join(OUTPUTDIR, "linkages.gdb")
+    CWDGDB = path.join(OUTPUTDIR,"cwd.gdb")
+    BARRIERGDB = path.join(OUTPUTDIR, "barriers.gdb")
+    PINCHGDB = path.join(OUTPUTDIR, "pinchpoints.gdb")
+    CENTRALITYGDB = path.join(OUTPUTDIR, "centrality.gdb")
     BNDCIRCEN = "boundingCircleCenter.shp"
     BNDCIR = "boundingCircle.shp"
-
-    CWDTHRESH = 100000  # CWD corridor width in a truncated raster
-    if MAXCOSTDIST is None:
-        TMAXCWDIST = None
-    else:
-        TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # This will limit cw calcs
-
+    
+    
     # Link table column numbers
     LTB_LINKID = 0  # Link ID
     LTB_CORE1 = 1  # Core ID of 1st core area link connects
@@ -112,7 +153,9 @@ class Config():
     LTB_LCPLEN = 10
     LTB_CWDEUCR = 11
     LTB_CWDPATHR = 12
-
+    LTB_EFFRESIST = 13
+    LTB_CURRENT = 14
+    
     # Linkage type values (NOTE- these map to codes in get_linktype_desc)
     LT_CPLK = -1  # Not_nearest N neighbors
     LT_TLEC = -11  # Too long Euclidean distance
@@ -138,3 +181,5 @@ class Config():
     gp.CheckOutExtension("Spatial")
     gp.OverwriteOutput = True
     gp.SnapRaster = RESRAST
+
+    

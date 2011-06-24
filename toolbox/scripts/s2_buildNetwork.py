@@ -8,7 +8,7 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 
 import os.path as path
 
@@ -18,6 +18,8 @@ import numpy as npy
 from lm_config import Config as Cfg
 import lm_util as lu
 
+gp = Cfg.gp
+gprint = gp.addmessage
 
 def STEP2_build_network():
     """Generates initial version of linkTable.csv based on euclidean distances
@@ -26,7 +28,7 @@ def STEP2_build_network():
     """
     try:
         lu.dashline(1)
-        Cfg.gp.addmessage('Running script' + __filename__)
+        gprint('Running script' + __filename__)
         outlinkTableFile = lu.get_this_step_link_table(step=2)
 
         # This is a warning flag if distances are mising in conefor
@@ -44,7 +46,7 @@ def STEP2_build_network():
             # adjacency file created from s1_getAdjacencies.py
             eucAdjFile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
             if not path.exists(eucAdjFile):
-                Cfg.gp.AddMessage('\nERROR: Euclidean adjacency file required '
+                gprint('\nERROR: Euclidean adjacency file required '
                                   'to keep Euclidean adjacent linksS: ' +
                                   eucAdjFile)
                 exit(0)
@@ -57,7 +59,7 @@ def STEP2_build_network():
              # adjacency file created from s1_getAdjacencies.py
             cwdAdjFile = path.join(Cfg.DATAPASSDIR, "cwdAdj.csv")
             if not path.exists(cwdAdjFile):
-                Cfg.gp.AddMessage('\nERROR: Cost-weighted adjacency file '
+                gprint('\nERROR: Cost-weighted adjacency file '
                                   'required to keep CWD adjacent links: ' +
                                   cwdAdjFile)
                 exit(0)
@@ -70,9 +72,9 @@ def STEP2_build_network():
                                comments='#')
         numDists = eucDists.shape[0]
         # lu.dashline()
-        Cfg.gp.addmessage('Core area distance list from Conefor Sensinode '
+        gprint('Core area distance list from Conefor Sensinode '
                           'loaded. \n')
-        Cfg.gp.addmessage('number of pairwise distances = ' + str(numDists))
+        gprint('number of pairwise distances = ' + str(numDists))
         # lu.dashline(2)
         eucDists[:, 0:2] = npy.sort(eucDists[:, 0:2])
 
@@ -96,11 +98,11 @@ def STEP2_build_network():
         del delRowsVector
         numDists = eucDists.shape[0]
         lu.dashline(1)
-        Cfg.gp.addmessage('Removed '+ str(numDistsOld - numDists) +
+        gprint('Removed '+ str(numDistsOld - numDists) +
                           ' duplicate core pairs in Euclidean distance table.'
                           '\n')
         maxeudistid = max(eucDists[:, 1])
-        Cfg.gp.addmessage('After removing duplicates and distances that exceed'
+        gprint('After removing duplicates and distances that exceed'
                           ' maximum, \nthere are ' + str(numDists) +
                           ' pairwise distances.  Max core ID number is ' +
                           str(int(maxeudistid)) + '.')
@@ -130,7 +132,7 @@ def STEP2_build_network():
                     cwdAdjList = adjList
                 cwdAdjList = cwdAdjList[:, 1:3] # Drop first column
                 cwdAdjList = npy.sort(cwdAdjList)
-                Cfg.gp.addmessage('Cost-weighted adjacency file loaded.')
+                gprint('Cost-weighted adjacency file loaded.')
                 maxCwdAdjCoreID = max(cwdAdjList[:, 1])
             else:
                 maxCwdAdjCoreID = 0
@@ -146,7 +148,7 @@ def STEP2_build_network():
                     eucAdjList = adjList
                 eucAdjList = eucAdjList[:, 1:3] # Drop first column
                 eucAdjList = npy.sort(eucAdjList)
-                Cfg.gp.addmessage('Euclidean adjacency file loaded')
+                gprint('Euclidean adjacency file loaded')
                 maxEucAdjCoreID = max(eucAdjList[:, 1])
             else:
                 maxEucAdjCoreID = 0
@@ -213,7 +215,7 @@ def STEP2_build_network():
         #----------------------------------------------------------------------
         # OK, we have distance matrix (which now defines which pairs can be
         # potential links).  Use it to create link table.
-        Cfg.gp.addmessage('creating link table')
+        gprint('creating link table')
         # Get rid of 0 index- we don't have any valid core ids with 0 values
         distanceMatrix = lu.delete_row_col(distanceMatrix, 0, 0)
         rows,cols = npy.where(distanceMatrix)
@@ -243,9 +245,9 @@ def STEP2_build_network():
 
         if dropFlag:
             lu.dashline(1)
-            Cfg.gp.addmessage('NOTE: At least one adjacent link was dropped '
+            gprint('NOTE: At least one adjacent link was dropped '
                           'because there was no Euclidean ')
-            Cfg.gp.addmessage('distance value in the input distance file from '
+            gprint('distance value in the input distance file from '
                           'Conefor extension.')
             # lu.dashline(2)
 
@@ -283,7 +285,7 @@ def STEP2_build_network():
         ind = npy.lexsort((linkTable[:, Cfg.LTB_CORE2],
               linkTable[:, Cfg.LTB_CORE1]))
         if len(linkTable) == 0:
-            Cfg.gp.Adderror('\nERROR: There are no valid core area '
+            gp.Adderror('\nERROR: There are no valid core area '
                             'pairs. This can happen when core area numbers in '
                             'your Conefor distances text file do not match '
                             'those in your core area feature class.')
@@ -296,7 +298,7 @@ def STEP2_build_network():
             linkTable[x, Cfg.LTB_LINKID] = x + 1
 
         if len(npy.unique(coreList[:, 1])) < 2:
-            Cfg.gp.addmessage('\nERROR: There are less than two core '
+            gprint('\nERROR: There are less than two core '
                               'areas.\nThis means there is nothing to connect '
                               'with linkages. Bailing.')
             exit(0)
@@ -304,28 +306,28 @@ def STEP2_build_network():
 
 
         # Drop links that are too long
-        Cfg.gp.addmessage('\nChecking for corridors that are too long to map.')
+        gprint('\nChecking for corridors that are too long to map.')
         disableLeastCostNoVal = False
         linkTable,numDroppedLinks = lu.drop_links(linkTable, Cfg.MAXEUCDIST, 0,
                                                   Cfg.MINEUCDIST, 0,
                                                   disableLeastCostNoVal)
         if numDroppedLinks > 0:
             lu.dashline(1)
-            Cfg.gp.addmessage('Removed ' + str(numDroppedLinks) +
+            gprint('Removed ' + str(numDroppedLinks) +
                               ' links that were too long in Euclidean '
                               'distance.')
             # lu.dashline(2)
 
         # Write linkTable to disk
-        Cfg.gp.addmessage('Writing ' + outlinkTableFile)
+        gprint('Writing ' + outlinkTableFile)
         lu.write_link_table(linkTable, outlinkTableFile)
         linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s2.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
         lu.report_links(linkTable)
 
-        Cfg.gp.addmessage ('Creating shapefiles with linework for links.\n')
+        gprint ('Creating shapefiles with linework for links.\n')
         lu.write_link_maps(outlinkTableFile, step=2)
-        Cfg.gp.addmessage('Linework shapefiles written.')
+        gprint('Linework shapefiles written.')
 
         if dropFlag:
             lu.print_conefor_warning
@@ -333,13 +335,13 @@ def STEP2_build_network():
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
-        Cfg.gp.addmessage('****Failed in step 2. Details follow.****')
-        lu.raise_python_error(__filename__)
+        gprint('****Failed in step 2. Details follow.****')
+        lu.raise_geoproc_error(__filename__)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
-        Cfg.gp.addmessage('****Failed in step 2. Details follow.****')
+        gprint('****Failed in step 2. Details follow.****')
         lu.raise_python_error(__filename__)
 
     return
