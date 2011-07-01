@@ -33,9 +33,12 @@ def pinch_master():
             if not path.exists(lmfolder):
                 gp.CreateFolder_management(path.dirname(lmfolder),
                                                path.basename(lmfolder))               
-
-
-        gp.RefreshCatalog(Cfg.OUTPUTDIR)
+                                               
+        # Move adj and cwd results from earlier versions to datapass directory
+        lu.move_old_results()
+                                               
+        if path.exists(Cfg.OUTPUTDIR):
+            gp.RefreshCatalog(Cfg.OUTPUTDIR)
         
         if Cfg.DOPINCH == False and Cfg.DOCENTRALITY == False:            
             msg = ('ERROR: Please choose at least one option: pinch point or\n'
