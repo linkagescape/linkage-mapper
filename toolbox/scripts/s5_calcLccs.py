@@ -95,7 +95,7 @@ def STEP5_calc_lccs():
         mosaicRaster = path.join(Cfg.LCCMOSAICDIR, "nlcc_mos")
         gprint('\nNormalized Least-cost corridors will be written '
                           'to ' + clccdir + '\n')
-        prefix = path.basename(Cfg.PROJECTDIR)
+        PREFIX = Cfg.PREFIX
         
         # Add CWD layers for core area pairs to produce NORMALIZED LCC layers
         numGridsWritten = 0
@@ -200,9 +200,12 @@ def STEP5_calc_lccs():
         # Create output geodatabase
         gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.OUTPUTGDB))
         gp.workspace = Cfg.OUTPUTGDB
+
+        gp.pyramid = "PYRAMIDS 2"
+        gp.rasterStatistics = "STATISTICS 10 10"
         
         # Copy mosaic raster to output geodatabase
-        mosRaster = prefix + "_lcc_mosaic"
+        mosRaster = PREFIX + "_lcc_mosaic"
         count = 0
         statement = 'gp.CopyRaster_management(mosaicRaster, mosRaster)'
         while True:
@@ -212,9 +215,6 @@ def STEP5_calc_lccs():
                 if not tryAgain:
                     exec statement
             else: break
-
-        gp.pyramid = "PYRAMIDS 2"
-        gp.rasterStatistics = "STATISTICS 10 10"
 
         # ---------------------------------------------------------------------
         # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
@@ -230,7 +230,7 @@ def STEP5_calc_lccs():
                 count,tryAgain = lu.hiccup_test(count,statement)
                 if not tryAgain: exec statement
             else: break
-        intRaster = prefix + "_lcc_mosaic_100k_max_int"
+        intRaster = PREFIX + "_lcc_mosaic_100k_max_int"
         expression = "int(" + truncRaster + ")"
         count = 0
         statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
@@ -247,15 +247,13 @@ def STEP5_calc_lccs():
         # ---------------------------------------------------------------------
 
         start_time = time.clock()
-
+        gprint('Writing final LCP maps...')
         if Cfg.STEP4:
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=4,
                                                      thisStep=5)
-            start_time = lu.elapsed_time(start_time)
         elif Cfg.STEP3:
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=3,
                                                      thisStep=5)
-            start_time = lu.elapsed_time(start_time)
         else:
             # Don't know if step 4 was run, since this is started at step 5.
             # Will look for step 4 lcp file, then step 3.  FIXME: this is one
@@ -264,7 +262,6 @@ def STEP5_calc_lccs():
             # new run superceded it.
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=4,
                                                      thisStep=5)
-            start_time = lu.elapsed_time(start_time)
 
         outlinkTableFile = lu.get_this_step_link_table(step=5)
         gprint('Updating ' + outlinkTableFile)
@@ -273,7 +270,7 @@ def STEP5_calc_lccs():
         linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s5.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
-        linkTableFinalFile = path.join(Cfg.OUTPUTDIR, prefix + "_linkTable_Final.csv")
+        linkTableFinalFile = path.join(Cfg.OUTPUTDIR, PREFIX + "_linkTable_s5.csv")
         lu.write_link_table(finalLinkTable, linkTableFinalFile)
         gprint('Copy of final linkTable written to '+
                           linkTableFinalFile)
@@ -308,7 +305,7 @@ def STEP5_calc_lccs():
 
         # Create final linkmap files in output directory, and remove files from
         # scratch.
-        lu.copy_final_link_maps()
+        lu.copy_final_link_maps(step=5)
 
         # Clean up
         lu.delete_dir(Cfg.SCRATCHDIR)
@@ -320,7 +317,7 @@ def STEP5_calc_lccs():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.raise_geoproc_error(__filename__)
 
     # Return any PYTHON or system specific errors
     except:

@@ -5,7 +5,7 @@
 """
 
 __filename__ = "s7_pinchpoints.py"
-__version__ = "PINCHPOINT TEST"
+__version__ = "0.6.4"
 
 import os.path as path
 import os
@@ -14,6 +14,7 @@ import shutil
 import ConfigParser
 import arcgisscripting
 import numpy as npy
+import math
 
 from lm_config import Config as Cfg
 import lm_util as lu
@@ -26,11 +27,12 @@ LTB_CORE2 = Cfg.LTB_CORE2
 LTB_LINKID = Cfg.LTB_LINKID
 LTB_LINKTYPE = Cfg.LTB_LINKTYPE
 LTB_CWDIST = Cfg.LTB_CWDIST
-
+LTB_EFFRESIST = Cfg.LTB_EFFRESIST
+LTB_CWDTORR = Cfg.LTB_CWDTORR
     
 def STEP7_calc_pinchpoints():
-    """Maps pinch points using Circuitscape given CWD calculations from
-       s3_calcCwds.py.
+    """ Experimental code map pinch points using Circuitscape 
+        given CWD calculations from s3_calcCwds.py.
 
     """
     try:        
@@ -49,10 +51,8 @@ def STEP7_calc_pinchpoints():
         gp.snapraster = Cfg.RESRAST
         resRaster = Cfg.RESRAST 
 
-        cwdRaster = path.join(Cfg.OUTPUTDIR,"cwd")
-
-        linkTableFile = lu.get_prev_step_link_table(step=7)
-        linkTable = lu.load_link_table(linkTableFile)
+        inLinkTableFile = lu.get_prev_step_link_table(step=7)
+        linkTable = lu.load_link_table(inLinkTableFile)
         numLinks = linkTable.shape[0]
         numCorridorLinks = lu.report_links(linkTable)
         if numCorridorLinks == 0:
@@ -60,17 +60,18 @@ def STEP7_calc_pinchpoints():
             gprint('\nThere are no linkages. Bailing.')
             time.sleep(5)
             return
-            
-        if linkTable.shape[1] < 10: # If linktable has no entries from prior
+        if linkTable.shape[1] < 16: # If linktable has no entries from prior
                                     # centrality or pinchpint analyses
-            extraCols = npy.zeros((numLinks, 5), dtype="float64")
+            extraCols = npy.zeros((numLinks, 6), dtype="float64")
+            linkTable = linkTable[:,0:10]
             linkTable = npy.append(linkTable, extraCols, axis=1)
             linkTable[:, Cfg.LTB_LCPLEN] = -1
             linkTable[:, Cfg.LTB_CWDEUCR] = -1
             linkTable[:, Cfg.LTB_CWDPATHR] = -1
-            linkTable[:, Cfg.LTB_EFFRESIST] = -1
+            linkTable[:, LTB_EFFRESIST] = -1
+            linkTable[:, Cfg.LTB_CWDTORR] = -1
             linkTable[:, Cfg.LTB_CURRENT] = -1
-        
+            del extraCols
         
         # For speed:
         gp.pyramid = "NONE"
@@ -79,9 +80,7 @@ def STEP7_calc_pinchpoints():
         # set up directories for circuit and circuit mosaic grids
 
 
-        PREFIX = path.basename(Cfg.PROJECTDIR)
-        
-        CWDCUTOFF = Cfg.CWDCUTOFF
+        PREFIX = Cfg.PREFIX       
 
         # Create output geodatabase
         gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.PINCHGDB))
@@ -145,9 +144,8 @@ def STEP7_calc_pinchpoints():
 
                 #create raster mask 
                 resMaskRaster = path.join(Cfg.SCRATCHDIR, 'res_mask')
-                CWDCUTOFF = Cfg.CWDCUTOFF
                 expression = ("(con(" + lccNormRaster + "<= " +
-                              str(CWDCUTOFF) + ",1))")
+                              str(Cfg.CWDCUTOFF) + ",1))")
                 
                 gp.SingleOutputMapAlgebra_sa(expression, resMaskRaster)
                     
@@ -239,8 +237,16 @@ def STEP7_calc_pinchpoints():
                 resistancesFile = path.join(OUTCIRCUITDIR,resistancesFN)
                 resistances = npy.loadtxt(resistancesFile, 
                                           dtype = 'Float64', comments='#')
-                linkTable[link,Cfg.LTB_EFFRESIST] = resistances[2]
 
+                resistance = float(str(gp.CellSize)) * resistances[2]
+                linkTable[link,LTB_EFFRESIST] = resistance
+                # Ratio
+                if Cfg.SQUARERESISTANCES == True:
+                    linkTable[link,LTB_CWDTORR] = -1
+                else:
+                    linkTable[link,LTB_CWDTORR] = (linkTable[link,LTB_CWDIST] /
+                                                 linkTable[link,LTB_EFFRESIST])
+                
                 # Clean up (fixme: put these in function)
                 lu.delete_file(coreAsciiFile)
                 lu.delete_file(resAsciiFile)
@@ -252,21 +258,25 @@ def STEP7_calc_pinchpoints():
         outputRaster = path.join(outputGDB, PREFIX + "_current_mos")
         Cfg.gp.CopyRaster_management(mosaicRaster, outputRaster)
         
-
         finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=5,
-                                                  thisStep=7)
+                                                  thisStep=7) 
+                                                  
         linkTableFile = path.join(Cfg.DATAPASSDIR, "linkTable_s7.csv")
-        lu.write_link_table(finalLinkTable, linkTableFile)
+        lu.write_link_table(finalLinkTable, linkTableFile, inLinkTableFile)
         linkTableFinalFile = path.join(Cfg.OUTPUTDIR, 
                                        PREFIX + "_linkTable_s7.csv")
-        lu.write_link_table(finalLinkTable, linkTableFinalFile)
+        lu.write_link_table(finalLinkTable, 
+                            linkTableFinalFile, inLinkTableFile)
         gprint('Copy of final linkTable written to '+
                           linkTableFinalFile)
         #fixme: update sticks?
         
         gprint('Creating shapefiles with linework for links.')
-        lu.write_link_maps(linkTableFinalFile, step=7) #FIXME- copy this to gdb.  use copy_final_ code...
-
+        lu.write_link_maps(linkTableFinalFile, step=7) 
+        
+        # Copy final link maps to gdb.  
+        lu.copy_final_link_maps(step=7)
+        
         # Clean up temporary files
         # if not Cfg.SAVECURRENTMAPS:
             # lu.delete_dir(OUTCIRCUITDIR)
@@ -296,6 +306,7 @@ def STEP7_calc_pinchpoints():
         # Use linkage map mask out all portions of resrast that 
         # are above CWDCUTOFF
         ### REMOVED FOR NOW- no speed improvement found with LI data
+        # cwdRaster = path.join(Cfg.OUTPUTDIR,"cwd")
         # if gp.exists(lccMosaicRaster):
             # resRasterLccMask = path.join(Cfg.SCRATCHDIR, "res_lcc_mask")
             # expression = ("(" + resRaster + " * (con(" + lccMosaicRaster +
