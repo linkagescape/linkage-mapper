@@ -267,9 +267,9 @@ def get_core_targets(core, linktable):
     """Returns a list of other core areas the core area is connected to."""
     try:
         targetList = npy.zeros((len(linktable), 2), dtype="int32")
-        # possible targets 1st column = Cfg.LTB_CORE1
+        # possible targets. 1st column = Cfg.LTB_CORE1
         targetList[:, 0] = linktable[:, Cfg.LTB_CORE1]
-        # possible targets 2nd column = Cfg.LTB_CORE2
+        # possible targets. 2nd column = Cfg.LTB_CORE2
         targetList[:, 1] = linktable[:, Cfg.LTB_CORE2]
         # Copy of Cfg.LTB_LINKTYPE column
         validPair = linktable[:, Cfg.LTB_LINKTYPE]
@@ -859,6 +859,20 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
                     oldLcpShapefile = os.path.join(
                         Cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep - 1) +
                         ".shp")
+            
+            elif thisStep > 5:
+                oldLcpShapefile = os.path.join(
+                    Cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep) + ".shp")
+                if not gp.exists(oldLcpShapefile):
+                    # step 4
+                    oldLcpShapefile = os.path.join(
+                        Cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep - 1) +
+                        ".shp")
+                    if not gp.exists(oldLcpShapefile):
+                        # step 3
+                        oldLcpShapefile = os.path.join(
+                            Cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep - 1) +
+                            ".shp")
             else:
                 oldLcpShapefile = os.path.join(
                     Cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep) + ".shp")
@@ -876,6 +890,7 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
             gp.copy_management(oldLcpShapefile, lcpShapefile)
             if thisStep > 5:
                 gp.AddField_management(lcpShapefile, "Eff_Resist", "FLOAT") ### 
+                gp.AddField_management(lcpShapefile, "cwd2EffR_r", "FLOAT")
                 gp.AddField_management(lcpShapefile, "CF_Central", "FLOAT") ### 
         rows = gp.UpdateCursor(lcpShapefile)
         row = rows.Next()
@@ -889,8 +904,10 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
             if thisStep > 5:
                 current = linkTableTemp[linkid - 1, Cfg.LTB_CURRENT] 
                 effResist = linkTableTemp[linkid - 1, Cfg.LTB_EFFRESIST] 
+                CWDTORRatio = linkTableTemp[linkid - 1, Cfg.LTB_CWDTORR]
                 #fixme: linkid - 1 assumes linktable ordered
                 row.SetValue("Eff_Resist", effResist)
+                row.SetValue("cwd2EffR_r",CWDTORRatio)
                 row.SetValue("CF_Central", current)
             rows.UpdateRow(row)
 
@@ -907,8 +924,8 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
         del row, rows
 
 
-
-        outputLcpShapefile = os.path.join(Cfg.OUTPUTDIR, "lcpLines_s" +
+        PREFIX = Cfg.PREFIX
+        outputLcpShapefile = os.path.join(Cfg.OUTPUTDIR, PREFIX + "_lcpLines_s" +
                                           str(thisStep) + ".shp")
         if gp.exists(outputLcpShapefile):
             try:
@@ -1113,7 +1130,7 @@ def load_link_table(linkTableFile):
 ############################################################################
 ## Output Functions ########################################################
 ############################################################################
-def write_link_table(linktable, outlinkTableFile):
+def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
     """Writes link tables to pass link data between steps """
     try:
 
@@ -1140,15 +1157,15 @@ def write_link_table(linktable, outlinkTableFile):
                     outFile.write(str(linktable[x, y]) + ",")
                 outFile.write(str(linktable[x, 12]))
                 outFile.write("\n")
-        else: #Called from pinch point tool, has 15 columns
+        else: #Called from pinch point or centrality tool, has 16 columns
             outFile.write("#link,coreId1,coreId2,cluster1,cluster2,linkType,"
                            "eucDist,lcDist,eucAdj,cwdAdj,lcpLength,"
-                           "cwdToEucRatio,cwdToPathRatio,Eff_Resist,CF_Centrality\n")
+                           "cwdToEucRatio,cwdToPathRatio,Eff_Resist,CWDTORRatio,CF_Centrality\n")
 
             for x in range(0, numLinks):
-                for y in range(0, 14):
+                for y in range(0, 15):
                     outFile.write(str(linktable[x, y]) + ",")
-                outFile.write(str(linktable[x, 14]))
+                outFile.write(str(linktable[x, 15]))
                 outFile.write("\n")
 
 
@@ -1197,6 +1214,26 @@ def write_link_table(linktable, outlinkTableFile):
             outFile.write("\n# Minimum Euclidean Corridor Distance: "
                            + str(Cfg.MINEUCDIST))
 
+
+        elif Cfg.TOOL == 'pinchpoint_mapper':
+            outFile.write("\n# Pinchpoints Analyzed: "
+                           + str(Cfg.DOPINCH))
+            outFile.write("\n# Resistance Raster: " + Cfg.RESRAST)
+            outFile.write("\n# CWD Cutoff Distance: "
+                           + str(Cfg.CWDCUTOFF))
+            outFile.write("\n# Resistance Raster ValuesS quared for "
+                            "Circuitscape Analyses: "+ str(Cfg.SQUARERESISTANCES))
+            outFile.write("\n# Network Centrality Analyzed: "
+                          + str(Cfg.DOCENTRALITY))
+            outFile.write("\n# Core Area Feature Class: " + Cfg.COREFC)
+
+            outFile.write("\n# Core Area Field Name: " + Cfg.COREFN)
+            FN = str(inLinkTableFile)
+            FN = FN.replace("('", "")
+            FN = FN.replace("',)", "")
+            outFile.write("\n# Link Data Derived from: " + FN)
+                           
+                           
         outFile.close()
     except arcgisscripting.ExecuteError:
         raise_geoproc_error(__filename__)
@@ -1228,6 +1265,7 @@ def write_link_maps(linkTableFile, step):
         gp.workspace = Cfg.OUTPUTDIR
         gp.RefreshCatalog(Cfg.OUTPUTDIR)
         linktable = load_link_table(linkTableFile)
+        
         #linktable = npy.loadtxt(linkTableFile, dtype ='Float64', comments='#',
         #                    delimiter=',')
         numLinks = linktable.shape[0]
@@ -1244,7 +1282,7 @@ def write_link_maps(linkTableFile, step):
         #   linktable[:, Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] == Cfg.LT_CORR)
 
         coreLinks = linktable
-
+               
         # create coreCoords array, with geographic centers of cores
         coreCoords = npy.zeros(pointArray.shape, dtype='float64')
         coreCoords[:, 0] = pointArray[:, 2]
@@ -1252,7 +1290,7 @@ def write_link_maps(linkTableFile, step):
         coreCoords[:, 2] = pointArray[:, 1]
 
         # Create linkCoords array
-        linkCoords = npy.zeros((len(coreLinks), 12))
+        linkCoords = npy.zeros((len(coreLinks), 13))
         linkCoords[:, 0] = coreLinks[:, Cfg.LTB_LINKID]
         linkCoords[:, 1:3] = npy.sort(
             coreLinks[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1])
@@ -1260,11 +1298,12 @@ def write_link_maps(linkTableFile, step):
         linkCoords[:, 9] = coreLinks[:, Cfg.LTB_LINKTYPE]
         if step > 5:
             linkCoords[:, 10] = coreLinks[:, Cfg.LTB_EFFRESIST]
-            linkCoords[:, 11] = coreLinks[:, Cfg.LTB_CURRENT]
+            linkCoords[:, 11] = coreLinks[:, Cfg.LTB_CWDTORR]
+            linkCoords[:, 12] = coreLinks[:, Cfg.LTB_CURRENT]
         else:
             linkCoords[:, 10] = -1
             linkCoords[:, 11] = -1
-            
+            linkCoords[:, 12] = -1
             
         if len(coreLinks) > 0:
             ind = npy.lexsort((linkCoords[:, 2], linkCoords[:, 1]))
@@ -1287,7 +1326,7 @@ def write_link_maps(linkTableFile, step):
             ind = npy.argsort((linkCoords[:, 0]))  # Sort by LTB_LINKID
             linkCoords = linkCoords[ind]
 
-        coreLinksShapefile = 'sticks_s' + str(step) + '.shp'
+        coreLinksShapefile = Cfg.PREFIX + '_sticks_s' + str(step) + '.shp'
 
         file = os.path.join(gp.workspace,coreLinksShapefile)
         if gp.Exists(file):
@@ -1297,7 +1336,7 @@ def write_link_maps(linkTableFile, step):
             except:
                 dashline(1)
                 msg = ('ERROR: Could not remove shapefile ' +
-                       lcpShapefile + '. Was it open in ArcMap?\n You may '
+                       coreLinksShapefile + '. Was it open in ArcMap?\n You may '
                        'need to re-start ArcMap to release the file lock.')
                 gp.AddError(msg)
                 exit(1)
@@ -1321,6 +1360,7 @@ def write_link_maps(linkTableFile, step):
         gp.AddField_management(coreLinksShapefile, "CW_Dist", "FLOAT")
         gp.AddField_management(coreLinksShapefile, "cwd2Euc_R", "FLOAT")
         gp.AddField_management(coreLinksShapefile, "Eff_Resist", "FLOAT")
+        gp.AddField_management(coreLinksShapefile, "cwd2EffR_r", "FLOAT")
         gp.AddField_management(coreLinksShapefile, "CF_Central", "FLOAT")
         #Create an Array and Point object.
         lineArray = gp.CreateObject("Array")
@@ -1379,7 +1419,8 @@ def write_link_maps(linkTableFile, step):
                 row.SetValue("cwd2Euc_R", linkCoords[line, 4] /
                              linkCoords[line, 3])
             row.SetValue("Eff_Resist", linkCoords[line, 10])
-            row.SetValue("CF_Central", linkCoords[line, 11])
+            row.SetValue("cwd2EffR_r", linkCoords[line, 11])
+            row.SetValue("CF_Central", linkCoords[line, 12])
             
             rows.UpdateRow(row)
             row = rows.Next()
@@ -1401,6 +1442,47 @@ def write_link_maps(linkTableFile, step):
 ############################################################################
 ## File and Path Management Functions ######################################
 ############################################################################
+
+
+def move_old_results():
+    try:
+        oldFolder = Cfg.CWDBASEDIR_OLD
+        newFolder = Cfg.CWDBASEDIR
+        move_results_folder(oldFolder, newFolder)
+            
+        oldFolder = Cfg.ADJACENCYDIR_OLD
+        newFolder = Cfg.ADJACENCYDIR
+        move_results_folder(oldFolder, newFolder)            
+
+        oldFolder = Cfg.LCCBASEDIR_OLD
+        newFolder = Cfg.LCCBASEDIR
+        move_results_folder(oldFolder, newFolder) 
+
+        oldFolder = Cfg.BARRIERBASEDIR_OLD
+        newFolder = Cfg.BARRIERBASEDIR
+        move_results_folder(oldFolder, newFolder) 
+
+        oldFolder = Cfg.CIRCUITBASEDIR_OLD
+        newFolder = Cfg.CIRCUITBASEDIR
+        move_results_folder(oldFolder, newFolder) 
+        
+        oldFolder = Cfg.CENTRALITYBASEDIR_OLD 
+        newFolder = Cfg.CENTRALITYBASEDIR 
+        move_results_folder(oldFolder, newFolder) 
+
+    except:
+        raise_python_error(__filename__)
+        
+        
+def move_results_folder(oldFolder, newFolder):        
+    try:
+        if (os.path.exists(oldFolder) and not os.path.exists(newFolder)):
+            os.rename(oldFolder, newFolder)
+            #shutil.copytree(oldFolder,newFolder)
+            #shutil.rmtree(oldFolder)
+    except:
+        raise_python_error(__filename__)
+        
 
 def delete_file(file):
     try:
@@ -1472,12 +1554,20 @@ def get_prev_step_link_table(step):
 
         
         if (step == 7) or (step == 8):
-            prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
-                                             'linkTable_s7_s8.csv')
-            gp.addmessage('\nLooking for ' + prevStepLinkTable)
+            if step == 7:
+                prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
+                                             'linkTable_s8.csv')
+                gp.addmessage('\nLooking for ' + prevStepLinkTable)
 
-            if os.path.exists(prevStepLinkTable):
-                return prevStepLinkTable
+                if os.path.exists(prevStepLinkTable):
+                    return prevStepLinkTable
+            else:
+                prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
+                                             'linkTable_s7.csv')
+                gp.addmessage('\nLooking for ' + prevStepLinkTable)
+
+                if os.path.exists(prevStepLinkTable):
+                    return prevStepLinkTable
 
             prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
                                              'linkTable_s5.csv')
@@ -1494,8 +1584,6 @@ def get_prev_step_link_table(step):
                 return prevStepLinkTable
             else:
                 prevStep = 3  # Can skip steps 4 & 5
-        
-        
         
         
         if step == 6:
@@ -1563,7 +1651,7 @@ def clean_up_link_tables(step):
         filename = os.path.join(Cfg.DATAPASSDIR, 'linkTable_s7_s8.csv')
         if os.path.isfile(filename):
             os.remove(filename)
-        for stepNum in range(step, 7):
+        for stepNum in range(step, 9):
             filename = os.path.join(Cfg.DATAPASSDIR, 'linkTable_s' +
                                     str(stepNum) + '.csv')
             if os.path.isfile(filename):
@@ -1572,24 +1660,34 @@ def clean_up_link_tables(step):
         filename = os.path.join(Cfg.OUTPUTDIR, 'linkTable_final.csv')
         if os.path.isfile(filename):
             os.remove(filename)
+        filename = os.path.join(Cfg.OUTPUTDIR, Cfg.PREFIX + '_linkTable_final.csv')
+        if os.path.isfile(filename):
+            os.remove(filename)
 
+        filename = os.path.join(Cfg.OUTPUTDIR, 'linkTable_s5.csv')
+        if os.path.isfile(filename):
+            os.remove(filename)
+        filename = os.path.join(Cfg.OUTPUTDIR, Cfg.PREFIX + 'linkTable_s5.csv')
+        if os.path.isfile(filename):
+            os.remove(filename)
+            
     except arcgisscripting.ExecuteError:
         raise_geoproc_error(__filename__)
     except:
         raise_python_error(__filename__)
 
 
-def copy_final_link_maps():
+def copy_final_link_maps(step):
     """Copies final link maps from datapass to the output directory"""
     try:
-        step = 5  # This is the number of the final step
-
-        prefix = os.path.basename(Cfg.PROJECTDIR)
-        coreLinksShapefile = os.path.join(Cfg.OUTPUTDIR, 'sticks_s'
+        PREFIX = Cfg.PREFIX
+        coreLinksShapefile = os.path.join(Cfg.DATAPASSDIR, 'sticks_s'
                                           + str(step) + '.shp')
-        lcpShapefile = os.path.join(Cfg.DATAPASSDIR, "lcpLines_s" +
-                                    str(step) + ".shp")
+        lcpShapefile = os.path.join(Cfg.DATAPASSDIR, 'lcpLines_s' +
+                                    str(step) + '.shp')
 
+        if not gp.exists(Cfg.LINKMAPGDB):
+            gp.createfilegdb(Cfg.OUTPUTDIR, os.path.basename(Cfg.LINKMAPGDB))
         if gp.exists(coreLinksShapefile):
             gp.MakeFeatureLayer(coreLinksShapefile, "flinks")
             field = "Active"
@@ -1597,19 +1695,17 @@ def copy_final_link_maps():
             gp.selectlayerbyattribute("flinks", "NEW_SELECTION",
                                           expression)
 
-            activeLinksShapefile = os.path.join(Cfg.OUTPUTGDB,
-                                               prefix + '_Sticks')
+            activeLinksShapefile = os.path.join(Cfg.LINKMAPGDB,
+                                               PREFIX + '_Sticks')
             gp.CopyFeatures_management("flinks", activeLinksShapefile)
 
             expression = field + " = " + str(0)
             gp.selectlayerbyattribute("flinks", "NEW_SELECTION",
                                           expression)
-            inActiveLinksShapefile = os.path.join(Cfg.OUTPUTGDB,
-                                                  prefix + '_Inactive_Sticks')
+            inActiveLinksShapefile = os.path.join(Cfg.LINKMAPGDB,
+                                                  PREFIX + '_Inactive_Sticks')
             gp.CopyFeatures_management("flinks", inActiveLinksShapefile)
 
-            #move_map(coreLinksShapefile,activeLinksShapefile)
-            #copy_map(activeLinksShapefile,inActiveLinksShapefile)
 
         if gp.exists(lcpShapefile):
             gp.MakeFeatureLayer(lcpShapefile, "flcp")
@@ -1617,31 +1713,31 @@ def copy_final_link_maps():
             expression = field + " = " + str(1)
             gp.selectlayerbyattribute("flcp", "NEW_SELECTION", expression)
 
-            activeLcpShapefile = os.path.join(Cfg.OUTPUTGDB, 
-                                              prefix + '_LCPs')
+            activeLcpShapefile = os.path.join(Cfg.LINKMAPGDB, 
+                                              PREFIX + '_LCPs')
             gp.CopyFeatures_management("flcp", activeLcpShapefile)
 
             expression = field + " = " + str(0)
             gp.selectlayerbyattribute("flcp", "NEW_SELECTION", expression)
-            inActiveLcpShapefile = os.path.join(Cfg.OUTPUTGDB,
-                                               prefix + '_Inactive_LCPs')
+            inActiveLcpShapefile = os.path.join(Cfg.LINKMAPGDB,
+                                               PREFIX + '_Inactive_LCPs')
             gp.CopyFeatures_management("flcp", inActiveLcpShapefile)
 
         # Move stick and lcp maps for each step to log directory to reduce
         # clutter in output
-        for i in range(2, 6):
-            oldLinkFile = os.path.join(Cfg.OUTPUTDIR, 'sticks_s' + str(i) +
-                                       '.shp')
-            logLinkFile = os.path.join(Cfg.LOGDIR, 'sticks_s' + str(i) +
-                                       '.shp')
+        for i in range(2, 9):
+            oldLinkFile = os.path.join(Cfg.OUTPUTDIR, PREFIX + '_sticks_s' 
+                                        + str(i) + '.shp')
+            logLinkFile = os.path.join(Cfg.LOGDIR, PREFIX + '_sticks_s' 
+                                        + str(i) + '.shp')
             if gp.exists(oldLinkFile):
                 try:
                     move_map(oldLinkFile, logLinkFile)
                 except:
                     pass
-            oldLcpShapeFile = os.path.join(Cfg.OUTPUTDIR, 'lcpLines_s'
+            oldLcpShapeFile = os.path.join(Cfg.OUTPUTDIR, PREFIX + '_lcpLines_s'
                                            + str(i) + '.shp')
-            logLcpShapeFile = os.path.join(Cfg.LOGDIR, 'lcpLines_s' +
+            logLcpShapeFile = os.path.join(Cfg.LOGDIR, PREFIX + '_lcpLines_s' +
                                            str(i) + '.shp')
             if gp.exists(oldLcpShapeFile):
                 try:
