@@ -1,10 +1,13 @@
+# copy STICKS to output gdb
 # copy datapass/cores to outputgdb
+#
 #set pinchpoint 0 current to nodata?
 
 #option 1 = centrality?
 # Comment code
 # Update demo
 
+#barriers- allow map units or pixels?
 # is it open in arcmap message
 #Divide centrality by # cores?
 # separate tools, and then a single all-in-one?
