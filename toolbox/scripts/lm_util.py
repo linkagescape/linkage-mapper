@@ -1681,7 +1681,7 @@ def copy_final_link_maps(step):
     """Copies final link maps from datapass to the output directory"""
     try:
         PREFIX = Cfg.PREFIX
-        coreLinksShapefile = os.path.join(Cfg.DATAPASSDIR, 'sticks_s'
+        coreLinksShapefile = os.path.join(Cfg.OUTPUTDIR, PREFIX + '_sticks_s'
                                           + str(step) + '.shp')
         lcpShapefile = os.path.join(Cfg.DATAPASSDIR, 'lcpLines_s' +
                                     str(step) + '.shp')
