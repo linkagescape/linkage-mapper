@@ -108,7 +108,10 @@ def lm_master():
             s4.STEP4_refine_network()
         if Cfg.STEP5:
             s5.STEP5_calc_lccs()
-
+        
+        # Clean up
+        lu.delete_dir(Cfg.SCRATCHDIR)
+        
         Cfg.gp.addmessage('\nDONE!\n')
 
     # Return GEOPROCESSING specific errors

@@ -307,8 +307,7 @@ def STEP5_calc_lccs():
         # scratch.
         lu.copy_final_link_maps(step=5)
 
-        # Clean up
-        lu.delete_dir(Cfg.SCRATCHDIR)
+        
         if not Cfg.SAVENORMLCCS:
             lu.delete_dir(Cfg.LCCBASEDIR)
 

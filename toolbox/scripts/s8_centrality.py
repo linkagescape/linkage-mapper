@@ -1,6 +1,10 @@
-# copy STICKS to output gdb
-# copy datapass/cores to outputgdb
-#
+# add check for ID as field name.  Disallow.
+
+
+#Factorial least cost paths? (Consider all cores adjacent, add pixels)
+
+#centrality- copy datapass/cores to outputgdb
+
 #set pinchpoint 0 current to nodata?
 
 #option 1 = centrality?
@@ -8,6 +12,7 @@
 # Update demo
 
 #barriers- allow map units or pixels?
+# allow arbitrary resistance of restored habitat
 # is it open in arcmap message
 #Divide centrality by # cores?
 # separate tools, and then a single all-in-one?
@@ -24,7 +29,7 @@
 #UPDATE CIRCUITSCAPE WITH VIRAL'S NEW GAPDT
 # Update circuitscape with multi component code
 
-# global current flow? i.e. all pairs with raster?
+# global current flow? i.e. all pairs of cores with raster?
 
 #!/usr/bin/env python2.5
 
