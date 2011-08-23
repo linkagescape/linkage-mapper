@@ -38,6 +38,11 @@ def lm_master():
             Cfg.gp.RefreshCatalog(Cfg.OUTPUTDIR)
         
         # Delete final ouptut geodatabase
+        if Cfg.gp.Exists(Cfg.OUTPUTGDB_OLD) and Cfg.STEP5:
+            try:
+                Cfg.gp.delete_management(Cfg.OUTPUTGDB_OLD)
+            except:
+                pass
         if Cfg.gp.Exists(Cfg.OUTPUTGDB) and Cfg.STEP5:
             Cfg.gp.addmessage('Deleting geodatabase ' + Cfg.OUTPUTGDB)
             try:
@@ -50,6 +55,22 @@ def lm_master():
                 Cfg.gp.AddError(msg)
                 exit(1)
 
+        # Delete final link map geodatabase
+        if Cfg.gp.Exists(Cfg.LINKMAPGDB) and Cfg.STEP5:
+            Cfg.gp.addmessage('Deleting geodatabase ' + Cfg.LINKMAPGDB)
+            try:
+                Cfg.gp.delete_management(Cfg.LINKMAPGDB)
+            except:
+                lu.dashline(1)
+                msg = ('ERROR: Could not remove geodatabase ' +
+                       Cfg.LINKMAPGDB + '. Is it open in ArcMap?\n You may '
+                       'need to re-start ArcMap to release the file lock.')
+                Cfg.gp.AddError(msg)
+                exit(1)
+                
+                
+                
+                
         def createfolder(lmfolder):
             """Creates folder if it doesn't exist."""
             if not path.exists(lmfolder):
@@ -73,6 +94,9 @@ def lm_master():
             firststep = 5
         lu.clean_up_link_tables(firststep)
 
+        # Move adj and cwd results from earlier versions to datapass directory
+        lu.move_old_results()
+
         # Run linkage mapper processing steps
         if Cfg.STEP1:
             s1.STEP1_get_adjacencies()
@@ -84,7 +108,10 @@ def lm_master():
             s4.STEP4_refine_network()
         if Cfg.STEP5:
             s5.STEP5_calc_lccs()
-
+        
+        # Clean up
+        lu.delete_dir(Cfg.SCRATCHDIR)
+        
         Cfg.gp.addmessage('\nDONE!\n')
 
     # Return GEOPROCESSING specific errors

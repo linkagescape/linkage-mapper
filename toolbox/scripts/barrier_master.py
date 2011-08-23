@@ -10,7 +10,7 @@ Numpy
 """
 
 __filename__ = "barrier_master.py"
-__version__ = "BARRIER TEST"
+__version__ = "0.6.4"
 
 import os.path as path
 import arcgisscripting
@@ -19,12 +19,16 @@ import lm_util as lu
 import s6_barriers as s6 
 
 def bar_master():
-    """
+    """ Experimental code to detect barriers using cost-weighted distance
+    outputs from Linkage Mapper tool.
     
     """
     try:
         Cfg.gp.RefreshCatalog(Cfg.OUTPUTDIR)
         
+        # Move adj and cwd results from earlier versions to datapass directory
+        lu.move_old_results()
+
         # Delete final ouptut geodatabase
         if Cfg.gp.Exists(Cfg.BARRIERGDB): 
             Cfg.gp.addmessage('Deleting geodatabase ' + Cfg.BARRIERGDB)
