@@ -92,32 +92,40 @@ class Config():
     else:
         TOOL = 'pinchpoint_mapper'
         PROJECTDIR = sys.argv[1]  # Project directory
-        DOPINCH = str2bool(sys.argv[2])
-        RESRAST = sys.argv[3]
-        CWDCUTOFF = sys.argv[4] # To clip resistance rasters for Circuitscape
-        SQUARERESISTANCES = str2bool(sys.argv[5]) # Square resistance values 
-        DOCENTRALITY = str2bool(sys.argv[6])
-        COREFC = sys.argv[7]
-        COREFN = sys.argv[8]
+        COREFC = sys.argv[2]
+        COREFN = sys.argv[3]
+        DOPINCH = str2bool(sys.argv[4])
+        RESRAST = sys.argv[5]
+        CWDCUTOFF = sys.argv[6] # To clip resistance rasters for Circuitscape
+        SQUARERESISTANCES = str2bool(sys.argv[7]) # Square resistance values 
+        DOCENTRALITY = str2bool(sys.argv[8])
     # Ouput directory paths & folder names
+    PREFIX = path.basename(PROJECTDIR)
     OUTPUTDIR = path.join(PROJECTDIR, "output")
     SCRATCHDIR = path.join(PROJECTDIR, "scratch")
     LOGDIR = path.join(PROJECTDIR, "log")
     DATAPASSDIR = path.join(PROJECTDIR, "datapass")
-    ADJACENCYDIR = path.join(PROJECTDIR, "adj")
-    CWDBASEDIR = path.join(PROJECTDIR, "cwd")
+    ADJACENCYDIR = path.join(DATAPASSDIR, "adj")
+    ADJACENCYDIR_OLD = path.join(PROJECTDIR, "adj")
+    CWDBASEDIR = path.join(DATAPASSDIR, "cwd")
+    CWDBASEDIR_OLD = path.join(PROJECTDIR, "cwd")
     CWDSUBDIR_NM = "cw"
-    LCCBASEDIR = path.join(PROJECTDIR, "nlcc")
+    LCCBASEDIR = path.join(DATAPASSDIR, "nlcc")
+    LCCBASEDIR_OLD = path.join(PROJECTDIR, "nlcc")
     LCCNLCDIR_NM = "nlc"
     LCCMOSAICDIR = path.join(LCCBASEDIR, "mosaic")
     FOCALSUBDIR1_NM = "focalr"
     FOCALSUBDIR2_NM = "f"
     FOCALGRID_NM = "focal"
-    BARRIERBASEDIR = path.join(PROJECTDIR, "barrier")
+    BARRIERBASEDIR = path.join(DATAPASSDIR, "barrier")
+    BARRIERBASEDIR_OLD = path.join(PROJECTDIR, "barrier")    
     BARRIERDIR_NM = "bar"
     BARRIERMOSAICDIR = "mosaic"
-    CIRCUITBASEDIR = path.join(PROJECTDIR, "pinchpoints")
-    CENTRALITYBASEDIR = path.join(PROJECTDIR, "centrality")
+    CIRCUITBASEDIR = path.join(DATAPASSDIR, "pinchpoints")
+    CIRCUITBASEDIR_OLD = path.join(PROJECTDIR, "pinchpoints")
+    CENTRALITYBASEDIR = path.join(DATAPASSDIR, "centrality")
+    CENTRALITYBASEDIR_OLD = path.join(PROJECTDIR, "centrality")
+
     CIRCUITCONFIGDIR_NM = "config"
     CIRCUITOUTPUTDIR_NM =  "output"
         
@@ -130,11 +138,13 @@ class Config():
     SAVEBARRIERRASTERS = False # Save individual barrier grids
     SAVECURRENTMAPS = False# Save individual current maps from Circuitscape
     FCORES = "fcores"
-    OUTPUTGDB = path.join(OUTPUTDIR, "linkages.gdb")
+    OUTPUTGDB = path.join(OUTPUTDIR, "corridors.gdb")
+    OUTPUTGDB_OLD = path.join(OUTPUTDIR, "linkages.gdb")
     CWDGDB = path.join(OUTPUTDIR,"cwd.gdb")
+    LINKMAPGDB = path.join(OUTPUTDIR,"link_maps.gdb")
     BARRIERGDB = path.join(OUTPUTDIR, "barriers.gdb")
     PINCHGDB = path.join(OUTPUTDIR, "pinchpoints.gdb")
-    CENTRALITYGDB = path.join(OUTPUTDIR, "centrality.gdb")
+    CORECENTRALITYGDB = path.join(OUTPUTDIR, "core_centrality.gdb")
     BNDCIRCEN = "boundingCircleCenter.shp"
     BNDCIR = "boundingCircle.shp"
     
@@ -154,7 +164,8 @@ class Config():
     LTB_CWDEUCR = 11
     LTB_CWDPATHR = 12
     LTB_EFFRESIST = 13
-    LTB_CURRENT = 14
+    LTB_CWDTORR = 14
+    LTB_CURRENT = 15
     
     # Linkage type values (NOTE- these map to codes in get_linktype_desc)
     LT_CPLK = -1  # Not_nearest N neighbors
