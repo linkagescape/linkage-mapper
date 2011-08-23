@@ -111,10 +111,10 @@ def STEP1_get_adjacencies():
             cwadjacency()
         if Cfg.S1ADJMETH_EU:
             euadjacency()
+        
             
         # Clean up
         lu.delete_data(S1CORE_RAS)
-        lu.delete_data(outDistanceRaster)
             
 
     # Return GEOPROCESSING specific errors
@@ -142,7 +142,7 @@ def cwadjacency():
         gprint('\nCalculating cost-weighted distance adjacency')
         outcsvfile = path.join(Cfg.DATAPASSDIR, "cwdAdj.csv")
         outcsvLogfile = path.join(Cfg.LOGDIR, "cwdAdj_STEP1.csv")
-        prefix = path.basename(Cfg.PROJECTDIR)
+        PREFIX = Cfg.PREFIX
         
         # May need to set extent prior to core poly to raster conversion...
         # ----------------------------------------------
@@ -184,9 +184,8 @@ def cwadjacency():
         gp.workspace = Cfg.ADJACENCYDIR
         gp.scratchworkspace = gp.workspace
 
-        # fixme: put this in geodatabase instead
         gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.CWDGDB))
-        outDistanceRaster = path.join(Cfg.CWDGDB, prefix + "_cwd")
+        outDistanceRaster = path.join(Cfg.CWDGDB, PREFIX + "_cwd")
         alloc_ras = path.join(Cfg.ADJACENCYDIR, alloc_rasFN)
         s1core_ras_path = path.join(Cfg.SCRATCHDIR, S1CORE_RAS)
         count = 0
@@ -208,7 +207,10 @@ def cwadjacency():
         start_time = lu.elapsed_time(start_time)
         adjshiftwrite(alloc_ras, outcsvfile, outcsvLogfile)
 
-    # Return GEOPROCESSING specific errors
+        # Clean up
+        lu.delete_data(outDistanceRaster)
+
+        # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
@@ -285,6 +287,9 @@ def euadjacency():
         start_time = lu.elapsed_time(start_time)
         gp.extent = oldextent
         adjshiftwrite(alloc_ras, outcsvfile, outcsvLogfile)
+
+        # Clean up
+        lu.delete_data(outDistanceRaster)
 
     
      # Return GEOPROCESSING specific errors
