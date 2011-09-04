@@ -34,6 +34,14 @@ def lm_master():
 
     """
     try:
+        if Cfg.COREFN == 'FID' or Cfg.COREFN == 'ID':
+            lu.dashline(1)
+            msg = ('ERROR: Core area field name "ID" and "FID" are reserved '
+                    'for ArcGIS. Please choose another field- must be a '
+                    'positive integer.')
+            Cfg.gp.AddError(msg)
+            exit(1)
+       
         if Cfg.gp.Exists(Cfg.OUTPUTDIR):
             Cfg.gp.RefreshCatalog(Cfg.OUTPUTDIR)
         
@@ -108,7 +116,10 @@ def lm_master():
             s4.STEP4_refine_network()
         if Cfg.STEP5:
             s5.STEP5_calc_lccs()
-
+        
+        # Clean up
+        lu.delete_dir(Cfg.SCRATCHDIR)
+        
         Cfg.gp.addmessage('\nDONE!\n')
 
     # Return GEOPROCESSING specific errors

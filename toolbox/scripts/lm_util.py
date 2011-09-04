@@ -711,8 +711,8 @@ def make_points(workspace, pointArray, outFC):
                 row.SetValue(Cfg.COREFN, float(pointArray[i, 2]))
 
             rows.InsertRow(row)
-        del row
-        del point
+            del row
+            del point
         del rows
         gp.workspace = wkspbefore
 
@@ -786,13 +786,22 @@ def create_lcp_shapefile(linktable, sourceCore, targetCore, lcpLoop, SR):
             row = rows.Next()
         del row, rows
 
-        distRatio1 = (float(linktable[link, Cfg.LTB_CWDIST])
-                      / float(linktable[link, Cfg.LTB_EUCDIST]))
+        try:
+            distRatio1 = (float(linktable[link, Cfg.LTB_CWDIST])
+                        / float(linktable[link, Cfg.LTB_EUCDIST]))
+        except ZeroDivisionError:
+            distRatio1 = -1
+            
         gp.AddField_management(lcplineDslv, "cwd2Euc_R", "DOUBLE", "10",
                                    "2")
         gp.CalculateField_management(lcplineDslv, "cwd2Euc_R", distRatio1)
 
-        distRatio2 = float(linktable[link, Cfg.LTB_CWDIST]) / float(lcpLength)
+        try:
+            distRatio2 = (float(linktable[link, Cfg.LTB_CWDIST]) 
+                        / float(lcpLength))
+        except ZeroDivisionError:
+            distRatio2 = -1
+            
         gp.AddField_management(lcplineDslv, "cwd2Path_R", "DOUBLE", "10",
                                    "2")
         gp.CalculateField_management(lcplineDslv, "cwd2Path_R", distRatio2)
