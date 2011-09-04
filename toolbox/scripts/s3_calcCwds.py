@@ -20,14 +20,39 @@ import numpy as npy
 
 from lm_config import Config as Cfg
 import lm_util as lu
-
+            
 gp = Cfg.gp
 gprint = gp.addmessage
-
+   
 BNDCIRCENS = "boundingCircleCenters.shp"
 BNDCIRS = "boundingCircles.shp"
 BNDFC = "boundingFeature.shp"
 ZNSTATS = path.join(Cfg.SCRATCHDIR, "zonestats.dbf")
+
+def write_cores_to_map(x, coresToMap):
+    """ save core list at start of loop to allow a run to be re-started 
+        if it fails.
+        
+    """
+    try:
+        coreListFile = path.join(Cfg.SCRATCHDIR, "temp_cores_to_map.csv")
+        outFile = open(coreListFile, "w")
+        outFile.write("#INDEX of last core being processed:\n")
+        outFile.write(str(int(x)))
+        outFile.write("\n")
+        outFile.write("#Full list of IDs of cores to be processed:\n")
+        for coreToMap in range(len(coresToMap)):
+            outFile.write(str(int(coresToMap[coreToMap])))
+            outFile.write("\n")
+        outFile.close()
+    
+    # Return any PYTHON or system specific errors
+    except:
+        lu.dashline(1)
+        gprint('****Failed in step 3. Details follow.****')
+        lu.raise_python_error(__filename__)
+
+    
 
 def STEP3_calc_cwds():
     """Calculates cost-weighted distances from each core area.
@@ -36,11 +61,20 @@ def STEP3_calc_cwds():
 
     """
     try:
+            
         lu.dashline(1)
         gprint('Running script ' + __filename__)
         gp.scratchWorkspace = Cfg.SCRATCHDIR
-        linkTableFile = lu.get_prev_step_link_table(step=3)
+        lu.dashline(0)
 
+        # Super secret setting to re-start failed run.  Enter 'RESTART' as the
+        # Name of the pairwise distance table in step 2, and uncheck step 2.
+        # We can eventually place this in a .ini file.
+        if Cfg.S2EUCDISTFILE == "RESTART": 
+            rerun = True 
+        else:
+            rerun = False        
+             
         if Cfg.TMAXCWDIST is None:
            	gprint('NOT using a maximum cost-weighted distance.')
         else:
@@ -67,44 +101,21 @@ def STEP3_calc_cwds():
         SR = gp.describe(Cfg.COREFC).SpatialReference
 
         # Load linkTable (created in previous script)
+        linkTableFile = lu.get_prev_step_link_table(step=3)
         linkTable = lu.load_link_table(linkTableFile)
         lu.report_links(linkTable)
 
         rows,cols = npy.where(
             linkTable[:, Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] == Cfg.LT_CORR)
-        coresToProcess = npy.unique(linkTable[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1])
+        coresToProcess = npy.unique(
+            linkTable[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1])
         maxCoreNum = max(coresToProcess)
         del rows, cols, coresToProcess
 
-        # Set up cwd directories.
-        # To keep there from being > 100 grids in any one directory,
-        # outputs are written to:
-        # cwd\cw for cores 1-99
-        # cwd\cw1 for cores 100-199
-        # etc.
-        if path.exists(Cfg.CWDBASEDIR):
-            shutil.rmtree(Cfg.CWDBASEDIR)
-        # lu.dashline(1)
-        gprint("\nCreating cost-weighted distance grid output folders"
-                          ":")
-        gprint(path.join(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM))
-        gp.CreateFolder_management(path.dirname(Cfg.CWDBASEDIR),
-                                       path.basename(Cfg.CWDBASEDIR))
-        gp.CreateFolder_management(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM)
-        if maxCoreNum > 100:
-            maxDirCount = int(maxCoreNum/100)
-            for dirCount in range(1, maxDirCount + 1):
-                ccwdir = Cfg.CWDSUBDIR_NM + str(dirCount)
-                gprint(ccwdir)
-                gp.CreateFolder_management(Cfg.CWDBASEDIR, ccwdir)
-        # lu.dashline(2)
-
-        # make a feature layer for input cores to select from
-        gp.MakeFeatureLayer(Cfg.COREFC, Cfg.FCORES)
-
+        
         # Identify cores to map from LinkTable
-        rows,cols = npy.where(linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] ==
-                          Cfg.LT_CORR)
+        rows,cols = npy.where(linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE+1] 
+                              == Cfg.LT_CORR)
         coresToMap = npy.unique(linkTable[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1])
         numCoresToMap = len(coresToMap)
         del rows,cols
@@ -115,7 +126,57 @@ def STEP3_calc_cwds():
             Cfg.S3DROPLCCSic = Cfg.S3DROPLCCS
 
         gprint('Number of core areas to connect:' +
-                          str(numCoresToMap))
+                          str(numCoresToMap))        
+        
+        if rerun == True: 
+            # If picking up a failed run, make sure needed files are there
+            lu.dashline(1)
+            gprint ('\n**** RESTART MODE ENABLED ****\n')   
+            gprint ('**** WARNING: This mode picks up step 3 where\n'
+                    'a previous run left off due to a crash or\n' 
+                    'user abort.  It assumes you are using exactly\n' 
+                    'the same settings as the terminated run.****\n')
+            lu.dashline(0)
+            time.sleep(20)
+            savedLinkTableFile = path.join(Cfg.SCRATCHDIR, 
+                                           "temp_linkTable_s3_partial.csv")
+            coreListFile = path.join(Cfg.SCRATCHDIR, "temp_cores_to_map.csv")
+
+            if not path.exists(savedLinkTableFile) or not path.exists(
+                                                          savedLinkTableFile):
+                
+                gprint('No partial results file found from previous '
+                       'stopped run. Starting run from beginning.\n')
+                lu.dashline(0)
+                rerun = False
+                
+
+        if rerun == False: # If picking up a failed run, use old folders
+            startIndex = 0
+            if path.exists(Cfg.CWDBASEDIR):
+                shutil.rmtree(Cfg.CWDBASEDIR)
+
+            # Set up cwd directories.
+            # To keep there from being > 100 grids in any one directory,
+            # outputs are written to:
+            # cwd\cw for cores 1-99
+            # cwd\cw1 for cores 100-199
+            # etc.
+
+            gprint("\nCreating cost-weighted distance output folders:")
+            gprint(path.join(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM))
+            gp.CreateFolder_management(path.dirname(Cfg.CWDBASEDIR),
+                                           path.basename(Cfg.CWDBASEDIR))
+            gp.CreateFolder_management(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM)
+            if maxCoreNum > 100:
+                maxDirCount = int(maxCoreNum/100)
+                for dirCount in range(1, maxDirCount + 1):
+                    ccwdir = Cfg.CWDSUBDIR_NM + str(dirCount)
+                    gprint(ccwdir)
+                    gp.CreateFolder_management(Cfg.CWDBASEDIR, ccwdir)
+                        
+        # make a feature layer for input cores to select from
+        gp.MakeFeatureLayer(Cfg.COREFC, Cfg.FCORES)
 
         # Drop links that are too long
         gprint('\nChecking for corridors that are too long to map.')
@@ -180,8 +241,8 @@ def STEP3_calc_cwds():
                             lu.get_bounding_circle_data(extentBoxList,
                             corex, corey, Cfg.BUFFERDIST))
                         boundingCirclePointArray = (
-                            npy.append(boundingCirclePointArray,circlePointData,
-                            axis=0))
+                            npy.append(boundingCirclePointArray,
+                            circlePointData, axis=0))
                         # keep track of which cores we draw bounding circles
                         # around
                         circleList = npy.append(circleList, cores, axis=0)
@@ -262,14 +323,31 @@ def STEP3_calc_cwds():
                 count,tryAgain = lu.hiccup_test(count,statement)
                 if not tryAgain: exec statement
             else: break
+          
+                
+        if rerun == True:
+            # saved linktable replaces the one now in memory
+            linkTable = lu.load_link_table(savedLinkTableFile) 
+            coresToMapSaved = npy.loadtxt(coreListFile, dtype='Float64',
+                                          comments='#', delimiter=',')        
+            startIndex = coresToMapSaved[0] # Index of core where we left off
+            del coresToMapSaved
+            gprint ('\n****** Re-starting run at core area number ' 
+                    + str(int(coresToMap[startIndex]))+ ' ******\n')
+            lu.dashline(0)            
+            
+            
         gp.extent = "MINOF"
 
         #----------------------------------------------------------------------
         # Loop through cores, do cwd calcs for each
         gprint("\nStarting cost distance calculations.\n")
         lcpLoop = 0
-        for x in range(len(coresToMap)):
-            startTime1 = time.clock()
+
+        for x in range(startIndex, len(coresToMap)):              
+            startTime1 = time.clock()    
+            write_cores_to_map(x, coresToMap)             
+
             # This is the focal core we're running cwd out from
             sourceCore = int(coresToMap[x])
 
@@ -318,7 +396,7 @@ def STEP3_calc_cwds():
 
                         cores_x_y = str(int(corex))+'_'+str(int(corey))
                         field = "cores_x_y"
-                        # fixme: need to check for case where link is not found.
+                        # fixme: need to check for case where link is not found
                         gp.SelectLayerByAttribute(
                             "fGlobalBoundingFeat", "ADD_TO_SELECTION", field +
                             " = '" + cores_x_y + "'")
@@ -351,6 +429,7 @@ def STEP3_calc_cwds():
                 else:
                     bResistance = boundResis
 
+      
                 # ---------------------------------------------------------
                 # CWD Calculations
                 outDistanceRaster = lu.get_cwd_path(sourceCore)
@@ -375,22 +454,21 @@ def STEP3_calc_cwds():
                 count = 0
                 statement = ('gp.CostDistance_sa(SRCRASTER, bResistance, '
                              'outDistanceRaster, Cfg.TMAXCWDIST, "BACK")')
+                             
                 while True:
                     try: exec statement
                     except:
                         count, tryAgain = lu.hiccup_test(count, statement)
                         if not tryAgain: exec statement
                     else: break
-                # gprint('Cost distances for source core ' +
-                              # str(int(sourceCore)) + ' calculated.')
-                # start_time = lu.elapsed_time(start_time)
+
                 start_time = time.clock()
                 # Extract cost distances from source core to target cores
                 # Fixme: there will be redundant calls to b-a when already
                 # done a-b
                 # gprint('Getting least cost distances from source '
-                                  # 'core #' + str(int(sourceCore)) + ' to ' +
-                                  # str(len(targetCores)) + ' potential targets')
+                            # 'core #' + str(int(sourceCore)) + ' to ' +
+                            # str(len(targetCores)) + ' potential targets')
                 count = 0
                 statement = ('gp.zonalstatisticsastable_sa(s3core_ras, '
                              '"VALUE", outDistanceRaster, ZNSTATS)')
@@ -457,9 +535,14 @@ def STEP3_calc_cwds():
                             # Cost path allows us to map the least cost path
                             # between source and target
                             count = 0
+                            # statement = ('gp.CostPath_sa(TARGETRASTER, '
+                                        # 'outDistanceRaster, "BACK",  "lcp", '
+                                        # '"BEST_SINGLE", "")')
+                                        
                             statement = ('gp.CostPath_sa(TARGETRASTER, '
-                                        'outDistanceRaster, "BACK",  "lcp", '
-                                        '"BEST_SINGLE", "")')
+                                        'outDistanceRaster, backraster,  '
+                                        '"lcp", "BEST_SINGLE", "")')
+                                        
                             try:
                                 exec statement
                             except:
@@ -471,10 +554,12 @@ def STEP3_calc_cwds():
                             # Not picked up by above cwd calc code
                             if (Cfg.MAXCOSTDIST is not None
                                 and linkTable[link,Cfg.LTB_CWDIST] == -1):
-                                gprint('Cost path failed- should '
-                                                  'not have gotten to this '
-                                                  'point?')
-                                continue
+                                msg = ("Cost path failed.  Should not have "
+                                       "gotten to this point. Link "
+                                       "#" + str(int(link)) +
+                                       ".\nThis is mysterious.  "
+                                       "Please report error.\n")
+
                             else:
                                 lu.dashline(1)
                                 msg = ("Error in COST PATH function for link "
@@ -523,7 +608,7 @@ def STEP3_calc_cwds():
                                     "least-cost path between cores " +
                                     str(int(sourceCore)) + " and " +
                                     str(int(targetCore)) + ".  The corridor "
-                                    "will be removed.\n")
+                                    "will be removed.")
                                 # disable link
                                 linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_INT
                             # -------------------------------------------------
@@ -538,14 +623,21 @@ def STEP3_calc_cwds():
                 # endTime = time.clock()
                 # processTime = round((endTime - start_time), 2)
                 # gprint('Intermediate core checks and LCP shapefiles'
-                                  # ' for core #' + str(sourceCore) + ' took ' +
-                                  # str(processTime) + ' seconds.')
+                                  # ' for core #' + str(sourceCore) + ' took '
+                                  # + str(processTime) + ' seconds.')
                 # -----------------------------------------------------------
 
 
                 gprint('Done with all calculations for core #' +
                                   str(sourceCore) + '.')
                 start_time = lu.elapsed_time(startTime1)
+  
+                outlinkTableFile = path.join(Cfg.SCRATCHDIR, 
+                                             "temp_linkTable_s3_partial.csv")
+                lu.write_link_table(linkTable, outlinkTableFile)
+                # if x == 3:
+                    # blarg
+                    
             # -----------------------------------------------------------
 
         # reinstate temporarily disabled links
@@ -575,10 +667,10 @@ def STEP3_calc_cwds():
 
         gprint('\nIndividual cost-weighted distance layers written '
                           'to "cwd" directory. \n')
-        gprint(
-            outlinkTableFile + '\n updated with cost-weighted distances between '
-            'core areas.')
+        gprint(outlinkTableFile + 
+                '\n updated with cost-weighted distances between core areas.')
 
+    
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
