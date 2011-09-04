@@ -535,13 +535,13 @@ def STEP3_calc_cwds():
                             # Cost path allows us to map the least cost path
                             # between source and target
                             count = 0
-                            # statement = ('gp.CostPath_sa(TARGETRASTER, '
-                                        # 'outDistanceRaster, "BACK",  "lcp", '
-                                        # '"BEST_SINGLE", "")')
-                                        
                             statement = ('gp.CostPath_sa(TARGETRASTER, '
-                                        'outDistanceRaster, backraster,  '
-                                        '"lcp", "BEST_SINGLE", "")')
+                                        'outDistanceRaster, "BACK",  "lcp", '
+                                        '"BEST_SINGLE", "")')
+                                        
+                            #statement = ('gp.CostPath_sa(TARGETRASTER, '
+                             #           'outDistanceRaster, backraster,  '
+                              #          '"lcp", "BEST_SINGLE", "")')
                                         
                             try:
                                 exec statement
