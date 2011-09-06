@@ -151,7 +151,7 @@ def rpycallgraph(cgodir, cgdatetime, cgmainm):
     """"Run pycallgraph"""
     print "Creating call graph using pycallgraph"
     opycall = os.path.join(cgodir, "pycallgraph" + cgdatetime + ".png")
-    call("pycallgraph.py -o " + opycall + " " + cgmainm, shell=True)
+    call("pycallgraph -o " + opycall + " " + cgmainm, shell=True)
 
 
 def rrunsnake(rspfile):
