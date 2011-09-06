@@ -491,13 +491,11 @@ def STEP3_calc_cwds():
                             if Cfg.MAXCOSTDIST is not None:
                                 if tableRow.Min > Cfg.MAXCOSTDIST:
                                      # Disable link, it's too long
-                                    linkTable[link,Cfg.LTB_LINKTYPE] = 
-                                              Cfg.LT_TLLC
+                                    linkTable[link,Cfg.LTB_LINKTYPE] = Cfg.LT_TLLC
                             if Cfg.MINCOSTDIST is not None:
                                 if tableRow.Min < Cfg.MINCOSTDIST:
                                     # Disable link, it's too short
-                                    linkTable[link,Cfg.LTB_LINKTYPE] = 
-                                              Cfg.LT_TSLC
+                                    linkTable[link,Cfg.LTB_LINKTYPE] = Cfg.LT_TSLC
                     tableRow = tableRows.next()
                 del tableRow, tableRows
                 #start_time = lu.elapsed_time(start_time)
@@ -537,13 +535,13 @@ def STEP3_calc_cwds():
                             # Cost path allows us to map the least cost path
                             # between source and target
                             count = 0
-                            # statement = ('gp.CostPath_sa(TARGETRASTER, '
-                                        # 'outDistanceRaster, "BACK",  "lcp", '
-                                        # '"BEST_SINGLE", "")')
-                                        
                             statement = ('gp.CostPath_sa(TARGETRASTER, '
-                                        'outDistanceRaster, backraster,  '
-                                        '"lcp", "BEST_SINGLE", "")')
+                                        'outDistanceRaster, "BACK",  "lcp", '
+                                        '"BEST_SINGLE", "")')
+                                        
+                            #statement = ('gp.CostPath_sa(TARGETRASTER, '
+                             #           'outDistanceRaster, backraster,  '
+                              #          '"lcp", "BEST_SINGLE", "")')
                                         
                             try:
                                 exec statement

@@ -1,5 +1,5 @@
 # add check for ID as field name.  Disallow.
-
+#convert core field name to short integer, at least in rasterized version
 
 #Factorial least cost paths? (Consider all cores adjacent, add pixels)
 
@@ -72,7 +72,14 @@ def STEP8_calc_centrality():
             
         gp.workspace = Cfg.SCRATCHDIR
 
-        
+        if Cfg.COREFN == 'FID' or Cfg.COREFN == 'ID':
+            lu.dashline(1)
+            msg = ('ERROR: Core area field name "ID" and "FID" are reserved '
+                    'for ArcGIS. Please choose another field- must be a '
+                    'positive integer.')
+            Cfg.gp.AddError(msg)
+            exit(1)
+
         # set the analysis extent and cell size to that of the resistance
         # surface
         coreCopy =  path.join(Cfg.DATAPASSDIR, 
