@@ -635,8 +635,6 @@ def STEP3_calc_cwds():
                 outlinkTableFile = path.join(Cfg.SCRATCHDIR, 
                                              "temp_linkTable_s3_partial.csv")
                 lu.write_link_table(linkTable, outlinkTableFile)
-                # if x == 3:
-                    # blarg
                     
             # -----------------------------------------------------------
 

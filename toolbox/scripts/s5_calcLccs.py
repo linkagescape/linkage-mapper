@@ -216,34 +216,44 @@ def STEP5_calc_lccs():
                     exec statement
             else: break
 
-        # ---------------------------------------------------------------------
-        # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
-        # to NODATA.
-        truncRaster = "lcc_mosaic_100k_max"
-        expression = ("(" + mosaicRaster + " * (con(" + mosaicRaster + "<= " +
-                      str(Cfg.CWDTHRESH) + ",1)))")
-        count = 0
-        statement = 'gp.SingleOutputMapAlgebra_sa(expression, truncRaster)'
-        while True:
-            try: exec statement
-            except:
-                count,tryAgain = lu.hiccup_test(count,statement)
-                if not tryAgain: exec statement
-            else: break
-        intRaster = PREFIX + "_lcc_mosaic_100k_max_int"
-        expression = "int(" + truncRaster + ")"
-        count = 0
-        statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
-        while True:
-            try: exec statement
-            except:
-                count,tryAgain = lu.hiccup_test(count,statement)
-                if not tryAgain: exec statement
-            else: break
+        # generate pyramids and statistics for final output
         try:
-            gp.delete_management(truncRaster)
+            gp.addmessage('Building output statistics and pyramids' + '\n')        
+            gp.CalculateStatistics_management(mosRaster, "1", "1", "#")
+            gp.BuildPyramids_management(mosRaster)    
         except:
             pass
+        
+        writeIntRaster = False
+        if writeIntRaster == True:
+            # ---------------------------------------------------------------------
+            # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
+            # to NODATA.
+            truncRaster = "lcc_mosaic_100k_max"
+            expression = ("(" + mosaicRaster + " * (con(" + mosaicRaster + "<= " +
+                          str(Cfg.CWDTHRESH) + ",1)))")
+            count = 0
+            statement = 'gp.SingleOutputMapAlgebra_sa(expression, truncRaster)'
+            while True:
+                try: exec statement
+                except:
+                    count,tryAgain = lu.hiccup_test(count,statement)
+                    if not tryAgain: exec statement
+                else: break
+            intRaster = PREFIX + "_lcc_mosaic_100k_max_int"
+            expression = "int(" + truncRaster + ")"
+            count = 0
+            statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
+            while True:
+                try: exec statement
+                except:
+                    count,tryAgain = lu.hiccup_test(count,statement)
+                    if not tryAgain: exec statement
+                else: break
+            try:
+                gp.delete_management(truncRaster)
+            except:
+                pass
         # ---------------------------------------------------------------------
 
         start_time = time.clock()
