@@ -216,13 +216,15 @@ def STEP5_calc_lccs():
                     exec statement
             else: break
 
-        # generate pyramids and statistics for final output
-        try:
-            gp.addmessage('Building output statistics and pyramids' + '\n')        
-            gp.CalculateStatistics_management(mosRaster, "1", "1", "#")
-            gp.BuildPyramids_management(mosRaster)    
-        except:
-            pass
+        # generate pyramids and statistics for final output 
+        # DISABLED for now. Seems to build statistics too coarsely for clear
+        # corridor display.
+        # try:
+            # gp.addmessage('Building output statistics and pyramids' + '\n')        
+            # gp.CalculateStatistics_management(mosRaster, "1", "1", "#")
+            # gp.BuildPyramids_management(mosRaster)    
+        # except:
+            # pass
         
         writeIntRaster = False
         if writeIntRaster == True:
