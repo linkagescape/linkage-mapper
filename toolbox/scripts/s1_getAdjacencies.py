@@ -49,8 +49,12 @@ def STEP1_get_adjacencies():
 
         gprint('Adjacency files will be written to ' +
                           Cfg.ADJACENCYDIR)
-        if path.exists(Cfg.ADJACENCYDIR):
-            shutil.rmtree(Cfg.ADJACENCYDIR)
+
+        #remove cwd directory
+        if Cfg.gp.Exists(Cfg.ADJACENCYDIR):
+            Cfg.gp.RefreshCatalog(Cfg.ADJACENCYDIR)
+            Cfg.gp.delete_management(Cfg.ADJACENCYDIR)                        
+            
         gp.CreateFolder_management(path.dirname(Cfg.ADJACENCYDIR),
                                        path.basename(Cfg.ADJACENCYDIR))
 
@@ -162,6 +166,7 @@ def cwadjacency():
         start_time = time.clock()
         gprint('Starting cost weighted distance allocation...')
 
+        # core_rastmp = 'core_rastmp'
         if Cfg.TMAXCWDIST is not None:
             gprint('Maximum cost-weighted distance set to ' +
                               str(Cfg.TMAXCWDIST))
@@ -181,6 +186,13 @@ def cwadjacency():
             else:
                 break
 
+        #Convert core raster to integer format Not implemented.
+        # if gp.exists(S1CORE_RAS):
+            # gp.delete_management(S1CORE_RAS)           
+        # gp.Int_sa(core_rastmp, S1CORE_RAS)
+        # gp.delete_management(core_rastmp)
+        
+                
         gp.workspace = Cfg.ADJACENCYDIR
         gp.scratchworkspace = gp.workspace
 
@@ -248,6 +260,7 @@ def euadjacency():
                       # 'raster cell size (' +
                       # str(cellSizeEuclidean) + ').')
 
+        # core_rastmp = 'core_rastmp'
         oldextent = gp.extent
         if Cfg.BUFFERDIST is not None:
             gp.extent = gp.Describe(BNDCIRWD).extent
@@ -264,6 +277,13 @@ def euadjacency():
             else:
                 break
 
+        #Convert core raster to integer format # Not implemented
+        # if gp.exists(S1CORE_RAS):
+            # gp.delete_management(S1CORE_RAS)           
+        # gp.Int_sa(core_rastmp, S1CORE_RAS)
+        # gp.delete_management(core_rastmp)                
+                
+                
         start_time = time.clock()
 
         gp.scratchworkspace = gp.workspace

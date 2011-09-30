@@ -1830,6 +1830,51 @@ def check_dist_file():
     return
 
 
+def check_cores():
+    """Checks for positive integer core IDs with appropriate naming."""
+    try:
+        if Cfg.COREFN == 'FID' or Cfg.COREFN == 'ID' or Cfg.COREFN == 'Shape':
+            dashline(1)
+            msg = ('ERROR: Core area field name "ID", "FID", and "Shape" are reserved '
+                    'for ArcGIS. Please choose another field- must be a '
+                    'positive integer.')
+            Cfg.gp.AddError(msg)
+            exit(1)      
+
+        fieldList = Cfg.gp.ListFields(Cfg.COREFC)
+        for field in fieldList:
+            if str(field.Name) == Cfg.COREFN:
+                FT = str(field.Type)
+                if (FT != 'SmallInteger' and FT != 'SHORT' and FT != 'Integer' 
+                    and FT != 'LONG'):
+                    dashline(1)
+                    msg = ('ERROR: Core area field must be in Short Integer '
+                            'format.')
+                    Cfg.gp.AddError(msg)
+                    exit(1)                   
+
+        coreList = get_core_list()
+        # test = coreList - coreList.astype(int)
+        # if npy.any(test) == True:
+            # dashline(1)
+            # msg = ('ERROR: Core area field must be in integer format. ')
+            # Cfg.gp.AddError(msg)
+            # exit(1)
+
+        if npy.amin(coreList) < 1:
+            dashline(1)
+            msg = ('ERROR: Core area field must contain only positive integers. ')
+            Cfg.gp.AddError(msg)
+            exit(1)
+
+    except arcgisscripting.ExecuteError:
+        raise_geoproc_error(__filename__)
+    except:
+        raise_python_error(__filename__)
+    
+    
+    
+    
 def hiccup_test(count, statement):
     """Re-tries ArcGIS calls in case of server problems or 'other hiccups'."""
     try:
@@ -1860,12 +1905,12 @@ def hiccup_test(count, statement):
             time.sleep(sleepTime)
             return count, True
         else:
-            sleepTime = 300
+            sleepTime = 60
             count = count + 1
             dashline(1)
             gp.addmessage('Failed to execute ' + statement + ' on try #' +
                           str(count) + '.\n Could be an ArcGIS hiccup.  Trying'
-                          'again in 5 minutes.\n')
+                          'again in 1 minute.\n')
             time.sleep(sleepTime)
             return count, True
     except:

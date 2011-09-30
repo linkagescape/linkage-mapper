@@ -24,6 +24,7 @@ import s3_calcCwds as s3
 import s4_refineNetwork as s4
 import s5_calcLccs as s5
 
+gprint = Cfg.gp.addmessage
 
 def lm_master():
     """Main function for linkage mapper.
@@ -34,13 +35,9 @@ def lm_master():
 
     """
     try:
-        if Cfg.COREFN == 'FID' or Cfg.COREFN == 'ID':
-            lu.dashline(1)
-            msg = ('ERROR: Core area field name "ID" and "FID" are reserved '
-                    'for ArcGIS. Please choose another field- must be a '
-                    'positive integer.')
-            Cfg.gp.AddError(msg)
-            exit(1)
+        # Check core ID field.
+        lu.check_cores()
+       
        
         if Cfg.gp.Exists(Cfg.OUTPUTDIR):
             Cfg.gp.RefreshCatalog(Cfg.OUTPUTDIR)
@@ -63,6 +60,11 @@ def lm_master():
                 Cfg.gp.AddError(msg)
                 exit(1)
 
+        # Remove scratch directory- was causing conflicts in Arc10. 
+        if Cfg.gp.Exists(Cfg.SCRATCHDIR):
+            Cfg.gp.RefreshCatalog(Cfg.SCRATCHDIR)
+            Cfg.gp.delete_management(Cfg.SCRATCHDIR) #XXX           
+                
         # Delete final link map geodatabase
         if Cfg.gp.Exists(Cfg.LINKMAPGDB) and Cfg.STEP5:
             Cfg.gp.addmessage('Deleting geodatabase ' + Cfg.LINKMAPGDB)
@@ -119,6 +121,9 @@ def lm_master():
         
         # Clean up
         lu.delete_dir(Cfg.SCRATCHDIR)
+        if Cfg.gp.Exists(Cfg.SCRATCHDIR):
+            Cfg.gp.RefreshCatalog(Cfg.SCRATCHDIR)
+            Cfg.gp.delete_management(Cfg.SCRATCHDIR) #XXX
         
         Cfg.gp.addmessage('\nDONE!\n')
 
