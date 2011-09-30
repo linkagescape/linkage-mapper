@@ -221,13 +221,13 @@ def STEP5_calc_lccs():
         # corridor display.
         # try:
             # gp.addmessage('Building output statistics and pyramids' + '\n')        
-            # gp.CalculateStatistics_management(mosRaster, "1", "1", "#")
-            # gp.BuildPyramids_management(mosRaster)    
+            # gp.CalculateStatistics_management(intRaster, "1", "1", "#")
+            # gp.BuildPyramids_management(intRaster)    
         # except:
             # pass
         
-        writeIntRaster = False
-        if writeIntRaster == True:
+        writeTruncRaster = False
+        if writeTruncRaster == True:
             # ---------------------------------------------------------------------
             # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
             # to NODATA.
@@ -258,6 +258,31 @@ def STEP5_calc_lccs():
                 pass
         # ---------------------------------------------------------------------
 
+        
+        writeIntRaster = True
+        if writeIntRaster == True:
+            # ---------------------------------------------------------------------
+            # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
+            # to NODATA.
+            intRaster = PREFIX + "_lcc_mosaic_int"
+            expression = "int(" + mosaicRaster + " + 0.5)"
+            count = 0
+            statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
+            while True:
+                try: exec statement
+                except:
+                    count,tryAgain = lu.hiccup_test(count,statement)
+                    if not tryAgain: exec statement
+                else: break
+        # ---------------------------------------------------------------------
+
+        saveFloatRaster = False
+        if saveFloatRaster == False:
+            try:
+                gp.delete_management(mosRaster)
+            except:
+                pass
+        
         start_time = time.clock()
         gprint('Writing final LCP maps...')
         if Cfg.STEP4:
