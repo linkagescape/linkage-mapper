@@ -217,14 +217,14 @@ def STEP5_calc_lccs():
             else: break
 
         # generate pyramids and statistics for final output 
-        # DISABLED for now. Seems to build statistics too coarsely for clear
+        # DISABLE? Seems to build statistics too coarsely for clear
         # corridor display.
-        # try:
-            # gp.addmessage('Building output statistics and pyramids' + '\n')        
-            # gp.CalculateStatistics_management(intRaster, "1", "1", "#")
-            # gp.BuildPyramids_management(intRaster)    
-        # except:
-            # pass
+        try:
+            gp.addmessage('Building output statistics and pyramids' + '\n')        
+            gp.CalculateStatistics_management(intRaster, "1", "1", "#")
+            gp.BuildPyramids_management(intRaster)    
+        except:
+            pass
         
         writeTruncRaster = False
         if writeTruncRaster == True:
@@ -293,10 +293,10 @@ def STEP5_calc_lccs():
                                                      thisStep=5)
         else:
             # Don't know if step 4 was run, since this is started at step 5.
-            # Use presence of linktable file to figure this out
- 
+            # Use presence of previous linktable files to figure this out.
+            # Linktable name includes step number.
             prevLinkTableFile = lu.get_prev_step_link_table(step=5)
-            prevStepInd = len(prevLinkTableFile)-5
+            prevStepInd = len(prevLinkTableFile)-5 
             lastStep = prevLinkTableFile[prevStepInd]
         
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep,
