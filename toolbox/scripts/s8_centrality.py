@@ -1,3 +1,5 @@
+#don't delete scratchdir if may be used by a next step
+
 #set pinchpoint 0 current to nodata when input nodata
    #eventually do in cs
    #also in cs- show average current density in polygons

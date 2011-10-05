@@ -1185,7 +1185,7 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
             outFile.write("\n# Core Area Feature Class: " + Cfg.COREFC)
 
             outFile.write("\n# Core Area Field Name: " + Cfg.COREFN)
-            outFile.write("\n# Resistance Raster: " + Cfg.RESRAST)
+            outFile.write("\n# Resistance Raster: " + Cfg.RESRAST_IN)
             outFile.write("\n# Step 1 - Identify Adjacent Core Areas: " +
                            str(Cfg.STEP1))
             outFile.write("\n# Step 1 Adjacency Method Includes Cost-Weighted "

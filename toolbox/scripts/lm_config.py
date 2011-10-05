@@ -54,7 +54,7 @@ class Config():
         PROJECTDIR = sys.argv[1]  # Project directory
         COREFC = sys.argv[2]  # Core area feature class
         COREFN = sys.argv[3]  # Core area field name
-        RESRAST = sys.argv[4]  # Resistance raster
+        RESRAST_IN = sys.argv[4]  # Resistance raster
 
         # Processing steps inputs
         STEP1 = str2bool(sys.argv[5])
@@ -84,7 +84,7 @@ class Config():
     elif script == "barrier_master.py":  #Barrier Mapper    
         TOOL = 'barrier_mapper'
         PROJECTDIR = sys.argv[1]  # Project directory
-        RESRAST = sys.argv[2]
+        RESRAST_IN = sys.argv[2]
         STARTRADIUS = sys.argv[3]  # 
         ENDRADIUS = sys.argv[4]  # 
         RADIUSSTEP = sys.argv[5]  # 
@@ -95,7 +95,7 @@ class Config():
         COREFC = sys.argv[2]
         COREFN = sys.argv[3]
         DOPINCH = str2bool(sys.argv[4])
-        RESRAST = sys.argv[5]
+        RESRAST_IN = sys.argv[5]
         CWDCUTOFF = sys.argv[6] # To clip resistance rasters for Circuitscape
         SQUARERESISTANCES = str2bool(sys.argv[7]) # Square resistance values 
         DOCENTRALITY = str2bool(sys.argv[8])
@@ -103,7 +103,7 @@ class Config():
     PREFIX = path.basename(PROJECTDIR)
     OUTPUTDIR = path.join(PROJECTDIR, "output")
     SCRATCHDIR = path.join(PROJECTDIR, "scratch")
-    LOGDIR = path.join(PROJECTDIR, "log")
+    LOGDIR = path.join(PROJECTDIR, "logFiles")
     DATAPASSDIR = path.join(PROJECTDIR, "datapass")
     ADJACENCYDIR = path.join(DATAPASSDIR, "adj")
     ADJACENCYDIR_OLD = path.join(PROJECTDIR, "adj")
@@ -191,6 +191,23 @@ class Config():
     gp = arcgisscripting.create(9.3)
     gp.CheckOutExtension("Spatial")
     gp.OverwriteOutput = True
+    gprint = gp.addmessage
+    
+    # Remove scratch directory- was causing conflicts in Arc10. 
+    if gp.Exists(SCRATCHDIR):
+        gp.RefreshCatalog(SCRATCHDIR)
+        gp.delete_management(SCRATCHDIR) #XXX   
+    gp.CreateFolder_management(path.dirname(SCRATCHDIR),
+                                   path.basename(SCRATCHDIR))
+
+    # Make a local grid copy of resistance raster- will run faster than gdb
+    # Don't know if we can figure out if raster is in a gdb if entered from TOC
+    localRaster  = path.join(SCRATCHDIR, 'resrast')
+    if gp.Exists(localRaster):
+        gp.delete_management(localRaster)
+    gprint('\nMaking local copy of resistance raster.')
+    gp.CopyRaster_management(RESRAST_IN, localRaster)    
+    RESRAST = localRaster
+        
     gp.SnapRaster = RESRAST
 
-    
