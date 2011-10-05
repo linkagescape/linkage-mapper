@@ -58,12 +58,7 @@ def lm_master():
                        Cfg.OUTPUTGDB + '. Is it open in ArcMap?\n You may '
                        'need to re-start ArcMap to release the file lock.')
                 Cfg.gp.AddError(msg)
-                exit(1)
-
-        # Remove scratch directory- was causing conflicts in Arc10. 
-        if Cfg.gp.Exists(Cfg.SCRATCHDIR):
-            Cfg.gp.RefreshCatalog(Cfg.SCRATCHDIR)
-            Cfg.gp.delete_management(Cfg.SCRATCHDIR) #XXX           
+                exit(1)       
                 
         # Delete final link map geodatabase
         if Cfg.gp.Exists(Cfg.LINKMAPGDB) and Cfg.STEP5:
@@ -88,7 +83,6 @@ def lm_master():
                                                path.basename(lmfolder))
         createfolder(Cfg.OUTPUTDIR)
         createfolder(Cfg.LOGDIR)
-        createfolder(Cfg.SCRATCHDIR)
         createfolder(Cfg.DATAPASSDIR)
 
         # Identify first step cleanup link tables from that point
