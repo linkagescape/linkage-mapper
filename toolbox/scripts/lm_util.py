@@ -727,7 +727,7 @@ def make_points(workspace, pointArray, outFC):
 ## LCP Shapefile Functions #################################################
 ############################################################################
 
-def create_lcp_shapefile(linktable, sourceCore, targetCore, lcpLoop, SR):
+def create_lcp_shapefile(linktable, sourceCore, targetCore, lcpLoop):
     """Creates lcp shapefile.
 
     Shows locations of least-cost path lines attributed with corridor
@@ -825,10 +825,7 @@ def create_lcp_shapefile(linktable, sourceCore, targetCore, lcpLoop, SR):
             gp.copy_management(lcplineDslv, lcpShapefile)
         else:
             gp.Append_management(lcplineDslv, lcpShapefile, "TEST")
-
-        gp.defineprojection(lcpShapefile, SR)
-
-
+ 
         return lcpLoop
 
     except arcgisscripting.ExecuteError:
@@ -1354,12 +1351,8 @@ def write_link_maps(linkTableFile, step):
         # will contain linework between each pair of connected cores
         gp.CreateFeatureclass(gp.workspace, coreLinksShapefile,
                                   "POLYLINE")
-
-        #Define Coordinate System for output shapefiles
-        desc = gp.Describe
-        SR = desc(Cfg.COREFC).SpatialReference
-        gp.defineprojection(coreLinksShapefile, SR)
-        #ADD ATTRIBUTES
+        
+        # ADD ATTRIBUTES
         gp.AddField_management(coreLinksShapefile, "Link_ID", "SHORT")
         gp.AddField_management(coreLinksShapefile, "Active", "SHORT")
         gp.AddField_management(coreLinksShapefile, "Link_Info", "TEXT")
