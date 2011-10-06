@@ -96,9 +96,7 @@ def STEP3_calc_cwds():
         # So we don't extract rasters that go beyond extent of original raster
         gp.Extent = "MINOF"
         gp.mask = Cfg.RESRAST
-        gp.Workspace = Cfg.SCRATCHDIR
-        # for later shapefiles
-        SR = gp.describe(Cfg.COREFC).SpatialReference
+        gp.Workspace = Cfg.SCRATCHDIR       
 
         # Load linkTable (created in previous script)
         linkTableFile = lu.get_prev_step_link_table(step=3)
@@ -254,11 +252,9 @@ def STEP3_calc_cwds():
                               'analysis.')
             lu.make_points(Cfg.SCRATCHDIR, boundingCirclePointArray,
                            BNDCIRCENS)
-            gp.defineprojection(BNDCIRCENS, SR)
             if gp.Exists(BNDCIRS):
                 gp.delete_management(BNDCIRS)
             gp.buffer_analysis(BNDCIRCENS, BNDCIRS, "radius")
-            gp.defineprojection(BNDCIRS, SR)
             gp.deletefield (BNDCIRS, "BUFF_DIST")
 
             gprint('Successfully created bounding circles around '
@@ -281,11 +277,9 @@ def STEP3_calc_cwds():
                                                         0, Cfg.BUFFERDIST)
 
             lu.make_points(Cfg.SCRATCHDIR, circlePointData, Cfg.BNDCIRCEN)
-            gp.defineprojection(Cfg.BNDCIRCEN, SR)
             if gp.Exists(Cfg.BNDCIR):
                 gp.delete_management(Cfg.BNDCIR)
             gp.buffer_analysis(Cfg.BNDCIRCEN, Cfg.BNDCIR, "radius")
-            gp.defineprojection(Cfg.BNDCIR, SR)
 
             boundResis = "boundResis"
             gprint('Extracting raster....')
@@ -631,7 +625,7 @@ def STEP3_calc_cwds():
                         lcpLoop = lu.create_lcp_shapefile(linkTable,
                                                           sourceCore,
                                                           targetCore,
-                                                          lcpLoop, SR)
+                                                          lcpLoop)
 
                 # endTime = time.clock()
                 # processTime = round((endTime - start_time), 2)

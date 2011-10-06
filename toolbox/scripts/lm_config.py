@@ -192,7 +192,8 @@ class Config():
     gp.CheckOutExtension("Spatial")
     gp.OverwriteOutput = True
     gprint = gp.addmessage
-    
+    gp.OutputCoordinateSystem = gp.describe(COREFC).SpatialReference
+
     # Remove scratch directory- was causing conflicts in Arc10. 
     if gp.Exists(SCRATCHDIR):
         gp.RefreshCatalog(SCRATCHDIR)
