@@ -192,5 +192,4 @@ class Config():
     gp.CheckOutExtension("Spatial")
     gp.OverwriteOutput = True
     gp.SnapRaster = RESRAST
-
-    
+    gp.OutputCoordinateSystem = gp.describe(COREFC).SpatialReference

@@ -40,7 +40,7 @@ def STEP1_get_adjacencies():
     """
     try:
         lu.dashline(1)
-        gprint('Running script ' + __filename__)
+        gprint('Running script ' + __filename__)        
 
         # Default behavior is to use same cell size as resistance raster,
         # but this can be changed here.
@@ -53,10 +53,7 @@ def STEP1_get_adjacencies():
             shutil.rmtree(Cfg.ADJACENCYDIR)
         gp.CreateFolder_management(path.dirname(Cfg.ADJACENCYDIR),
                                        path.basename(Cfg.ADJACENCYDIR))
-
-        # To set spatial reference for shapefiles we create later
-        SR = gp.describe(Cfg.COREFC).SpatialReference
-
+ 
         # ------------------------------------------------------------------
         # Create bounding circles to limit cwd and allocation calculations
         if Cfg.BUFFERDIST is not None:
@@ -76,14 +73,12 @@ def STEP1_get_adjacencies():
             boundingCirclePointArray = npy.zeros((0, 5), dtype='float32')
             circlePointData = lu.get_bounding_circle_data(extentBoxList, 0, 0,
                                                           Cfg.BUFFERDIST)
-            lu.make_points(Cfg.SCRATCHDIR, circlePointData, Cfg.BNDCIRCEN)
-            gp.defineprojection(path.join(Cfg.SCRATCHDIR, Cfg.BNDCIRCEN),
-                                    SR)
+            lu.make_points(Cfg.SCRATCHDIR, circlePointData, Cfg.BNDCIRCEN)            
+            
             if gp.Exists(BNDCIRWD):
                 gp.delete_management(BNDCIRWD)
             gp.buffer_analysis(path.join(Cfg.SCRATCHDIR, Cfg.BNDCIRCEN),
                                              BNDCIRWD, "radius")
-            gp.defineprojection(BNDCIRWD, SR)
             # boundingCirclePointArray  = npy.zeros((0, 5),dtype='float32')
             # circlePointData = lu.get_bounding_circle_data(extentBoxList, 0,
             #                                               0, Cfg.BUFFERDIST)
@@ -95,11 +90,9 @@ def STEP1_get_adjacencies():
             circlePointData = lu.get_bounding_circle_data(
                 extentBoxList, 0, 0, 0)
             lu.make_points(Cfg.SCRATCHDIR, circlePointData, EUC_BNDCIRCEN)
-            gp.defineprojection(EUC_BNDCIRCENWD, SR)
             if gp.Exists(EUC_BNDCIRWD):
                 gp.delete_management(EUC_BNDCIRWD)
             gp.buffer_analysis(EUC_BNDCIRCENWD, EUC_BNDCIRWD, "radius")
-            gp.defineprojection(EUC_BNDCIRWD, SR)
 
             del boundingCirclePointArray
 
