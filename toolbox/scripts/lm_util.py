@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.5
 
-"""Contains functions called by linkage mapper and barrier mapper scripts."""
+"""Contains functions called by linkage mapper and barrier mapper scripts."""  
 
 __filename__ = "lm_util.py"
 __version__ = "0.6.4"
