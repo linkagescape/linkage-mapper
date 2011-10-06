@@ -1,11 +1,17 @@
-# add check for ID as field name.  Disallow.
-#convert core field name to short integer, at least in rasterized version
+#don't delete scratchdir if may be used by a next step
+
+#set pinchpoint 0 current to nodata when input nodata
+   #eventually do in cs
+   #also in cs- show average current density in polygons
+   #next release??
+   
+# add check for FID or ID as field name in toolbox.  Disallow.
+# make sure core area field name is short integer
 
 #Factorial least cost paths? (Consider all cores adjacent, add pixels)
 
 #centrality- copy datapass/cores to outputgdb
 
-#set pinchpoint 0 current to nodata?
 
 #option 1 = centrality?
 # Comment code
@@ -22,7 +28,6 @@
 # clean up network current maps
 # eventually have nework connectedness measures.  these would have all pairs as sources and targets, 2 measures using eff resis with r's parm'd using eff resis and cwd vals
 
-# circuitscape- don't import wx.  
 # put all outputgdb raster names in cfg
 # results tab in ug
 

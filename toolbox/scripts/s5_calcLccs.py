@@ -216,36 +216,73 @@ def STEP5_calc_lccs():
                     exec statement
             else: break
 
-        # ---------------------------------------------------------------------
-        # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
-        # to NODATA.
-        truncRaster = "lcc_mosaic_100k_max"
-        expression = ("(" + mosaicRaster + " * (con(" + mosaicRaster + "<= " +
-                      str(Cfg.CWDTHRESH) + ",1)))")
-        count = 0
-        statement = 'gp.SingleOutputMapAlgebra_sa(expression, truncRaster)'
-        while True:
-            try: exec statement
-            except:
-                count,tryAgain = lu.hiccup_test(count,statement)
-                if not tryAgain: exec statement
-            else: break
-        intRaster = PREFIX + "_lcc_mosaic_100k_max_int"
-        expression = "int(" + truncRaster + ")"
-        count = 0
-        statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
-        while True:
-            try: exec statement
-            except:
-                count,tryAgain = lu.hiccup_test(count,statement)
-                if not tryAgain: exec statement
-            else: break
+        # generate pyramids and statistics for final output 
+        # DISABLE? Seems to build statistics too coarsely for clear
+        # corridor display.
         try:
-            gp.delete_management(truncRaster)
+            gp.addmessage('Building output statistics and pyramids' + '\n')        
+            gp.CalculateStatistics_management(intRaster, "1", "1", "#")
+            gp.BuildPyramids_management(intRaster)    
         except:
             pass
+        
+        writeTruncRaster = False
+        if writeTruncRaster == True:
+            # ---------------------------------------------------------------------
+            # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
+            # to NODATA.
+            truncRaster = "lcc_mosaic_100k_max"
+            expression = ("(" + mosaicRaster + " * (con(" + mosaicRaster + "<= " +
+                          str(Cfg.CWDTHRESH) + ",1)))")
+            count = 0
+            statement = 'gp.SingleOutputMapAlgebra_sa(expression, truncRaster)'
+            while True:
+                try: exec statement
+                except:
+                    count,tryAgain = lu.hiccup_test(count,statement)
+                    if not tryAgain: exec statement
+                else: break
+            intRaster = PREFIX + "_lcc_mosaic_100k_max_int"
+            expression = "int(" + truncRaster + ")"
+            count = 0
+            statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
+            while True:
+                try: exec statement
+                except:
+                    count,tryAgain = lu.hiccup_test(count,statement)
+                    if not tryAgain: exec statement
+                else: break
+            try:
+                gp.delete_management(truncRaster)
+            except:
+                pass
         # ---------------------------------------------------------------------
 
+        
+        writeIntRaster = True
+        if writeIntRaster == True:
+            # ---------------------------------------------------------------------
+            # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
+            # to NODATA.
+            intRaster = PREFIX + "_lcc_mosaic_int"
+            expression = "int(" + mosaicRaster + " + 0.5)"
+            count = 0
+            statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
+            while True:
+                try: exec statement
+                except:
+                    count,tryAgain = lu.hiccup_test(count,statement)
+                    if not tryAgain: exec statement
+                else: break
+        # ---------------------------------------------------------------------
+
+        saveFloatRaster = False
+        if saveFloatRaster == False:
+            try:
+                gp.delete_management(mosRaster)
+            except:
+                pass
+        
         start_time = time.clock()
         gprint('Writing final LCP maps...')
         if Cfg.STEP4:
@@ -256,11 +293,13 @@ def STEP5_calc_lccs():
                                                      thisStep=5)
         else:
             # Don't know if step 4 was run, since this is started at step 5.
-            # Will look for step 4 lcp file, then step 3.  FIXME: this is one
-            # reason to remove old LCP files- or make a copy of step 3 with
-            # step 4 filename.  Otherwise could retrieve a step 4 file when a
-            # new run superceded it.
-            finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=4,
+            # Use presence of previous linktable files to figure this out.
+            # Linktable name includes step number.
+            prevLinkTableFile = lu.get_prev_step_link_table(step=5)
+            prevStepInd = len(prevLinkTableFile)-5 
+            lastStep = prevLinkTableFile[prevStepInd]
+        
+            finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep,
                                                      thisStep=5)
 
         outlinkTableFile = lu.get_this_step_link_table(step=5)

@@ -151,9 +151,12 @@ def STEP3_calc_cwds():
 
         if rerun == False: # If picking up a failed run, use old folders
             startIndex = 0
-            if path.exists(Cfg.CWDBASEDIR):
-                shutil.rmtree(Cfg.CWDBASEDIR)
-
+            
+            #remove cwd directory
+            if Cfg.gp.Exists(Cfg.CWDBASEDIR):
+                Cfg.gp.RefreshCatalog(Cfg.CWDBASEDIR)
+                Cfg.gp.delete_management(Cfg.CWDBASEDIR) 
+                
             # Set up cwd directories.
             # To keep there from being > 100 grids in any one directory,
             # outputs are written to:
@@ -302,6 +305,7 @@ def STEP3_calc_cwds():
         # Rasterize core areas to speed cost distance calcs
         # lu.dashline(1)
         gprint("Creating core area raster.")
+        # core_rastmp="core_rastmp"
         s3core_ras="s3core_ras"
         gp.SelectLayerByAttribute(Cfg.FCORES, "CLEAR_SELECTION")
         gp.CellSize = gp.Describe(boundResis).MeanCellHeight
@@ -317,7 +321,14 @@ def STEP3_calc_cwds():
                 count,tryAgain = lu.hiccup_test(count,statement)
                 if not tryAgain: exec statement
             else: break
-          
+        
+        #Convert core raster to integer format  #Not implemented- we only allow integer inputs.
+        # s3core_ras="s3core_ras"
+        # if gp.exists(s3core_ras):
+            # gp.delete_management(s3core_ras)           
+        # gp.Int_sa(core_rastmp, s3core_ras)
+        # gp.delete_management(core_rastmp)
+        
                 
         if rerun == True:
             # saved linktable replaces the one now in memory
@@ -423,7 +434,6 @@ def STEP3_calc_cwds():
                 else:
                     bResistance = boundResis
 
-      
                 # ---------------------------------------------------------
                 # CWD Calculations
                 outDistanceRaster = lu.get_cwd_path(sourceCore)
@@ -443,19 +453,17 @@ def STEP3_calc_cwds():
                         count, tryAgain = lu.hiccup_test(count, statement)
                         if not tryAgain: exec statement
                     else: break
-
                 # Cost distance raster creation
+
                 count = 0
                 statement = ('gp.CostDistance_sa(SRCRASTER, bResistance, '
-                             'outDistanceRaster, Cfg.TMAXCWDIST, "BACK")')
-                             
+                             'outDistanceRaster, Cfg.TMAXCWDIST, "BACK")')                            
                 while True:
                     try: exec statement
                     except:
                         count, tryAgain = lu.hiccup_test(count, statement)
                         if not tryAgain: exec statement
                     else: break
-
                 start_time = time.clock()
                 # Extract cost distances from source core to target cores
                 # Fixme: there will be redundant calls to b-a when already
@@ -464,15 +472,20 @@ def STEP3_calc_cwds():
                             # 'core #' + str(int(sourceCore)) + ' to ' +
                             # str(len(targetCores)) + ' potential targets')
                 count = 0
+               
                 statement = ('gp.zonalstatisticsastable_sa(s3core_ras, '
                              '"VALUE", outDistanceRaster, ZNSTATS)')
-                while True:
-                    try: exec statement
-                    except:
-                        count,tryAgain = lu.hiccup_test(count,statement)
-                        if not tryAgain: exec statement
-                    else: break
+                try: exec statement
+                except:
 
+                    lu.dashline(1)
+                    msg = ('ERROR in Zonal Stats.  This seems to be an ArcGIS'
+                           ' bug or a problem with intermediate files being open'
+                           ' in ArcMap.\n  Please make sure no intermediate files'
+                           ' (e.g., CWD maps) are open, then restart ArcMap and try again.')
+                    Cfg.gp.AddError(msg)
+                    exit(1)                               
+                
                 tableRows = gp.searchcursor(ZNSTATS)
                 tableRow = tableRows.Next()
                 while tableRow:
@@ -629,8 +642,6 @@ def STEP3_calc_cwds():
                 outlinkTableFile = path.join(Cfg.SCRATCHDIR, 
                                              "temp_linkTable_s3_partial.csv")
                 lu.write_link_table(linkTable, outlinkTableFile)
-                # if x == 3:
-                    # blarg
                     
             # -----------------------------------------------------------
 
