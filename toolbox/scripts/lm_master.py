@@ -73,9 +73,7 @@ def lm_master():
                 Cfg.gp.AddError(msg)
                 exit(1)
                 
-                
-                
-                
+                               
         def createfolder(lmfolder):
             """Creates folder if it doesn't exist."""
             if not path.exists(lmfolder):
@@ -115,10 +113,7 @@ def lm_master():
         
         # Clean up
         lu.delete_dir(Cfg.SCRATCHDIR)
-        if Cfg.gp.Exists(Cfg.SCRATCHDIR):
-            Cfg.gp.RefreshCatalog(Cfg.SCRATCHDIR)
-            Cfg.gp.delete_management(Cfg.SCRATCHDIR) #XXX
-        
+
         Cfg.gp.addmessage('\nDONE!\n')
 
     # Return GEOPROCESSING specific errors
