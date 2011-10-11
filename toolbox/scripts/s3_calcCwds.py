@@ -154,8 +154,7 @@ def STEP3_calc_cwds():
             
             #remove cwd directory
             if Cfg.gp.Exists(Cfg.CWDBASEDIR):
-                Cfg.gp.RefreshCatalog(Cfg.CWDBASEDIR)
-                Cfg.gp.delete_management(Cfg.CWDBASEDIR) 
+                lu.delete_dir(Cfg.CWDBASEDIR)
                 
             # Set up cwd directories.
             # To keep there from being > 100 grids in any one directory,
@@ -676,10 +675,10 @@ def STEP3_calc_cwds():
                 '\n updated with cost-weighted distances between core areas.')
 
         #Clean up temporary files for restart code
-        file = path.join(Cfg.DATAPASSDIR, "temp_cores_to_map.csv")
-        lu.delete_file(file)
-        file = path.join(Cfg.DATAPASSDIR, "temp_linkTable_s3_partial.csv")        
-        lu.delete_file(file)
+        tempFile = path.join(Cfg.DATAPASSDIR, "temp_cores_to_map.csv")
+        lu.delete_file(tempFile)
+        tempFile = path.join(Cfg.DATAPASSDIR, "temp_linkTable_s3_partial.csv")        
+        lu.delete_file(tempFile)
     
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
