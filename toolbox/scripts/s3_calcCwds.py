@@ -9,7 +9,7 @@ extent of cwd calculations and speed computation.
 """
 
 __filename__ = "s3_calcCwds.py"
-__version__ = "0.6.4"
+__version__ = "0.6.5"
 
 import os.path as path
 import shutil
@@ -35,7 +35,7 @@ def write_cores_to_map(x, coresToMap):
         
     """
     try:
-        coreListFile = path.join(Cfg.SCRATCHDIR, "temp_cores_to_map.csv")
+        coreListFile = path.join(Cfg.DATAPASSDIR, "temp_cores_to_map.csv")
         outFile = open(coreListFile, "w")
         outFile.write("#INDEX of last core being processed:\n")
         outFile.write(str(int(x)))
@@ -136,12 +136,12 @@ def STEP3_calc_cwds():
                     'the same settings as the terminated run.****\n')
             lu.dashline(0)
             time.sleep(20)
-            savedLinkTableFile = path.join(Cfg.SCRATCHDIR, 
+            savedLinkTableFile = path.join(Cfg.DATAPASSDIR, 
                                            "temp_linkTable_s3_partial.csv")
-            coreListFile = path.join(Cfg.SCRATCHDIR, "temp_cores_to_map.csv")
+            coreListFile = path.join(Cfg.DATAPASSDIR, "temp_cores_to_map.csv")
 
             if not path.exists(savedLinkTableFile) or not path.exists(
-                                                          savedLinkTableFile):
+                                                          coreListFile):
                 
                 gprint('No partial results file found from previous '
                        'stopped run. Starting run from beginning.\n')
@@ -154,8 +154,7 @@ def STEP3_calc_cwds():
             
             #remove cwd directory
             if Cfg.gp.Exists(Cfg.CWDBASEDIR):
-                Cfg.gp.RefreshCatalog(Cfg.CWDBASEDIR)
-                Cfg.gp.delete_management(Cfg.CWDBASEDIR) 
+                lu.delete_dir(Cfg.CWDBASEDIR)
                 
             # Set up cwd directories.
             # To keep there from being > 100 grids in any one directory,
@@ -639,7 +638,7 @@ def STEP3_calc_cwds():
                                   str(sourceCore) + '.')
                 start_time = lu.elapsed_time(startTime1)
   
-                outlinkTableFile = path.join(Cfg.SCRATCHDIR, 
+                outlinkTableFile = path.join(Cfg.DATAPASSDIR, 
                                              "temp_linkTable_s3_partial.csv")
                 lu.write_link_table(linkTable, outlinkTableFile)
                     
@@ -675,6 +674,11 @@ def STEP3_calc_cwds():
         gprint(outlinkTableFile + 
                 '\n updated with cost-weighted distances between core areas.')
 
+        #Clean up temporary files for restart code
+        tempFile = path.join(Cfg.DATAPASSDIR, "temp_cores_to_map.csv")
+        lu.delete_file(tempFile)
+        tempFile = path.join(Cfg.DATAPASSDIR, "temp_linkTable_s3_partial.csv")        
+        lu.delete_file(tempFile)
     
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:

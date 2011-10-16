@@ -3,7 +3,7 @@
 """Contains functions called by linkage mapper and barrier mapper scripts."""  
 
 __filename__ = "lm_util.py"
-__version__ = "0.6.4"
+__version__ = "0.6.5"
 
 import os
 import sys
@@ -1496,9 +1496,16 @@ def delete_file(file):
     
 def delete_dir(dir):
     try:
-        shutil.rmtree(dir)
+        gp.RefreshCatalog(dir)
+        shutil.rmtree(dir)       
     except:
-        pass
+        # In case rmtree was unsuccessful due to lock on data
+        try:
+            if gp.Exists(dir):
+                gp.RefreshCatalog(dir)
+                gp.delete_management(dir)            
+        except:
+            pass
     return
 
     
@@ -1831,10 +1838,10 @@ def check_cores():
             msg = ('ERROR: Core area field name "ID", "FID", and "Shape" are reserved '
                     'for ArcGIS. Please choose another field- must be a '
                     'positive integer.')
-            Cfg.gp.AddError(msg)
+            gp.AddError(msg)
             exit(1)      
 
-        fieldList = Cfg.gp.ListFields(Cfg.COREFC)
+        fieldList = gp.ListFields(Cfg.COREFC)
         for field in fieldList:
             if str(field.Name) == Cfg.COREFN:
                 FT = str(field.Type)
@@ -1843,7 +1850,7 @@ def check_cores():
                     dashline(1)
                     msg = ('ERROR: Core area field must be in Short Integer '
                             'format.')
-                    Cfg.gp.AddError(msg)
+                    gp.AddError(msg)
                     exit(1)                   
 
         coreList = get_core_list()
@@ -1851,13 +1858,13 @@ def check_cores():
         # if npy.any(test) == True:
             # dashline(1)
             # msg = ('ERROR: Core area field must be in integer format. ')
-            # Cfg.gp.AddError(msg)
+            # gp.AddError(msg)
             # exit(1)
 
         if npy.amin(coreList) < 1:
             dashline(1)
             msg = ('ERROR: Core area field must contain only positive integers. ')
-            Cfg.gp.AddError(msg)
+            gp.AddError(msg)
             exit(1)
 
     except arcgisscripting.ExecuteError:
