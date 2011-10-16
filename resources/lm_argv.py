@@ -3,8 +3,9 @@
 """Script to set system arguments for Linkage Mapper"""
 import sys
 
-sys.argv = ("lm_master", "project", "/data/Cores.shp", "core_ID",
-    "/data/resistances", "true", "Cost-Weighted & Euclidean", "true",
-    "C:/lm_test/project/distances_Cores.txt", "Cost-Weighted & Euclidean",
-    "true", "true", "false", "4", "Cost-Weighted", "false", "true",
-    "100000", "100000", "100000")
+sys.argv = ("lm_master.py", "C:/lm_test/demoProject", 
+    "C:/lm_test/demoData/Cores.shp", "core_ID",
+    "C:/lm_test/demoData/resistances", "true", "Cost-Weighted & Euclidean",
+    "true", "C:/lm_test/demoData/distances_Cores.txt", 
+    "Cost-Weighted & Euclidean", "true", "true", "false", "4", "Cost-Weighted",
+    "false", "true", "100000", "100000", "100000")
