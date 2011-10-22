@@ -12,10 +12,10 @@ def main():
     gp.Workspace = "C:\\lm_test"
 
     gp.MapLinkages(
-        "demoProject", "/demoData/Cores.shp", "core_ID", "/demoData/resistances", "true",
-        "Cost-Weighted & Euclidean", "true",
-        "C:/lm_test/demoData/distances_Cores.txt", "Cost-Weighted & Euclidean",
-        "true", "true", "false", "4", "Cost-Weighted", "false", "true",
+        "demoProject", "/demoData/Cores.shp", "core_ID", 
+        "/demoData/resistances", "true", "Cost-Weighted & Euclidean", "true", 
+        "Cost-Weighted & Euclidean", "C:/lm_test/demoData/distances_Cores.txt",
+        "true", "true", "false", "4", "Cost-Weighted", "false", "true", 
         "100000", "100000", "100000")
 
 
