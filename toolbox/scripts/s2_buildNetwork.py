@@ -34,9 +34,6 @@ def STEP2_build_network():
         # This is a warning flag if distances are mising in conefor
         dropFlag = False
 
-        # ------------------------------------------------------------------
-        # Load text file from conefor sensinode extension of edge-edge
-        # distances between core area pairs
         dir, file = path.split(Cfg.COREFC)
         base, extension = path.splitext(file)
 
@@ -68,8 +65,12 @@ def STEP2_build_network():
 
         #----------------------------------------------------------------------
         # Load eucDists matrix from file and npy.sort
-        eucDists = npy.loadtxt(Cfg.S2EUCDISTFILE, dtype='Float64',
-                               comments='#')
+        if Cfg.S2EUCDISTFILE is None:
+            eucdist_file = generate_distance_file()
+        else:
+            eucdist_file = Cfg.S2EUCDISTFILE
+
+        eucDists = npy.loadtxt(eucdist_file, dtype='Float64', comments='#')
         numDists = eucDists.shape[0]
         # lu.dashline()
         gprint('Core area distance list from Conefor Sensinode '
@@ -345,3 +346,64 @@ def STEP2_build_network():
         lu.raise_python_error(__filename__)
 
     return
+
+def generate_distance_file():
+    """Use ArcGIS to create Conefor distance file
+
+    Requires ArcInfo license.
+
+    """
+    gprint('Generating Conefor distance file using ArcGIS')
+    NEAR_TBL = path.join(Cfg.SCRATCHDIR, "neartbl.dbf")
+
+    DIST_FNAME = path.join(Cfg.OUTPUTDIR, (Cfg.COREFC + "_dist.txt"))
+
+    FID_FN = "FID"
+    INFID_FN = "IN_FID"
+    NEARID_FN = "NEAR_FID"
+    NEAR_FN = "NEAR_DIST"
+    NEAR_COREFN = Cfg.COREFN + "_1"
+
+    try:
+        gp.generateneartable(Cfg.COREFC, Cfg.COREFC, NEAR_TBL, "#",
+                                         "NO_LOCATION", "NO_ANGLE", "ALL", "0")
+
+        gp.joinfield(NEAR_TBL, INFID_FN, Cfg.COREFC, FID_FN, Cfg.COREFN)
+        gp.joinfield(NEAR_TBL, NEARID_FN, Cfg.COREFC, FID_FN, Cfg.COREFN)
+
+        rows = gp.searchcursor(NEAR_TBL, "", "", Cfg.COREFN + "; " +
+                               NEAR_COREFN + "; " + NEAR_FN, Cfg.COREFN +
+                               " A; " + NEAR_COREFN + " A")
+
+        output = []
+        csvseparator = "\t"
+        processed_ids = []
+
+        for row in iter(rows.next, None):
+            core_id = str(row.getvalue(Cfg.COREFN))
+            near_id = str(row.getvalue(NEAR_COREFN))
+            current_id = near_id + " " + core_id
+            if current_id not in processed_ids:
+                outputrow = []
+                outputrow.append(str(core_id))
+                outputrow.append(str(near_id))
+                outputrow.append(str(row.getvalue(NEAR_FN)))
+                output.append(csvseparator.join(outputrow))
+                processed_ids.append(core_id + " " + near_id)
+
+        dist_file = open(DIST_FNAME, 'w')
+        dist_file.write('\n'.join(output))
+        dist_file.close()
+        gprint('Distance file ' + DIST_FNAME + ' generated')
+        return DIST_FNAME
+
+    except arcgisscripting.ExecuteError:
+        lu.dashline(1)
+        gprint('****Failed in step 2. Details follow.****')
+        lu.raise_geoproc_error(__filename__)
+
+    # Return any PYTHON or system specific errors
+    except:
+        lu.dashline(1)
+        gprint('****Failed in step 2. Details follow.****')
+        lu.raise_python_error(__filename__)

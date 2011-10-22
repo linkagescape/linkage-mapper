@@ -1191,7 +1191,8 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
                            "Distance: " + str(Cfg.S1ADJMETH_EU))
             outFile.write("\n# Step 2 - Construct a Network of Core Areas: " +
                            str(Cfg.STEP2))
-            outFile.write("\n# Conefor Distances Text File: " + Cfg.S2EUCDISTFILE)
+            outFile.write("\n# Conefor Distances Text File: " + 
+                          str(Cfg.S2EUCDISTFILE))
             outFile.write("\n# Network Adjacency Method Includes Cost-Weighted "
                            "Distance: " + str(Cfg.S2ADJMETH_CW))
             outFile.write("\n# Network Adjacency Method Includes Euclidean "
@@ -1816,17 +1817,6 @@ def check_steps():
             exit(0)
         except:
             raise_python_error(__filename__)
-    return
-
-
-def check_dist_file():
-    """Checks for Euclidean distance file from Conefor Inputs tool."""
-    # Text file from conefor sensinode extension of edge-edge distances between
-    # core area pairs
-    if not os.path.exists(Cfg.S2EUCDISTFILE):
-        gp.AddMessage('\nERROR: Euclidean distance file not found: ' +
-                          Cfg.S2EUCDISTFILE)
-        exit(0)
     return
 
 

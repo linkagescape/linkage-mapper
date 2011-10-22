@@ -42,7 +42,11 @@ def nullfloat(innum):
         nfloat = float(innum)
     return nfloat
 
-
+def nullstring(arg_string):
+    """Convert ESRI nullstring to Python null"""
+    if arg_string == '#':
+        arg_string = None
+    return arg_string
 
 class Config():
     """Class to enscapulate all global constants"""
@@ -60,8 +64,8 @@ class Config():
         STEP1 = str2bool(sys.argv[5])
         S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
         STEP2 = str2bool(sys.argv[7])
-        S2EUCDISTFILE = sys.argv[8]
-        S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[9])
+        S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[8])
+        S2EUCDISTFILE = nullstring(sys.argv[9])
         STEP3 = str2bool(sys.argv[10])
         S3DROPLCCS = sys.argv[11]  # Drop LCC's with intermediate cores
         STEP4 = str2bool(sys.argv[12])

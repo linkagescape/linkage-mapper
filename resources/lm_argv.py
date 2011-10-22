@@ -6,6 +6,6 @@ import sys
 sys.argv = ("lm_master.py", "C:/lm_test/demoProject", 
     "C:/lm_test/demoData/Cores.shp", "core_ID",
     "C:/lm_test/demoData/resistances", "true", "Cost-Weighted & Euclidean",
-    "true", "C:/lm_test/demoData/distances_Cores.txt", 
-    "Cost-Weighted & Euclidean", "true", "true", "false", "4", "Cost-Weighted",
-    "false", "true", "100000", "100000", "100000")
+    "true", "Cost-Weighted & Euclidean", 
+    "C:/lm_test/demoData/distances_Cores.txt", "true", "true", "false", "4", 
+    "Cost-Weighted", "false", "true", "100000", "100000", "100000")
