@@ -65,7 +65,7 @@ class Config():
         S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
         STEP2 = str2bool(sys.argv[7])
         S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[8])
-        S2EUCDISTFILE = nullstring(sys.argv[9])
+        S2EUCDISTFILE = nullstring(sys.argv[9])       
         STEP3 = str2bool(sys.argv[10])
         S3DROPLCCS = sys.argv[11]  # Drop LCC's with intermediate cores
         STEP4 = str2bool(sys.argv[12])
@@ -79,7 +79,7 @@ class Config():
         MAXCOSTDIST = nullfloat(sys.argv[18])
         MAXEUCDIST = nullfloat(sys.argv[19])
 
-        CWDTHRESH = 100000  # CWD corridor width in a truncated raster
+        CWDTHRESH = 200000  # CWD corridor width in a truncated raster
         if MAXCOSTDIST is None:
             TMAXCWDIST = None
         else:
@@ -87,6 +87,7 @@ class Config():
        
     elif script == "barrier_master.py":  #Barrier Mapper    
         TOOL = 'barrier_mapper'
+        
         PROJECTDIR = sys.argv[1]  # Project directory
         RESRAST_IN = sys.argv[2]
         STARTRADIUS = sys.argv[3]  # 
@@ -95,6 +96,7 @@ class Config():
     
     else:
         TOOL = 'pinchpoint_mapper'
+        
         PROJECTDIR = sys.argv[1]  # Project directory
         COREFC = sys.argv[2]
         COREFN = sys.argv[3]
@@ -195,24 +197,10 @@ class Config():
     gp = arcgisscripting.create(9.3)
     gp.CheckOutExtension("Spatial")
     gp.OverwriteOutput = True
-    gprint = gp.addmessage
-    gp.OutputCoordinateSystem = gp.describe(COREFC).SpatialReference
-
-    # Remove scratch directory- was causing conflicts in Arc10. 
-    if gp.Exists(SCRATCHDIR):
-        gp.RefreshCatalog(SCRATCHDIR)
-        gp.delete_management(SCRATCHDIR) #XXX   
-    gp.CreateFolder_management(path.dirname(SCRATCHDIR),
-                                   path.basename(SCRATCHDIR))
-
-    # Make a local grid copy of resistance raster- will run faster than gdb
-    # Don't know if we can figure out if raster is in a gdb if entered from TOC
-    localRaster  = path.join(SCRATCHDIR, 'resrast')
-    if gp.Exists(localRaster):
-        gp.delete_management(localRaster)
-    gprint('\nMaking local copy of resistance raster.')
-    gp.CopyRaster_management(RESRAST_IN, localRaster)    
-    RESRAST = localRaster
-        
-    gp.SnapRaster = RESRAST
+    if TOOL != 'barrier_mapper':
+        gp.OutputCoordinateSystem = gp.describe(COREFC).SpatialReference
+    
+    #Temporary resistance raster copy to be created in lm_master
+    RESRAST  = path.join(SCRATCHDIR, 'resrast')
+    
 

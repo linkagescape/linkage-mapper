@@ -24,7 +24,8 @@ import s3_calcCwds as s3
 import s4_refineNetwork as s4
 import s5_calcLccs as s5
 
-gprint = Cfg.gp.addmessage
+gp = Cfg.gp
+gprint = gp.addmessage
 
 def lm_master():
     """Main function for linkage mapper.
@@ -39,50 +40,53 @@ def lm_master():
         lu.check_cores()
        
        
-        if Cfg.gp.Exists(Cfg.OUTPUTDIR):
-            Cfg.gp.RefreshCatalog(Cfg.OUTPUTDIR)
+        if gp.Exists(Cfg.OUTPUTDIR):
+            gp.RefreshCatalog(Cfg.OUTPUTDIR)
         
         # Delete final ouptut geodatabase
-        if Cfg.gp.Exists(Cfg.OUTPUTGDB_OLD) and Cfg.STEP5:
+        if gp.Exists(Cfg.OUTPUTGDB_OLD) and Cfg.STEP5:
             try:
-                Cfg.gp.delete_management(Cfg.OUTPUTGDB_OLD)
+                gp.delete_management(Cfg.OUTPUTGDB_OLD)
             except:
                 pass
-        if Cfg.gp.Exists(Cfg.OUTPUTGDB) and Cfg.STEP5:
-            Cfg.gp.addmessage('Deleting geodatabase ' + Cfg.OUTPUTGDB)
+        if gp.Exists(Cfg.OUTPUTGDB) and Cfg.STEP5:
+            gp.addmessage('Deleting geodatabase ' + Cfg.OUTPUTGDB)
             try:
-                Cfg.gp.delete_management(Cfg.OUTPUTGDB)
+                gp.delete_management(Cfg.OUTPUTGDB)
             except:
                 lu.dashline(1)
                 msg = ('ERROR: Could not remove geodatabase ' +
                        Cfg.OUTPUTGDB + '. Is it open in ArcMap?\n You may '
                        'need to re-start ArcMap to release the file lock.')
-                Cfg.gp.AddError(msg)
+                gp.AddError(msg)
                 exit(1)       
                 
         # Delete final link map geodatabase
-        if Cfg.gp.Exists(Cfg.LINKMAPGDB) and Cfg.STEP5:
-            Cfg.gp.addmessage('Deleting geodatabase ' + Cfg.LINKMAPGDB)
+        if gp.Exists(Cfg.LINKMAPGDB) and Cfg.STEP5:
+            gp.addmessage('Deleting geodatabase ' + Cfg.LINKMAPGDB)
             try:
-                Cfg.gp.delete_management(Cfg.LINKMAPGDB)
+                gp.delete_management(Cfg.LINKMAPGDB)
             except:
                 lu.dashline(1)
                 msg = ('ERROR: Could not remove geodatabase ' +
                        Cfg.LINKMAPGDB + '. Is it open in ArcMap?\n You may '
                        'need to re-start ArcMap to release the file lock.')
-                Cfg.gp.AddError(msg)
+                gp.AddError(msg)
                 exit(1)
                 
                                
         def createfolder(lmfolder):
             """Creates folder if it doesn't exist."""
             if not path.exists(lmfolder):
-                Cfg.gp.CreateFolder_management(path.dirname(lmfolder),
+                gp.CreateFolder_management(path.dirname(lmfolder),
                                                path.basename(lmfolder))
         createfolder(Cfg.OUTPUTDIR)
         createfolder(Cfg.LOGDIR)
         createfolder(Cfg.DATAPASSDIR)
-
+        # Create fresh scratch directory
+        lu.delete_dir(Cfg.SCRATCHDIR)
+        createfolder(Cfg.SCRATCHDIR)
+        
         # Identify first step cleanup link tables from that point
         if Cfg.STEP1:
             firststep = 1
@@ -99,6 +103,14 @@ def lm_master():
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
 
+        # Make a local grid copy of resistance raster- will run faster than gdb
+        # Don't know if raster is in a gdb if entered from TOC
+        if gp.Exists(Cfg.RESRAST):
+            gp.delete_management(Cfg.RESRAST)
+        gprint('\nMaking local copy of resistance raster.')
+        gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
+        gp.SnapRaster = Cfg.RESRAST
+        
         # Run linkage mapper processing steps
         if Cfg.STEP1:
             s1.STEP1_get_adjacencies()
@@ -114,7 +126,7 @@ def lm_master():
         # Clean up
         lu.delete_dir(Cfg.SCRATCHDIR)
 
-        Cfg.gp.addmessage('\nDONE!\n')
+        gp.addmessage('\nDONE!\n')
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:

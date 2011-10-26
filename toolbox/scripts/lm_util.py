@@ -1142,7 +1142,10 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
 
         numLinks = linktable.shape[0]
         outFile = open(outlinkTableFile, "w")
-
+        # gprint('linktable')
+        # gprint(str(linktable.shape[1]))
+        # gprint(str(linktable.astype('int32')))
+        
         if linktable.shape[1] == 10:
             outFile.write("# link,coreId1,coreId2,cluster1,cluster2,linkType,"
                            "eucDist,lcDist,eucAdj,cwdAdj\n")
@@ -1152,7 +1155,7 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
                     outFile.write(str(linktable[x, y]) + ",")
                 outFile.write(str(linktable[x, 9]))
                 outFile.write("\n")
-
+        
         elif linktable.shape[1] == 13:
             outFile.write("#link,coreId1,coreId2,cluster1,cluster2,linkType,"
                            "eucDist,lcDist,eucAdj,cwdAdj,lcpLength,"
@@ -1958,6 +1961,17 @@ def dashline(lspace=0):
         gp.addmessage('\n')
 
         
+############################################################################
+## Config File #############################################################
+############################################################################
+def set_lm_options():
+    """Set default options
+
+    """
+
+    options = {}
+    options['lcc_cutoff'] = None
+    return options
         
         
 ############################################################################

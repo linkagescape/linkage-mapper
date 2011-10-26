@@ -1,3 +1,54 @@
+display cwd or ratio on top of corridors using sgticks?
+
+
+        elif linktable.shape[1] == 13:
+            outFile.write("#link,coreId1,coreId2,cluster1,cluster2,linkType,"
+                           "eucDist,lcDist,eucAdj,cwdAdj,lcpLength,"
+                           "cwdToEucRatio,cwdToPathRatio\n")
+right now this is just for final linktable.  but calculated for all lcplines.
+
+add lcplength lcp shapefile? right now is just ratio
+
+# Min1=Rank(1,[acost1],[acost2],[acost3]....) where acostx is the
+# accumulative cost to HCA x.
+# Likewise, do:
+
+# Min2=Rank(2,[acost1],[acost2],[acost3]....)
+#can we do a rank with 100 acosts?  what about nodata? NO.
+#So, just don't normalize and do regular min mosaic of cost distances.
+Correct for euc dist?  cwd - pathlength or cwd/pathlength (minus doesn't give you wider corridors..)
+
+
+
+                      
+
+#For recursive deletes:
+# from os.path import join, getsize
+# for root, dirs, files in os.walk('python/Lib/email'):
+    # print root, "consumes",
+    # print sum(getsize(join(root, name)) for name in files),
+    # print "bytes in", len(files), "non-directory files"
+    # if 'CVS' in dirs:
+        # dirs.remove('CVS')  # don't visit CVS directories
+
+# In the next example, walking the tree bottom-up is essential: rmdir() doesn’t allow deleting a directory before the directory is empty:
+
+# # Delete everything reachable from the directory named in "top",
+# # assuming there are no symbolic links.
+# # CAUTION:  This is dangerous!  For example, if top == '/', it
+# # could delete all your disk files.
+# import os
+# for root, dirs, files in os.walk(top, topdown=False):
+    # for name in files:
+        # os.remove(os.path.join(root, name))
+    # for name in dirs:
+        # os.rmdir(os.path.join(root, name))
+
+
+        
+                                             
+# Add defaults to dialog?  Or at least hints (bc's speed calcs).
+
 #don't delete scratchdir if may be used by a next step
 
 #set pinchpoint 0 current to nodata when input nodata
@@ -43,7 +94,7 @@
 """
 
 __filename__ = "s8_centrality.py"
-__version__ = "0.6.4"
+__version__ = "0.6.5"
 
 import os.path as path
 import os
