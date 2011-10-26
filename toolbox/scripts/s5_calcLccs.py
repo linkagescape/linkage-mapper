@@ -225,14 +225,35 @@ def STEP5_calc_lccs():
             gp.BuildPyramids_management(intRaster)    
         except:
             pass
-        
-        writeTruncRaster = False
+
+
+        # ---------------------------------------------------------------------
+        # convert mosaic raster to integer
+        intRaster = PREFIX + "_lcc_mosaic_int"
+        expression = "int(" + mosaicRaster + " + 0.5)"
+        count = 0
+        statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
+        while True:
+            try: exec statement
+            except:
+                count,tryAgain = lu.hiccup_test(count,statement)
+                if not tryAgain: exec statement
+            else: break
+        # ---------------------------------------------------------------------
+
+        saveFloatRaster = False
+        if saveFloatRaster == False:
+            try:
+                gp.delete_management(mosRaster)
+            except:
+                pass
+
+        writeTruncRaster = True
         if writeTruncRaster == True:
             # ---------------------------------------------------------------------
-            # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
-            # to NODATA.
-            truncRaster = "lcc_mosaic_100k_max"
-            expression = ("(" + mosaicRaster + " * (con(" + mosaicRaster + "<= " +
+            # Set anything beyond Cfg.CWDTHRESH to NODATA.
+            truncRaster = PREFIX + "lcc_mosaic_truncated_values"
+            expression = ("(" + intRaster + " * (con(" + intRaster + "<= " +
                           str(Cfg.CWDTHRESH) + ",1)))")
             count = 0
             statement = 'gp.SingleOutputMapAlgebra_sa(expression, truncRaster)'
@@ -242,46 +263,8 @@ def STEP5_calc_lccs():
                     count,tryAgain = lu.hiccup_test(count,statement)
                     if not tryAgain: exec statement
                 else: break
-            intRaster = PREFIX + "_lcc_mosaic_100k_max_int"
-            expression = "int(" + truncRaster + ")"
-            count = 0
-            statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
-            while True:
-                try: exec statement
-                except:
-                    count,tryAgain = lu.hiccup_test(count,statement)
-                    if not tryAgain: exec statement
-                else: break
-            try:
-                gp.delete_management(truncRaster)
-            except:
-                pass
         # ---------------------------------------------------------------------
-
         
-        writeIntRaster = True
-        if writeIntRaster == True:
-            # ---------------------------------------------------------------------
-            # convert mosaic raster to integer, set anything beyond Cfg.CWDTHRESH
-            # to NODATA.
-            intRaster = PREFIX + "_lcc_mosaic_int"
-            expression = "int(" + mosaicRaster + " + 0.5)"
-            count = 0
-            statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
-            while True:
-                try: exec statement
-                except:
-                    count,tryAgain = lu.hiccup_test(count,statement)
-                    if not tryAgain: exec statement
-                else: break
-        # ---------------------------------------------------------------------
-
-        saveFloatRaster = False
-        if saveFloatRaster == False:
-            try:
-                gp.delete_management(mosRaster)
-            except:
-                pass
         
         start_time = time.clock()
         gprint('Writing final LCP maps...')
