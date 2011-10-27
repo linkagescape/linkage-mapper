@@ -1826,9 +1826,10 @@ def check_steps():
 def check_cores():
     """Checks for positive integer core IDs with appropriate naming."""
     try:
-        if Cfg.COREFN == 'FID' or Cfg.COREFN == 'ID' or Cfg.COREFN == 'Shape':
+        invalidFNs = ['fid','id','oid','shape']
+        if Cfg.COREFN.lower() in invalidFNs:
             dashline(1)
-            msg = ('ERROR: Core area field name "ID", "FID", and "Shape" are reserved '
+            msg = ('ERROR: Core area field name "ID", "FID", "OID", and "Shape" are reserved '
                     'for ArcGIS. Please choose another field- must be a '
                     'positive integer.')
             gp.AddError(msg)
