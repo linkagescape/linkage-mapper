@@ -1919,8 +1919,9 @@ def raise_geoproc_error(filename):
     tbinfo = traceback.format_tb(tb)[0]
     line = tbinfo.split(", ")[1]
 
-    gp.AddError("Geoprocessing error on **" + line + "** of " + filename +
-                " :")
+    gp.AddError("Geoprocessing error on **" + line + "** of " + filename + " "
+                "in Linkage Mapper Version " + str(__version__) + ":")
+
     dashline(1)
     for msg in range(0, gp.MessageCount):
         if gp.GetSeverity(msg) == 2:
@@ -1941,8 +1942,10 @@ def raise_python_error(filename):
 
     err = traceback.format_exc().splitlines()[-1]
 
-    gp.AddError("Python error on **" + line + "** of " + filename)
+    gp.AddError("Python error on **" + line + "** of " + filename + " "
+                "in Linkage Mapper Version " + str(__version__) + ":")
     gp.AddError(err)
+
     # dashline(2)
     exit(0)
 
