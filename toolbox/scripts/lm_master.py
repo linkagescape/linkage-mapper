@@ -36,9 +36,11 @@ def lm_master():
 
     """
     try:
+        gprint('\nLinkage Mapper Version ' + str(__version__))
+        
         # Check core ID field.
         lu.check_cores()
-       
+        
        
         if gp.Exists(Cfg.OUTPUTDIR):
             gp.RefreshCatalog(Cfg.OUTPUTDIR)
