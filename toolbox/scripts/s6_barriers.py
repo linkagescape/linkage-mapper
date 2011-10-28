@@ -192,7 +192,7 @@ def STEP6_calc_barriers():
                                              "MAXIMUM", "MATCH")
 
                     if not Cfg.SAVEBARRIERRASTERS:
-                        gp.delete_management(barrierRaster)
+                        lu.delete_data(barrierRaster)
 
                     # Temporarily disable links in linktable - 
                     # don't want to mosaic them twice
@@ -229,10 +229,7 @@ def STEP6_calc_barriers():
             gp.SetNull_sa(tempMosaicRaster, tempMosaicRaster, mosaicRaster, 
                           "VALUE < 0")
             
-            try:
-                gp.delete_management(tempMosaicRaster)
-            except:
-                pass
+            lu.delete_data(tempMosaicRaster)
 
             # Place copy of result in output geodatabase
             Cfg.gp.workspace = Cfg.BARRIERGDB
