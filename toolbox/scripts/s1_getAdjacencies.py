@@ -50,10 +50,8 @@ def STEP1_get_adjacencies():
         gprint('Adjacency files will be written to ' +
                           Cfg.ADJACENCYDIR)
 
-        #remove cwd directory
-        if Cfg.gp.Exists(Cfg.ADJACENCYDIR):
-            Cfg.gp.RefreshCatalog(Cfg.ADJACENCYDIR)
-            Cfg.gp.delete_management(Cfg.ADJACENCYDIR)                        
+        #remove adj directory
+        lu.delete_dir(Cfg.ADJACENCYDIR)                        
             
         gp.CreateFolder_management(path.dirname(Cfg.ADJACENCYDIR),
                                        path.basename(Cfg.ADJACENCYDIR))
@@ -79,8 +77,7 @@ def STEP1_get_adjacencies():
                                                           Cfg.BUFFERDIST)
             lu.make_points(Cfg.SCRATCHDIR, circlePointData, Cfg.BNDCIRCEN)            
             
-            if gp.Exists(BNDCIRWD):
-                gp.delete_management(BNDCIRWD)
+            lu.delete_data(BNDCIRWD)
             gp.buffer_analysis(path.join(Cfg.SCRATCHDIR, Cfg.BNDCIRCEN),
                                              BNDCIRWD, "radius")
             # boundingCirclePointArray  = npy.zeros((0, 5),dtype='float32')
@@ -94,8 +91,7 @@ def STEP1_get_adjacencies():
             circlePointData = lu.get_bounding_circle_data(
                 extentBoxList, 0, 0, 0)
             lu.make_points(Cfg.SCRATCHDIR, circlePointData, EUC_BNDCIRCEN)
-            if gp.Exists(EUC_BNDCIRWD):
-                gp.delete_management(EUC_BNDCIRWD)
+            lu.delete_data(EUC_BNDCIRWD)
             gp.buffer_analysis(EUC_BNDCIRCENWD, EUC_BNDCIRWD, "radius")
 
             del boundingCirclePointArray
@@ -212,9 +208,7 @@ def cwadjacency():
         start_time = lu.elapsed_time(start_time)
         adjshiftwrite(alloc_ras, outcsvfile, outcsvLogfile)
 
-        # Clean up
-        lu.delete_data(outDistanceRaster)
-
+        
         # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)

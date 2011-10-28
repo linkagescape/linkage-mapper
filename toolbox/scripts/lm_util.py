@@ -1515,7 +1515,8 @@ def delete_dir(dir):
     
 def delete_data(dataset):
     try:
-        gp.delete_management(dataset)
+        if gp.Exists(dataset):
+            gp.delete_management(dataset)
     except:
         pass
 
