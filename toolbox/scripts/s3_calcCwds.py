@@ -153,8 +153,7 @@ def STEP3_calc_cwds():
             startIndex = 0
             
             #remove cwd directory
-            if Cfg.gp.Exists(Cfg.CWDBASEDIR):
-                lu.delete_dir(Cfg.CWDBASEDIR)
+            lu.delete_dir(Cfg.CWDBASEDIR)
                 
             # Set up cwd directories.
             # To keep there from being > 100 grids in any one directory,
@@ -251,8 +250,7 @@ def STEP3_calc_cwds():
                               'analysis.')
             lu.make_points(Cfg.SCRATCHDIR, boundingCirclePointArray,
                            BNDCIRCENS)
-            if gp.Exists(BNDCIRS):
-                gp.delete_management(BNDCIRS)
+            lu.delete_data(BNDCIRS)
             gp.buffer_analysis(BNDCIRCENS, BNDCIRS, "radius")
             gp.deletefield (BNDCIRS, "BUFF_DIST")
 
@@ -276,8 +274,7 @@ def STEP3_calc_cwds():
                                                         0, Cfg.BUFFERDIST)
 
             lu.make_points(Cfg.SCRATCHDIR, circlePointData, Cfg.BNDCIRCEN)
-            if gp.Exists(Cfg.BNDCIR):
-                gp.delete_management(Cfg.BNDCIR)
+            lu.delete_data(Cfg.BNDCIR)
             gp.buffer_analysis(Cfg.BNDCIRCEN, Cfg.BNDCIR, "radius")
 
             boundResis = "boundResis"
@@ -308,8 +305,7 @@ def STEP3_calc_cwds():
         s3core_ras="s3core_ras"
         gp.SelectLayerByAttribute(Cfg.FCORES, "CLEAR_SELECTION")
         gp.CellSize = gp.Describe(boundResis).MeanCellHeight
-        if gp.exists(s3core_ras):
-            gp.delete_management(s3core_ras)
+        lu.delete_data(s3core_ras)
         gp.extent = gp.Describe(boundResis).extent
         count = 0
         statement = ('gp.FeatureToRaster_conversion(Cfg.FCORES, '
@@ -405,8 +401,7 @@ def STEP3_calc_cwds():
                             "fGlobalBoundingFeat", "ADD_TO_SELECTION", field +
                             " = '" + cores_x_y + "'")
 
-                    if gp.Exists(BNDFC):
-                        gp.delete_management(BNDFC) # fixme: necessary?
+                    lu.delete_data(BNDFC) # fixme: necessary?
                     # fixme: may not be needed- can we just clip raster
                     # using selected?
                     gp.CopyFeatures_management("fGlobalBoundingFeat",

@@ -1,3 +1,7 @@
+change where distances.txt stored
+trim down options- combine steps 1 and 2
+
+
 display cwd or ratio on top of corridors using sgticks?
 
 
@@ -128,11 +132,13 @@ def STEP8_calc_centrality():
             
         gp.workspace = Cfg.SCRATCHDIR
 
-        if Cfg.COREFN == 'FID' or Cfg.COREFN == 'ID':
+        invalidFNs = {'fid','id','oid','shape'}
+        if Cfg.COREFN.lower() in invalidFNs:
+        #if Cfg.COREFN == 'FID' or Cfg.COREFN == 'ID':
             lu.dashline(1)
-            msg = ('ERROR: Core area field name "ID" and "FID" are reserved '
-                    'for ArcGIS. Please choose another field- must be a '
-                    'positive integer.')
+            msg = ('ERROR: Core area field names ID, FID, SHAPE, and OID are '
+                    'reserved for ArcGIS. Please choose another field- must be '
+                    'a positive integer.')
             Cfg.gp.AddError(msg)
             exit(1)
 

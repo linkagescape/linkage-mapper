@@ -165,7 +165,7 @@ def STEP5_calc_lccs():
                                   str(processTime) + " seconds.")
 
                 if not Cfg.SAVENORMLCCS:
-                    gp.delete_management(lccNormRaster)
+                    lu.delete_data(lccNormRaster)
 
                 # temporarily disable links in linktable - don't want to mosaic
                 # them twice
@@ -243,10 +243,7 @@ def STEP5_calc_lccs():
 
         saveFloatRaster = False
         if saveFloatRaster == False:
-            try:
-                gp.delete_management(mosRaster)
-            except:
-                pass
+            lu.delete_data(mosRaster)
 
         writeTruncRaster = True
         if writeTruncRaster == True:

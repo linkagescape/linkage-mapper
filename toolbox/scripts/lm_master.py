@@ -107,8 +107,7 @@ def lm_master():
 
         # Make a local grid copy of resistance raster- will run faster than gdb
         # Don't know if raster is in a gdb if entered from TOC
-        if gp.Exists(Cfg.RESRAST):
-            gp.delete_management(Cfg.RESRAST)
+        lu.delete_data(Cfg.RESRAST)
         gprint('\nMaking local copy of resistance raster.')
         gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
         gp.SnapRaster = Cfg.RESRAST
