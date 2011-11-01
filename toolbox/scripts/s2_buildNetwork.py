@@ -14,17 +14,23 @@ import os.path as path
 
 import arcgisscripting
 import numpy as npy
+import time
 
 from lm_config import Config as Cfg
 import lm_util as lu
 
+SIMPLIFY_CORES = True #fixme: move to config
+
 NEAR_TBL = path.join(Cfg.SCRATCHDIR, "neartbl.dbf")
-DIST_FNAME = path.join(Cfg.OUTPUTDIR, (Cfg.COREFC + "_dist.txt"))
+DIST_FNAME = path.join(Cfg.PROJECTDIR, (Cfg.COREFC + "_dist.txt"))
 FID_FN = "FID"
 INFID_FN = "IN_FID"
 NEARID_FN = "NEAR_FID"
 NEAR_FN = "NEAR_DIST"
-NEAR_COREFN = Cfg.COREFN + "_1"
+S2CORE_RAS = "s2core_ras"
+S2COREFN = Cfg.COREFN
+NEAR_COREFN = S2COREFN + "_1"
+
 
 gp = Cfg.gp
 gprint = gp.addmessage
@@ -104,6 +110,7 @@ def STEP2_build_network():
         del delRows
         del delRowsVector
         numDists = eucDists.shape[0]
+
         lu.dashline(1)
         gprint('Removed ' + str(numDistsOld - numDists) +
                           ' duplicate core pairs in Euclidean distance table.'
@@ -360,15 +367,33 @@ def generate_distance_file():
 
     """
     try:
-        gprint('\nGenerating Conefor distance file using ArcGIS.')
-        gp.generateneartable(Cfg.COREFC, Cfg.COREFC, NEAR_TBL, "#",
-                                         "NO_LOCATION", "NO_ANGLE", "ALL", "0")
+        gp.CellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight    
+        
+        if SIMPLIFY_CORES == True:
+            gprint('Simplifying polygons')
+            COREFC_SIMP = path.join(Cfg.SCRATCHDIR, "CoreFC_Simp.shp")
+            tolerance = float(gp.CellSize) / 3
+            gp.simplifypolygon(Cfg.COREFC, COREFC_SIMP,"POINT_REMOVE", tolerance, "#", "NO_CHECK")
+            
+            gprint('\nGenerating Conefor distance file')
+            start_time = time.clock()
+            gp.generateneartable(COREFC_SIMP, COREFC_SIMP, NEAR_TBL, "#",
+                                             "NO_LOCATION", "NO_ANGLE", "ALL", "0")        
+            start_time = lu.elapsed_time(start_time)           
+            gp.joinfield(NEAR_TBL, INFID_FN, COREFC_SIMP, FID_FN, S2COREFN)
+            gp.joinfield(NEAR_TBL, NEARID_FN, COREFC_SIMP, FID_FN, S2COREFN)
 
-        gp.joinfield(NEAR_TBL, INFID_FN, Cfg.COREFC, FID_FN, Cfg.COREFN)
-        gp.joinfield(NEAR_TBL, NEARID_FN, Cfg.COREFC, FID_FN, Cfg.COREFN)
+        else:
+            start_time = time.clock()
+            gprint('\nGenerating Conefor distance file using ArcGIS.')
+            gp.generateneartable(Cfg.COREFC, Cfg.COREFC, NEAR_TBL, "#",
+                                             "NO_LOCATION", "NO_ANGLE", "ALL", "0")
+            start_time = lu.elapsed_time(start_time)
+            gp.joinfield(NEAR_TBL, INFID_FN, Cfg.COREFC, FID_FN, S2COREFN)
+            gp.joinfield(NEAR_TBL, NEARID_FN, Cfg.COREFC, FID_FN, S2COREFN)
 
-        rows = gp.searchcursor(NEAR_TBL, "", "", Cfg.COREFN + "; " +
-                               NEAR_COREFN + "; " + NEAR_FN, Cfg.COREFN +
+        rows = gp.searchcursor(NEAR_TBL, "", "", S2COREFN+ "; " +
+                               NEAR_COREFN + "; " + NEAR_FN, S2COREFN +
                                " A; " + NEAR_COREFN + " A")
 
         output = []
@@ -376,14 +401,17 @@ def generate_distance_file():
         processed_ids = []
 
         for row in iter(rows.next, None):
-            core_id = str(row.getvalue(Cfg.COREFN))
+            core_id = str(row.getvalue(S2COREFN))
             near_id = str(row.getvalue(NEAR_COREFN))
             current_id = near_id + " " + core_id
             if current_id not in processed_ids:
                 outputrow = []
                 outputrow.append(str(core_id))
                 outputrow.append(str(near_id))
-                outputrow.append(str(row.getvalue(NEAR_FN)))
+                dist = row.getvalue(NEAR_FN)
+                if dist == 0 and core_id != near_id: #In case simplified polygons abut one another
+                    dist = gp.CellSize
+                outputrow.append(str(dist))
                 output.append(csvseparator.join(outputrow))
                 processed_ids.append(core_id + " " + near_id)
 
@@ -391,6 +419,7 @@ def generate_distance_file():
         dist_file.write('\n'.join(output))
         dist_file.close()
         gprint('Distance file ' + DIST_FNAME + ' generated.\n')
+        
         return DIST_FNAME
 
     except arcgisscripting.ExecuteError:
