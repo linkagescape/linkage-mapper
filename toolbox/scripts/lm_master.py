@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.5
+# Authors: Brad McRae and Darren Kavanagh
 
-"""Master script for linkage mapper.
+"""Master script for Linkage Lapper.
 
 Reguired Software:
 ArcGIS 9.3 with Spatial Analyst extension
@@ -45,38 +46,27 @@ def lm_master():
         if gp.Exists(Cfg.OUTPUTDIR):
             gp.RefreshCatalog(Cfg.OUTPUTDIR)
         
-        # Delete final ouptut geodatabase
-        if gp.Exists(Cfg.OUTPUTGDB_OLD) and Cfg.STEP5:
-            try:
-                gp.delete_management(Cfg.OUTPUTGDB_OLD)
-            except:
-                pass
-        if gp.Exists(Cfg.OUTPUTGDB) and Cfg.STEP5:
-            gp.addmessage('Deleting geodatabase ' + Cfg.OUTPUTGDB)
-            try:
-                gp.delete_management(Cfg.OUTPUTGDB)
-            except:
-                lu.dashline(1)
-                msg = ('ERROR: Could not remove geodatabase ' +
-                       Cfg.OUTPUTGDB + '. Is it open in ArcMap?\n You may '
-                       'need to re-start ArcMap to release the file lock.')
-                gp.AddError(msg)
-                exit(1)       
-                
-        # Delete final link map geodatabase
-        if gp.Exists(Cfg.LINKMAPGDB) and Cfg.STEP5:
-            gp.addmessage('Deleting geodatabase ' + Cfg.LINKMAPGDB)
-            try:
-                gp.delete_management(Cfg.LINKMAPGDB)
-            except:
-                lu.dashline(1)
-                msg = ('ERROR: Could not remove geodatabase ' +
-                       Cfg.LINKMAPGDB + '. Is it open in ArcMap?\n You may '
-                       'need to re-start ArcMap to release the file lock.')
-                gp.AddError(msg)
-                exit(1)
-                
-                               
+      
+        def delete_final_gdb(finalgdb):
+            if gp.Exists(finalgdb) and Cfg.STEP5:
+                gp.addmessage('Deleting geodatabase ' + finalgdb)
+                try:
+                    gp.delete_management(finalgdb)
+                except:
+                    lu.dashline(1)
+                    msg = ('ERROR: Could not remove geodatabase ' +
+                           finalgdb + '. Is it open in ArcMap?\n You may '
+                           'need to re-start ArcMap to release the file lock.')
+                    gp.AddError(msg)
+                    exit(1)       
+                    
+        # Delete final output geodatabase
+        delete_final_gdb(Cfg.OUTPUTGDB_OLD)
+        delete_final_gdb(Cfg.OUTPUTGDB)
+        delete_final_gdb(Cfg.EXTRAGDB)
+        delete_final_gdb(Cfg.LINKMAPGDB)        
+
+  
         def createfolder(lmfolder):
             """Creates folder if it doesn't exist."""
             if not path.exists(lmfolder):

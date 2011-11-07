@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.
+# Authors: Brad McRae and Darren Kavanagh
 
 """Linkage Mapper configuration module.
 
@@ -63,8 +64,13 @@ class Config():
         # Processing steps inputs
         STEP1 = str2bool(sys.argv[5])
         S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
+        
+        ### SETTING BOTH ADJ METHODS TO TRUE FOR S1 IN FUTURE RELEASES ###
+        S1ADJMETH_CW = True
+        S1ADJMETH_EU = True
+        
         STEP2 = str2bool(sys.argv[7])
-        S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[8])
+        S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[8])       
         S2EUCDISTFILE = nullstring(sys.argv[9])       
         STEP3 = str2bool(sys.argv[10])
         S3DROPLCCS = sys.argv[11]  # Drop LCC's with intermediate cores
@@ -79,15 +85,25 @@ class Config():
         MAXCOSTDIST = nullfloat(sys.argv[18])
         MAXEUCDIST = nullfloat(sys.argv[19])
 
-        CWDTHRESH = 200000  # CWD corridor width in a truncated raster
+        ### USER SETTABLE 
+        # Add extra step to mosaic non-normalized LCCs in s5 (for WHCWG use)
+        CALCNONNORMLCCS = True 
+        WRITETRUNCRASTER = True # Write a truncated version of mosaicked raster
+        CWDTHRESH = 200000  # CWD corridor width in a truncated raster. 
+        MINCOSTDIST = None
+        MINEUCDIST = None
+        SAVENORMLCCS = False  # Set to True to save individual norm LCC grids        
+        ### END USER SETTABLE 
+        
+        
         if MAXCOSTDIST is None:
             TMAXCWDIST = None
-        else:
-            TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # This will limit cw calcs
+        elif CWDTHRESH is not None:
+            TMAXCWDIST = None # Max is disabled for now- see line below.
+            #TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # Will limit cw calcs. 
        
     elif script == "barrier_master.py":  #Barrier Mapper    
         TOOL = 'barrier_mapper'
-        
         PROJECTDIR = sys.argv[1]  # Project directory
         RESRAST_IN = sys.argv[2]
         STARTRADIUS = sys.argv[3]  # 
@@ -136,15 +152,12 @@ class Config():
     CIRCUITOUTPUTDIR_NM =  "output"
         
     
-    # Other global constants
-    MINCOSTDIST = None
-    MINEUCDIST = None
-    SAVENORMLCCS = False  # Set to True to save individual normalized LCC grids
     SAVEFOCALRASTERS = False # Save individual focal grids for barrier analysis
     SAVEBARRIERRASTERS = False # Save individual barrier grids
     SAVECURRENTMAPS = False# Save individual current maps from Circuitscape
     FCORES = "fcores"
     OUTPUTGDB = path.join(OUTPUTDIR, "corridors.gdb")
+    EXTRAGDB = path.join(OUTPUTDIR, "extra.gdb")
     OUTPUTGDB_OLD = path.join(OUTPUTDIR, "linkages.gdb")
     CWDGDB = path.join(OUTPUTDIR,"cwd.gdb")
     LINKMAPGDB = path.join(OUTPUTDIR,"link_maps.gdb")
