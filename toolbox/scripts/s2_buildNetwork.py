@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.5
+# Authors: Brad McRae and Darren Kavanagh
 
 """Step 2: Build network.
 
@@ -78,7 +79,7 @@ def STEP2_build_network():
         #----------------------------------------------------------------------
         # Load eucDists matrix from file and npy.sort
         if Cfg.S2EUCDISTFILE is None:
-            eucdist_file = generate_distance_file()
+            eucdist_file = generate_distance_file(cwdAdjFile,eucAdjFile)
         else:
             eucdist_file = Cfg.S2EUCDISTFILE
 
@@ -360,7 +361,32 @@ def STEP2_build_network():
     return
 
 
-def generate_distance_file():
+def get_adj_list(adjFile):
+    try:
+        inAdjList = npy.loadtxt(adjFile, dtype='int32', comments='#',
+                          delimiter=',')  # creates a numpy array
+        if len(inAdjList) == inAdjList.size:  # Just one connection
+            outAdjList = npy.zeros((1, 3), dtype='int32')
+            outAdjList[:, 0:3] = inAdjList[0:3]
+        else:
+            outAdjList = inAdjList
+        outAdjList = outAdjList[:, 1:3]  # Drop first column
+        outAdjList = npy.sort(outAdjList)
+        return outAdjList
+
+    except arcgisscripting.ExecuteError:
+        lu.dashline(1)
+        gprint('****Failed in step 2. Details follow.****')
+        lu.raise_geoproc_error(__filename__)
+
+    # Return any PYTHON or system specific errors
+    except:
+        lu.dashline(1)
+        gprint('****Failed in step 2. Details follow.****')
+        lu.raise_python_error(__filename__)
+    
+    
+def generate_distance_file(cwdAdjFile,eucAdjFile):
     """Use ArcGIS to create Conefor distance file
 
     Requires ArcInfo license.
@@ -368,53 +394,77 @@ def generate_distance_file():
     """
     try:
         gp.CellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight    
-        
+                
         if SIMPLIFY_CORES == True:
             gprint('Simplifying polygons')
             COREFC_SIMP = path.join(Cfg.SCRATCHDIR, "CoreFC_Simp.shp")
             tolerance = float(gp.CellSize) / 3
-            gp.simplifypolygon(Cfg.COREFC, COREFC_SIMP,"POINT_REMOVE", tolerance, "#", "NO_CHECK")
             
-            gprint('\nGenerating Conefor distance file')
-            start_time = time.clock()
-            gp.generateneartable(COREFC_SIMP, COREFC_SIMP, NEAR_TBL, "#",
-                                             "NO_LOCATION", "NO_ANGLE", "ALL", "0")        
-            start_time = lu.elapsed_time(start_time)           
-            gp.joinfield(NEAR_TBL, INFID_FN, COREFC_SIMP, FID_FN, S2COREFN)
-            gp.joinfield(NEAR_TBL, NEARID_FN, COREFC_SIMP, FID_FN, S2COREFN)
-
+            arc10 = True
+            try:
+                import arcpy.cartography as CA
+            except:
+                arc10 = False
+            if arc10 == True:
+                CA.SimplifyPolygon(Cfg.COREFC, COREFC_SIMP,"POINT_REMOVE", tolerance, "#", "NO_CHECK")
+            else:
+                gp.SimplifyPolygon(Cfg.COREFC, COREFC_SIMP,"POINT_REMOVE", tolerance, "#", "NO_CHECK")
+                                         
+                                          
+            S2COREFC = COREFC_SIMP
         else:
-            start_time = time.clock()
-            gprint('\nGenerating Conefor distance file using ArcGIS.')
-            gp.generateneartable(Cfg.COREFC, Cfg.COREFC, NEAR_TBL, "#",
-                                             "NO_LOCATION", "NO_ANGLE", "ALL", "0")
-            start_time = lu.elapsed_time(start_time)
-            gp.joinfield(NEAR_TBL, INFID_FN, Cfg.COREFC, FID_FN, S2COREFN)
-            gp.joinfield(NEAR_TBL, NEARID_FN, Cfg.COREFC, FID_FN, S2COREFN)
-
-        rows = gp.searchcursor(NEAR_TBL, "", "", S2COREFN+ "; " +
-                               NEAR_COREFN + "; " + NEAR_FN, S2COREFN +
-                               " A; " + NEAR_COREFN + " A")
-
+            S2COREFC = Cfg.COREFC
+           
+        gp.workspace = Cfg.SCRATCHDIR
+        FS2COREFC = "fcores"
+        FS2COREFC2 = "fcores2"
+        gp.MakeFeatureLayer(S2COREFC, FS2COREFC)
+        gp.MakeFeatureLayer(S2COREFC, FS2COREFC2)
+        
         output = []
         csvseparator = "\t"
-        processed_ids = []
 
-        for row in iter(rows.next, None):
-            core_id = str(row.getvalue(S2COREFN))
-            near_id = str(row.getvalue(NEAR_COREFN))
-            current_id = near_id + " " + core_id
-            if current_id not in processed_ids:
-                outputrow = []
-                outputrow.append(str(core_id))
-                outputrow.append(str(near_id))
+        adjList = get_full_adj_list(cwdAdjFile,eucAdjFile)
+        sourceCores = npy.unique(adjList[:,0])
+
+        gprint('\nFinding distances between cores using Generate Near Table.')
+        
+        # gprint('old method')
+        # start_time = time.clock()
+        # gp.generateneartable(S2COREFC, S2COREFC, NEAR_TBL, "#",
+                           # "NO_LOCATION", "NO_ANGLE", "ALL", "0")
+        # start_time = lu.elapsed_time(start_time)
+        
+        gprint('There are '+str(len(adjList))+' core pairs to process.')
+        pctDone = 0
+        start_time = time.clock()
+        for x in range(0,len(adjList)):
+            
+            pctDone = lu.report_pct_done(x, len(adjList), pctDone)
+            sourceCore = adjList[x,0]
+            targetCore = adjList[x,1]
+            expression = S2COREFN + " = " + str(sourceCore)
+            gp.selectlayerbyattribute(FS2COREFC, "NEW_SELECTION", expression)
+            expression = S2COREFN + " = " + str(targetCore)
+            gp.selectlayerbyattribute(FS2COREFC2, "NEW_SELECTION", expression)
+    
+            gp.generateneartable(FS2COREFC, FS2COREFC2, NEAR_TBL, "#",
+                               "NO_LOCATION", "NO_ANGLE", "ALL", "0")        
+
+            rows = gp.searchcursor(NEAR_TBL)
+            row = rows.Next()
+            if row: #May be running on selected core areas in step 2
                 dist = row.getvalue(NEAR_FN)
-                if dist == 0 and core_id != near_id: #In case simplified polygons abut one another
+                if dist == 0: #In case simplified polygons abut one another
                     dist = gp.CellSize
+                outputrow = []           
+                outputrow.append(str(sourceCore))
+                outputrow.append(str(targetCore))                    
                 outputrow.append(str(dist))
                 output.append(csvseparator.join(outputrow))
-                processed_ids.append(core_id + " " + near_id)
-
+            del rows   
+        start_time = lu.elapsed_time(start_time)           
+ 
         dist_file = open(DIST_FNAME, 'w')
         dist_file.write('\n'.join(output))
         dist_file.close()
@@ -432,3 +482,50 @@ def generate_distance_file():
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.raise_python_error(__filename__)
+
+        
+
+def get_full_adj_list(cwdAdjFile,eucAdjFile):       
+    try:    
+        cwdAdjList = get_adj_list(cwdAdjFile)
+        eucAdjList = get_adj_list(eucAdjFile)
+        adjList = npy.append(eucAdjList, cwdAdjList, axis=0)
+        adjList = npy.sort(adjList)
+        
+                # sort by 1st core Id then by 2nd core Id
+        ind = npy.lexsort((adjList[:, 1], adjList[:, 0]))
+        adjList = adjList[ind]
+        
+        numDists = len(adjList)
+        x = 1
+        while x < numDists:
+            if (adjList[x, 0] == adjList[x - 1, 0] and
+                adjList[x, 1] == adjList[x - 1, 1]):
+                adjList[x - 1, 0] = 0  # mark for deletion
+            x = x + 1
+
+        if numDists > 0:
+            delRows = npy.asarray(npy.where(adjList[:, 0] == 0))
+            delRowsVector = npy.zeros((delRows.shape[1]), dtype="int32")
+            delRowsVector[:] = delRows[0, :]
+            adjList = lu.delete_row(adjList, delRowsVector)
+            del delRows
+            del delRowsVector
+
+        return adjList
+
+    except arcgisscripting.ExecuteError:
+        lu.dashline(1)
+        gprint('****Failed in step 2. Details follow.****')
+        lu.raise_geoproc_error(__filename__)
+
+    # Return any PYTHON or system specific errors
+    except:
+        lu.dashline(1)
+        gprint('****Failed in step 2. Details follow.****')
+        lu.raise_python_error(__filename__)
+
+
+
+
+        
