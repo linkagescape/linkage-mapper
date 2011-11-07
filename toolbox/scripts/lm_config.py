@@ -87,7 +87,7 @@ class Config():
 
         ### USER SETTABLE 
         # Add extra step to mosaic non-normalized LCCs in s5 (for WHCWG use)
-        CALCNONNORMLCCS = True 
+        CALCNONNORMLCCS = False 
         WRITETRUNCRASTER = True # Write a truncated version of mosaicked raster
         CWDTHRESH = 200000  # CWD corridor width in a truncated raster. 
         MINCOSTDIST = None
