@@ -42,13 +42,6 @@ def STEP5_calc_lccs():
             gprint('\n**EXTRA STEP 5 RUN to mosaic NON-normalized corridors**')
             calc_lccs(normalize)
             
-
-    # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
-        lu.dashline(1)
-        gprint('****Failed in step 5. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
-
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
@@ -205,7 +198,7 @@ def calc_lccs(normalize):
                 if normalize == True:
                     printText = "Normalized and mosaicked "
                 else:
-                    printText = "Mosaicked "
+                    printText = "Mosaicked NON-normalized "
                 gprint(printText + "corridor for link "
                                   "#" + str(linkId)
                                   + " connecting core areas " + str(corex) +
@@ -371,7 +364,7 @@ def calc_lccs(normalize):
         if rasterMin < tolerance:
             lu.dashline(1)
             msg = ('WARNING: Minimum value of mosaicked corridor map is ' 
-                   'much less than zero ('+str((float(gp.CellSize) * -10))+').'
+                   'much less than zero ('+str(rasterMin)+').'
                    '\nThis could mean that BOUNDING CIRCLE BUFFER DISTANCES '
                    'were too small and a corridor passed outside of a '
                    'bounding circle. All steps were completed. ')
