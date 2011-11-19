@@ -9,7 +9,7 @@ pairs specified in linkTable and cwd layers
 """
 
 __filename__ = "s5_calcLccs.py"
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 
 import os.path as path
 import time

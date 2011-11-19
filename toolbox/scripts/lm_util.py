@@ -4,7 +4,7 @@
 """Contains functions called by linkage mapper and barrier mapper scripts."""  
 
 __filename__ = "lm_util.py"
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 
 import os
 import sys
@@ -1872,7 +1872,7 @@ def check_cores():
     
     
 def hiccup_test(count, statement):
-    """Re-tries ArcGIS calls in case of server problems or 'other hiccups'."""
+    """Re-tries ArcGIS calls in case of server problems or other 'hiccups'."""
     try:
         if count < 10:
             sleepTime = 10 * count

@@ -1,5 +1,27 @@
-change where distances.txt stored
-trim down options- combine steps 1 and 2
+to simplify core areas...
+        S2CORE_RAS = "s2core_ras"
+        gp.workspace = Cfg.SCRATCHDIR
+        gp.CellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight
+        gp.extent = "MAXOF"
+        gp.FeatureToRaster_conversion(Cfg.COREFC, Cfg.COREFN, S2CORE_RAS, gp.Cellsize)
+        S2CORE_FC = "s2corefc" 
+        gp.RasterToPolygon_conversion(S2CORE_RAS, S2CORE_FC, "SIMPLIFY")
+
+then... create new field name same as core field name
+        copy gridcode values to this field 
+        
+        
+        
+                                           
+set options- write to project dir, let user know code will look there.
+
+OPTIONS FILE FOUND
+Options set to:
+
+NO OPTIONS FILE FOUND
+Default options will be used
+
+trim down options- combine steps 1 and 2?
 
 
 display cwd or ratio on top of corridors using sgticks?
@@ -98,7 +120,7 @@ Correct for euc dist?  cwd - pathlength or cwd/pathlength (minus doesn't give yo
 """
 
 __filename__ = "s8_centrality.py"
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 
 import os.path as path
 import os
