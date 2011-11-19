@@ -9,7 +9,7 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 
 import os.path as path
 
@@ -47,36 +47,26 @@ def STEP2_build_network():
         gprint('Running script' + __filename__)
         outlinkTableFile = lu.get_this_step_link_table(step=2)
 
-        # This is a warning flag if distances are mising in conefor
+        # Warning flag for missing distances in conefor file
         dropFlag = False
 
         # ------------------------------------------------------------------
-        # Load euclidean adjacency file if needed
-        if Cfg.S2ADJMETH_EU:
-            # adjacency file created from s1_getAdjacencies.py
-            eucAdjFile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
-            if not path.exists(eucAdjFile):
-                gprint('\nERROR: Euclidean adjacency file required '
-                                  'to keep Euclidean adjacent linksS: ' +
-                                  eucAdjFile)
-                exit(0)
-        else:
-            eucAdjFile = None
+        # adjacency file created from s1_getAdjacencies.py
+        eucAdjFile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
+        if not path.exists(eucAdjFile):
+            gprint('\nERROR: Euclidean adjacency file required from '
+                  'Step 1: ' + eucAdjFile)
+            exit(0)
 
         # ------------------------------------------------------------------
-        # Load cwd adjacency file if needed
-        if Cfg.S2ADJMETH_CW:
-             # adjacency file created from s1_getAdjacencies.py
-            cwdAdjFile = path.join(Cfg.DATAPASSDIR, "cwdAdj.csv")
-            if not path.exists(cwdAdjFile):
-                gprint('\nERROR: Cost-weighted adjacency file '
-                                  'required to keep CWD adjacent links: ' +
-                                  cwdAdjFile)
-                exit(0)
-        else:
-            cwdAdjFile = None
-
+        # adjacency file created from s1_getAdjacencies.py
+        cwdAdjFile = path.join(Cfg.DATAPASSDIR, "cwdAdj.csv")
+        if not path.exists(cwdAdjFile):
+            gprint('\nERROR: Cost-weighted adjacency file required from'
+                              'Step 1: ' + cwdAdjFile)
+            exit(0)
         #----------------------------------------------------------------------
+
         # Load eucDists matrix from file and npy.sort
         if Cfg.S2EUCDISTFILE is None:
             eucdist_file = generate_distance_file(cwdAdjFile,eucAdjFile)
@@ -86,7 +76,7 @@ def STEP2_build_network():
         eucDists = npy.loadtxt(eucdist_file, dtype='Float64', comments='#')
         numDists = eucDists.shape[0]
         # lu.dashline()
-        gprint('Core area distance list from Conefor Sensinode '
+        gprint('Core area distance list '
                           'loaded. \n')
         gprint('number of pairwise distances = ' + str(numDists))
         # lu.dashline(2)
@@ -135,97 +125,88 @@ def STEP2_build_network():
 
         #----------------------------------------------------------------------
         # Get adjacencies using adj files from step 1.
-        if cwdAdjFile is not None or eucAdjFile is not None:
-            if cwdAdjFile is not None:
-                adjList = npy.loadtxt(cwdAdjFile, dtype='int32', comments='#',
-                                  delimiter=',')  # creates a numpy array
+        adjList = npy.loadtxt(cwdAdjFile, dtype='int32', comments='#',
+                          delimiter=',')  # creates a numpy array
 
-                if len(adjList) == adjList.size:  # Just one connection
-                    cwdAdjList = npy.zeros((1, 3), dtype='int32')
-                    cwdAdjList[:, 0:3] = adjList[0:3]
-                else:
-                    cwdAdjList = adjList
-                cwdAdjList = cwdAdjList[:, 1:3]  # Drop first column
-                cwdAdjList = npy.sort(cwdAdjList)
-                gprint('Cost-weighted adjacency file loaded.')
-                maxCwdAdjCoreID = max(cwdAdjList[:, 1])
-            else:
-                maxCwdAdjCoreID = 0
+        if len(adjList) == adjList.size:  # Just one connection
+            cwdAdjList = npy.zeros((1, 3), dtype='int32')
+            cwdAdjList[:, 0:3] = adjList[0:3]
+        else:
+            cwdAdjList = adjList
+        cwdAdjList = cwdAdjList[:, 1:3]  # Drop first column
+        cwdAdjList = npy.sort(cwdAdjList)
+        gprint('Cost-weighted adjacency file loaded.')
+        maxCwdAdjCoreID = max(cwdAdjList[:, 1])
 
-            if eucAdjFile is not None:
-                # Create Numpy array
-                adjList = npy.loadtxt(eucAdjFile, dtype='int32', comments='#',
-                                      delimiter=',')
+        # Create Numpy array
+        adjList = npy.loadtxt(eucAdjFile, dtype='int32', comments='#',
+                              delimiter=',')
 
-                if len(adjList) == adjList.size:  # Just one connection
-                    eucAdjList = npy.zeros((1, 3), dtype='int32')
-                    eucAdjList[:, 0:3] = adjList[0:3]
-                else:
-                    eucAdjList = adjList
-                eucAdjList = eucAdjList[:, 1:3]  # Drop first column
-                eucAdjList = npy.sort(eucAdjList)
-                gprint('Euclidean adjacency file loaded')
-                maxEucAdjCoreID = max(eucAdjList[:, 1])
-            else:
-                maxEucAdjCoreID = 0
-            # lu.dashline(2)
+        if len(adjList) == adjList.size:  # Just one connection
+            eucAdjList = npy.zeros((1, 3), dtype='int32')
+            eucAdjList[:, 0:3] = adjList[0:3]
+        else:
+            eucAdjList = adjList
+        eucAdjList = eucAdjList[:, 1:3]  # Drop first column
+        eucAdjList = npy.sort(eucAdjList)
+        gprint('Euclidean adjacency file loaded')
+        maxEucAdjCoreID = max(eucAdjList[:, 1])
 
-            maxCoreId = max(maxEucAdjCoreID, maxCwdAdjCoreID, maxeudistid)
+        maxCoreId = max(maxEucAdjCoreID, maxCwdAdjCoreID, maxeudistid)
 
-            # FIXME: consider using a lookup table to reduce size of matrix
-            # when there are gaps in core areas
-            if cwdAdjFile is not None:
-                cwdAdjMatrix = npy.zeros((maxCoreId + 1, maxCoreId + 1),
-                                     dtype='int32')
-                for x in range(0, len(cwdAdjList)):
-                    cwdAdjMatrix[cwdAdjList[x, 0], cwdAdjList[x, 1]] = 1
-                cwdAdjMatrix[0, :] = 0  # 0 values for core Ids are invalid
-                cwdAdjMatrix[0, :] = 0
+        # FIXME: consider using a lookup table to reduce size of matrix
+        # when there are gaps in core areas
+        cwdAdjMatrix = npy.zeros((maxCoreId + 1, maxCoreId + 1),
+                             dtype='int32')
+        for x in range(0, len(cwdAdjList)):
+            cwdAdjMatrix[cwdAdjList[x, 0], cwdAdjList[x, 1]] = 1
+        cwdAdjMatrix[0, :] = 0  # 0 values for core Ids are invalid
+        cwdAdjMatrix[0, :] = 0
 
-            if eucAdjFile is not None:
-                eucAdjMatrix = npy.zeros((maxCoreId + 1, maxCoreId + 1),
-                                     dtype='int32')
-                for x in range(0, len(eucAdjList)):
-                    eucAdjMatrix[eucAdjList[x, 0], eucAdjList[x, 1]] = 1
-                eucAdjMatrix[0, :] = 0  # 0 values for core Ids are invalid
-                eucAdjMatrix[0, :] = 0
+        eucAdjMatrix = npy.zeros((maxCoreId + 1, maxCoreId + 1),
+                             dtype='int32')
+        for x in range(0, len(eucAdjList)):
+            eucAdjMatrix[eucAdjList[x, 0], eucAdjList[x, 1]] = 1
+        eucAdjMatrix[0, :] = 0  # 0 values for core Ids are invalid
+        eucAdjMatrix[0, :] = 0
 
-            distanceMatrix = npy.zeros((maxCoreId + 1, maxCoreId + 1),
-                                       dtype='int32')
-            for x in range(0, len(eucDists)):
-                distanceMatrix[eucDists[x, 0], eucDists[x, 1]] = (
-                    int(eucDists[x, 2]))
+        distanceMatrix = npy.zeros((maxCoreId + 1, maxCoreId + 1),
+                                   dtype='int32')
 
-            if Cfg.S2ADJMETH_CW:
-                difference = npy.where(distanceMatrix, 1, 0)
-                difference = difference - cwdAdjMatrix
-                if npy.amin(difference) < 0:
-                    dropFlag = True
-                # Drop anything not cwd adjacent
-                distanceMatrix = npy.multiply(distanceMatrix, cwdAdjMatrix)
+        for x in range(0, len(eucDists)):
+            distanceMatrix[eucDists[x, 0], eucDists[x, 1]] = (
+                int(eucDists[x, 2]))
 
-            elif Cfg.S2ADJMETH_EU:
-                difference = npy.where(distanceMatrix, 1, 0)
-                difference = difference - eucAdjMatrix
-                if npy.amin(difference) < 0:
-                    dropFlag = True
-                del difference
-                # Drop anything not euc adjacent
-                distanceMatrix = npy.multiply(distanceMatrix, eucAdjMatrix)
+        if Cfg.S2ADJMETH_CW:
+            difference = npy.where(distanceMatrix, 1, 0)
+            difference = difference - cwdAdjMatrix
+            if npy.amin(difference) < 0:
+                dropFlag = True
+            # Drop anything not cwd adjacent
+            distanceMatrix = npy.multiply(distanceMatrix, cwdAdjMatrix)
 
-            else:  # "Keep all adjacent links"
-                adjMatrix = eucAdjMatrix
-                adjMatrix = adjMatrix + cwdAdjMatrix
-                adjMatrix = npy.where(adjMatrix == 2, 1, adjMatrix)
-                difference = npy.where(distanceMatrix, 1, 0)
-                difference = difference - adjMatrix
+        elif Cfg.S2ADJMETH_EU:
+            difference = npy.where(distanceMatrix, 1, 0)
+            difference = difference - eucAdjMatrix
+            if npy.amin(difference) < 0:
+                dropFlag = True
+            del difference
+            # Drop anything not euc adjacent
+            distanceMatrix = npy.multiply(distanceMatrix, eucAdjMatrix)
 
-                if npy.amin(difference) < 0:
-                    dropFlag = True
+        else:  # "Keep all adjacent links"
+            adjMatrix = eucAdjMatrix
+            adjMatrix = adjMatrix + cwdAdjMatrix
+            adjMatrix = npy.where(adjMatrix == 2, 1, adjMatrix)
+            difference = npy.where(distanceMatrix, 1, 0)
+            difference = difference - adjMatrix
 
-                del difference
-                # Drop anything not adjacent
-                distanceMatrix = npy.multiply(distanceMatrix, adjMatrix)
+            if npy.amin(difference) < 0:
+                dropFlag = True
+
+            del difference
+            # Drop anything not adjacent
+            distanceMatrix = npy.multiply(distanceMatrix, adjMatrix)
 
         #----------------------------------------------------------------------
         # OK, we have distance matrix (which now defines which pairs can be
@@ -242,21 +223,19 @@ def STEP2_build_network():
             linkTable[x, Cfg.LTB_EUCDIST] = distanceMatrix[rows[x], cols[x]]
         del distanceMatrix
 
-        if eucAdjFile is not None:
-            # Get rid of 0 index- we don't have any valid core ids with 0
-            # values
-            eucAdjMatrix = lu.delete_row_col(eucAdjMatrix, 0, 0)
-            for x in range(0, len(rows)):
-                linkTable[x, Cfg.LTB_EUCADJ] = eucAdjMatrix[rows[x], cols[x]]
-            del eucAdjMatrix
+        # Get rid of 0 index- we don't have any valid core ids with 0
+        # values
+        eucAdjMatrix = lu.delete_row_col(eucAdjMatrix, 0, 0)
+        for x in range(0, len(rows)):
+            linkTable[x, Cfg.LTB_EUCADJ] = eucAdjMatrix[rows[x], cols[x]]
+        del eucAdjMatrix
 
-        if cwdAdjFile is not None:
-            # Get rid of 0 index- we don't have any valid core ids with 0
-            # values
-            cwdAdjMatrix = lu.delete_row_col(cwdAdjMatrix, 0, 0)
-            for x in range(0, len(rows)):
-                linkTable[x, Cfg.LTB_CWDADJ] = cwdAdjMatrix[rows[x], cols[x]]
-            del cwdAdjMatrix
+        # Get rid of 0 index- we don't have any valid core ids with 0
+        # values
+        cwdAdjMatrix = lu.delete_row_col(cwdAdjMatrix, 0, 0)
+        for x in range(0, len(rows)):
+            linkTable[x, Cfg.LTB_CWDADJ] = cwdAdjMatrix[rows[x], cols[x]]
+        del cwdAdjMatrix
 
         if dropFlag:
             lu.dashline(1)
@@ -273,11 +252,8 @@ def STEP2_build_network():
         linkTable[:, Cfg.LTB_CLUST1] = -1  # No clusters until later steps
         linkTable[:, Cfg.LTB_CLUST2] = -1
 
-        if cwdAdjFile is None:
-            linkTable[:, Cfg.LTB_CWDADJ] = -1  # Euc adjacency not evaluated
-        if eucAdjFile is None:
-            # Cost-weighted adjacency not evaluated
-            linkTable[:, Cfg.LTB_EUCADJ] = -1
+        linkTable[:, Cfg.LTB_CWDADJ] = -1  # Euc adjacency not evaluated
+        linkTable[:, Cfg.LTB_EUCADJ] = -1
 
         # not evaluated yet. May eventually have ability to get lcdistances
         # for adjacent cores from s1_getAdjacencies.py
@@ -360,8 +336,8 @@ def STEP2_build_network():
 
     return
 
-
-def get_adj_list(adjFile):
+# Fixme: routine below could be used for other operations in code above.
+def get_adj_list(adjFile): 
     try:
         inAdjList = npy.loadtxt(adjFile, dtype='int32', comments='#',
                           delimiter=',')  # creates a numpy array
@@ -396,7 +372,7 @@ def generate_distance_file(cwdAdjFile,eucAdjFile):
         gp.CellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight    
                 
         if SIMPLIFY_CORES == True:
-            gprint('Simplifying polygons')
+            gprint('Simplifying polygons for core pair distance calculations')
             COREFC_SIMP = path.join(Cfg.SCRATCHDIR, "CoreFC_Simp.shp")
             tolerance = float(gp.CellSize) / 3
             
@@ -406,9 +382,11 @@ def generate_distance_file(cwdAdjFile,eucAdjFile):
             except:
                 arc10 = False
             if arc10 == True:
-                CA.SimplifyPolygon(Cfg.COREFC, COREFC_SIMP,"POINT_REMOVE", tolerance, "#", "NO_CHECK")
+                CA.SimplifyPolygon(Cfg.COREFC, COREFC_SIMP,"POINT_REMOVE", 
+                                    tolerance, "#", "NO_CHECK")
             else:
-                gp.SimplifyPolygon(Cfg.COREFC, COREFC_SIMP,"POINT_REMOVE", tolerance, "#", "NO_CHECK")
+                gp.SimplifyPolygon(Cfg.COREFC, COREFC_SIMP,"POINT_REMOVE", 
+                                    tolerance, "#", "NO_CHECK")
                                          
                                           
             S2COREFC = COREFC_SIMP

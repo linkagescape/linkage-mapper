@@ -8,7 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 
 import os.path as path
 import sys
