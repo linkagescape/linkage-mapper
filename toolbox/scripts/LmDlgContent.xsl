@@ -138,8 +138,8 @@ function Window_onresize()
     <xsl:for-each select="Properties/PropertyGroup">
      <xsl:for-each select="Property">  
         <xsl:choose>
-         <xsl:when test='PropertyName="Param6" or PropertyName="Param8" or PropertyName="Param9" or PropertyName="Param11"
-            or PropertyName="Param13" or PropertyName="Param14" or PropertyName="Param15"'> 
+         <xsl:when test='PropertyName="Param6" or PropertyName="Param7" or PropertyName="Param8" or PropertyName="Param10"
+            or PropertyName="Param12" or PropertyName="Param13" or PropertyName="Param14"'> 
             <xsl:value-of select="CtrlName"/>.width = window.document.body.clientWidth - 50;
          </xsl:when>   
          <xsl:otherwise>
@@ -417,7 +417,7 @@ function clicker(a,b)
                     Process Steps
                 </TD>            
       </xsl:when>
-      <xsl:when test='PropertyName="Param17"'>                    
+      <xsl:when test='PropertyName="Param16"'>                    
                 <TD style="padding-bottom=5; padding-top=10">
                     Additional Options
                 </TD>
@@ -438,12 +438,12 @@ function clicker(a,b)
             <TABLE>
                 <TR>
                    <xsl:choose>
-                     <xsl:when test='PropertyName="Param11" or PropertyName="Param15"'> 
+                     <xsl:when test='PropertyName="Param10" or PropertyName="Param14"'> 
                         <TD class="lmsteppad">
                             <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');" /> 
                         </TD>
                      </xsl:when>  
-                     <xsl:when test='PropertyName="Param8" or PropertyName="Param10"'> 
+                     <xsl:when test='PropertyName="Param7" or PropertyName="Param9"'> 
                         <TD style="padding-top=7">
                             <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');" /> 
                         </TD>
@@ -461,8 +461,8 @@ function clicker(a,b)
 
         <xsl:otherwise>   
             <xsl:choose>
-             <xsl:when test='PropertyName="Param6" or PropertyName="Param8" or PropertyName="Param9" or PropertyName="Param13" 
-             or PropertyName="Param14"'> 
+             <xsl:when test='PropertyName="Param6" or PropertyName="Param7" or PropertyName="Param8" or PropertyName="Param12" 
+             or PropertyName="Param13"'> 
                 <TD class="lmsteppad">                    
                     <OBJECT width="100%" style="z-index: -1" classid="CLSID:9FA602C6-85AF-40E2-A64A-E938C70C67B9" id="{CtrlLabel}" onfocus="ShowHelpTopic('{PropertyName}Topic');"/>
                     <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');"/>                    
