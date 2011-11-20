@@ -355,7 +355,8 @@ def calc_lccs(normalize):
        
         # Check for unreasonably low minimum NLCC values
         propertyType = "MINIMUM"
-        rasterMin = float(str(gp.GetRasterProperties(mosaicRaster, propertyType)))
+        minObject = gp.GetRasterProperties(mosaicRaster, propertyType)
+        rasterMin = float(str(minObject.getoutput(0)))
         tolerance = (float(gp.CellSize) * -10)
 
         if not SAVENORMLCCS:
