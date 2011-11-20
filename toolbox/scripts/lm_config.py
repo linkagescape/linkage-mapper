@@ -8,7 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.6.6"
+__version__ = "0.7.0"
 
 import os.path as path
 import sys
@@ -63,27 +63,27 @@ class Config():
 
         # Processing steps inputs
         STEP1 = str2bool(sys.argv[5])
-        S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
-        
+      
         ### SETTING BOTH ADJ METHODS TO TRUE FOR S1 IN FUTURE RELEASES ###
+        # S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
         S1ADJMETH_CW = True
         S1ADJMETH_EU = True
         
-        STEP2 = str2bool(sys.argv[7])
-        S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[8])       
-        S2EUCDISTFILE = nullstring(sys.argv[9])       
-        STEP3 = str2bool(sys.argv[10])
-        S3DROPLCCS = sys.argv[11]  # Drop LCC's with intermediate cores
-        STEP4 = str2bool(sys.argv[12])
-        S4MAXNN = int(sys.argv[13])  # No of connected nearest neighbors
-        S4DISTTYPE_CW, S4DISTTYPE_EU = setadjmeth(sys.argv[14])  # NN Unit
-        S4CONNECT = str2bool(sys.argv[15])
-        STEP5 = str2bool(sys.argv[16])
+        STEP2 = str2bool(sys.argv[6])
+        S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[7])       
+        S2EUCDISTFILE = nullstring(sys.argv[8])       
+        STEP3 = str2bool(sys.argv[9])
+        S3DROPLCCS = sys.argv[10]  # Drop LCC's with intermediate cores
+        STEP4 = str2bool(sys.argv[11])
+        S4MAXNN = int(sys.argv[12])  # No of connected nearest neighbors
+        S4DISTTYPE_CW, S4DISTTYPE_EU = setadjmeth(sys.argv[13])  # NN Unit
+        S4CONNECT = str2bool(sys.argv[14])
+        STEP5 = str2bool(sys.argv[15])
 
         # Optional input parameters
-        BUFFERDIST = nullfloat(sys.argv[17])
-        MAXCOSTDIST = nullfloat(sys.argv[18])
-        MAXEUCDIST = nullfloat(sys.argv[19])
+        BUFFERDIST = nullfloat(sys.argv[16])
+        MAXCOSTDIST = nullfloat(sys.argv[17])
+        MAXEUCDIST = nullfloat(sys.argv[18])
 
         ### USER SETTABLE 
         # Add extra step to mosaic non-normalized LCCs in s5 (for WHCWG use)
