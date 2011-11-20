@@ -4,7 +4,7 @@
 """Contains functions called by linkage mapper and barrier mapper scripts."""  
 
 __filename__ = "lm_util.py"
-__version__ = "0.6.6"
+__version__ = "0.7.0"
 
 import os
 import sys

@@ -9,7 +9,7 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.6.6"
+__version__ = "0.7.0"
 
 import os.path as path
 
@@ -23,7 +23,7 @@ import lm_util as lu
 SIMPLIFY_CORES = True #fixme: move to config
 
 NEAR_TBL = path.join(Cfg.SCRATCHDIR, "neartbl.dbf")
-DIST_FNAME = path.join(Cfg.PROJECTDIR, (Cfg.COREFC + "_dist.txt"))
+DIST_FNAME = path.join(Cfg.PROJECTDIR, (Cfg.COREFC + "_dists.txt"))
 FID_FN = "FID"
 INFID_FN = "IN_FID"
 NEARID_FN = "NEAR_FID"
