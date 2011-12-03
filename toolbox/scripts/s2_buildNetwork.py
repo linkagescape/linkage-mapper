@@ -9,7 +9,7 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.7.0"
+__version__ = "0.7.2_whcwg"
 
 import os.path as path
 
@@ -440,6 +440,7 @@ def generate_distance_file(cwdAdjFile,eucAdjFile):
                 outputrow.append(str(targetCore))                    
                 outputrow.append(str(dist))
                 output.append(csvseparator.join(outputrow))
+                del row
             del rows   
         start_time = lu.elapsed_time(start_time)           
  

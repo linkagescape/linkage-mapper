@@ -4,7 +4,7 @@
 """Contains functions called by linkage mapper and barrier mapper scripts."""  
 
 __filename__ = "lm_util.py"
-__version__ = "0.7.0"
+__version__ = "0.7.2_whcwg"
 
 import os
 import sys
@@ -1785,6 +1785,15 @@ def move_map(oldMap, newMap):
 ############################################################################
 ##Error Checking and Handling Functions ####################################
 ############################################################################
+def print_failure(statement):
+    """ Reports ArcGIS call that's failing before re-starting iteration.
+    
+    """ 
+    lu.dashline(1)
+    gprint('***Problem encountered executing statement:')
+    gprint('"' + statement + '"')
+    
+    
 def print_conefor_warning():
     """Warns that some links have no euclidean distances in conefor file."""
     gp.addmessage('\nWARNING: At least one potential link was dropped '
