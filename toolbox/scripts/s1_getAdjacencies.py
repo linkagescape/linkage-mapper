@@ -9,7 +9,7 @@ cost-weighted distance space
 """
 
 __filename__ = "s1_getAdjacencies.py"
-__version__ = "0.7.0"
+__version__ = "0.7.2_whcwg"
 
 import shutil
 import time
@@ -265,13 +265,6 @@ def euadjacency():
             else:
                 break
 
-        #Convert core raster to integer format # Not implemented
-        # if gp.exists(S1CORE_RAS):
-            # gp.delete_management(S1CORE_RAS)           
-        # gp.Int_sa(core_rastmp, S1CORE_RAS)
-        # gp.delete_management(core_rastmp)                
-                
-                
         start_time = time.clock()
 
         gp.scratchworkspace = gp.workspace
