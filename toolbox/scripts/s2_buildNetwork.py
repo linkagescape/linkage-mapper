@@ -9,7 +9,7 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.7.3_whcwg"
+__version__ = "0.7.3"
 
 import os.path as path
 
@@ -21,18 +21,12 @@ from lm_config import Config as Cfg
 import lm_util as lu
 
 ###
-SIMPLIFY_CORES = True #fixme: move to config
-
+SIMPLIFY_CORES = Cfg.SIMPLIFY_CORES
 NEAR_TBL = path.join(Cfg.SCRATCHDIR, "neartbl.dbf")
 DIST_FNAME = path.join(Cfg.PROJECTDIR, (Cfg.COREFC + "_dists.txt"))
-FID_FN = "FID"
-INFID_FN = "IN_FID"
-NEARID_FN = "NEAR_FID"
 NEAR_FN = "NEAR_DIST"
 S2CORE_RAS = "s2core_ras"
 S2COREFN = Cfg.COREFN
-NEAR_COREFN = S2COREFN + "_1"
-
 
 gp = Cfg.gp
 gprint = gp.addmessage
@@ -45,7 +39,7 @@ def STEP2_build_network():
     """
     try:
         lu.dashline(1)
-        gprint('Running script' + __filename__)
+        gprint('Running script ' + __filename__)
         outlinkTableFile = lu.get_this_step_link_table(step=2)
 
         # Warning flag for missing distances in conefor file
