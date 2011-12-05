@@ -10,7 +10,7 @@ extent of cwd calculations and speed computation.
 """
 
 __filename__ = "s3_calcCwds.py"
-__version__ = "0.7.2_whcwg"
+__version__ = "0.7.3_whcwg"
 
 import os.path as path
 import shutil
@@ -404,8 +404,7 @@ def STEP3_calc_cwds():
         tempFile = path.join(Cfg.DATAPASSDIR, "temp_linkTable_s3_partial.csv")        
         lu.delete_file(tempFile)
 
-
-        
+    
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)

@@ -9,7 +9,7 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.7.2_whcwg"
+__version__ = "0.7.3_whcwg"
 
 import os.path as path
 
@@ -20,6 +20,7 @@ import time
 from lm_config import Config as Cfg
 import lm_util as lu
 
+###
 SIMPLIFY_CORES = True #fixme: move to config
 
 NEAR_TBL = path.join(Cfg.SCRATCHDIR, "neartbl.dbf")
@@ -72,7 +73,7 @@ def STEP2_build_network():
             eucdist_file = generate_distance_file(cwdAdjFile,eucAdjFile)
         else:
             eucdist_file = Cfg.S2EUCDISTFILE
-
+        
         eucDists = npy.loadtxt(eucdist_file, dtype='Float64', comments='#')
         numDists = eucDists.shape[0]
         # lu.dashline()
@@ -177,24 +178,8 @@ def STEP2_build_network():
             distanceMatrix[eucDists[x, 0], eucDists[x, 1]] = (
                 int(eucDists[x, 2]))
 
-        if Cfg.S2ADJMETH_CW:
-            difference = npy.where(distanceMatrix, 1, 0)
-            difference = difference - cwdAdjMatrix
-            if npy.amin(difference) < 0:
-                dropFlag = True
-            # Drop anything not cwd adjacent
-            distanceMatrix = npy.multiply(distanceMatrix, cwdAdjMatrix)
-
-        elif Cfg.S2ADJMETH_EU:
-            difference = npy.where(distanceMatrix, 1, 0)
-            difference = difference - eucAdjMatrix
-            if npy.amin(difference) < 0:
-                dropFlag = True
-            del difference
-            # Drop anything not euc adjacent
-            distanceMatrix = npy.multiply(distanceMatrix, eucAdjMatrix)
-
-        else:  # "Keep all adjacent links"
+        if Cfg.S2ADJMETH_CW and Cfg.S2ADJMETH_EU:  # "Keep all adjacent links"
+            gprint("\nKeeping all adjacent links\n")
             adjMatrix = eucAdjMatrix
             adjMatrix = adjMatrix + cwdAdjMatrix
             adjMatrix = npy.where(adjMatrix == 2, 1, adjMatrix)
@@ -208,6 +193,25 @@ def STEP2_build_network():
             # Drop anything not adjacent
             distanceMatrix = npy.multiply(distanceMatrix, adjMatrix)
 
+        elif Cfg.S2ADJMETH_CW:
+            gprint("\nKeeping cost-weighted adjacent links\n")
+            difference = npy.where(distanceMatrix, 1, 0)
+            difference = difference - cwdAdjMatrix
+            if npy.amin(difference) < 0:
+                dropFlag = True
+            # Drop anything not cwd adjacent
+            distanceMatrix = npy.multiply(distanceMatrix, cwdAdjMatrix)
+
+        else:
+            gprint("\nKeeping Euclidean adjacent links\n")
+            difference = npy.where(distanceMatrix, 1, 0)
+            difference = difference - eucAdjMatrix
+            if npy.amin(difference) < 0:
+                dropFlag = True
+            del difference
+            # Drop anything not euc adjacent
+            distanceMatrix = npy.multiply(distanceMatrix, eucAdjMatrix)
+
         #----------------------------------------------------------------------
         # OK, we have distance matrix (which now defines which pairs can be
         # potential links).  Use it to create link table.
@@ -217,6 +221,9 @@ def STEP2_build_network():
         rows, cols = npy.where(distanceMatrix)
         linkTable = npy.zeros((len(rows), 10), dtype='int32')
 
+        linkTable[:, Cfg.LTB_CWDADJ] = -1  # Euc adjacency not evaluated
+        linkTable[:, Cfg.LTB_EUCADJ] = -1        
+        
         for x in range(0, len(rows)):
             linkTable[x, Cfg.LTB_CORE1] = rows[x] + 1
             linkTable[x, Cfg.LTB_CORE2] = cols[x] + 1
@@ -252,8 +259,6 @@ def STEP2_build_network():
         linkTable[:, Cfg.LTB_CLUST1] = -1  # No clusters until later steps
         linkTable[:, Cfg.LTB_CLUST2] = -1
 
-        linkTable[:, Cfg.LTB_CWDADJ] = -1  # Euc adjacency not evaluated
-        linkTable[:, Cfg.LTB_EUCADJ] = -1
 
         # not evaluated yet. May eventually have ability to get lcdistances
         # for adjacent cores from s1_getAdjacencies.py
