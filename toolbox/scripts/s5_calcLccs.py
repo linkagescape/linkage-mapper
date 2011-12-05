@@ -9,7 +9,7 @@ pairs specified in linkTable and cwd layers
 """
 
 __filename__ = "s5_calcLccs.py"
-__version__ = "0.7.3_whcwg"
+__version__ = "0.7.3"
 
 import os.path as path
 import time
@@ -66,7 +66,7 @@ def calc_lccs(normalize):
             writeTruncRaster = False
 
         lu.dashline(1)
-        gprint('Running script' + __filename__)
+        gprint('Running script ' + __filename__)
         linkTableFile = lu.get_prev_step_link_table(step=5)
         gp.workspace = Cfg.SCRATCHDIR
 
