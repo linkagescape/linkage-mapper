@@ -8,7 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.7.3_whcwg"
+__version__ = "0.7.3"
 
 import os.path as path
 import sys
@@ -89,14 +89,17 @@ class Config():
         MAXEUCDIST = nullfloat(sys.argv[18])
         if MAXEUCDIST == 0:
             MAXEUCDIST = None
-        ### USER SETTABLE 
-        # Add extra step to mosaic non-normalized LCCs in s5 (for WHCWG use)
-        CALCNONNORMLCCS = True
+
+         ### USER SETTABLE 
+        CALCNONNORMLCCS = False # Add extra step to mosaic non-normalized 
+                               # LCCs in s5 (for WHCWG use)
         WRITETRUNCRASTER = True # Write a truncated version of mosaicked raster
         CWDTHRESH = 200000  # CWD corridor width in a truncated raster. 
         MINCOSTDIST = None
         MINEUCDIST = None
-        SAVENORMLCCS = False  # Set to True to save individual norm LCC grids        
+        SAVENORMLCCS = False  # Set to True to save individual norm LCC grids 
+        SIMPLIFY_CORES = True # Simplifies core areas before calculating 
+                              # pairwise euclidean distances
         ### END USER SETTABLE 
         
         
