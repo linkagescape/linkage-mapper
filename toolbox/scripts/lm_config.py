@@ -8,7 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.7.2_whcwg"
+__version__ = "0.7.3_whcwg"
 
 import os.path as path
 import sys
@@ -66,6 +66,7 @@ class Config():
       
         ### SETTING BOTH ADJ METHODS TO TRUE FOR S1 IN FUTURE RELEASES ###
         # S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
+
         S1ADJMETH_CW = True
         S1ADJMETH_EU = True
         
