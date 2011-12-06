@@ -10,7 +10,7 @@ extent of cwd calculations and speed computation.
 """
 
 __filename__ = "s3_calcCwds.py"
-__version__ = "0.7.3"
+__version__ = "0.7.4"
 
 import os.path as path
 import shutil
@@ -539,8 +539,15 @@ def do_cwd_calcs(workspace, x, linkTable, coresToMap, boundResis,
             else: exec statement
 
         # Cost distance raster creation
+        gp.Extent = "MINOF"
+
         statement = ('gp.CostDistance_sa(SRCRASTER, bResistance, '
                      'outDistanceRaster, Cfg.TMAXCWDIST, "BACK")')                                       
+
+        exec statement
+        
+        
+        
         try: 
             exec statement
             randomerror()

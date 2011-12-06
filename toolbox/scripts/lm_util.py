@@ -4,7 +4,7 @@
 """Contains functions called by linkage mapper and barrier mapper scripts."""  
 
 __filename__ = "lm_util.py"
-__version__ = "0.7.3"
+__version__ = "0.7.4"
 
 import os
 import sys
@@ -1789,7 +1789,7 @@ def print_failure(statement):
     """ Reports ArcGIS call that's failing before re-starting iteration.
     
     """ 
-    lu.dashline(1)
+    dashline(1)
     gprint('***Problem encountered executing statement:')
     gprint('"' + statement + '"')
     
