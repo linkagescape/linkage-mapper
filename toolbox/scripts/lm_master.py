@@ -11,7 +11,7 @@ Numpy
 """
 
 __filename__ = "lm_master.py"
-__version__ = "0.7.0"
+__version__ = "0.7.4"
 
 import os.path as path
 
@@ -94,12 +94,16 @@ def lm_master():
 
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
-
+        gp.OverwriteOutput = True
+        
         # Make a local grid copy of resistance raster- will run faster than gdb
         # Don't know if raster is in a gdb if entered from TOC
         lu.delete_data(Cfg.RESRAST)
         gprint('\nMaking local copy of resistance raster.')
-        gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
+        try:
+            gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
+        except: # This sometimes fails due to bad file locks
+            Cfg.RESRAST = Cfg.RESRAST_IN
         gp.SnapRaster = Cfg.RESRAST
         
         # Run linkage mapper processing steps
