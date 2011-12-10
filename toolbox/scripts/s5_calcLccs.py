@@ -9,7 +9,7 @@ pairs specified in linkTable and cwd layers
 """
 
 __filename__ = "s5_calcLccs.py"
-__version__ = "0.7.0"
+__version__ = "0.7.4"
 
 import os.path as path
 import time
@@ -66,7 +66,7 @@ def calc_lccs(normalize):
             writeTruncRaster = False
 
         lu.dashline(1)
-        gprint('Running script' + __filename__)
+        gprint('Running script ' + __filename__)
         linkTableFile = lu.get_prev_step_link_table(step=5)
         gp.workspace = Cfg.SCRATCHDIR
 
@@ -135,8 +135,12 @@ def calc_lccs(normalize):
         numGridsWritten = 0
         coreList = linkTable[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1]
         coreList = npy.sort(coreList)
-
-        for x in range(0,numLinks):
+ 
+        failures = 0
+        x = 0
+        endIndex = numLinks
+        while x < endIndex:
+        #for x in range(0,numLinks):
             linkId = str(int(linkTable[x,Cfg.LTB_LINKID]))
 
             if (linkTable[x,Cfg.LTB_LINKTYPE] > 0):
@@ -169,12 +173,15 @@ def calc_lccs(normalize):
                 statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
                             'lccNormRaster)')
                 start_time = time.clock()
-                while True:
-                    try: exec statement
-                    except:
-                        count,tryAgain = lu.hiccup_test(count,statement)
-                        if not tryAgain: exec statement
-                    else: break
+                try: 
+                    exec statement
+                    randomerror()
+                except:
+                    failures = failures + 1
+                    if failures < 10:
+                        lu.print_failure(statement)
+                        continue                               
+                    else: exec statement
 
                 gp.Extent = "MAXOF"
                 if numGridsWritten == 0 and dirCount == 0:
@@ -186,12 +193,15 @@ def calc_lccs(normalize):
                     count = 0
                     statement = ('gp.Mosaic_management(lccNormRaster, '
                                  'mosaicRaster, "MINIMUM", "MATCH")')
-                    while True:
-                        try: exec statement
-                        except:
-                            count,tryAgain = lu.hiccup_test(count,statement)
-                            if not tryAgain: exec statement
-                        else: break
+                    try: 
+                        exec statement
+                        randomerror()
+                    except:
+                        failures = failures + 1
+                        if failures < 10:
+                            lu.print_failure(statement)
+                            continue
+                        else: exec statement
 
                 endTime = time.clock()
                 processTime = round((endTime - start_time), 2)
@@ -228,12 +238,16 @@ def calc_lccs(normalize):
                         # because otherwise Arc slows to a crawl
                         dirCount = dirCount + 1
                         numGridsWritten = 0
-                        clccdir = path.join(Cfg.LCCBASEDIR, Cfg.LCCNLCDIR_NM + str(dirCount))
+                        clccdir = path.join(Cfg.LCCBASEDIR, 
+                                            Cfg.LCCNLCDIR_NM + str(dirCount))
                         #clccdir = path.join(clccdir, str(dirCount))
                         #clccdir = clccdir+str(dirCount)
                         gprint("Creating output folder: " + clccdir)
                         gp.CreateFolder_management(Cfg.LCCBASEDIR,
                                                        path.basename(clccdir))
+            x = x + 1
+            failures = 0
+        
         #rows that were temporarily disabled
         rows = npy.where(linkTable[:,Cfg.LTB_LINKTYPE]>100)
         linkTable[rows,Cfg.LTB_LINKTYPE] = (
@@ -252,7 +266,8 @@ def calc_lccs(normalize):
         count = 0
         statement = 'gp.CopyRaster_management(mosaicRaster, mosRaster)'
         while True:
-            try: exec statement
+            try: 
+                exec statement
             except:
                 count,tryAgain = lu.hiccup_test(count,statement)
                 if not tryAgain:
@@ -267,7 +282,8 @@ def calc_lccs(normalize):
         count = 0
         statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
         while True:
-            try: exec statement
+            try: 
+                exec statement
             except:
                 count,tryAgain = lu.hiccup_test(count,statement)
                 if not tryAgain: exec statement
@@ -292,7 +308,7 @@ def calc_lccs(normalize):
 
         
         if writeTruncRaster == True:
-            # ---------------------------------------------------------------------
+            # -----------------------------------------------------------------
             # Set anything beyond Cfg.CWDTHRESH to NODATA.
             truncRaster = PREFIX + mosaicBaseName + "_truncated_values"
             expression = ("(" + intRaster + " * (con(" + intRaster + "<= " +
@@ -300,7 +316,8 @@ def calc_lccs(normalize):
             count = 0
             statement = 'gp.SingleOutputMapAlgebra_sa(expression, truncRaster)'
             while True:
-                try: exec statement
+                try: 
+                    exec statement
                 except:
                     count,tryAgain = lu.hiccup_test(count,statement)
                     if not tryAgain: exec statement
@@ -386,3 +403,15 @@ def calc_lccs(normalize):
         lu.raise_python_error(__filename__)
 
     return
+
+def randomerror():
+    # import random
+    # test = random.randrange(1, 4)
+    # if test == 2:
+        # gprint('Creating artificial error')
+        # blarg
+    return    
+
+    
+    
+        

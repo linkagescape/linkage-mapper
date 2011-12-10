@@ -8,7 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.7.0"
+__version__ = "0.7.4"
 
 import os.path as path
 import sys
@@ -66,6 +66,7 @@ class Config():
       
         ### SETTING BOTH ADJ METHODS TO TRUE FOR S1 IN FUTURE RELEASES ###
         # S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
+
         S1ADJMETH_CW = True
         S1ADJMETH_EU = True
         
@@ -83,16 +84,22 @@ class Config():
         # Optional input parameters
         BUFFERDIST = nullfloat(sys.argv[16])
         MAXCOSTDIST = nullfloat(sys.argv[17])
+        if MAXCOSTDIST == 0:
+            MAXCOSTDIST = None
         MAXEUCDIST = nullfloat(sys.argv[18])
+        if MAXEUCDIST == 0:
+            MAXEUCDIST = None
 
-        ### USER SETTABLE 
-        # Add extra step to mosaic non-normalized LCCs in s5 (for WHCWG use)
-        CALCNONNORMLCCS = False 
+         ### USER SETTABLE 
+        CALCNONNORMLCCS = False # Add extra step to mosaic non-normalized 
+                               # LCCs in s5 (for WHCWG use)
         WRITETRUNCRASTER = True # Write a truncated version of mosaicked raster
         CWDTHRESH = 200000  # CWD corridor width in a truncated raster. 
         MINCOSTDIST = None
         MINEUCDIST = None
-        SAVENORMLCCS = False  # Set to True to save individual norm LCC grids        
+        SAVENORMLCCS = False  # Set to True to save individual norm LCC grids 
+        SIMPLIFY_CORES = True # Simplifies core areas before calculating 
+                              # pairwise euclidean distances
         ### END USER SETTABLE 
         
         
@@ -215,5 +222,5 @@ class Config():
     
     #Temporary resistance raster copy to be created in lm_master
     RESRAST  = path.join(SCRATCHDIR, 'resrast')
-    
+
 
