@@ -13,7 +13,7 @@ def main():
 
     gp.MapLinkages(
         "demoProject", "/demoData/Cores.shp", "core_ID", 
-        "/demoData/resistances", "true", "Cost-Weighted & Euclidean", "true", 
+        "/demoData/resistances", "true", "true", 
         "Cost-Weighted & Euclidean", "C:/lm_test/demoData/distances_Cores.txt",
         "true", "true", "false", "4", "Cost-Weighted", "false", "true", 
         "100000", "100000", "100000")
