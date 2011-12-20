@@ -8,7 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.7.4"
+__version__ = "0.7.5"
 
 import os.path as path
 import sys
@@ -204,6 +204,7 @@ class Config():
     LT_NNC = 10  # Corridor connecting N Nearest Neighbors
     LT_CLU = 20  # Connects_constellations (corridor)
     LT_NNCT = 30  # TEMP NN corridor links (s4), may be able to get rid of this
+    LT_KEEP = 100 #user retained despite length
     # 1 corridor
     # 10 NN corridor
     # 11 1st nn (future)

@@ -9,7 +9,7 @@ pairs specified in linkTable and cwd layers
 """
 
 __filename__ = "s5_calcLccs.py"
-__version__ = "0.7.4"
+__version__ = "0.7.5"
 
 import os.path as path
 import time
@@ -177,9 +177,9 @@ def calc_lccs(normalize):
                     exec statement
                     randomerror()
                 except:
-                    failures = failures + 1
+                    
                     if failures < 10:
-                        lu.print_failure(statement)
+                        failures = lu.print_failures(statement, failures)
                         continue                               
                     else: exec statement
 
@@ -197,9 +197,8 @@ def calc_lccs(normalize):
                         exec statement
                         randomerror()
                     except:
-                        failures = failures + 1
                         if failures < 10:
-                            lu.print_failure(statement)
+                            failures = lu.print_failures(statement, failures)
                             continue
                         else: exec statement
 
@@ -225,10 +224,10 @@ def calc_lccs(normalize):
                     corey1 = int(coreList[y,1])
                     if corex1 == corex and corey1 == corey:
                         linkTable[y,Cfg.LTB_LINKTYPE] = (
-                            linkTable[y,Cfg.LTB_LINKTYPE] + 100)
+                            linkTable[y,Cfg.LTB_LINKTYPE] + 1000)
                     elif corex1==corey and corey1==corex:
                         linkTable[y,Cfg.LTB_LINKTYPE] = (
-                            linkTable[y,Cfg.LTB_LINKTYPE] + 100)
+                            linkTable[y,Cfg.LTB_LINKTYPE] + 1000)
 
 
                 numGridsWritten = numGridsWritten + 1
@@ -249,13 +248,14 @@ def calc_lccs(normalize):
             failures = 0
         
         #rows that were temporarily disabled
-        rows = npy.where(linkTable[:,Cfg.LTB_LINKTYPE]>100)
+        rows = npy.where(linkTable[:,Cfg.LTB_LINKTYPE]>1000)
         linkTable[rows,Cfg.LTB_LINKTYPE] = (
-            linkTable[rows,Cfg.LTB_LINKTYPE] - 100)
+            linkTable[rows,Cfg.LTB_LINKTYPE] - 1000)
         # ---------------------------------------------------------------------
 
         # Create output geodatabase
-        gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(outputGDB))
+        if not gp.exists(outputGDB):
+            gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(outputGDB))
         gp.workspace = outputGDB
 
         gp.pyramid = "NONE"
@@ -405,11 +405,16 @@ def calc_lccs(normalize):
     return
 
 def randomerror():
-    # import random
-    # test = random.randrange(1, 4)
-    # if test == 2:
-        # gprint('Creating artificial error')
-        # blarg
+    """ Used to test error recovery.
+    
+    """    
+    generateError = False # Set to True to create random errors
+    if generateError == True:
+        import random
+        test = random.randrange(1, 6)
+        if test == 2:
+            gprint('Creating artificial error')
+            blarg
     return    
 
     

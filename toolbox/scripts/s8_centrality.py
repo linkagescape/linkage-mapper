@@ -1,103 +1,3 @@
-                                           
-set options- write to project dir, let user know code will look there.
---or--
-have an option to load a settings file.  user places it wherever.
-
-OPTIONS FILE FOUND
-Options set to:
-
-NO OPTIONS FILE FOUND
-Default options will be used
-
-display cwd or ratio on top of corridors using sticks?
-
-
-        elif linktable.shape[1] == 13:
-            outFile.write("#link,coreId1,coreId2,cluster1,cluster2,linkType,"
-                           "eucDist,lcDist,eucAdj,cwdAdj,lcpLength,"
-                           "cwdToEucRatio,cwdToPathRatio\n")
-right now this is just for final linktable.  but calculated for all lcplines.
-
-add lcplength lcp shapefile? right now is just ratio
-
-# Min1=Rank(1,[acost1],[acost2],[acost3]....) where acostx is the
-# accumulative cost to HCA x.
-# Likewise, do:
-
-# Min2=Rank(2,[acost1],[acost2],[acost3]....)
-#can we do a rank with 100 acosts?  what about nodata? NO.
-#So, just don't normalize and do regular min mosaic of cost distances.
-Correct for euc dist?  cwd - pathlength or cwd/pathlength (minus doesn't give you wider corridors..)
-
-
-
-                      
-
-#For recursive deletes:
-# from os.path import join, getsize
-# for root, dirs, files in os.walk('python/Lib/email'):
-    # print root, "consumes",
-    # print sum(getsize(join(root, name)) for name in files),
-    # print "bytes in", len(files), "non-directory files"
-    # if 'CVS' in dirs:
-        # dirs.remove('CVS')  # don't visit CVS directories
-
-# In the next example, walking the tree bottom-up is essential: rmdir() doesn’t allow deleting a directory before the directory is empty:
-
-# # Delete everything reachable from the directory named in "top",
-# # assuming there are no symbolic links.
-# # CAUTION:  This is dangerous!  For example, if top == '/', it
-# # could delete all your disk files.
-# import os
-# for root, dirs, files in os.walk(top, topdown=False):
-    # for name in files:
-        # os.remove(os.path.join(root, name))
-    # for name in dirs:
-        # os.rmdir(os.path.join(root, name))
-
-
-        
-                                             
-# Add defaults to dialog?  Or at least hints (bc's speed calcs).
-
-#don't delete scratchdir if may be used by a next step
-
-#set pinchpoint 0 current to nodata when input nodata
-   #eventually do in cs
-   #also in cs- show average current density in polygons
-   #next release??
-   
-# add check for FID or ID as field name in toolbox.  Disallow.
-# make sure core area field name is short integer
-
-#Factorial least cost paths? (Consider all cores adjacent, add pixels)
-
-#centrality- copy datapass/cores to outputgdb
-
-
-#option 1 = centrality?
-# Comment code
-# Update demo
-
-#barriers- allow map units or pixels?
-# allow arbitrary resistance of restored habitat
-# is it open in arcmap message
-#Divide centrality by # cores?
-# separate tools, and then a single all-in-one?
-# capitalize constants like CONFIGDIR
-# calculate ratios for all linktables
-# remove stick shapefile at start of script?
-# clean up network current maps
-# eventually have nework connectedness measures.  these would have all pairs as sources and targets, 2 measures using eff resis with r's parm'd using eff resis and cwd vals
-
-# put all outputgdb raster names in cfg
-# results tab in ug
-
-#UPDATE CIRCUITSCAPE WITH VIRAL'S NEW GAPDT
-# Update circuitscape with multi component code
-
-# global current flow? i.e. all pairs of cores with raster?
-
 #!/usr/bin/env python2.5
 
 """Maps pinch points using Circuitscape given CWD calculations from
@@ -105,7 +5,7 @@ Correct for euc dist?  cwd - pathlength or cwd/pathlength (minus doesn't give yo
 """
 
 __filename__ = "s8_centrality.py"
-__version__ = "0.7.0"
+__version__ = "0.7.5"
 
 import os.path as path
 import os
@@ -113,7 +13,8 @@ import time
 import shutil
 import arcgisscripting
 import numpy as npy
-
+import subprocess
+            
 from lm_config import Config as Cfg
 import lm_util as lu
 
@@ -139,7 +40,15 @@ def STEP8_calc_centrality():
             
         gp.workspace = Cfg.SCRATCHDIR
 
-        invalidFNs = {'fid','id','oid','shape'}
+        csPath = lu.getCsPath()
+        if csPath == None:
+            msg = ('Cannot find an installation of Circuitscape 3.5.5' 
+                    '\nor greater in your Program Files directory.') 
+            gp.AddError(msg)
+            gp.AddMessage(gp.GetMessages(2))
+            exit(1)
+        
+        invalidFNs = ['fid','id','oid','shape']
         if Cfg.COREFN.lower() in invalidFNs:
         #if Cfg.COREFN == 'FID' or Cfg.COREFN == 'ID':
             lu.dashline(1)
@@ -246,10 +155,15 @@ def STEP8_calc_centrality():
         components = lu.components_no_sparse(G) 
         # Currently, need to solve one component at a time with Circuitscape
         for component in range (1, npy.max(components) + 1):
-            inComp = npy.where(components[:] == component)
-            notInComp = npy.where(components[:] != component)
-            componentGraph = lu.delete_row_col(G,notInComp,notInComp)
-            componentNodeNames = nodeNames[inComp]
+            if npy.max(components) > 1:
+                inComp = npy.where(components[:] == component)
+                notInComp = npy.where(components[:] != component)
+                componentGraph = lu.delete_row_col(G,notInComp,notInComp)
+                componentNodeNames = nodeNames[inComp]
+            else:
+                componentGraph = G
+                componentNodeNames = nodeNames
+
             rows,cols, = npy.where(componentGraph)
             data = componentGraph[rows,cols]
             numEntries = len(data)
@@ -259,14 +173,11 @@ def STEP8_calc_centrality():
             graphListComponent[:,1] = componentNodeNames[cols]
             graphListComponent[:,2] = data
 
-
             write_graph(options['habitat_file'] ,graphListComponent)                
-            systemCall = path.join(os.path.dirname(
-                os.path.realpath( __file__ )), 'circuitscape\\cs_run.exe')
-            systemCall = systemCall + ' ' + outConfigFile  
-            import subprocess
-            gprint('Calculating current flow centrality...')
-            subprocess.check_call(systemCall, shell=True)
+
+            gprint('\nCalculating current flow centrality for component ' + str(component))
+#            subprocess.check_call(systemCall, shell=True)
+            subprocess.call([csPath, outConfigFile], shell=True)                     
             
             outputFN = 'Circuitscape_network_branch_currents_cum.txt'
             currentList = path.join(OUTCENTRALITYDIR, outputFN)
@@ -313,12 +224,14 @@ def STEP8_calc_centrality():
                           linkTableFinalFile)
         
         
-        
-        
-        #copy core area map to gdb.
-        gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.CORECENTRALITYGDB))
+
+        # ListFeatureClasses (wildCard, geometryType)	Returns the feature classes in the current workspace
+        # ListRasters (wildCard, rasterType)
         finalCoreFile = os.path.join(Cfg.CORECENTRALITYGDB,
-                                     PREFIX + '_Cores')
+                                     PREFIX + '_Cores')       
+        #copy core area map to gdb.
+        if not gp.exists(Cfg.CORECENTRALITYGDB):
+            gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.CORECENTRALITYGDB))             
         gp.CopyFeatures_management(coreCopy, finalCoreFile)
         
         gprint('Creating shapefiles with linework for links.')
@@ -392,5 +305,8 @@ def make_graph_from_list(graphList):
         gprint('****Failed in step 8. Details follow.****')
         lu.raise_python_error(__filename__)
             
+    
+    
+
     
     

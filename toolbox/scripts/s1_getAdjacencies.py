@@ -9,7 +9,7 @@ cost-weighted distance space
 """
 
 __filename__ = "s1_getAdjacencies.py"
-__version__ = "0.7.4"
+__version__ = "0.7.5"
 
 import shutil
 import time
@@ -185,8 +185,9 @@ def cwadjacency():
                 
         gp.workspace = Cfg.ADJACENCYDIR
         gp.scratchworkspace = gp.workspace
-
-        gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.CWDGDB))
+        
+        if not gp.exists(Cfg.CWDGDB):
+            gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.CWDGDB))
         outDistanceRaster = path.join(Cfg.CWDGDB, PREFIX + "_cwd")
         alloc_ras = path.join(Cfg.ADJACENCYDIR, alloc_rasFN)
         s1core_ras_path = path.join(Cfg.SCRATCHDIR, S1CORE_RAS)
@@ -236,8 +237,6 @@ def euadjacency():
         outcsvfile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
         outcsvLogfile = path.join(Cfg.LOGDIR, "eucAdj_STEP1.csv")
 
-        # FIXME - would be good to have bounding circle affect euclidean calcs
-        # too
         # ----------------------------------------------
         # Euclidean allocation code
         gp.workspace = Cfg.ADJACENCYDIR

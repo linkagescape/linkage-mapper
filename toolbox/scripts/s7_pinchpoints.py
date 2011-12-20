@@ -1,3 +1,9 @@
+#NEED cores and r's in same # cells!
+#cs call failing but works otherwise
+
+#print number of nodata cells being exported
+#option to coarsen resistance grids
+
 #!/usr/bin/env python2.5
 
 """Maps pinch points using Circuitscape given CWD calculations from
@@ -15,6 +21,12 @@ import ConfigParser
 import arcgisscripting
 import numpy as npy
 import math
+import subprocess
+
+try:
+    import arcpy
+except:
+    arcpy = False
 
 from lm_config import Config as Cfg
 import lm_util as lu
@@ -29,13 +41,19 @@ LTB_LINKTYPE = Cfg.LTB_LINKTYPE
 LTB_CWDIST = Cfg.LTB_CWDIST
 LTB_EFFRESIST = Cfg.LTB_EFFRESIST
 LTB_CWDTORR = Cfg.LTB_CWDTORR
+
+ALLPAIRS = True
+NORMALIZECORECURRENTS = False
+SETCORESTONULL = True
     
 def STEP7_calc_pinchpoints():
     """ Experimental code map pinch points using Circuitscape 
         given CWD calculations from s3_calcCwds.py.
 
     """
-    try:        
+    try:     
+
+    
         lu.dashline(0)
         gprint('Running script ' + __filename__)
             
@@ -78,12 +96,11 @@ def STEP7_calc_pinchpoints():
         gp.rasterstatistics = "NONE"
 
         # set up directories for circuit and circuit mosaic grids
-
-
         PREFIX = Cfg.PREFIX       
 
         # Create output geodatabase
-        gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.PINCHGDB))
+        if not gp.exists(Cfg.PINCHGDB):
+            gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.PINCHGDB))
         mosaicRaster = path.join(Cfg.CIRCUITBASEDIR, "current_mos")        
 
         coresToProcess = npy.unique(linkTable[:, LTB_CORE1:LTB_CORE2 + 1])
@@ -104,15 +121,94 @@ def STEP7_calc_pinchpoints():
         
         if Cfg.SQUARERESISTANCES == True:
             # Square resistance values
-            expression = resRaster + " * " + resRaster
+            # expression = resRaster + " * " + resRaster
+            cwdRaster = path.join(Cfg.CWDGDB, PREFIX + "_cwd")
+            expression = resRaster + " * " + cwdRaster + " + 1 "
+            
             squaredRaster = path.join(Cfg.SCRATCHDIR,'res_squared')
             gp.SingleOutputMapAlgebra_sa(expression, squaredRaster) 
             resRaster = squaredRaster    
             
+# do global centrality?  either multiply indiv current rasters by link centrality
+# or do all pairs (would give current in core areas...).        
+        
+        if ALLPAIRS == True:
+            gp.extent = "MAXOF"
+            S7CORE_RAS = "s7core_ras"
+            gp.FeatureToRaster_conversion(Cfg.COREFC, Cfg.COREFN, S7CORE_RAS, gp.Cellsize)
+            binaryCoreRaster = "core_ras_bin"
+            gp.Con_sa(S7CORE_RAS, 1, binaryCoreRaster, "#", "VALUE > 0")
+
+            
+            
+            s5corridorRas = os.path.join(Cfg.OUTPUTGDB,PREFIX + "_lcc_mosaic_int")
+            expression = ("(con(" + s5corridorRas + "<= " +
+                          str(Cfg.CWDCUTOFF) + ", "+ resRaster + ", con(" + binaryCoreRaster + " > 0, " + resRaster +  ")))")            
+            resRasClip = 'resRasClip'
+            gp.SingleOutputMapAlgebra_sa(expression, resRasClip)
+            
+        
+            # export resistance map cut with linkage map and hcas
+            # export hcas
+            # do cs all pairs.
+            s7CoreRasPath = os.path.join(Cfg.SCRATCHDIR,S7CORE_RAS)
+            resRasClipPath = os.path.join(Cfg.SCRATCHDIR,resRasClip)
+            resAsciiFN = 'resistances.asc'
+            coreAsciiFN = 'cores.asc'
+            gp.Extent = resClipRasterMasked 
+            resAsciiFile = path.join(INCIRCUITDIR, resAsciiFN)
+            gp.RasterToASCII_conversion(resRasClipPath, resAsciiFile)
+            coreAsciiFile = path.join(INCIRCUITDIR, coreAsciiFN)
+            gp.RasterToASCII_conversion(s7CoreRasPath, coreAsciiFile)
+            gp.extent = "MINOF"
+
+
+            options = lu.setCircuitscapeOptions() 
+            options['habitat_file'] = resAsciiFile
+            options['point_file'] = coreAsciiFile
+            outputFN = 'Circuitscape.out'
+            options['output_file'] = path.join(OUTCIRCUITDIR, outputFN)
+            configFN = 'pinchpoint_allpair_config.ini'
+            outConfigFile = path.join(CONFIGDIR, configFN)
+            lu.writeCircuitscapeConfigFile(outConfigFile, options)
+
+            csPath = lu.getCsPath()
+            if csPath == None:
+                msg = ('Cannot find an installation of Circuitscape 3.5.5' 
+                        '\nor greater in your Program Files directory.') 
+                gp.AddError(msg)
+                gp.AddMessage(gp.GetMessages(2))
+                exit(1)
+            gprint('Calling Circuitscape...')
+            #subprocess.check_call(systemCall, shell=True)
+            #subprocess.call([csPath, outConfigFile], shell=True)                     
+            test = subprocess.check_call([csPath, outConfigFile], shell=True)                     
+            gprint(test)
+            
+            currentFN = ('Circuitscape_cum_curmap.asc')
+            currentMap = path.join(OUTCIRCUITDIR, currentFN)
+
+            outputGDB = path.join(Cfg.OUTPUTDIR, path.basename(Cfg.PINCHGDB))
+            outputRaster = path.join(outputGDB, PREFIX + "_current_all_pairs")
+            Cfg.gp.CopyRaster_management(currentMap, outputRaster)
+
+            try:
+                gp.addmessage('\nBuilding output statistics and pyramids ' 
+                                  'for corridor raster\n')        
+                gp.CalculateStatistics_management(outputRaster, "1", "1", "#")
+                gp.BuildPyramids_management(outputRaster)    
+            except:
+                pass
+            return
+            
+
+
+
+            
         pctDone = 0
         linkLoop = 0
         gprint('Mapping pinch points in corridors using Circuitscape....')
-        gprint('0 percent done')
+        gprint('0 percent done')        
         for x in range(0,numLinks):
             linkId = str(int(linkTable[x,LTB_LINKID]))
             if (linkTable[x,LTB_LINKTYPE] > 0):
@@ -144,8 +240,13 @@ def STEP7_calc_pinchpoints():
 
                 #create raster mask 
                 resMaskRaster = path.join(Cfg.SCRATCHDIR, 'res_mask')
-                expression = ("(con(" + lccNormRaster + "<= " +
-                              str(Cfg.CWDCUTOFF) + ",1))")
+#                expression = ("(con(" + lccNormRaster + "<= " +
+#                              str(Cfg.CWDCUTOFF) + ",1))")
+                
+                #create raster mask 
+                #include core areas
+                expression = ("(con(" + lccNormRaster + " <= " +
+                              str(Cfg.CWDCUTOFF) + ", 1, con(" + cwdRaster1 + " == 0, 1, con(" + cwdRaster2 + " == 0, 1))))")                
                 
                 gp.SingleOutputMapAlgebra_sa(expression, resMaskRaster)
                     
@@ -153,7 +254,8 @@ def STEP7_calc_pinchpoints():
                 resMaskPoly = path.join(Cfg.SCRATCHDIR, 
                                         'res_mask_poly.shp')
                 gp.RasterToPolygon_conversion(resMaskRaster, resMaskPoly, 
-                                              "SIMPLIFY")
+                                              "NO_SIMPLIFY")
+                                                             
                 resClipRasterMasked = path.join(Cfg.SCRATCHDIR, 
                                                 'res_clip_m')
                 gp.ExtractByMask_sa(resRaster, resMaskPoly, 
@@ -193,27 +295,56 @@ def STEP7_calc_pinchpoints():
                 # gprint(str(platform.architecture()))
                 # gprint('done with prep')
                 # start_time = lu.elapsed_time(start_time)
-                
-                systemCall = path.join(os.path.dirname(
-                    os.path.realpath( __file__ )), 
-                    'circuitscape\\cs_run.exe')
-                systemCall = systemCall + ' ' + outConfigFile  
-                import subprocess
-                #subprocess.check_call(systemCall, shell=True)
-                subprocess.call(systemCall, shell=True)
 
+                csPath = lu.getCsPath()
+                if csPath == None:
+                    msg = ('Cannot find an installation of Circuitscape 3.5.5' 
+                            '\nor greater in your Program Files directory.') 
+                    gp.AddError(msg)
+                    gp.AddMessage(gp.GetMessages(2))
+                    exit(1)
+                #gprint('Calling Circuitscape...')
+                #subprocess.check_call(systemCall, shell=True)
+                subprocess.call([csPath, outConfigFile], shell=True)                     
+                
                 # start_time = lu.elapsed_time(start_time)
                 currentFN = ('Circuitscape_link' + linkId 
                             + '_cum_curmap.asc')
                 currentMap = path.join(OUTCIRCUITDIR, currentFN)
         
-                # Set core areas to NoData in current map for color ramping
-                isNullExpression = ("con(isnull(" + corePairRaster + "), " 
-                    + currentMap + ")")
+                
+                # Either set core areas to nodata in current map or
+                # divide each by its radius
                 currentRaster = path.join(Cfg.SCRATCHDIR, "current")
-                gp.SingleOutputMapAlgebra_sa(isNullExpression, 
-                                             currentRaster)
-        
+                gp.Extent = gp.Describe(currentMap).Extent
+                SETCORESTONULL = True
+                if not arcpy:
+                    NORMALIZECORECURRENTS = False
+                if SETCORESTONULL == True:                  
+                    # Set core areas to NoData in current map for color ramping
+                    isNullExpression = ("con(isnull(" + corePairRaster + "), " 
+                        + currentMap + ")")   
+                    gp.SingleOutputMapAlgebra_sa(isNullExpression, 
+                                                 currentRaster)
+                elif NORMALIZECORECURRENTS == True:
+                    # Experimental- spread current over core areas 
+                    # dividing by their 'diameter'.
+                    corePairArray = arcpy.RasterToNumPyArray(corePairRaster)
+                    # Get areas of cores:
+                    numCellsX = (corePairArray==corex).sum()
+                    numCellsY = (corePairArray==corey).sum()
+                    
+                    diaX = 2 * npy.sqrt(numCellsX / math.pi)
+                    diaY = 2 * npy.sqrt(numCellsY / math.pi)
+                    expression = ("con(isnull("+corePairRaster+"), 1, con(" + corePairRaster + " == " + str(corex) + ", " + str(diaX) + 
+                        ", con(" + corePairRaster + " == " + str(corey) + ", " + str(diaY) + ")))")
+                    divRaster = path.join(Cfg.SCRATCHDIR, 'divRaster')
+                    gp.SingleOutputMapAlgebra_sa(expression, divRaster)
+                    
+                    expression = (currentMap + " / " + divRaster)
+                    gp.SingleOutputMapAlgebra_sa(expression, currentRaster)                    
+                
+                gp.extent = "MAXOF"
                 if linkLoop == 1:
                     Cfg.gp.CopyRaster_management(currentRaster, 
                                                  mosaicRaster)
@@ -257,6 +388,14 @@ def STEP7_calc_pinchpoints():
         outputGDB = path.join(Cfg.OUTPUTDIR, path.basename(Cfg.PINCHGDB))
         outputRaster = path.join(outputGDB, PREFIX + "_current_mos")
         Cfg.gp.CopyRaster_management(mosaicRaster, outputRaster)
+
+        try:
+            gp.addmessage('\nBuilding output statistics and pyramids ' 
+                              'for corridor raster\n')        
+            gp.CalculateStatistics_management(outputRaster, "1", "1", "#")
+            gp.BuildPyramids_management(outputRaster)    
+        except:
+            pass
         
         finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=5,
                                                   thisStep=7) 
@@ -295,12 +434,8 @@ def STEP7_calc_pinchpoints():
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
         lu.raise_python_error(__filename__)
-
     return
-   
-    
-    
-    
+
     
     
         # Use linkage map mask out all portions of resrast that 

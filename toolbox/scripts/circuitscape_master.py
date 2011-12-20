@@ -20,6 +20,9 @@ import shutil
 
 import os
 
+import s7_pinchpoints as s7 
+import s8_centrality as s8
+
 gp = Cfg.gp
 gprint = gp.addmessage
 
@@ -46,6 +49,7 @@ def pinch_master():
             gp.AddError(msg)
             exit(1)    
 
+        createfolder(Cfg.SCRATCHDIR)    
             
         if Cfg.DOPINCH == True:     
             gprint("Creating output folder: " + Cfg.CIRCUITBASEDIR)
@@ -56,12 +60,20 @@ def pinch_master():
                                         Cfg.CIRCUITOUTPUTDIR_NM)
             gp.CreateFolder_management(Cfg.CIRCUITBASEDIR, 
                                         Cfg.CIRCUITCONFIGDIR_NM)                 
-            createfolder(Cfg.SCRATCHDIR)    
+            lu.clean_out_workspace(Cfg.PINCHGDB)
             
-            import s7_pinchpoints as s7            
+            # Make a local grid copy of resistance raster-
+            # will run faster than gdb.
+            lu.delete_data(Cfg.RESRAST)
+            gprint('\nMaking local copy of resistance raster.')
+            try:
+                gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
+            except: # This sometimes fails due to bad file locks
+                Cfg.RESRAST = Cfg.RESRAST_IN
+            
             s7.STEP7_calc_pinchpoints()            
 
-        if Cfg.DOCENTRALITY == True:            
+        if Cfg.DOCENTRALITY == True:             
             gprint("Creating output folder: " + Cfg.CENTRALITYBASEDIR)
             if path.exists(Cfg.CENTRALITYBASEDIR):
                 shutil.rmtree(Cfg.CENTRALITYBASEDIR)
@@ -70,7 +82,8 @@ def pinch_master():
                                         Cfg.CIRCUITOUTPUTDIR_NM)
             gp.CreateFolder_management(Cfg.CENTRALITYBASEDIR, 
                                         Cfg.CIRCUITCONFIGDIR_NM)    
-            import s8_centrality as s8
+            lu.clean_out_workspace(Cfg.CORECENTRALITYGDB)
+            
             s8.STEP8_calc_centrality()
 
         gprint('\nDONE!\n')

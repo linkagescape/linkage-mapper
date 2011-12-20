@@ -10,7 +10,7 @@ nearest neighboring cluster
 """
 
 __filename__ = "s4_refineNetwork.py"
-__version__ = "0.7.4"
+__version__ = "0.7.5"
 
 # Note: because cwds calculated in step 3, constellation links just connect
 # core pairs, not all cores in 1 constellation to all cores in another.
@@ -53,7 +53,10 @@ def STEP4_refine_network():
                 disableLeastCostNoVal)
 
         rows, cols = npy.where(
-            linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] == Cfg.LT_CORR)
+                     linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] > 0)
+        # == Cfg.LT_CORR
+            # or 
+            # linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] == Cfg.LT_KEEP)
         corridorLinks = linkTable[rows,:]
         coresToProcess = npy.unique(
             corridorLinks[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1])
@@ -155,7 +158,8 @@ def STEP4_refine_network():
             # until all constellations connected.
             for row in range(0,numLinks):
                 if ((linkTableComp[row,distCol] > 0) and
-                    (linkTableComp[row,Cfg.LTB_LINKTYPE] == Cfg.LT_CORR) and
+                    ((linkTableComp[row,Cfg.LTB_LINKTYPE] == Cfg.LT_CORR) or
+                    (linkTableComp[row,Cfg.LTB_LINKTYPE] == Cfg.LT_KEEP)) and
                     (linkTableComp[row,component1Col] !=
                      linkTableComp[row,component2Col])):
                     # Make this an inter-component link

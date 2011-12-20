@@ -9,7 +9,7 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.7.4"
+__version__ = "0.7.5"
 
 import os.path as path
 
@@ -252,7 +252,6 @@ def STEP2_build_network():
 
         linkTable[:, Cfg.LTB_CLUST1] = -1  # No clusters until later steps
         linkTable[:, Cfg.LTB_CLUST2] = -1
-
 
         # not evaluated yet. May eventually have ability to get lcdistances
         # for adjacent cores from s1_getAdjacencies.py

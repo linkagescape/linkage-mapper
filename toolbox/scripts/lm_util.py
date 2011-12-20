@@ -4,7 +4,7 @@
 """Contains functions called by linkage mapper and barrier mapper scripts."""  
 
 __filename__ = "lm_util.py"
-__version__ = "0.7.4"
+__version__ = "0.7.5"
 
 import os
 import sys
@@ -85,9 +85,11 @@ def get_link_type_desc(linktypecode):
            # linktypedesc = '"4th_nearest_neighbors"'
         elif linktypecode == 20:
             linktypedesc = '"Connects_constellations"'
+        elif linktypecode == 100:
+            linktypedesc = '"User_retained"'
         else:
             linktypedesc = '"Unknown_active"'
-        #Add user retained?
+            
     return activelink, linktypedesc
 
 
@@ -131,8 +133,8 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                             " and " + str(corey) + " (link #" + linkid + ") "
                             "has an unknown length in cost distance units. "
                             "This means it is longer than the max "
-                            "cost-weighted distance specified in the 'Calc "
-                            "CWDs' script OR it passes through NODATA cells "
+                            "cost-weighted distance specified in a previous "
+                            "step OR it passes through NODATA cells "
                             "and will be dropped.\n")
                         # Disable link
                         linktable[x, Cfg.LTB_LINKTYPE] = Cfg.LT_TLLC
@@ -146,7 +148,8 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                 if maxeud is not None:
                     if linktable[x, Cfg.LTB_EUCDIST] > maxeud:
                         # Check only enabled corridor links
-                        if (linktable[x, Cfg.LTB_LINKTYPE] > 0):
+                        if (linktable[x, Cfg.LTB_LINKTYPE] > 0) and (
+                            linktable[x, Cfg.LTB_LINKTYPE] != Cfg.LT_KEEP):
                             corex = str(int(coreList[x, 0]))
                             corey = str(int(coreList[x, 1]))
                             gp.addmessage("Link #" + linkid +
@@ -161,8 +164,8 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
 
                     if maxcwd is not None:
                         # Check only enabled corridor links
-                        if (linktable[x, Cfg.LTB_LINKTYPE] > 0):
-                            # Check for -1 Cfg.LTB_CWDIST
+                        if (linktable[x, Cfg.LTB_LINKTYPE] > 0) and (
+                            linktable[x, Cfg.LTB_LINKTYPE] != Cfg.LT_KEEP):
                             if (linktable[x, Cfg.LTB_CWDIST] > maxcwd):
                                 corex = str(int(linktable[x, Cfg.LTB_CORE1]))
                                 corey = str(int(linktable[x, Cfg.LTB_CORE2]))
@@ -183,7 +186,8 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                 # Check only enabled corridor links
                 if (linktable[x, Cfg.LTB_LINKTYPE] > 0):
                     if mineud is not None:
-                        if linktable[x, Cfg.LTB_EUCDIST] < mineud:
+                        if (linktable[x, Cfg.LTB_EUCDIST] < mineud) and (                        
+                            linktable[x, Cfg.LTB_LINKTYPE] != Cfg.LT_KEEP):
                             corex = str(int(coreList[x, 0]))
                             corey = str(int(coreList[x, 1]))
                             gp.addmessage(
@@ -198,7 +202,8 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
 
                     if mincwd is not None:
                         if ((linktable[x, Cfg.LTB_CWDIST] < mincwd) and
-                            (linktable[x, Cfg.LTB_CWDIST]) != -1):
+                            (linktable[x, Cfg.LTB_CWDIST]) != -1) and (                        
+                            linktable[x, Cfg.LTB_LINKTYPE] != Cfg.LT_KEEP):
                             if (linktable[x, Cfg.LTB_LINKTYPE] > 0):
                                 corex = str(int(linktable[x, Cfg.LTB_CORE1]))
                                 corey = str(int(linktable[x, Cfg.LTB_CORE2]))
@@ -274,7 +279,8 @@ def get_core_targets(core, linktable):
         targetList[:, 1] = linktable[:, Cfg.LTB_CORE2]
         # Copy of Cfg.LTB_LINKTYPE column
         validPair = linktable[:, Cfg.LTB_LINKTYPE]
-        validPair = npy.where(validPair == Cfg.LT_CORR, 1, 0)  # map corridor.
+        validPair = npy.where((validPair == Cfg.LT_KEEP), Cfg.LT_CORR, validPair)
+        validPair = npy.where((validPair == Cfg.LT_CORR), 1, 0)  # map corridor.
         targetList[:, 0] = npy.multiply(targetList[:, 0], validPair)
         targetList[:, 1] = npy.multiply(targetList[:, 1], validPair)
 
@@ -335,7 +341,7 @@ def report_links(linktable):
                           'table.')
         linkTypes = linktable[:, Cfg.LTB_LINKTYPE]
         numCorridorLinks = sum(linkTypes == Cfg.LT_CORR) + sum(linkTypes ==
-                                                               Cfg.LT_NNC)
+                           Cfg.LT_NNC) + sum(linkTypes == Cfg.LT_KEEP) 
         numComponentLinks = sum(linkTypes == Cfg.LT_CLU)
         if numComponentLinks > 0:
             gp.addmessage('This includes ' + str(numCorridorLinks) +
@@ -838,6 +844,7 @@ def create_lcp_shapefile(linktable, sourceCore, targetCore, lcpLoop):
 def update_lcp_shapefile(linktable, lastStep, thisStep):
     """Updates lcp shapefiles with new link information/status"""
     try:
+        gp.OverwriteOutput = True
         lcpShapefile = os.path.join(Cfg.DATAPASSDIR, "lcpLines_s" +
                                     str(thisStep) + ".shp")
 
@@ -1506,14 +1513,30 @@ def delete_dir(dir):
     except:
         # In case rmtree was unsuccessful due to lock on data
         try:
-            if gp.Exists(dir):
-                gp.RefreshCatalog(dir)
-                gp.delete_management(dir)            
+            clean_out_workspace(dir)
         except:
             pass
     return
 
-    
+def clean_out_workspace(ws):
+    try:
+        if gp.exists(ws):
+            gp.workspace = ws
+            gprint('\nDeleting contents of '+str(ws))
+            fcs = gp.ListFeatureClasses()
+            for fc in fcs:
+                fcPath = os.path.join(ws,fc)
+                gp.delete_management(fcPath)
+            rasters = gp.ListRasters()
+            for raster in rasters:
+                rasterPath = os.path.join(ws,raster)
+                gp.delete_management(rasterPath)
+        return
+    except arcgisscripting.ExecuteError:
+        raise_geoproc_error(__filename__)
+    except:
+        raise_python_error(__filename__)
+        
 def delete_data(dataset):
     try:
         if gp.Exists(dataset):
@@ -1782,16 +1805,31 @@ def move_map(oldMap, newMap):
     return
 
 
+def getCsPath():
+    """Returns path to Circuitscape installation """
+    envList = ["ProgramW6432", "ProgramFiles", "ProgramFiles(x86)"]
+    for x in range (0,len(envList)):
+        try:
+            pfPath = os.environ[envList[x]]
+            csPath = os.path.join(pfPath,'Circuitscape\\cs_run.exe')
+            if os.path.exists(csPath): return csPath
+        except: pass
+    return None    
+
 ############################################################################
 ##Error Checking and Handling Functions ####################################
-############################################################################
-def print_failure(statement):
-    """ Reports ArcGIS call that's failing before re-starting iteration.
+############################################################################  
+    
+def print_failures(statement, failures):
+    """ Reports ArcGIS call that's failing and decides whether to restart 
+        iteration.
     
     """ 
     dashline(1)
     gprint('***Problem encountered executing statement:')
-    gprint('"' + statement + '"')
+    gprint('"' + statement + '"')  
+    failures = failures + 1
+    return failures
     
     
 def print_conefor_warning():

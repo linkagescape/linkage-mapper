@@ -11,9 +11,10 @@ Numpy
 """
 
 __filename__ = "lm_master.py"
-__version__ = "0.7.4"
+__version__ = "0.7.5"
 
 import os.path as path
+import os
 
 import arcgisscripting
 
@@ -37,11 +38,14 @@ def lm_master():
 
     """
     try:
+        installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + str(__version__))
-        
+        try:
+            gprint('on ArcGIS '+ installD['ProductName'] + ' ' + installD['Version'] + ' Service Pack ' + installD['SPNumber'])
+        except: pass   
+    
         # Check core ID field.
-        lu.check_cores()
-        
+        lu.check_cores()        
        
         if gp.Exists(Cfg.OUTPUTDIR):
             gp.RefreshCatalog(Cfg.OUTPUTDIR)
@@ -49,17 +53,18 @@ def lm_master():
       
         def delete_final_gdb(finalgdb):
             if gp.Exists(finalgdb) and Cfg.STEP5:
-                gp.addmessage('Deleting geodatabase ' + finalgdb)
                 try:
-                    gp.delete_management(finalgdb)
+                    lu.clean_out_workspace(finalgdb)
+#                    gp.addmessage('Deleting geodatabase ' + finalgdb)
+ #                   gp.delete_management(finalgdb)
+
                 except:
                     lu.dashline(1)
-                    msg = ('ERROR: Could not remove geodatabase ' +
+                    msg = ('ERROR: Could not remove contents of geodatabase ' +
                            finalgdb + '. Is it open in ArcMap?\n You may '
                            'need to re-start ArcMap to release the file lock.')
                     gp.AddError(msg)
-                    exit(1)       
-                    
+                    exit(1)     
         # Delete final output geodatabase
         delete_final_gdb(Cfg.OUTPUTGDB_OLD)
         delete_final_gdb(Cfg.OUTPUTGDB)
@@ -96,15 +101,23 @@ def lm_master():
         lu.move_old_results()
         gp.OverwriteOutput = True
         
-        # Make a local grid copy of resistance raster- will run faster than gdb
-        # Don't know if raster is in a gdb if entered from TOC
-        lu.delete_data(Cfg.RESRAST)
-        gprint('\nMaking local copy of resistance raster.')
-        try:
-            gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
-        except: # This sometimes fails due to bad file locks
+        if Cfg.STEP1 or Cfg.STEP3:
+            # Make a local grid copy of resistance raster for cwd runs-
+            # will run faster than gdb.
+            # Don't know if raster is in a gdb if entered from TOC
+            lu.delete_data(Cfg.RESRAST)
+            gp.pyramid = "NONE"
+            gp.rasterstatistics = "NONE"
+
+            gprint('\nMaking local copy of resistance raster.')
+            try:
+                gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
+            except: # This sometimes fails due to bad file locks
+                Cfg.RESRAST = Cfg.RESRAST_IN
+        else:
             Cfg.RESRAST = Cfg.RESRAST_IN
         gp.SnapRaster = Cfg.RESRAST
+
         
         # Run linkage mapper processing steps
         if Cfg.STEP1:
@@ -120,6 +133,7 @@ def lm_master():
         
         # Clean up
         lu.delete_dir(Cfg.SCRATCHDIR)
+        lu.clean_out_workspace(Cfg.SCRATCHDIR)
 
         gp.addmessage('\nDONE!\n')
 
