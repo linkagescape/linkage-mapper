@@ -10,7 +10,7 @@ Numpy
 """
 
 __filename__ = "Circuitscape_master.py"
-__version__ = "CIRCUITSCAPE TEST"
+__version__ = "0.7.6"
 
 import os.path as path
 import arcgisscripting
@@ -20,26 +20,27 @@ import shutil
 
 import os
 
-import s7_pinchpoints as s7 
-import s8_centrality as s8
+import s8_pinchpoints as s8 
+import s7_centrality as s7
 
 gp = Cfg.gp
 gprint = gp.addmessage
 
-def pinch_master():
+def circuitscape_master():
     """
     
     """
     try:
-        def createfolder(lmfolder):
-            """Creates folder if it doesn't exist."""
-            if not path.exists(lmfolder):
-                gp.CreateFolder_management(path.dirname(lmfolder),
-                                               path.basename(lmfolder))               
+        gp.OutputCoordinateSystem = gp.describe(Cfg.COREFC).SpatialReference
+        gp.pyramid = "NONE"
+        gp.rasterstatistics = "NONE"              
                                                
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
-                                               
+              
+        lu.delete_dir(Cfg.SCRATCHDIR)
+        lu.clean_out_workspace(Cfg.SCRATCHDIR)
+              
         if path.exists(Cfg.OUTPUTDIR):
             gp.RefreshCatalog(Cfg.OUTPUTDIR)
         
@@ -49,46 +50,57 @@ def pinch_master():
             gp.AddError(msg)
             exit(1)    
 
-        createfolder(Cfg.SCRATCHDIR)    
-            
-        if Cfg.DOPINCH == True:     
-            gprint("Creating output folder: " + Cfg.CIRCUITBASEDIR)
-            if path.exists(Cfg.CIRCUITBASEDIR):
-                shutil.rmtree(Cfg.CIRCUITBASEDIR)
-            createfolder(Cfg.CIRCUITBASEDIR)
-            gp.CreateFolder_management(Cfg.CIRCUITBASEDIR, 
-                                        Cfg.CIRCUITOUTPUTDIR_NM)
-            gp.CreateFolder_management(Cfg.CIRCUITBASEDIR, 
-                                        Cfg.CIRCUITCONFIGDIR_NM)                 
-            lu.clean_out_workspace(Cfg.PINCHGDB)
-            
+        lu.createfolder(Cfg.SCRATCHDIR)    
+
+        if Cfg.DOPINCH == True:
             # Make a local grid copy of resistance raster-
             # will run faster than gdb.
             lu.delete_data(Cfg.RESRAST)
+            if not gp.Exists(Cfg.RESRAST_IN):
+                msg = ('ERROR: Resistance raster is required for pinch point'
+                        ' analyses, but was not found.')
+                gp.AddError(msg)
+                exit(1)    
+                        
             gprint('\nMaking local copy of resistance raster.')
             try:
                 gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
             except: # This sometimes fails due to bad file locks
                 Cfg.RESRAST = Cfg.RESRAST_IN
-            
-            s7.STEP7_calc_pinchpoints()            
-
+                    
+        
         if Cfg.DOCENTRALITY == True:             
             gprint("Creating output folder: " + Cfg.CENTRALITYBASEDIR)
             if path.exists(Cfg.CENTRALITYBASEDIR):
                 shutil.rmtree(Cfg.CENTRALITYBASEDIR)
-            createfolder(Cfg.CENTRALITYBASEDIR)
+            lu.createfolder(Cfg.CENTRALITYBASEDIR)
             gp.CreateFolder_management(Cfg.CENTRALITYBASEDIR, 
                                         Cfg.CIRCUITOUTPUTDIR_NM)
             gp.CreateFolder_management(Cfg.CENTRALITYBASEDIR, 
                                         Cfg.CIRCUITCONFIGDIR_NM)    
             lu.clean_out_workspace(Cfg.CORECENTRALITYGDB)
             
-            s8.STEP8_calc_centrality()
+            s7.STEP7_calc_centrality()
+            if Cfg.SAVECENTRALITYDIR == False:
+                lu.delete_dir(Cfg.CENTRALITYBASEDIR)
+    
+        if Cfg.DOPINCH == True:     
+            gprint("Creating output folder: " + Cfg.CIRCUITBASEDIR)
+            lu.delete_dir(Cfg.CIRCUITBASEDIR)
+            lu.createfolder(Cfg.CIRCUITBASEDIR)
+            gp.CreateFolder_management(Cfg.CIRCUITBASEDIR, 
+                                        Cfg.CIRCUITOUTPUTDIR_NM)
+            gp.CreateFolder_management(Cfg.CIRCUITBASEDIR, 
+                                        Cfg.CIRCUITCONFIGDIR_NM)                 
+            lu.clean_out_workspace(Cfg.PINCHGDB)
+                        
+            s8.STEP8_calc_pinchpoints()            
 
+            lu.delete_dir(Cfg.SCRATCHDIR)
+            if Cfg.SAVECIRCUITDIR == False:
+                lu.delete_dir(Cfg.CIRCUITBASEDIR)
+            
         gprint('\nDONE!\n')
-
-        
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
@@ -100,4 +112,4 @@ def pinch_master():
        
         
 if __name__ == "__main__":
-    pinch_master()
+    circuitscape_master()

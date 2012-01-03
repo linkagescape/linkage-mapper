@@ -10,7 +10,7 @@ Numpy
 """
 
 __filename__ = "barrier_master.py"
-__version__ = "0.6.4"
+__version__ = "0.7.6"
 
 import os.path as path
 import arcgisscripting
@@ -18,40 +18,42 @@ from lm_config import Config as Cfg
 import lm_util as lu
 import s6_barriers as s6 
 
+gp = Cfg.gp
+gprint = gp.addmessage
+
 def bar_master():
     """ Experimental code to detect barriers using cost-weighted distance
     outputs from Linkage Mapper tool.
     
     """
     try:
-        Cfg.gp.RefreshCatalog(Cfg.OUTPUTDIR)
+        gp.RefreshCatalog(Cfg.OUTPUTDIR)
         
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
 
         # Delete final ouptut geodatabase
-        if Cfg.gp.Exists(Cfg.BARRIERGDB): 
-            Cfg.gp.addmessage('Deleting geodatabase ' + Cfg.BARRIERGDB)
-            try:
-                Cfg.gp.delete_management(Cfg.BARRIERGDB)
-            except:
-                lu.dashline(1)
-                msg = ('ERROR: Could not remove geodatabase ' +
-                       Cfg.BARRIERGDB + '. Is it open in ArcMap?\n You may '
-                       'need to re-start ArcMap to release the file lock.')
-                Cfg.gp.AddError(msg)
-                exit(1)
+        lu.delete_dir(Cfg.BARRIERGDB)
+        if not gp.exists(Cfg.BARRIERGDB):
+            # Create output geodatabase
+            Cfg.gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.BARRIERGDB))        
                 
-        def createfolder(lmfolder):
-            """Creates folder if it doesn't exist."""
-            if not path.exists(lmfolder):
-                Cfg.gp.CreateFolder_management(path.dirname(lmfolder),
-                                               path.basename(lmfolder))
-        createfolder(Cfg.OUTPUTDIR)
-        createfolder(Cfg.SCRATCHDIR)    
+        lu.createfolder(Cfg.OUTPUTDIR)
+        lu.createfolder(Cfg.SCRATCHDIR) 
+
+        gprint('\nMaking local copy of resistance raster.')
+        try:
+            gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
+        except: # This sometimes fails due to bad file locks
+            Cfg.RESRAST = Cfg.RESRAST_IN        
      
         s6.STEP6_calc_barriers()
-        Cfg.gp.addmessage('\nDONE!\n')
+        
+        #clean up
+        lu.delete_dir(Cfg.SCRATCHDIR)
+        if Cfg.SAVEBARRIERDIR ==  False:
+            lu.delete_dir(Cfg.BARRIERBASEDIR)
+        gp.addmessage('\nDONE!\n')
 
 
     # Return GEOPROCESSING specific errors

@@ -11,7 +11,7 @@ Numpy
 """
 
 __filename__ = "lm_master.py"
-__version__ = "0.7.5"
+__version__ = "0.7.6"
 
 import os.path as path
 import os
@@ -41,9 +41,12 @@ def lm_master():
         installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + str(__version__))
         try:
-            gprint('on ArcGIS '+ installD['ProductName'] + ' ' + installD['Version'] + ' Service Pack ' + installD['SPNumber'])
+            gprint('on ArcGIS '+ installD['ProductName'] + ' ' + 
+                installD['Version'] + ' Service Pack ' + installD['SPNumber'])
         except: pass   
     
+        gp.OutputCoordinateSystem = gp.describe(Cfg.COREFC).SpatialReference
+
         # Check core ID field.
         lu.check_cores()        
        
@@ -72,17 +75,12 @@ def lm_master():
         delete_final_gdb(Cfg.LINKMAPGDB)        
 
   
-        def createfolder(lmfolder):
-            """Creates folder if it doesn't exist."""
-            if not path.exists(lmfolder):
-                gp.CreateFolder_management(path.dirname(lmfolder),
-                                               path.basename(lmfolder))
-        createfolder(Cfg.OUTPUTDIR)
-        createfolder(Cfg.LOGDIR)
-        createfolder(Cfg.DATAPASSDIR)
+        lu.createfolder(Cfg.OUTPUTDIR)
+        lu.createfolder(Cfg.LOGDIR)
+        lu.createfolder(Cfg.DATAPASSDIR)
         # Create fresh scratch directory
         lu.delete_dir(Cfg.SCRATCHDIR)
-        createfolder(Cfg.SCRATCHDIR)
+        lu.createfolder(Cfg.SCRATCHDIR)
         
         # Identify first step cleanup link tables from that point
         if Cfg.STEP1:

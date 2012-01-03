@@ -9,7 +9,7 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.7.5"
+__version__ = "0.7.6"
 
 import os.path as path
 
@@ -431,7 +431,7 @@ def generate_distance_file(cwdAdjFile,eucAdjFile):
             row = rows.Next()
             if row: #May be running on selected core areas in step 2
                 dist = row.getvalue(NEAR_FN)
-                if dist == 0: #In case simplified polygons abut one another
+                if dist <= 0: #In case simplified polygons abut one another
                     dist = gp.CellSize
                 outputrow = []           
                 outputrow.append(str(sourceCore))

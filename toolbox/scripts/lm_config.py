@@ -8,7 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.7.5"
+__version__ = "0.7.6"
 
 import os.path as path
 import sys
@@ -108,6 +108,8 @@ class Config():
         elif CWDTHRESH is not None:
             TMAXCWDIST = None # Max is disabled for now- see line below.
             #TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # Will limit cw calcs. 
+        
+        SCRATCHDIR = path.join(PROJECTDIR, "scratch")
        
     elif script == "barrier_master.py":  #Barrier Mapper    
         TOOL = 'barrier_mapper'
@@ -116,22 +118,23 @@ class Config():
         STARTRADIUS = sys.argv[3]  # 
         ENDRADIUS = sys.argv[4]  # 
         RADIUSSTEP = sys.argv[5]  # 
-    
+        SCRATCHDIR = path.join(PROJECTDIR, "scratch_bar")
+
     else:
         TOOL = 'pinchpoint_mapper'
-        
         PROJECTDIR = sys.argv[1]  # Project directory
         COREFC = sys.argv[2]
         COREFN = sys.argv[3]
-        DOPINCH = str2bool(sys.argv[4])
-        RESRAST_IN = sys.argv[5]
-        CWDCUTOFF = sys.argv[6] # To clip resistance rasters for Circuitscape
-        SQUARERESISTANCES = str2bool(sys.argv[7]) # Square resistance values 
-        DOCENTRALITY = str2bool(sys.argv[8])
+        DOCENTRALITY = str2bool(sys.argv[4])
+        DOPINCH = str2bool(sys.argv[5])
+        RESRAST_IN = sys.argv[6]
+        CWDCUTOFF = sys.argv[7] # To clip resistance rasters for Circuitscape
+        SQUARERESISTANCES = str2bool(sys.argv[8]) # Square resistance values 
+        SCRATCHDIR = path.join(PROJECTDIR, "scratch_cs")        
+        
     # Ouput directory paths & folder names
     PREFIX = path.basename(PROJECTDIR)
     OUTPUTDIR = path.join(PROJECTDIR, "output")
-    SCRATCHDIR = path.join(PROJECTDIR, "scratch")
     LOGDIR = path.join(PROJECTDIR, "logFiles")
     DATAPASSDIR = path.join(PROJECTDIR, "datapass")
     ADJACENCYDIR = path.join(DATAPASSDIR, "adj")
@@ -146,13 +149,13 @@ class Config():
     FOCALSUBDIR1_NM = "focalr"
     FOCALSUBDIR2_NM = "f"
     FOCALGRID_NM = "focal"
-    BARRIERBASEDIR = path.join(DATAPASSDIR, "barrier")
+    BARRIERBASEDIR = path.join(PROJECTDIR, "barrier")
     BARRIERBASEDIR_OLD = path.join(PROJECTDIR, "barrier")    
     BARRIERDIR_NM = "bar"
     BARRIERMOSAICDIR = "mosaic"
-    CIRCUITBASEDIR = path.join(DATAPASSDIR, "pinchpoints")
+    CIRCUITBASEDIR = path.join(PROJECTDIR, "pinchpoints")
     CIRCUITBASEDIR_OLD = path.join(PROJECTDIR, "pinchpoints")
-    CENTRALITYBASEDIR = path.join(DATAPASSDIR, "centrality")
+    CENTRALITYBASEDIR = path.join(PROJECTDIR, "centrality")
     CENTRALITYBASEDIR_OLD = path.join(PROJECTDIR, "centrality")
 
     CIRCUITCONFIGDIR_NM = "config"
@@ -162,6 +165,10 @@ class Config():
     SAVEFOCALRASTERS = False # Save individual focal grids for barrier analysis
     SAVEBARRIERRASTERS = False # Save individual barrier grids
     SAVECURRENTMAPS = False# Save individual current maps from Circuitscape
+    SAVECIRCUITDIR = False
+    SAVEBARRIERDIR =  False
+    SAVECENTRALITYDIR = False
+    
     FCORES = "fcores"
     OUTPUTGDB = path.join(OUTPUTDIR, "corridors.gdb")
     EXTRAGDB = path.join(OUTPUTDIR, "extra.gdb")
@@ -218,8 +225,6 @@ class Config():
     gp = arcgisscripting.create(9.3)
     gp.CheckOutExtension("Spatial")
     gp.OverwriteOutput = True
-    if TOOL != 'barrier_mapper':
-        gp.OutputCoordinateSystem = gp.describe(COREFC).SpatialReference
     
     #Temporary resistance raster copy to be created in lm_master
     RESRAST  = path.join(SCRATCHDIR, 'resrast')

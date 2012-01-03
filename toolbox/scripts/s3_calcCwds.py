@@ -10,7 +10,7 @@ extent of cwd calculations and speed computation.
 """
 
 __filename__ = "s3_calcCwds.py"
-__version__ = "0.7.5"
+__version__ = "0.7.6"
 
 import os.path as path
 import shutil
@@ -77,11 +77,11 @@ def STEP3_calc_cwds():
         else:
             rerun = False        
              
-        if Cfg.TMAXCWDIST is None:
-           	gprint('NOT using a maximum cost-weighted distance.')
-        else:
-            gprint('Max cost-weighted distance for CWD calcs set '
-                              'to ' + str(Cfg.TMAXCWDIST) + '\n')
+        # if Cfg.TMAXCWDIST is None:
+           	# gprint('NOT using a maximum cost-weighted distance.')
+        # else:
+            # gprint('Max cost-weighted distance for CWD calcs set '
+                              # 'to ' + str(Cfg.TMAXCWDIST) + '\n')
 
         # FIXME: because it's integer, it fills in 0 if not entered.
         if (Cfg.BUFFERDIST) is not None:
@@ -337,22 +337,22 @@ def STEP3_calc_cwds():
         failures = 0
         x = startIndex
         endIndex = len(coresToMap)
+        linkTableMod = linkTable.copy() 
         while x < endIndex:
             startTime1 = time.clock()    
             # Modification of linkTable in function was causing problems. so 
             # make a copy:
-            linkTablePassed = linkTable.copy() 
+            linkTablePassed = linkTableMod.copy() 
 
             # Tried to re-call this whenever any error happened.  Cfg.BNDCIRS 
             # layer caused problems. May need to make copy of shapefile 
             # whenever there is a failure and point Cfg.BNDCIRS to copy.
-            
             (linkTableReturned, failures, lcpLoop) = do_cwd_calcs(x, 
                         linkTablePassed, coresToMap, lcpLoop, failures)
 
             if failures == 0:
                 # If iteration was successful
-                linkTable = linkTableReturned
+                linkTableMod = linkTableReturned
                 sourceCore = int(coresToMap[x])
                 gprint('Done with all calculations for core #' +
                         str(sourceCore) + '.')
@@ -360,7 +360,7 @@ def STEP3_calc_cwds():
       
                 outlinkTableFile = path.join(Cfg.DATAPASSDIR, 
                                              "temp_linkTable_s3_partial.csv")
-                lu.write_link_table(linkTable, outlinkTableFile)
+                lu.write_link_table(linkTableMod, outlinkTableFile)
                 # Increment  loop counter
                 x = x + 1
             else:
@@ -370,7 +370,7 @@ def STEP3_calc_cwds():
                 time.sleep(2)                        
                 lu.dashline(2)
         #----------------------------------------------------------------------
-
+        linkTable = linkTableMod
         
         # reinstate temporarily disabled links
         rows = npy.where(linkTable[:,Cfg.LTB_LINKTYPE] > 1000)
@@ -787,11 +787,18 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
     """ 
     try:
         gp.workspace = workspace
+        gp.OverwriteOutput = True
         if gp.exists("addRas"):
             gp.delete_management("addRas")
         expression = (lcpRas + " + " + corePairRas)
         statement = ('gp.SingleOutputMapAlgebra_sa(expression, "addRas")')                              
-        exec statement
+        while True:
+            try: exec statement
+            except:
+                count,tryAgain = lu.hiccup_test(count,statement)
+                if not tryAgain: exec statement
+            else: break
+
         # make sure there is a raster, even if empty, and properties are obtainable
         propertyType = "TOP"
         topObject = gp.GetRasterProperties("addRas", propertyType)
