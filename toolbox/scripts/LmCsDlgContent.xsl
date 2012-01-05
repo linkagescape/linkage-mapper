@@ -433,12 +433,12 @@ function clicker(a,b)
             <TABLE>
                 <TR>
                    <xsl:choose>
-                     <xsl:when test= 'PropertyName="Param8"'> 
+                     <xsl:when test= 'PropertyName="Param8" or PropertyName="Param9"'> 
                         <TD class="lmsteppad">
                             <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');" /> 
                         </TD>
                      </xsl:when>  
-                     <xsl:when test='PropertyName="Param7" or PropertyName="Param9"'> 
+                     <xsl:when test='PropertyName="Param7"'> 
                         <TD style="padding-top=7">
                             <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');" /> 
                         </TD>

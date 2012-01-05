@@ -58,8 +58,6 @@ def lm_master():
             if gp.Exists(finalgdb) and Cfg.STEP5:
                 try:
                     lu.clean_out_workspace(finalgdb)
-#                    gp.addmessage('Deleting geodatabase ' + finalgdb)
- #                   gp.delete_management(finalgdb)
 
                 except:
                     lu.dashline(1)

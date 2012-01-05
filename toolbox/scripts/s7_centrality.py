@@ -67,9 +67,9 @@ def STEP7_calc_centrality():
         if Cfg.COREFN.lower() in invalidFNs:
         #if Cfg.COREFN == 'FID' or Cfg.COREFN == 'ID':
             lu.dashline(1)
-            msg = ('ERROR: Core area field names ID, FID, SHAPE, and OID are '
-                    'reserved for ArcGIS. Please choose another field- must be '
-                    'a positive integer.')
+            msg = ('ERROR: Core area field names ID, FID, SHAPE, and OID are'
+                    ' reserved for ArcGIS. \nPlease choose another field- must'
+                    ' be a positive integer.')
             Cfg.gp.AddError(msg)
             exit(1)
 
@@ -180,9 +180,11 @@ def STEP7_calc_centrality():
 
             write_graph(options['habitat_file'] ,graphListComponent)                
             if npy.max(components) > 1:
-                gprint('\nCalculating current flow centrality for component ' + str(component))
+                gprint('\nCalculating current flow centrality for component '
+                        + str(component) + '\n using Circuitscape...')
             else:
-                gprint('\nCalculating current flow centrality...')                
+                gprint('\nCalculating current flow centrality '
+                       'using Circuitscape...')                
 #            subprocess.check_call(systemCall, shell=True)
             subprocess.call([csPath, outConfigFile], shell=True)                     
             
@@ -236,16 +238,13 @@ def STEP7_calc_centrality():
                             linkTableFinalFile, inLinkTableFile)
         gprint('Copy of final linkTable written to '+
                           linkTableFinalFile)
-        
-        
-
-        # ListFeatureClasses (wildCard, geometryType)	Returns the feature classes in the current workspace
-        # ListRasters (wildCard, rasterType)
+                          
         finalCoreFile = os.path.join(Cfg.CORECENTRALITYGDB,
                                      PREFIX + '_Cores')
         #copy core area map to gdb.
         if not gp.exists(Cfg.CORECENTRALITYGDB):
-            gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.CORECENTRALITYGDB))             
+            gp.createfilegdb(Cfg.OUTPUTDIR, 
+                             path.basename(Cfg.CORECENTRALITYGDB))             
         gp.CopyFeatures_management(coreCopy, finalCoreFile)
         
         gprint('Creating shapefiles with linework for links.')

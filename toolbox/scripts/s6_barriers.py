@@ -1,4 +1,3 @@
-#throw error if radius isn't big enough
 #add options to do trm, max, etc
 #remove datapass/barrier 
 
@@ -66,6 +65,13 @@ def STEP6_calc_barriers():
         arcpy.OverWriteOutput = True            
         gp.Extent = gp.Describe(Cfg.RESRAST).Extent
         gp.CellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight
+        if gp.CellSize > startRadius or startRadius > endRadius:
+            msg = ('Error: minimum detection radius must be greater than '
+                    'cell size (' + str(gp.CellSize) +
+                    ') \nand less than or equal to maximum detection radius.') 
+            gp.AddError(msg)
+            gp.AddMessage(gp.GetMessages(2))
+            exit(1)        
         
         gp.Extent = "MINOF"
         #gp.mask = Cfg.RESRAST #BHM- need nodata values as barriers
@@ -99,7 +105,6 @@ def STEP6_calc_barriers():
         # barrier\focalX_ for cores 1-99 at radius X
         # barrier\focalX_1 for cores 100-199
         # etc.
-#code here:        
         lu.dashline(0)
 
         for radius in range(startRadius, endRadius + 1, radiusStep):
