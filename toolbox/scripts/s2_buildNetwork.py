@@ -246,9 +246,6 @@ def STEP2_build_network():
                           'Conefor extension.')
             # lu.dashline(2)
 
-        # Get list of core IDs, based on core area shapefile.
-        coreList = lu.get_core_list()
-        numCores = len(coreList)
 
         linkTable[:, Cfg.LTB_CLUST1] = -1  # No clusters until later steps
         linkTable[:, Cfg.LTB_CLUST2] = -1
@@ -257,8 +254,13 @@ def STEP2_build_network():
         # for adjacent cores from s1_getAdjacencies.py
         linkTable[:, Cfg.LTB_CWDIST] = -1
 
+        # Get list of core IDs, based on core area shapefile.
+        coreList = lu.get_core_list()
+
         # Update linkTable with new core IDs
         numCores = len(coreList)
+        # Fixme: this appears to be a holdover from earlier code. Core numbers
+        # in col 0 and 1 should always be equal.
         for core in range(numCores):
             if coreList[core, 0] != coreList[core, 1]:
                 linkTable[:, Cfg.LTB_CORE1] = npy.where(

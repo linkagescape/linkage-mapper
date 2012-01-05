@@ -258,12 +258,16 @@ def get_zonal_minimum(dbfFile):
 def get_core_list():
     """Returns a list of core area IDs from polygon file"""
     try:
-        # Get the number of cores
-        # FIXME: I think this returns number of shapes, not number of unique
-        # cores.
-        coreCount = int(gp.GetCount_management(Cfg.COREFC).GetOutput(0))
+        
+        # FIXME: This returns a list with length equal to number of shapes, 
+        # not number of unique
+        # cores.  Is this a problem?  Search cursor works on shapes, so
+        # we need to work on shapes as well.
+        
+        # Get the number of core shapes
+        shapeCount = int(gp.GetCount_management(Cfg.COREFC).GetOutput(0))
         # Get core data into numpy array
-        coreList = npy.zeros((coreCount, 2))
+        coreList = npy.zeros((shapeCount, 2))
         cur = gp.SearchCursor(Cfg.COREFC)
         row = cur.Next()
         i = 0
@@ -273,11 +277,12 @@ def get_core_list():
             row = cur.Next()
             i = i + 1
         del cur, row
+        return coreList
     except arcgisscripting.ExecuteError:
         raise_geoproc_error(__filename__)
     except:
         raise_python_error(__filename__)
-    return coreList
+    
 
 
 def get_core_targets(core, linktable):
@@ -693,8 +698,7 @@ def make_points(workspace, pointArray, outFC):
     try:
         wkspbefore = gp.workspace
         gp.workspace = workspace
-        if gp.exists(outFC):
-            gp.delete_management(outFC)
+        delete_data(outFC)
         gp.CreateFeatureclass_management(workspace, outFC, "POINT")
         #for field in fieldArray:
         if pointArray.shape[1] > 3:
@@ -1463,7 +1467,7 @@ def write_link_maps(linkTableFile, step):
         del row, rows
 
         #clean up temp files
-        gp.delete_management(coresForLinework)
+        delete_data(coresForLinework)
 
         return
 
@@ -1545,6 +1549,11 @@ def delete_dir(dir):
             gc.collect() 
         except:
             pass
+    try: #Try again following cleanup attempt
+        gp.RefreshCatalog(dir)
+        shutil.rmtree(dir)       
+    except:
+        pass
     return
 
 def clean_out_workspace(ws):
@@ -1830,14 +1839,10 @@ def copy_final_link_maps(step):
 def move_map(oldMap, newMap):
     """Moves a map to a new location """
     if gp.exists(oldMap):
-        if gp.exists(newMap):
-            try:
-                gp.delete_management(newMap)
-            except:
-                pass
+        delete_data(newMap)
         try:
             gp.CopyFeatures_management(oldMap, newMap)
-            gp.delete_management(oldMap)
+            delete_data(oldMap)
         except:
             pass
     return
@@ -2100,7 +2105,6 @@ def setCircuitscapeOptions():
     options['solver']='cg+amg'
     options['compress_grids']=False
     options['print_timings']=False
-    options['screenprint_log']=False     
     options['use_mask']=False
     options['mask_file']='None' 
     options['use_included_pairs']=False
@@ -2141,7 +2145,6 @@ def writeCircuitscapeConfigFile(configFile, options):
     section='Calculation options'
     sections['solver']=section
     sections['print_timings']=section
-    sections['screenprint_log']=section 
     sections['low_memory_mode']=section    
     
     section='Output options'

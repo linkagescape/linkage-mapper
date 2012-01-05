@@ -105,7 +105,6 @@ def STEP1_get_adjacencies():
             cwadjacency()
         if Cfg.S1ADJMETH_EU:
             euadjacency()
-        
             
         # Clean up
         lu.delete_data(S1CORE_RAS)

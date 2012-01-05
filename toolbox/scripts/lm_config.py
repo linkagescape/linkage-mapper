@@ -118,6 +118,8 @@ class Config():
         STARTRADIUS = sys.argv[3]  # 
         ENDRADIUS = sys.argv[4]  # 
         RADIUSSTEP = sys.argv[5]  # 
+        if RADIUSSTEP == '#':
+            RADIUSSTEP = 0
         SCRATCHDIR = path.join(PROJECTDIR, "scratch_bar")
 
     else:
@@ -130,6 +132,8 @@ class Config():
         RESRAST_IN = sys.argv[6]
         CWDCUTOFF = sys.argv[7] # To clip resistance rasters for Circuitscape
         SQUARERESISTANCES = str2bool(sys.argv[8]) # Square resistance values 
+        DO_ALLPAIRS = str2bool(sys.argv[9]) # Do all-pair current calculations 
+                                            # in raster linkage map 
         SCRATCHDIR = path.join(PROJECTDIR, "scratch_cs")        
         
     # Ouput directory paths & folder names
@@ -168,6 +172,7 @@ class Config():
     SAVECIRCUITDIR = False
     SAVEBARRIERDIR =  False
     SAVECENTRALITYDIR = False
+    SAVECURRENTMAPS = False     
     
     FCORES = "fcores"
     OUTPUTGDB = path.join(OUTPUTDIR, "corridors.gdb")
