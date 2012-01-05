@@ -35,11 +35,11 @@ LTB_CWDIST = Cfg.LTB_CWDIST
 LTB_EFFRESIST = Cfg.LTB_EFFRESIST
 LTB_CWDTORR = Cfg.LTB_CWDTORR
 
+DO_ALLPAIRS = Cfg.DO_ALLPAIRS
 DO_ADJACENTPAIRS = True
-DO_ALLPAIRS = False # Fixme: put in GUI
 NORMALIZECORECURRENTS = False
 SETCORESTONULL = True
-Cfg.SAVECURRENTMAPS = False #temp- set in cfg
+
     
 def STEP8_calc_pinchpoints():
     """ Experimental code map pinch points using Circuitscape 
@@ -121,7 +121,8 @@ def STEP8_calc_pinchpoints():
 
         # Create output geodatabase
         if not arcpy.Exists(Cfg.PINCHGDB):
-            arcpy.CreateFileGDB_management(Cfg.OUTPUTDIR, path.basename(Cfg.PINCHGDB))
+            arcpy.CreateFileGDB_management(Cfg.OUTPUTDIR, 
+                                            path.basename(Cfg.PINCHGDB))
 
         mosaicRaster = path.join(Cfg.CIRCUITBASEDIR, "current_mos")        
         coresToProcess = npy.unique(linkTable[:, LTB_CORE1:LTB_CORE2 + 1])
@@ -238,7 +239,6 @@ def STEP8_calc_pinchpoints():
                 options['output_file'] = path.join(OUTCIRCUITDIR, outputFN)
                 if numElements > 250000:
                     options['print_timings']=True
-                    options['screenprint_log']=True
                 configFN = 'pinchpoint_config' + linkId + '.ini'
 
                 outConfigFile = path.join(CONFIGDIR, configFN)
@@ -246,7 +246,8 @@ def STEP8_calc_pinchpoints():
                 
                 gprint('Calling Circuitscape...')
                 if numElements > 250000:
-                    test = subprocess.call([CSPATH, outConfigFile], creationflags = subprocess.CREATE_NEW_CONSOLE)
+                    test = subprocess.call([CSPATH, outConfigFile], 
+                                creationflags = subprocess.CREATE_NEW_CONSOLE)
                 else:
                     subprocess.call([CSPATH, outConfigFile], shell=True)                     
 
@@ -283,7 +284,8 @@ def STEP8_calc_pinchpoints():
                     arcpy.CopyRaster_management(currentRaster, 
                                                  mosaicRaster)
                 else:
-                    gp.Mosaic_management(currentRaster, mosaicRaster, "MAXIMUM", "MATCH")            
+                    gp.Mosaic_management(currentRaster, mosaicRaster, 
+                                         "MAXIMUM", "MATCH")            
                     
                 resistancesFN = ('Circuitscape_link' + linkId 
                             + '_resistances_3columns.out')
@@ -309,13 +311,15 @@ def STEP8_calc_pinchpoints():
                 start_time1 = lu.elapsed_time(start_time1)
                 
             outputGDB = path.join(Cfg.OUTPUTDIR, path.basename(Cfg.PINCHGDB))
-            outputRaster = path.join(outputGDB, PREFIX + "_current_adjacent_pairs")            
+            outputRaster = path.join(outputGDB, 
+                                     PREFIX + "_current_adjacent_pairs")            
             arcpy.CopyRaster_management(mosaicRaster, outputRaster)
 
             try:
                 gprint('Building output statistics and pyramids\n ' 
                                   'for corridor pinch point raster\n')        
-                arcpy.CalculateStatistics_management(outputRaster, "1", "1", "#")
+                arcpy.CalculateStatistics_management(outputRaster,
+                                                     "1", "1", "#")
                 arcpy.BuildPyramids_management(outputRaster)    
             except:
                 pass
@@ -356,7 +360,8 @@ def STEP8_calc_pinchpoints():
         S8CORE_RAS = "s8core_ras"
         s8CoreRasPath = os.path.join(Cfg.SCRATCHDIR,S8CORE_RAS)
         
-        arcpy.FeatureToRaster_conversion(Cfg.COREFC, Cfg.COREFN, s8CoreRasPath, arcpy.env.cellSize)
+        arcpy.FeatureToRaster_conversion(Cfg.COREFC, Cfg.COREFN, 
+                                         s8CoreRasPath, arcpy.env.cellSize)
         binaryCoreRaster = "core_ras_bin"
 
         # The following commands cause file lock problems on save.  using gp
@@ -367,7 +372,8 @@ def STEP8_calc_pinchpoints():
 
         s5corridorRas = os.path.join(Cfg.OUTPUTGDB,PREFIX + "_lcc_mosaic_int")
         expression = ("(con(" + s5corridorRas + "<= " +
-                      str(Cfg.CWDCUTOFF) + ", "+ resRaster + ", con(" + binaryCoreRaster + " > 0, " + resRaster +  ")))")            
+                      str(Cfg.CWDCUTOFF) + ", "+ resRaster + ", con(" + 
+                      binaryCoreRaster + " > 0, " + resRaster +  ")))")            
         
         resRasClip = 'res_ras_clip'
         resRasClipPath = os.path.join(Cfg.SCRATCHDIR,resRasClip)
@@ -395,15 +401,16 @@ def STEP8_calc_pinchpoints():
         outputFN = 'Circuitscape.out'
         options['output_file'] = path.join(OUTCIRCUITDIR, outputFN)
         options['print_timings']=True
-        options['screenprint_log']=True
         configFN = 'pinchpoint_allpair_config.ini'
         outConfigFile = path.join(CONFIGDIR, configFN)
         lu.writeCircuitscapeConfigFile(outConfigFile, options)
 
         gprint('Calling Circuitscape...')
-        test = subprocess.call([CSPATH, outConfigFile], creationflags = subprocess.CREATE_NEW_CONSOLE)
+        test = subprocess.call([CSPATH, outConfigFile], 
+                               creationflags = subprocess.CREATE_NEW_CONSOLE)
 
-        currentFNs = ['Circuitscape_cum_curmap.npy','Circuitscape_max_curmap.npy']
+        currentFNs = ['Circuitscape_cum_curmap.npy',
+                      'Circuitscape_max_curmap.npy']
         rasterSuffixes =  ["_cum_current_all_pairs","_max_current_all_pairs"]
         for i in range(0,2):
             currentFN = currentFNs[i]
@@ -425,7 +432,8 @@ def STEP8_calc_pinchpoints():
             try:
                 gprint('\nBuilding output statistics and pyramids\n ' 
                     'for pinch point raster ' + str(i + 1) + '\n')        
-                arcpy.CalculateStatistics_management(outputRaster, "1", "1", "#")
+                arcpy.CalculateStatistics_management(outputRaster, 
+                                                     "1", "1", "#")
                 arcpy.BuildPyramids_management(outputRaster)    
             except:
                 pass
@@ -486,7 +494,8 @@ def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
         extent=descData.Extent
         spatialReference=descData.spatialReference
         pnt=arcpy.Point(extent.XMin,extent.YMin)
-        newRaster = arcpy.NumPyArrayToRaster(npyArray,pnt, cellSize,cellSize,-9999)
+        newRaster = arcpy.NumPyArrayToRaster(npyArray,pnt, 
+                                             cellSize,cellSize,-9999)
         newRaster.save(outRasterPath)
         return
     # Return GEOPROCESSING specific errors
