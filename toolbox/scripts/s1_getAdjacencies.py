@@ -31,7 +31,7 @@ EUC_BNDCIRCEN = "euc" + Cfg.BNDCIRCEN
 EUC_BNDCIRCENWD = path.join(Cfg.SCRATCHDIR, EUC_BNDCIRCEN)
 EUC_BNDCIR = "euc" + Cfg.BNDCIR
 EUC_BNDCIRWD = path.join(Cfg.SCRATCHDIR, EUC_BNDCIR)
-S1CORE_RAS = "s1core_ras"
+# S1CORE_RAS = Cfg.CORERAS
 
 
 def STEP1_get_adjacencies():
@@ -106,9 +106,6 @@ def STEP1_get_adjacencies():
         if Cfg.S1ADJMETH_EU:
             euadjacency()
             
-        # Clean up
-        lu.delete_data(S1CORE_RAS)
-            
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
@@ -162,26 +159,19 @@ def cwadjacency():
         gp.CellSize = gp.Describe(bResistance).MeanCellHeight
         gp.extent = "MAXOF"
         gprint('Processing cell size: ' + gp.CellSize)
-        count = 0
-        statement = ('gp.FeatureToRaster_conversion(Cfg.COREFC, '
-                     'Cfg.COREFN, S1CORE_RAS, gp.Cellsize)')
-        while True:
-            try:
-                exec statement
-            except:
-                count, tryAgain = lu.hiccup_test(count, statement)
-                if not tryAgain:
-                    exec statement
-            else:
-                break
+        # count = 0
+        # statement = ('gp.FeatureToRaster_conversion(Cfg.COREFC, '
+                     # 'Cfg.COREFN, S1CORE_RAS, gp.Cellsize)')
+        # while True:
+            # try:
+                # exec statement
+            # except:
+                # count, tryAgain = lu.hiccup_test(count, statement)
+                # if not tryAgain:
+                    # exec statement
+            # else:
+                # break
 
-        #Convert core raster to integer format Not implemented.
-        # if gp.exists(S1CORE_RAS):
-            # gp.delete_management(S1CORE_RAS)           
-        # gp.Int_sa(core_rastmp, S1CORE_RAS)
-        # gp.delete_management(core_rastmp)
-        
-                
         gp.workspace = Cfg.ADJACENCYDIR
         gp.scratchworkspace = gp.workspace
         
@@ -189,10 +179,10 @@ def cwadjacency():
             gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.CWDGDB))
         outDistanceRaster = path.join(Cfg.CWDGDB, PREFIX + "_cwd")
         alloc_ras = path.join(Cfg.ADJACENCYDIR, alloc_rasFN)
-        s1core_ras_path = path.join(Cfg.SCRATCHDIR, S1CORE_RAS)
+        # s1core_ras_path = path.join(Cfg.SCRATCHDIR, S1CORE_RAS)
         count = 0
-        statement = ('gp.Costallocation_sa(s1core_ras_path, bResistance, '
-                     'alloc_ras, Cfg.TMAXCWDIST, s1core_ras_path, "VALUE", '
+        statement = ('gp.Costallocation_sa(Cfg.CORERAS, bResistance, '
+                     'alloc_ras, Cfg.TMAXCWDIST, Cfg.CORERAS, "VALUE", '
                      'outDistanceRaster, "")')
         while True:
             try:
@@ -250,18 +240,18 @@ def euadjacency():
         oldextent = gp.extent
         if Cfg.BUFFERDIST is not None:
             gp.extent = gp.Describe(BNDCIRWD).extent
-        count = 0
-        statement = ('gp.FeatureToRaster_conversion(Cfg.COREFC, '
-                     'Cfg.COREFN, S1CORE_RAS, cellSizeEuclidean)')
-        while True:
-            try:
-                exec statement
-            except:
-                count, tryAgain = lu.hiccup_test(count, statement)
-                if not tryAgain:
-                    exec statement
-            else:
-                break
+        # count = 0
+        # statement = ('gp.FeatureToRaster_conversion(Cfg.COREFC, '
+                     # 'Cfg.COREFN, S1CORE_RAS, cellSizeEuclidean)')
+        # while True:
+            # try:
+                # exec statement
+            # except:
+                # count, tryAgain = lu.hiccup_test(count, statement)
+                # if not tryAgain:
+                    # exec statement
+            # else:
+                # break
 
         start_time = time.clock()
 
@@ -269,7 +259,7 @@ def euadjacency():
         outDistanceRaster = path.join(Cfg.ADJACENCYDIR, "euc")
         alloc_ras = path.join(Cfg.ADJACENCYDIR, alloc_rasFN)
         count = 0
-        statement = ('gp.EucAllocation_sa(S1CORE_RAS, alloc_ras, "","", '
+        statement = ('gp.EucAllocation_sa(Cfg.CORERAS, alloc_ras, "","", '
                      'cellSizeEuclidean, "", outDistanceRaster, "")')
         while True:
             try:

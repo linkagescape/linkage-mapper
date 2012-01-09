@@ -255,29 +255,40 @@ def get_zonal_minimum(dbfFile):
         raise_python_error(__filename__)
 
 
-def get_core_list():
+def get_core_list(coreFC, coreFN):
     """Returns a list of core area IDs from polygon file"""
     try:
         
-        # FIXME: This returns a list with length equal to number of shapes, 
-        # not number of unique
-        # cores.  Is this a problem?  Search cursor works on shapes, so
-        # we need to work on shapes as well.
+        # This returns a list with length equal to number of shapes, not unique
+        # core id's.
         
         # Get the number of core shapes
-        shapeCount = int(gp.GetCount_management(Cfg.COREFC).GetOutput(0))
+        gp.Extent = gp.Describe(coreFC).Extent
+        shapeCount = int(gp.GetCount_management(coreFC).GetOutput(0))
+
+        if shapeCount < 2:
+            dashline(1)
+            msg =('\nERROR: Less than two core areas detected. This can '
+                   '\nresult when resistance and core area maps are missing'
+                   '\nspatial reference data or are in different projections.'
+                   '\nBailing because there is nothing to connect.')
+            gp.AddError(msg)
+            exit(1)
+
         # Get core data into numpy array
         coreList = npy.zeros((shapeCount, 2))
-        cur = gp.SearchCursor(Cfg.COREFC)
+        cur = gp.SearchCursor(coreFC)
         row = cur.Next()
         i = 0
         while row:
-            coreList[i, 0] = row.GetValue(Cfg.COREFN)
-            coreList[i, 1] = row.GetValue(Cfg.COREFN)
+            coreList[i, 0] = row.GetValue(coreFN)
+            coreList[i, 1] = row.GetValue(coreFN)
             row = cur.Next()
             i = i + 1
         del cur, row
+        gp.extent = "MAXOF"  # For downstream operations
         return coreList
+        
     except arcgisscripting.ExecuteError:
         raise_geoproc_error(__filename__)
     except:
@@ -1236,7 +1247,7 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
                            "Least-Cost Paths: " + str(Cfg.STEP3))
             outFile.write("\n# Drop Corridors that Intersect Core Areas: "
                            + Cfg.S3DROPLCCS)
-            outFile.write("\n# Step 4 - Refine Network" + str(Cfg.STEP4))
+            outFile.write("\n# Step 4 - Refine Network: " + str(Cfg.STEP4))
             outFile.write("\n# Option A - Number of Connected Nearest Neighbors: "
                            + str(Cfg.S4MAXNN))
             outFile.write("\n# Option B - Nearest Neighbor Measurement Unit is "
@@ -1504,17 +1515,6 @@ def move_old_results():
         newFolder = Cfg.LCCBASEDIR
         move_results_folder(oldFolder, newFolder) 
 
-        oldFolder = Cfg.BARRIERBASEDIR_OLD
-        newFolder = Cfg.BARRIERBASEDIR
-        move_results_folder(oldFolder, newFolder) 
-
-        oldFolder = Cfg.CIRCUITBASEDIR_OLD
-        newFolder = Cfg.CIRCUITBASEDIR
-        move_results_folder(oldFolder, newFolder) 
-        
-        oldFolder = Cfg.CENTRALITYBASEDIR_OLD 
-        newFolder = Cfg.CENTRALITYBASEDIR 
-        move_results_folder(oldFolder, newFolder) 
 
     except:
         raise_python_error(__filename__)
@@ -1874,24 +1874,6 @@ def print_failures(statement, failures):
     failures = failures + 1
     return failures
     
-    
-def print_conefor_warning():
-    """Warns that some links have no euclidean distances in conefor file."""
-    gp.addmessage('\nWARNING: At least one potential link was dropped '
-                      'because')
-    gp.addmessage('there was no Euclidean distance value in the input '
-                      'Euclidean')
-    gp.addmessage('distance file from Conefor extension.\n')
-    gp.addmessage('This may just mean that there were core areas that were'
-                      ' adjacent')
-    gp.addmessage('but were farther apart than the optional maximum '
-                      'distance used ')
-    gp.addmessage('when running Conefor.  But it can also mean that '
-                      'distances  were')
-    gp.addmessage('calculated using a different core area shapefile or the'
-                      ' wrong field')
-    gp.addmessage('in the same core area shapefile.\n')
-
 
 def check_steps():
     """Check to make sure there are no skipped steps in a sequence of chosen
@@ -1915,11 +1897,11 @@ def check_steps():
     return
 
 
-def check_cores():
+def check_cores(FC,FN):
     """Checks for positive integer core IDs with appropriate naming."""
     try:
         invalidFNs = ['fid','id','oid','shape']
-        if Cfg.COREFN.lower() in invalidFNs:
+        if FN.lower() in invalidFNs:
             dashline(1)
             msg = ('ERROR: Core area field name "ID", "FID", "OID", and "Shape" are reserved '
                     'for ArcGIS. Please choose another field- must be a '
@@ -1927,9 +1909,9 @@ def check_cores():
             gp.AddError(msg)
             exit(1)      
 
-        fieldList = gp.ListFields(Cfg.COREFC)
+        fieldList = gp.ListFields(FC)
         for field in fieldList:
-            if str(field.Name) == Cfg.COREFN:
+            if str(field.Name) == FN:
                 FT = str(field.Type)
                 if (FT != 'SmallInteger' and FT != 'SHORT' and FT != 'Integer' 
                     and FT != 'LONG'):
@@ -1939,14 +1921,7 @@ def check_cores():
                     gp.AddError(msg)
                     exit(1)                   
 
-        coreList = get_core_list()
-        # test = coreList - coreList.astype(int)
-        # if npy.any(test) == True:
-            # dashline(1)
-            # msg = ('ERROR: Core area field must be in integer format. ')
-            # gp.AddError(msg)
-            # exit(1)
-
+        coreList = get_core_list(FC,FN)
         if npy.amin(coreList) < 1:
             dashline(1)
             msg = ('ERROR: Core area field must contain only positive integers. ')

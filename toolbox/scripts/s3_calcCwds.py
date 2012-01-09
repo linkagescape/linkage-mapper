@@ -72,11 +72,11 @@ def STEP3_calc_cwds():
         # Super secret setting to re-start failed run.  Enter 'RESTART' as the
         # Name of the pairwise distance table in step 2, and uncheck step 2.
         # We can eventually place this in a .ini file.
-        if Cfg.S2EUCDISTFILE == "RESTART": 
-            rerun = True 
-        else:
-            rerun = False        
-             
+        rerun = False
+        if Cfg.S2EUCDISTFILE != None:
+            if Cfg.S2EUCDISTFILE.lower() == "restart": 
+                rerun = True 
+                
         # if Cfg.TMAXCWDIST is None:
            	# gprint('NOT using a maximum cost-weighted distance.')
         # else:
@@ -300,20 +300,20 @@ def STEP3_calc_cwds():
         # lu.dashline(1)
         gprint("Creating core area raster.")
         # core_rastmp="core_rastmp"
-        Cfg.s3core_ras="s3core_ras"
+  
         gp.SelectLayerByAttribute(Cfg.FCORES, "CLEAR_SELECTION")
         gp.CellSize = gp.Describe(Cfg.BOUNDRESIS).MeanCellHeight
-        lu.delete_data(Cfg.s3core_ras)
+        # lu.delete_data(Cfg.CORERAS)
         gp.extent = gp.Describe(Cfg.BOUNDRESIS).extent
-        count = 0
-        statement = ('gp.FeatureToRaster_conversion(Cfg.FCORES, '
-                     'Cfg.COREFN, Cfg.s3core_ras, gp.Cellsize)')
-        while True:
-            try: exec statement
-            except:
-                count,tryAgain = lu.hiccup_test(count,statement)
-                if not tryAgain: exec statement
-            else: break
+        # count = 0
+        # statement = ('gp.FeatureToRaster_conversion(Cfg.FCORES, '
+                     # 'Cfg.COREFN, Cfg.CORERAS, gp.Cellsize)')
+        # while True:
+            # try: exec statement
+            # except:
+                # count,tryAgain = lu.hiccup_test(count,statement)
+                # if not tryAgain: exec statement
+            # else: break
                
                 
         if rerun == True:
@@ -526,12 +526,11 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
         # Create raster that just has source core in it
         # Note: this seems faster than setnull with LI grid.
-        expression = ("con(" + Cfg.s3core_ras + " == " +
+        expression = ("con(" + Cfg.CORERAS + " == " +
                       str(int(sourceCore)) + ",1)")
         SRCRASTER = 'source'
 
-        statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
-                     'SRCRASTER)')
+        statement = ('gp.SingleOutputMapAlgebra_sa(expression, SRCRASTER)')
         try: 
             exec statement
             randomerror()
@@ -565,7 +564,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     # str(len(targetCores)) + ' potential targets')
        
         statement = ('gp.zonalstatisticsastable_sa('
-                      'Cfg.s3core_ras, "VALUE", outDistanceRaster, ZNSTATS)')
+                      'Cfg.CORERAS, "VALUE", outDistanceRaster, ZNSTATS)')
         try:  
             exec statement
             randomerror()
@@ -623,7 +622,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                                + 1000)
 
                 # Create raster that just has target core in it
-                expression = ("con(" + Cfg.s3core_ras + " == " +
+                expression = ("con(" + Cfg.CORERAS + " == " +
                               str(int(targetCore)) + ",1)")
                 TARGETRASTER = 'targ'
 
