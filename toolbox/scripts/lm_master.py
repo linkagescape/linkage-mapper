@@ -38,22 +38,71 @@ def lm_master():
 
     """
     try:
+    
         installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + str(__version__))
         try:
             gprint('on ArcGIS '+ installD['ProductName'] + ' ' + 
                 installD['Version'] + ' Service Pack ' + installD['SPNumber'])
         except: pass   
-    
-        gp.OutputCoordinateSystem = gp.describe(Cfg.COREFC).SpatialReference
 
-        # Check core ID field.
-        lu.check_cores()        
-       
         if gp.Exists(Cfg.OUTPUTDIR):
             gp.RefreshCatalog(Cfg.OUTPUTDIR)
+  
+        lu.createfolder(Cfg.OUTPUTDIR)
+        lu.createfolder(Cfg.LOGDIR)
+        lu.createfolder(Cfg.DATAPASSDIR)
+        # Create fresh scratch directory
+        lu.delete_dir(Cfg.SCRATCHDIR)
+        lu.createfolder(Cfg.SCRATCHDIR)
         
-      
+        # Check core ID field.
+        lu.check_cores(Cfg.COREFC, Cfg.COREFN) 
+        
+        # Identify first step cleanup link tables from that point
+        lu.dashline(1)
+        if Cfg.STEP1:
+            gprint('Starting at step 1.')       
+            firststep = 1
+        elif Cfg.STEP2:
+            gprint('Starting at step 2.')
+            firststep = 2
+        elif Cfg.STEP3:
+            gprint('Starting at step 3.')
+            firststep = 3
+        elif Cfg.STEP4:
+            gprint('Starting at step 4.')
+            firststep = 4
+        elif Cfg.STEP5:
+            gprint('Starting at step 5.')
+            firststep = 5
+        lu.clean_up_link_tables(firststep)
+
+        # Move adj and cwd results from earlier versions to datapass directory
+        lu.move_old_results()
+        gp.OverwriteOutput = True
+        
+        # Make a local grid copy of resistance raster for cwd runs-
+        # will run faster than gdb.
+        # Don't know if raster is in a gdb if entered from TOC
+        lu.delete_data(Cfg.RESRAST)
+        gp.pyramid = "NONE"
+        gp.rasterstatistics = "NONE"
+
+        gprint('\nMaking temporary copy of resistance raster for this run.')
+        gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)  
+
+        gp.Extent = gp.Describe(Cfg.RESRAST).Extent        
+        gp.SnapRaster = Cfg.RESRAST
+
+        if (Cfg.STEP1) or (Cfg.STEP3):
+            # Make core raster file
+            gprint('\nMaking temporary raster of core file for this run.')
+            gp.FeatureToRaster_conversion(Cfg.COREFC, Cfg.COREFN, 
+                          Cfg.CORERAS, gp.Describe(Cfg.RESRAST).MeanCellHeight)        
+         # #   gp.RasterToPolygon_conversion(Cfg.CORERAS, Cfg.COREFC, 
+                                              # "NO_SIMPLIFY")                
+
         def delete_final_gdb(finalgdb):
             if gp.Exists(finalgdb) and Cfg.STEP5:
                 try:
@@ -66,55 +115,14 @@ def lm_master():
                            'need to re-start ArcMap to release the file lock.')
                     gp.AddError(msg)
                     exit(1)     
+
         # Delete final output geodatabase
         delete_final_gdb(Cfg.OUTPUTGDB_OLD)
         delete_final_gdb(Cfg.OUTPUTGDB)
         delete_final_gdb(Cfg.EXTRAGDB)
-        delete_final_gdb(Cfg.LINKMAPGDB)        
+        delete_final_gdb(Cfg.LINKMAPGDB) 
 
-  
-        lu.createfolder(Cfg.OUTPUTDIR)
-        lu.createfolder(Cfg.LOGDIR)
-        lu.createfolder(Cfg.DATAPASSDIR)
-        # Create fresh scratch directory
-        lu.delete_dir(Cfg.SCRATCHDIR)
-        lu.createfolder(Cfg.SCRATCHDIR)
-        
-        # Identify first step cleanup link tables from that point
-        if Cfg.STEP1:
-            firststep = 1
-        elif Cfg.STEP2:
-            firststep = 2
-        elif Cfg.STEP3:
-            firststep = 3
-        elif Cfg.STEP4:
-            firststep = 4
-        elif Cfg.STEP5:
-            firststep = 5
-        lu.clean_up_link_tables(firststep)
-
-        # Move adj and cwd results from earlier versions to datapass directory
-        lu.move_old_results()
-        gp.OverwriteOutput = True
-        
-        if Cfg.STEP1 or Cfg.STEP3:
-            # Make a local grid copy of resistance raster for cwd runs-
-            # will run faster than gdb.
-            # Don't know if raster is in a gdb if entered from TOC
-            lu.delete_data(Cfg.RESRAST)
-            gp.pyramid = "NONE"
-            gp.rasterstatistics = "NONE"
-
-            gprint('\nMaking local copy of resistance raster.')
-            try:
-                gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
-            except: # This sometimes fails due to bad file locks
-                Cfg.RESRAST = Cfg.RESRAST_IN
-        else:
-            Cfg.RESRAST = Cfg.RESRAST_IN
-        gp.SnapRaster = Cfg.RESRAST
-
-        
+        gp.OutputCoordinateSystem = gp.describe(Cfg.COREFC).SpatialReference                                              
         # Run linkage mapper processing steps
         if Cfg.STEP1:
             s1.STEP1_get_adjacencies()
@@ -129,8 +137,7 @@ def lm_master():
         
         # Clean up
         lu.delete_dir(Cfg.SCRATCHDIR)
-        lu.clean_out_workspace(Cfg.SCRATCHDIR)
-
+ 
         gp.addmessage('\nDONE!\n')
 
     # Return GEOPROCESSING specific errors

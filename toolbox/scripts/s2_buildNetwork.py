@@ -25,8 +25,6 @@ SIMPLIFY_CORES = Cfg.SIMPLIFY_CORES
 NEAR_TBL = path.join(Cfg.SCRATCHDIR, "neartbl.dbf")
 DIST_FNAME = path.join(Cfg.PROJECTDIR, (Cfg.COREFC + "_dists.txt"))
 NEAR_FN = "NEAR_DIST"
-S2CORE_RAS = "s2core_ras"
-S2COREFN = Cfg.COREFN
 
 gp = Cfg.gp
 gprint = gp.addmessage
@@ -68,18 +66,25 @@ def STEP2_build_network():
         else:
             eucdist_file = Cfg.S2EUCDISTFILE
         
-        eucDists = npy.loadtxt(eucdist_file, dtype='Float64', comments='#')
-        numDists = eucDists.shape[0]
-        # lu.dashline()
-        gprint('Core area distance list '
-                          'loaded. \n')
-        gprint('number of pairwise distances = ' + str(numDists))
-        # lu.dashline(2)
-        eucDists[:, 0:2] = npy.sort(eucDists[:, 0:2])
+        eucDists_in = npy.loadtxt(eucdist_file, dtype='Float64', comments='#')
+        #gprint(str(eucDists.shape)) 
+        #gprint(str(eucDists.shape[1]))
+        #gprint(str(eucDists.size))
+        if eucDists_in.size == 3:  # If just one line in file
+            eucDists = npy.zeros((1,3),dtype = 'Float64')
+            eucDists[0,:] = eucDists_in
+            numDists = 1
 
-        # sort eucDists by 1st column then by 2nd then by 3rd
+        else:
+            eucDists = eucDists_in
+            numDists = eucDists.shape[0]
+        del eucDists_in
+        eucDists[:, 0:2] = npy.sort(eucDists[:, 0:2])
         ind = npy.lexsort((eucDists[:, 2], eucDists[:, 1], eucDists[:, 0]))
         eucDists = eucDists[ind]
+        gprint('Core area distance list loaded.')   
+        gprint('number of pairwise distances = ' + str(numDists))            
+        # sort eucDists by 1st column then by 2nd then by 3rd
 
         #----------------------------------------------------------------------
         # Get rid of duplicate pairs of cores, retaining MINIMUM distance
@@ -107,6 +112,7 @@ def STEP2_build_network():
                           ' pairwise distances.  Max core ID number is ' +
                           str(int(maxeudistid)) + '.')
         # lu.dashline(2)
+
 
         # Begin creating and manipulating linktables
         # zeros and many other array functions are imported from numpy
@@ -149,8 +155,6 @@ def STEP2_build_network():
 
         maxCoreId = max(maxEucAdjCoreID, maxCwdAdjCoreID, maxeudistid)
 
-        # FIXME: consider using a lookup table to reduce size of matrix
-        # when there are gaps in core areas
         cwdAdjMatrix = npy.zeros((maxCoreId + 1, maxCoreId + 1),
                              dtype='int32')
         for x in range(0, len(cwdAdjList)):
@@ -255,21 +259,13 @@ def STEP2_build_network():
         linkTable[:, Cfg.LTB_CWDIST] = -1
 
         # Get list of core IDs, based on core area shapefile.
-        coreList = lu.get_core_list()
-
-        # Update linkTable with new core IDs
-        numCores = len(coreList)
-        # Fixme: this appears to be a holdover from earlier code. Core numbers
-        # in col 0 and 1 should always be equal.
-        for core in range(numCores):
-            if coreList[core, 0] != coreList[core, 1]:
-                linkTable[:, Cfg.LTB_CORE1] = npy.where(
-                    linkTable[:, Cfg.LTB_CORE1] == coreList[core, 0],
-                    coreList[core, 1], linkTable[:, Cfg.LTB_CORE1])
-                linkTable[:, Cfg.LTB_CORE2] = npy.where(
-                    linkTable[:, Cfg.LTB_CORE2] == coreList[core, 0],
-                    coreList[core, 1], linkTable[:, Cfg.LTB_CORE2])
-
+        coreList = lu.get_core_list(Cfg.COREFC, Cfg.COREFN)
+        if len(npy.unique(coreList[:, 1])) < 2:
+            lu.dashline(1)
+            msg =('\nERROR: There are less than two core '
+                  'areas.\nThis means there is nothing to connect '
+                  'with linkages. Bailing.')
+            exit(1)
         # Set Cfg.LTB_LINKTYPE to valid corridor code
         linkTable[:, Cfg.LTB_LINKTYPE] = Cfg.LT_CORR
         # Make sure linkTable is sorted
@@ -288,11 +284,6 @@ def STEP2_build_network():
         for x in range(len(linkTable)):
             linkTable[x, Cfg.LTB_LINKID] = x + 1
 
-        if len(npy.unique(coreList[:, 1])) < 2:
-            gprint('\nERROR: There are less than two core '
-                              'areas.\nThis means there is nothing to connect '
-                              'with linkages. Bailing.')
-            exit(0)
         #----------------------------------------------------------------------
 
         # Drop links that are too long
@@ -318,9 +309,9 @@ def STEP2_build_network():
         gprint('Creating shapefiles with linework for links.\n')
         lu.write_link_maps(outlinkTableFile, step=2)
         gprint('Linework shapefiles written.')
-
+        
         if dropFlag:
-            lu.print_conefor_warning()
+            print_conefor_warning()
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
@@ -369,6 +360,7 @@ def generate_distance_file(cwdAdjFile,eucAdjFile):
 
     """
     try:
+        #gp.Extent = gp.Describe(Cfg.COREFC).Extent
         gp.CellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight    
                 
         if SIMPLIFY_CORES == True:
@@ -421,9 +413,9 @@ def generate_distance_file(cwdAdjFile,eucAdjFile):
             pctDone = lu.report_pct_done(x, len(adjList), pctDone)
             sourceCore = adjList[x,0]
             targetCore = adjList[x,1]
-            expression = S2COREFN + " = " + str(sourceCore)
+            expression = Cfg.COREFN + " = " + str(sourceCore)
             gp.selectlayerbyattribute(FS2COREFC, "NEW_SELECTION", expression)
-            expression = S2COREFN + " = " + str(targetCore)
+            expression = Cfg.COREFN + " = " + str(targetCore)
             gp.selectlayerbyattribute(FS2COREFC2, "NEW_SELECTION", expression)
     
             gp.generateneartable(FS2COREFC, FS2COREFC2, NEAR_TBL, "#",
@@ -463,6 +455,16 @@ def generate_distance_file(cwdAdjFile,eucAdjFile):
         lu.raise_python_error(__filename__)
 
         
+def print_conefor_warning():
+    """Warns that some links have no euclidean distances in conefor file."""
+    gprint('\nWARNING: At least one potential link was dropped because\n'
+        'there was no Euclidean distance value in the input Euclidean\n' 
+        'distance file from Conefor extension.\n'
+        '   This may just mean that there were core areas that were adjacent\n'
+        'but were farther apart than the optional maximum distance used\n'
+        'when running Conefor.  But it can also mean that distances  were\n'
+        'calculated using a different core area shapefile or the wrong field\n'
+        'in the same core area shapefile.\n')
 
 def get_full_adj_list(cwdAdjFile,eucAdjFile):       
     try:    

@@ -93,17 +93,15 @@ def calc_lccs(normalize):
         numLinks = linkTable.shape[0]
         numCorridorLinks = lu.report_links(linkTable)
         if numCorridorLinks == 0:
-            lu.dashline()
-            gprint('\nThere are no corridors to map. Bailing.')
-            time.sleep(5)
-            return
+            lu.dashline(1)
+            msg =('\nThere are no corridors to map. Bailing.')
+            exit(1)
 
 
         if not Cfg.STEP3 and not Cfg.STEP4:
             # re-check for links that are too long or in case script run out of
             # sequence with more stringent settings
-            gprint('Double-checking for corridors that are too long'
-                              ' to map.')
+            gprint('Double-checking for corridors that are too long to map.')
             disableLeastCostNoVal = True
             linkTable,numDroppedLinks = lu.drop_links(
                 linkTable, Cfg.MAXEUCDIST, Cfg.MINEUCDIST, Cfg.MAXCOSTDIST,
@@ -289,18 +287,7 @@ def calc_lccs(normalize):
                 if not tryAgain: exec statement
             else: break
         # ---------------------------------------------------------------------
-
-        # generate pyramids and statistics for final output 
-        # DISABLE? Seems to build statistics too coarsely for clear
-        # corridor display.
-        try:
-            gp.addmessage('\nBuilding output statistics and pyramids ' 
-                              'for corridor raster\n')        
-            gp.CalculateStatistics_management(intRaster, "1", "1", "#")
-            gp.BuildPyramids_management(intRaster)    
-        except:
-            pass
-        
+       
         
         saveFloatRaster = False
         if saveFloatRaster == False:
@@ -323,15 +310,8 @@ def calc_lccs(normalize):
                     if not tryAgain: exec statement
                 else: break
         # ---------------------------------------------------------------------
-            
-            try:
-                gp.addmessage('Building output statistics and pyramids ' 
-                              'for truncated corridor raster\n')        
-                gp.CalculateStatistics_management(intRaster, "1", "1", "#")
-                gp.BuildPyramids_management(intRaster)    
-            except:
-                pass
-            
+                            
+                
         start_time = time.clock()
         gprint('Writing final LCP maps...')
         if Cfg.STEP4:
@@ -369,7 +349,7 @@ def calc_lccs(normalize):
         # Create final linkmap files in output directory, and remove files from
         # scratch.
         lu.copy_final_link_maps(step=5)
-       
+
         # Check for unreasonably low minimum NLCC values
         propertyType = "MINIMUM"
         minObject = gp.GetRasterProperties(mosaicRaster, propertyType)
@@ -389,7 +369,26 @@ def calc_lccs(normalize):
             gp.AddError(msg)
             exit(1) 
 
+        # Build statistics for corridor rasters
+        try:
+            gp.addmessage('\nBuilding output statistics and pyramids ' 
+                              'for corridor raster')        
+            gp.CalculateStatistics_management(intRaster, "1", "1", "#")
+            gp.BuildPyramids_management(intRaster)    
+        except:
+            gprint('Statistics and/or pyramids failed.')
+            pass
         
+        if writeTruncRaster == True:            
+            try:
+                gp.addmessage('Building output statistics ' 
+                              'for truncated corridor raster')        
+                gp.CalculateStatistics_management(truncRaster, "1", "1", "#")
+                gp.BuildPyramids_management(truncRaster)    
+            except:
+                gprint('Statistics and/or pyramids failed.')
+                pass
+               
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)

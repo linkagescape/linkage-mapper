@@ -41,7 +41,7 @@ def STEP6_calc_barriers():
     """
 
 # Fixme: add option to save individual barrier files?
-    try:        
+    try:       
         lu.dashline(0)
         gprint('Running script ' + __filename__)
 
@@ -81,11 +81,11 @@ def STEP6_calc_barriers():
         numLinks = linkTable.shape[0]
         numCorridorLinks = lu.report_links(linkTable)
         if numCorridorLinks == 0:
-            lu.dashline()
-            gprint('\nThere are no linkages. Bailing.')
-            time.sleep(5)
-            return
-                                
+            dashline(1)
+            msg =('\nThere are no linkages. Bailing.')
+            gp.AddError(msg)
+            exit(1)
+            
         # set up directories for barrier and barrier mosaic grids
         dirCount = 0
         gprint("Creating intermediate output folder: " + Cfg.BARRIERBASEDIR)
@@ -139,7 +139,8 @@ def STEP6_calc_barriers():
             pctDone = 0
             gprint('\nMapping barriers at a radius of ' + str(radius) + 
                    ' map units...')
-            gprint('0 percent done')
+            if numCorridorLinks > 1:                   
+                gprint('0 percent done')
             for x in range(0,numLinks):
                 pctDone = lu.report_pct_done(linkLoop, numCorridorLinks, 
                                             pctDone)
@@ -301,7 +302,7 @@ def STEP6_calc_barriers():
             for radius in range (startRadius, endRadius + 1, radiusStep):
                 #radiusFN = "barriers" + str(radius)
                 #radiusRaster = path.join(Cfg.BARRIERBASEDIR, radiusFN)            
-#Fixme: run speed test with gdb mosaicking above and here
+                #Fixme: run speed test with gdb mosaicking above and here
                 radiusFN = prefix + "_barriers" + str(radius)
                 radiusRaster = path.join(Cfg.BARRIERGDB, radiusFN)
 
@@ -367,7 +368,7 @@ def STEP6_calc_barriers():
                 arcpy.CalculateStatistics_management(raster, "1", "1", "#")
                 arcpy.BuildPyramids_management(raster)
             except:
-                gprint('Failed.')
+                gprint('Statistics and/or pyramids failed.')
                 
         #Clean up temporary files and directories        
         if not Cfg.SAVEBARRIERRASTERS:
