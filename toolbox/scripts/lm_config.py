@@ -110,7 +110,15 @@ class Config():
             #TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # Will limit cw calcs. 
         
         SCRATCHDIR = path.join(PROJECTDIR, "scratch")
-       
+        
+        # Permanent copy of core area FC made at step 1 and used in all steps
+        # COREDIR = path.join(DATAPASSDIR,"corecopy") 
+        # COREFC = path.join(COREDIR,"core_copy.shp")
+        # COREFN = "GRIDCODE"
+        CORERAS = path.join(SCRATCHDIR,"core_ras")   
+
+
+        
     elif script == "barrier_master.py":  #Barrier Mapper    
         TOOL = 'barrier_mapper'
         PROJECTDIR = sys.argv[1]  # Project directory
@@ -136,11 +144,11 @@ class Config():
                                             # in raster linkage map 
         SCRATCHDIR = path.join(PROJECTDIR, "scratch_cs")        
         
-    # Ouput directory paths & folder names
+    # File names, directory paths & folder names
     PREFIX = path.basename(PROJECTDIR)
+    DATAPASSDIR = path.join(PROJECTDIR, "datapass")    
     OUTPUTDIR = path.join(PROJECTDIR, "output")
     LOGDIR = path.join(PROJECTDIR, "logFiles")
-    DATAPASSDIR = path.join(PROJECTDIR, "datapass")
     ADJACENCYDIR = path.join(DATAPASSDIR, "adj")
     ADJACENCYDIR_OLD = path.join(PROJECTDIR, "adj")
     CWDBASEDIR = path.join(DATAPASSDIR, "cwd")
@@ -153,14 +161,11 @@ class Config():
     FOCALSUBDIR1_NM = "focalr"
     FOCALSUBDIR2_NM = "f"
     FOCALGRID_NM = "focal"
-    BARRIERBASEDIR = path.join(PROJECTDIR, "barrier")
-    BARRIERBASEDIR_OLD = path.join(PROJECTDIR, "barrier")    
+    BARRIERBASEDIR = path.join(PROJECTDIR, "barrier_tmp")
     BARRIERDIR_NM = "bar"
     BARRIERMOSAICDIR = "mosaic"
-    CIRCUITBASEDIR = path.join(PROJECTDIR, "pinchpoints")
-    CIRCUITBASEDIR_OLD = path.join(PROJECTDIR, "pinchpoints")
-    CENTRALITYBASEDIR = path.join(PROJECTDIR, "centrality")
-    CENTRALITYBASEDIR_OLD = path.join(PROJECTDIR, "centrality")
+    CIRCUITBASEDIR = path.join(PROJECTDIR, "pinchpt_tmp")
+    CENTRALITYBASEDIR = path.join(PROJECTDIR, "centrality_tmp")
 
     CIRCUITCONFIGDIR_NM = "config"
     CIRCUITOUTPUTDIR_NM =  "output"
@@ -175,6 +180,7 @@ class Config():
     SAVECURRENTMAPS = False     
     
     FCORES = "fcores"
+
     OUTPUTGDB = path.join(OUTPUTDIR, "corridors.gdb")
     EXTRAGDB = path.join(OUTPUTDIR, "extra.gdb")
     OUTPUTGDB_OLD = path.join(OUTPUTDIR, "linkages.gdb")
@@ -224,7 +230,7 @@ class Config():
     # 20 constel
     # 21 1st nn constel (future)
     # 22 2nd nn constel etc (future)
-    # 30 temp saved nnconstel.  maybe able to get rid fo this
+    # 30 temp saved nnconstel.  maybe able to get rid of this
 
     # Create single geoprocessor object to be used throughout
     gp = arcgisscripting.create(9.3)

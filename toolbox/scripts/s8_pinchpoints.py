@@ -99,10 +99,10 @@ def STEP8_calc_pinchpoints():
         numLinks = linkTable.shape[0]
         numCorridorLinks = lu.report_links(linkTable)
         if numCorridorLinks == 0:
-            lu.dashline()
-            gprint('\nThere are no linkages. Bailing.')
-            time.sleep(5)
-            return
+            dashline(1)
+            msg =('\nThere are no linkages. Bailing.')
+            gp.AddError(msg)
+            exit(1)
         if linkTable.shape[1] < 16: # If linktable has no entries from prior
                                     # centrality or pinchpint analyses
             extraCols = npy.zeros((numLinks, 6), dtype="float64")
