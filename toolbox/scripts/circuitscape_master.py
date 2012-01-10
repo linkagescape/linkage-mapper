@@ -39,7 +39,6 @@ def circuitscape_master():
         lu.move_old_results()
               
         lu.delete_dir(Cfg.SCRATCHDIR)
-        lu.clean_out_workspace(Cfg.SCRATCHDIR)
               
         if path.exists(Cfg.OUTPUTDIR):
             gp.RefreshCatalog(Cfg.OUTPUTDIR)
@@ -53,6 +52,15 @@ def circuitscape_master():
         lu.createfolder(Cfg.SCRATCHDIR)    
 
         if Cfg.DOPINCH == True:
+            #  Fixme: move raster path to config
+            S5CORRIDORRAS = os.path.join(Cfg.OUTPUTGDB,Cfg.PREFIX + 
+                                         "_lcc_mosaic_int") 
+            if not gp.Exists(S5CORRIDORRAS):
+                msg = ('ERROR: Corridor raster created in step 5 is required'
+                        '\nfor all-pair analyses, but was not found.')
+                gp.AddError(msg)
+                exit(1)    
+            
             # Make a local grid copy of resistance raster-
             # will run faster than gdb.
             lu.delete_data(Cfg.RESRAST)

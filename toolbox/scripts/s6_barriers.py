@@ -362,14 +362,10 @@ def STEP6_calc_barriers():
         arcpy.env.workspace = Cfg.BARRIERGDB
         rasters = arcpy.ListRasters()
         for raster in rasters:
-            try:
-                gprint('\nBuilding output statistics and pyramids\n ' 
+            gprint('\nBuilding output statistics and pyramids\n ' 
                         'for raster ' + raster)        
-                arcpy.CalculateStatistics_management(raster, "1", "1", "#")
-                arcpy.BuildPyramids_management(raster)
-            except:
-                gprint('Statistics and/or pyramids failed.')
-                
+            lu.build_stats(raster)
+            
         #Clean up temporary files and directories        
         if not Cfg.SAVEBARRIERRASTERS:
             cbarrierdir = path.join(Cfg.BARRIERBASEDIR, Cfg.BARRIERDIR_NM) 
@@ -385,7 +381,8 @@ def STEP6_calc_barriers():
                 path1, dir1 = path.split(core1path)
                 path2, dir2 = path.split(path1)
                 lu.delete_dir(path2)
-                    
+    
+    
     # Return GEOPROCESSING specific errors
     except arcpy.ExecuteError:
         lu.dashline(1)
@@ -400,5 +397,5 @@ def STEP6_calc_barriers():
 
     return
     
-    
+
     

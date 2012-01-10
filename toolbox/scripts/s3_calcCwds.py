@@ -21,7 +21,8 @@ import numpy as npy
 
 from lm_config import Config as Cfg
 import lm_util as lu
-            
+
+    
 gp = Cfg.gp
 gprint = gp.addmessage
    
@@ -183,7 +184,6 @@ def STEP3_calc_cwds():
         linkTable,numDroppedLinks = lu.drop_links(linkTable, Cfg.MAXEUCDIST, 0,
                                                   Cfg.MINEUCDIST, 0,
                                                   disableLeastCostNoVal)
-
         # ------------------------------------------------------------------
         # Bounding boxes
         if (Cfg.BUFFERDIST) is not None:
@@ -393,7 +393,10 @@ def STEP3_calc_cwds():
 
         start_time = time.clock()
         gprint('Creating shapefiles with linework for links...')
-        lu.write_link_maps(outlinkTableFile, step=3)
+        try:
+            lu.write_link_maps(outlinkTableFile, step=3)
+        except:
+            lu.write_link_maps(outlinkTableFile, step=3)
         start_time = lu.elapsed_time(start_time)
 
         gprint('\nIndividual cost-weighted distance layers written '
@@ -705,41 +708,36 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         if failures < 10:
                             return None,failures,lcpLoop
                         else: exec statement                                                  
-                                                  
+
                     #------------------------------------------
-                    #New method for intermediate core test
+                    # Intermediate core test
                     try:
-                        coreDetected = test_for_intermediate_core(
-                                        gp.workspace, lcpRas, corePairRas)
+                        coreDetected = test_for_intermediate_core(gp.workspace, 
+                                                lcpRas, corePairRas)
                         randomerror()
-                        if coreDetected:
-                            lu.dashline()
-                            gprint(
-                                "Found an intermediate core in the "
-                                "least-cost path between cores " +
-                                str(int(sourceCore)) + " and " +
-                                str(int(targetCore)) + ".  The corridor "
-                                "will be removed.")
-                            # disable link
-                            rows = lu.get_links_from_core_pairs(linkTable,
-                                                        sourceCore,
-                                                        targetCore)
-                            linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_INT  
                     except:
                         statement = 'test_for_intermediate_core'
                         failures = lu.print_failures(statement, failures)
                         if failures < 10:
                             return None,failures,lcpLoop
-                        else: exec statement
+                        else: 
+                            coreDetected = test_for_intermediate_core(
+                                        gp.workspace, lcpRas, corePairRas)
+                                        
+                    if coreDetected:
+                        lu.dashline()
+                        gprint(
+                            "Found an intermediate core in the "
+                            "least-cost path between cores " +
+                            str(int(sourceCore)) + " and " +
+                            str(int(targetCore)) + ".  The corridor "
+                            "will be removed.")
+                        # disable link
+                        rows = lu.get_links_from_core_pairs(linkTable,
+                                                    sourceCore,
+                                                    targetCore)
+                        linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_INT  
                     #------------------------------------------
-
-                    #------------------------------------------
-                    # # old method for intermediate core test- disabled
-                    # coreDetected = test_for_intermediate_core_old_method(
-                                        # gp.workspace, lcpRas, corePairRas)
-                    # if coreDetected:
-                        # gprint("---------------Found an intermediate" 
-                               # " core using ZonalStats----------")
 
                 # Create lcp shapefile.  lcploop just keeps track of
                 # whether this is first time function is called.
@@ -797,18 +795,22 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
                 count,tryAgain = lu.hiccup_test(count,statement)
                 if not tryAgain: exec statement
             else: break
-
-        # make sure there is a raster, even if empty, and properties are obtainable
+        #addRasPath = path.join(workspace,"addRas") 
+        # make sure there is a raster, even if empty, and properties 
+        # are obtainable
         propertyType = "TOP"
         topObject = gp.GetRasterProperties("addRas", propertyType)
 
         # Test to see if raster has data
         try:
             propertyType = "MINIMUM"
+            # In Arc 10, next statement fails for empty rasters
             minObject = gp.GetRasterProperties("addRas", propertyType)
-            return True
-        except:
-            return False
+            # In Arc 9.3, next statement fails for empty rasters
+            minVal = int(minObject.getoutput(0))
+            return True  # If there is data in raster, return True
+        except:  
+            return False  # Failure indicates empty raster and no overlap
             
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
@@ -823,12 +825,9 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
         lu.raise_python_error(__filename__)    
     
 def test_for_intermediate_core_old_method(workspace,lcpRas,corePairRas):
-    """ Zonal stats method to test for intermediate core (disabled now)
-    usage: coreDetected = test_for_intermediate_core_old_method(gp.workspace, 
-                                                        lcpRas, corePairRas)                                 
+    """ Zonal stats method to test for intermediate core test
 
     """    
-    
     ZNSTATS2 = path.join(Cfg.SCRATCHDIR, "zonestats2.dbf")
     value = "VALUE"
     gp.ZonalStatisticsAsTable_sa(corePairRas, value, lcpRas, ZNSTATS2, 

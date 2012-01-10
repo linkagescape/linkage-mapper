@@ -315,14 +315,9 @@ def STEP8_calc_pinchpoints():
                                      PREFIX + "_current_adjacent_pairs")            
             arcpy.CopyRaster_management(mosaicRaster, outputRaster)
 
-            try:
-                gprint('Building output statistics and pyramids\n ' 
+            gprint('Building output statistics and pyramids ' 
                                   'for corridor pinch point raster\n')        
-                arcpy.CalculateStatistics_management(outputRaster,
-                                                     "1", "1", "#")
-                arcpy.BuildPyramids_management(outputRaster)    
-            except:
-                pass
+            lu.build_stats(outputRaster)
             
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=5,
                                                       thisStep=8) 
@@ -429,14 +424,9 @@ def STEP8_calc_pinchpoints():
                 arcpy.AddError(msg)
                 exit(1)
             
-            try:
-                gprint('\nBuilding output statistics and pyramids\n ' 
-                    'for pinch point raster ' + str(i + 1) + '\n')        
-                arcpy.CalculateStatistics_management(outputRaster, 
-                                                     "1", "1", "#")
-                arcpy.BuildPyramids_management(outputRaster)    
-            except:
-                pass
+            gprint('\nBuilding output statistics and pyramids ' 
+                    'for pinch point raster ' + str(i + 1))        
+            lu.build_stats(outputRaster)
         
         # Clean up temporary files
         if not Cfg.SAVECURRENTMAPS:

@@ -236,7 +236,7 @@ class Config():
     gp = arcgisscripting.create(9.3)
     gp.CheckOutExtension("Spatial")
     gp.OverwriteOutput = True
-    
+
     #Temporary resistance raster copy to be created in lm_master
     RESRAST  = path.join(SCRATCHDIR, 'resrast')
 
