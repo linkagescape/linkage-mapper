@@ -344,8 +344,11 @@ def calc_lccs(normalize):
                           linkTableFinalFile)
 
         gprint('Creating shapefiles with linework for links.')
-        lu.write_link_maps(outlinkTableFile, step=5)
-
+        try:
+            lu.write_link_maps(outlinkTableFile, step=5)
+        except:
+            lu.write_link_maps(outlinkTableFile, step=5)
+        
         # Create final linkmap files in output directory, and remove files from
         # scratch.
         lu.copy_final_link_maps(step=5)
@@ -370,24 +373,16 @@ def calc_lccs(normalize):
             exit(1) 
 
         # Build statistics for corridor rasters
-        try:
-            gp.addmessage('\nBuilding output statistics and pyramids ' 
-                              'for corridor raster')        
-            gp.CalculateStatistics_management(intRaster, "1", "1", "#")
-            gp.BuildPyramids_management(intRaster)    
-        except:
-            gprint('Statistics and/or pyramids failed.')
-            pass
+        gp.addmessage('\nBuilding output statistics and pyramids ' 
+                          'for corridor raster')        
+        intRaster = path.join(outputGDB,truncRaster)
+        lu.build_stats(intRaster)
         
         if writeTruncRaster == True:            
-            try:
-                gp.addmessage('Building output statistics ' 
-                              'for truncated corridor raster')        
-                gp.CalculateStatistics_management(truncRaster, "1", "1", "#")
-                gp.BuildPyramids_management(truncRaster)    
-            except:
-                gprint('Statistics and/or pyramids failed.')
-                pass
+            gp.addmessage('Building output statistics ' 
+                              'for truncated corridor raster') 
+            truncRaster = path.join(outputGDB,truncRaster)
+            lu.build_stats(truncRaster)
                
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:

@@ -307,7 +307,10 @@ def STEP2_build_network():
         lu.report_links(linkTable)
 
         gprint('Creating shapefiles with linework for links.\n')
-        lu.write_link_maps(outlinkTableFile, step=2)
+        try:
+            lu.write_link_maps(outlinkTableFile, step=2)
+        except:
+            lu.write_link_maps(outlinkTableFile, step=2)
         gprint('Linework shapefiles written.')
         
         if dropFlag:

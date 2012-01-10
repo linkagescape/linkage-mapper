@@ -31,7 +31,6 @@ EUC_BNDCIRCEN = "euc" + Cfg.BNDCIRCEN
 EUC_BNDCIRCENWD = path.join(Cfg.SCRATCHDIR, EUC_BNDCIRCEN)
 EUC_BNDCIR = "euc" + Cfg.BNDCIR
 EUC_BNDCIRWD = path.join(Cfg.SCRATCHDIR, EUC_BNDCIR)
-# S1CORE_RAS = Cfg.CORERAS
 
 
 def STEP1_get_adjacencies():
@@ -159,18 +158,6 @@ def cwadjacency():
         gp.CellSize = gp.Describe(bResistance).MeanCellHeight
         gp.extent = "MAXOF"
         gprint('Processing cell size: ' + gp.CellSize)
-        # count = 0
-        # statement = ('gp.FeatureToRaster_conversion(Cfg.COREFC, '
-                     # 'Cfg.COREFN, S1CORE_RAS, gp.Cellsize)')
-        # while True:
-            # try:
-                # exec statement
-            # except:
-                # count, tryAgain = lu.hiccup_test(count, statement)
-                # if not tryAgain:
-                    # exec statement
-            # else:
-                # break
 
         gp.workspace = Cfg.ADJACENCYDIR
         gp.scratchworkspace = gp.workspace
@@ -179,7 +166,7 @@ def cwadjacency():
             gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.CWDGDB))
         outDistanceRaster = path.join(Cfg.CWDGDB, PREFIX + "_cwd")
         alloc_ras = path.join(Cfg.ADJACENCYDIR, alloc_rasFN)
-        # s1core_ras_path = path.join(Cfg.SCRATCHDIR, S1CORE_RAS)
+
         count = 0
         statement = ('gp.Costallocation_sa(Cfg.CORERAS, bResistance, '
                      'alloc_ras, Cfg.TMAXCWDIST, Cfg.CORERAS, "VALUE", '
@@ -240,18 +227,6 @@ def euadjacency():
         oldextent = gp.extent
         if Cfg.BUFFERDIST is not None:
             gp.extent = gp.Describe(BNDCIRWD).extent
-        # count = 0
-        # statement = ('gp.FeatureToRaster_conversion(Cfg.COREFC, '
-                     # 'Cfg.COREFN, S1CORE_RAS, cellSizeEuclidean)')
-        # while True:
-            # try:
-                # exec statement
-            # except:
-                # count, tryAgain = lu.hiccup_test(count, statement)
-                # if not tryAgain:
-                    # exec statement
-            # else:
-                # break
 
         start_time = time.clock()
 

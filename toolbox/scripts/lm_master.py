@@ -44,8 +44,8 @@ def lm_master():
         try:
             gprint('on ArcGIS '+ installD['ProductName'] + ' ' + 
                 installD['Version'] + ' Service Pack ' + installD['SPNumber'])
-        except: pass   
-
+        except: pass           
+        
         if gp.Exists(Cfg.OUTPUTDIR):
             gp.RefreshCatalog(Cfg.OUTPUTDIR)
   
@@ -88,7 +88,7 @@ def lm_master():
         lu.delete_data(Cfg.RESRAST)
         gp.pyramid = "NONE"
         gp.rasterstatistics = "NONE"
-
+        
         gprint('\nMaking temporary copy of resistance raster for this run.')
         gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)  
 

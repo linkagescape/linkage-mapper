@@ -388,6 +388,20 @@ def report_links(linktable):
         raise_python_error(__filename__)
     return numCorridorLinks + numComponentLinks
 
+    
+def build_stats(raster):
+    """Builds statistics and pyramids for output rasters"""
+    try:
+        gp.CalculateStatistics_management(raster, "1", "1", "#")
+    except:
+        gprint('Statistics failed. They can still be calculated manually.')
+    try:
+        gp.BuildPyramids_management(raster)
+    except:
+        gprint('Pyramids failed. They can still be built manually.')
+    return    
+    
+    
 
 ############################################################################
 ## Adjacency and allocation functions ##########################
@@ -1620,7 +1634,7 @@ def check_project_dir():
     """Checks to make sure path name is not too long.
 
     Long path names can cause problems with ESRI grids.
-
+    (DISABLED- this is now implemented in toolbox GUI).
     """
     if len(Cfg.PROJECTDIR) > 100:
         msg = ('ERROR: Project directory "' + Cfg.PROJECTDIR +
