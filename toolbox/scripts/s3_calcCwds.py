@@ -768,9 +768,9 @@ def randomerror():
     """    
     generateError = False # Set to True to create random errors
     if generateError == True:
-        gprint('Rolling dice')
+        gprint('Rolling dice for random error')
         import random
-        test = random.randrange(1, 3)
+        test = random.randrange(1, 8)
         if test == 2:
             gprint('Creating artificial error')
             blarg
