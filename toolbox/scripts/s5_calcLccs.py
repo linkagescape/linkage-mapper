@@ -404,6 +404,7 @@ def randomerror():
     """    
     generateError = False # Set to True to create random errors
     if generateError == True:
+        gprint('Rolling dice for random error')
         import random
         test = random.randrange(1, 6)
         if test == 2:
