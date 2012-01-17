@@ -10,6 +10,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 __filename__ = "lm_config.py"
 __version__ = "0.7.6"
 
+import os
 import os.path as path
 import sys
 
@@ -48,11 +49,17 @@ def nullstring(arg_string):
     if arg_string == '#':
         arg_string = None
     return arg_string
-
+    
+    
+    
+import time, sys, os, string
+    
+    
 class Config():
     """Class to enscapulate all global constants"""
 
     # Model inputs from ArcGIS tool
+    PARAMS = sys.argv
     scriptDir, script = path.split(str(sys.argv[0]))
     if script == "lm_master.py":
         TOOL = 'linkage_mapper'
@@ -74,7 +81,7 @@ class Config():
         S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[7])       
         S2EUCDISTFILE = nullstring(sys.argv[8])       
         STEP3 = str2bool(sys.argv[9])
-        S3DROPLCCS = sys.argv[10]  # Drop LCC's with intermediate cores
+        S3DROPLCCS = sys.argv[10]  # Drop LCC's passing through intermediate cores      
         STEP4 = str2bool(sys.argv[11])
         S4MAXNN = int(sys.argv[12])  # No of connected nearest neighbors
         S4DISTTYPE_CW, S4DISTTYPE_EU = setadjmeth(sys.argv[13])  # NN Unit
@@ -89,8 +96,8 @@ class Config():
         MAXEUCDIST = nullfloat(sys.argv[18])
         if MAXEUCDIST == 0:
             MAXEUCDIST = None
-
-         ### USER SETTABLE 
+        
+        ### USER SETTABLE 
         CALCNONNORMLCCS = False # Add extra step to mosaic non-normalized 
                                # LCCs in s5 (for WHCWG use)
         WRITETRUNCRASTER = True # Write a truncated version of mosaicked raster
@@ -144,11 +151,15 @@ class Config():
                                             # in raster linkage map 
         SCRATCHDIR = path.join(PROJECTDIR, "scratch_cs")        
         
+    
+    LOGMESSAGES = True
+    
     # File names, directory paths & folder names
     PREFIX = path.basename(PROJECTDIR)
     DATAPASSDIR = path.join(PROJECTDIR, "datapass")    
     OUTPUTDIR = path.join(PROJECTDIR, "output")
     LOGDIR = path.join(PROJECTDIR, "logFiles")
+    MESSAGEDIR = path.join(LOGDIR, "Messages")
     ADJACENCYDIR = path.join(DATAPASSDIR, "adj")
     ADJACENCYDIR_OLD = path.join(PROJECTDIR, "adj")
     CWDBASEDIR = path.join(DATAPASSDIR, "cwd")
@@ -231,7 +242,7 @@ class Config():
     # 21 1st nn constel (future)
     # 22 2nd nn constel etc (future)
     # 30 temp saved nnconstel.  maybe able to get rid of this
-
+    
     # Create single geoprocessor object to be used throughout
     gp = arcgisscripting.create(9.3)
     gp.CheckOutExtension("Spatial")
@@ -239,5 +250,4 @@ class Config():
 
     #Temporary resistance raster copy to be created in lm_master
     RESRAST  = path.join(SCRATCHDIR, 'resrast')
-
-
+    
