@@ -27,7 +27,12 @@ import s4_refineNetwork as s4
 import s5_calcLccs as s5
 
 gp = Cfg.gp
-gprint = gp.addmessage
+
+if not Cfg.LOGMESSAGES:
+    gprint = gp.addmessage
+else:
+    gprint = lu.gprint
+
 
 def lm_master():
     """Main function for linkage mapper.
@@ -38,24 +43,25 @@ def lm_master():
 
     """
     try:
-    
         installD = gp.GetInstallInfo("desktop")
-        gprint('\nLinkage Mapper Version ' + str(__version__))
-        try:
-            gprint('on ArcGIS '+ installD['ProductName'] + ' ' + 
-                installD['Version'] + ' Service Pack ' + installD['SPNumber'])
-        except: pass           
-        
         if gp.Exists(Cfg.OUTPUTDIR):
             gp.RefreshCatalog(Cfg.OUTPUTDIR)
-  
         lu.createfolder(Cfg.OUTPUTDIR)
         lu.createfolder(Cfg.LOGDIR)
+        lu.createfolder(Cfg.MESSAGEDIR)
         lu.createfolder(Cfg.DATAPASSDIR)
         # Create fresh scratch directory
         lu.delete_dir(Cfg.SCRATCHDIR)
         lu.createfolder(Cfg.SCRATCHDIR)
         
+        Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
+        
+        gprint('\nLinkage Mapper Version ' + str(__version__))
+        try:
+            gprint('on ArcGIS '+ installD['ProductName'] + ' ' + 
+                installD['Version'] + ' Service Pack ' + installD['SPNumber'])
+        except: pass    
+                
         # Check core ID field.
         lu.check_cores(Cfg.COREFC, Cfg.COREFN) 
         
@@ -113,9 +119,8 @@ def lm_master():
                     msg = ('ERROR: Could not remove contents of geodatabase ' +
                            finalgdb + '. Is it open in ArcMap?\n You may '
                            'need to re-start ArcMap to release the file lock.')
-                    gp.AddError(msg)
-                    exit(1)     
-
+                    lu.raise_error(msg)
+                    
         # Delete final output geodatabase
         delete_final_gdb(Cfg.OUTPUTGDB_OLD)
         delete_final_gdb(Cfg.OUTPUTGDB)
@@ -137,9 +142,13 @@ def lm_master():
         
         # Clean up
         lu.delete_dir(Cfg.SCRATCHDIR)
- 
+        lu.close_log_file()
+        
         gp.addmessage('\nDONE!\n')
-
+        
+        gprint('Script completed successfully. You can'
+              ' ignore any failure messages from ArcGIS below.')
+        return
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.raise_geoproc_error(__filename__)

@@ -24,13 +24,18 @@ import s8_pinchpoints as s8
 import s7_centrality as s7
 
 gp = Cfg.gp
-gprint = gp.addmessage
+if not Cfg.LOGMESSAGES:
+    gprint = gp.addmessage
+else:
+    gprint = lu.gprint
 
 def circuitscape_master():
     """
     
     """
     try:
+        lu.createfolder(Cfg.MESSAGEDIR)
+        Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
         gp.OutputCoordinateSystem = gp.describe(Cfg.COREFC).SpatialReference
         gp.pyramid = "NONE"
         gp.rasterstatistics = "NONE"              
@@ -39,17 +44,13 @@ def circuitscape_master():
         lu.move_old_results()
               
         lu.delete_dir(Cfg.SCRATCHDIR)
-              
-        if path.exists(Cfg.OUTPUTDIR):
-            gp.RefreshCatalog(Cfg.OUTPUTDIR)
-        
+                     
         if Cfg.DOPINCH == False and Cfg.DOCENTRALITY == False:            
             msg = ('ERROR: Please choose at least one option: pinch point or\n'
                     'network centrality analysis.')
-            gp.AddError(msg)
-            exit(1)    
+            lu.raise_error(msg)
 
-        lu.createfolder(Cfg.SCRATCHDIR)    
+        lu.createfolder(Cfg.SCRATCHDIR) 
 
         if Cfg.DOPINCH == True:
             #  Fixme: move raster path to config
@@ -58,8 +59,7 @@ def circuitscape_master():
             if not gp.Exists(S5CORRIDORRAS):
                 msg = ('ERROR: Corridor raster created in step 5 is required'
                         '\nfor all-pair analyses, but was not found.')
-                gp.AddError(msg)
-                exit(1)    
+                lu.raise_error(msg)
             
             # Make a local grid copy of resistance raster-
             # will run faster than gdb.
@@ -67,8 +67,7 @@ def circuitscape_master():
             if not gp.Exists(Cfg.RESRAST_IN):
                 msg = ('ERROR: Resistance raster is required for pinch point'
                         ' analyses, but was not found.')
-                gp.AddError(msg)
-                exit(1)    
+                lu.raise_error(msg)
                         
             gprint('\nMaking local copy of resistance raster.')
             try:

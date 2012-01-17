@@ -19,11 +19,16 @@ import subprocess
 import gc
 
 import arcpy
-gprint = arcpy.AddMessage
-gp = arcpy.gp
-
 from lm_config import Config as Cfg
 import lm_util as lu
+
+if not Cfg.LOGMESSAGES:
+    gprint = arcpy.AddMessage
+else:
+    gprint = lu.gprint
+    
+gp = arcpy.gp
+
 
 
 # Set local references to objects and constants from config file
@@ -36,7 +41,7 @@ LTB_EFFRESIST = Cfg.LTB_EFFRESIST
 LTB_CWDTORR = Cfg.LTB_CWDTORR
 
 DO_ALLPAIRS = Cfg.DO_ALLPAIRS
-DO_ADJACENTPAIRS = True
+DO_ADJACENTPAIRS = False
 NORMALIZECORECURRENTS = False
 SETCORESTONULL = True
 
@@ -56,7 +61,7 @@ def STEP8_calc_pinchpoints():
             msg = ('Cannot find an installation of Circuitscape 3.5.5' 
                     '\nor greater in your Program Files directory.') 
             arcpy.AddError(msg)
-            gprint(arcpy.GetMessages(2))
+            lu.write_log(msg)
             exit(1)
 
         arcpy.OverWriteOutput = True            
@@ -83,9 +88,7 @@ def STEP8_calc_pinchpoints():
             if not arcpy.Exists(prevLcpShapefile):
                 msg = ('Cannot find an LCP shapefile from step 5.  Please '
                         'rerun that step and any previous ones if necessary.') 
-                gp.AddError(msg)
-                gp.AddMessage(gp.GetMessages(2))
-                exit(1)
+                lu.raise_error(msg)
 
             # Remove lcp shapefile
             lcpShapefile = os.path.join(Cfg.DATAPASSDIR, "lcpLines_s8.shp")        
@@ -101,8 +104,8 @@ def STEP8_calc_pinchpoints():
         if numCorridorLinks == 0:
             dashline(1)
             msg =('\nThere are no linkages. Bailing.')
-            gp.AddError(msg)
-            exit(1)
+            lu.raise_error(msg)
+            
         if linkTable.shape[1] < 16: # If linktable has no entries from prior
                                     # centrality or pinchpint analyses
             extraCols = npy.zeros((numLinks, 6), dtype="float64")
@@ -261,6 +264,7 @@ def STEP8_calc_pinchpoints():
                          '\nresistance raster values vary by > 6 orders of'
                          '\nmagnitude, that may have caused this.')
                     arcpy.AddError(msg)
+                    lu.write_log(msg)
                     exit(1)
                
                 # Either set core areas to nodata in current map or
@@ -422,6 +426,7 @@ def STEP8_calc_pinchpoints():
                      '\nresistance raster values vary by > 6 orders of'
                      '\nmagnitude, that may have caused Circuitscape to fail.')
                 arcpy.AddError(msg)
+                lu.write_log(msg)
                 exit(1)
             
             gprint('\nBuilding output statistics and pyramids ' 

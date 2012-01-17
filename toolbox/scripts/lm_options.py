@@ -1,6 +1,8 @@
 #Candidate OPTIONS
 #max width
 #keep cwd
+#keep lccs
+create different lcc with qual?  lcc/euc?  lcc-euc?
 
 #!/usr/bin/env python2.5
 

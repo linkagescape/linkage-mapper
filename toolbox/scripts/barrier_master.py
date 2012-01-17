@@ -19,7 +19,11 @@ import lm_util as lu
 import s6_barriers as s6 
 
 gp = Cfg.gp
-gprint = gp.addmessage
+if not Cfg.LOGMESSAGES:
+    gprint = gp.addmessage
+else:
+    gprint = lu.gprint
+
 
 def bar_master():
     """ Experimental code to detect barriers using cost-weighted distance
@@ -27,8 +31,9 @@ def bar_master():
     
     """
     try:
-        gp.RefreshCatalog(Cfg.OUTPUTDIR)
-        
+        lu.createfolder(Cfg.MESSAGEDIR)
+        Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
+                
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
 
