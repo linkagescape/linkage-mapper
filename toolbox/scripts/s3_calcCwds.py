@@ -24,7 +24,11 @@ import lm_util as lu
 
     
 gp = Cfg.gp
-gprint = gp.addmessage
+
+if not Cfg.LOGMESSAGES:
+    gprint = gp.addmessage
+else:
+    gprint = lu.gprint
    
 BNDCIRCENS = "boundingCircleCenters.shp"
 Cfg.BNDCIRS = "boundingCircles.shp"
@@ -131,7 +135,7 @@ def STEP3_calc_cwds():
             # If picking up a failed run, make sure needed files are there
             lu.dashline(1)
             gprint ('\n**** RESTART MODE ENABLED ****\n')   
-            gprint ('**** WARNING: This mode picks up step 3 where\n'
+            gprint ('**** NOTE: This mode picks up step 3 where\n'
                     'a previous run left off due to a crash or\n' 
                     'user abort.  It assumes you are using exactly\n' 
                     'the same settings as the terminated run.****\n')
@@ -344,14 +348,18 @@ def STEP3_calc_cwds():
             # make a copy:
             linkTablePassed = linkTableMod.copy() 
 
-            # Tried to re-call this whenever any error happened.  Cfg.BNDCIRS 
-            # layer caused problems. May need to make copy of shapefile 
-            # whenever there is a failure and point Cfg.BNDCIRS to copy.
+            # Tried to re-call this whenever any error happened.  Originally
+            # Cfg.BNDCIRS 
+            # layer caused problems. made copy but code got messier.  See
+            # s3_calcCwds_Attempt_to_wrap_hiccup.py
+            # What's below may be best approach.  Wrap in generic retry code,
+            # with hiccup calls targeted for especially problematic geoproc
+            # tasks
             (linkTableReturned, failures, lcpLoop) = do_cwd_calcs(x, 
                         linkTablePassed, coresToMap, lcpLoop, failures)
 
             if failures == 0:
-                # If iteration was successful
+                # If iteration was successful, continue with next core
                 linkTableMod = linkTableReturned
                 sourceCore = int(coresToMap[x])
                 gprint('Done with all calculations for core #' +
@@ -364,11 +372,8 @@ def STEP3_calc_cwds():
                 # Increment  loop counter
                 x = x + 1
             else:
-                # If iteration failed, try again
-                gprint('Restarting iteration. Try #'+str(failures+1) + ' for '
-                        'this core area.')
-                time.sleep(2)                        
-                lu.dashline(2)
+                # If iteration failed, try again after a wait period
+                delay_restart(failures)
         #----------------------------------------------------------------------
         linkTable = linkTableMod
         
@@ -429,10 +434,9 @@ def STEP3_calc_cwds():
         
 def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):    
     try:
-        gp = Cfg.gp
         gp.scratchWorkspace = Cfg.SCRATCHDIR
         gp.Workspace = Cfg.SCRATCHDIR  
-        gprint = gp.addmessage
+
         gp.Extent = "MINOF"
         #gp.Workspace = workspace
         ZNSTATS = path.join(Cfg.SCRATCHDIR, "zonestats.dbf")
@@ -510,7 +514,8 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             # Clip out bounded area of resistance raster for cwd
             # calculations from focal core
             bResistance = "bResistance"
-            statement = ('gp.ExtractByMask_sa(Cfg.BOUNDRESIS, Cfg.BNDFC, bResistance)')
+            statement = (
+                'gp.ExtractByMask_sa(Cfg.BOUNDRESIS, Cfg.BNDFC, bResistance)')
             try: 
                 exec statement
                 randomerror()
@@ -562,10 +567,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Extract cost distances from source core to target cores
         # Fixme: there will be redundant calls to b-a when already
         # done a-b
-        # gprint('Getting least cost distances from source '
-                    # 'core #' + str(int(sourceCore)) + ' to ' +
-                    # str(len(targetCores)) + ' potential targets')
-       
+
         statement = ('gp.zonalstatisticsastable_sa('
                       'Cfg.CORERAS, "VALUE", outDistanceRaster, ZNSTATS)')
         try:  
@@ -581,8 +583,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                        ' in ArcMap.\n  Please make sure no intermediate files'
                        ' (e.g., CWD maps) are open, then restart ArcMap and'
                        ' try again.')
-                Cfg.gp.AddError(msg)
-                exit(1)                               
+                lu.raise_error(msg)
         
         tableRows = gp.searchcursor(ZNSTATS)
         tableRow = tableRows.Next()
@@ -670,8 +671,8 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         msg = ("Error in COST PATH function for link "
                                "#" + str(int(link)) +
                                ".\nPlease report error.\n")
-                        gp.AddError(msg)
-                        exit(0)
+                        lu.raise_error(msg)
+                        
                 # fixme: may be fastest to not do selection, do
                 # EXTRACTBYMASK, getvaluelist, use code snippet at end
                 # of file to discard src and target values. Still this
@@ -770,7 +771,7 @@ def randomerror():
     if generateError == True:
         gprint('Rolling dice for random error')
         import random
-        test = random.randrange(1, 8)
+        test = random.randrange(1, 4)
         if test == 2:
             gprint('Creating artificial error')
             blarg
@@ -787,6 +788,7 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
         gp.OverwriteOutput = True
         if gp.exists("addRas"):
             gp.delete_management("addRas")
+        count = 0
         expression = (lcpRas + " + " + corePairRas)
         statement = ('gp.SingleOutputMapAlgebra_sa(expression, "addRas")')                              
         while True:
@@ -823,9 +825,16 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
         lu.raise_python_error(__filename__)    
+
+def delay_restart(failures):
+    gprint('That was try #' + str(failures) + ' of 10 for this core area.')
+    gprint('Restarting iteration in ' + str(10*failures) + ' seconds. ')
+    lu.dashline(2)
+    time.sleep(10*failures) 
     
+
 def test_for_intermediate_core_old_method(workspace,lcpRas,corePairRas):
-    """ Zonal stats method to test for intermediate core test
+    """ Zonal stats method to test for intermediate core test (discontinued)
 
     """    
     ZNSTATS2 = path.join(Cfg.SCRATCHDIR, "zonestats2.dbf")
@@ -839,3 +848,4 @@ def test_for_intermediate_core_old_method(workspace,lcpRas,corePairRas):
         return False
         
 
+    
