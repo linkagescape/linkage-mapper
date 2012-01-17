@@ -22,8 +22,10 @@ from lm_config import Config as Cfg
 import lm_util as lu
 
 gp = Cfg.gp
-gprint = gp.addmessage
-
+if not Cfg.LOGMESSAGES:
+    gprint = gp.addmessage
+else:
+    gprint = lu.gprint
 
 def STEP5_calc_lccs():
     """Creates and mosaics normalized least-cost corridors
@@ -95,7 +97,7 @@ def calc_lccs(normalize):
         if numCorridorLinks == 0:
             lu.dashline(1)
             msg =('\nThere are no corridors to map. Bailing.')
-            exit(1)
+            lu.raise_error(msg)
 
 
         if not Cfg.STEP3 and not Cfg.STEP4:
@@ -139,8 +141,10 @@ def calc_lccs(normalize):
         endIndex = numLinks
         while x < endIndex:
         #for x in range(0,numLinks):
+            if failures > 0: 
+                delay_restart(failures)
+                
             linkId = str(int(linkTable[x,Cfg.LTB_LINKID]))
-
             if (linkTable[x,Cfg.LTB_LINKTYPE] > 0):
                 # source and target cores
                 corex=int(coreList[x,0])
@@ -175,7 +179,6 @@ def calc_lccs(normalize):
                     exec statement
                     randomerror()
                 except:
-                    
                     if failures < 10:
                         failures = lu.print_failures(statement, failures)
                         continue                               
@@ -369,8 +372,7 @@ def calc_lccs(normalize):
                    '\nThis could mean that BOUNDING CIRCLE BUFFER DISTANCES '
                    'were too small and a corridor passed outside of a '
                    'bounding circle. All steps were completed. ')
-            gp.AddError(msg)
-            exit(1) 
+            lu.raise_error(msg)
 
         # Build statistics for corridor rasters
         gp.addmessage('\nBuilding output statistics and pyramids ' 
@@ -406,12 +408,14 @@ def randomerror():
     if generateError == True:
         gprint('Rolling dice for random error')
         import random
-        test = random.randrange(1, 6)
+        test = random.randrange(1, 4)
         if test == 2:
             gprint('Creating artificial error')
             blarg
     return    
 
-    
-    
-        
+def delay_restart(failures):
+    gprint('That was try #' + str(failures) + ' of 10 for this corridor.')
+    gprint('Restarting iteration in ' + str(10*failures) + ' seconds. ')
+    lu.dashline(2)
+    time.sleep(10*failures)

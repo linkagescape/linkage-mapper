@@ -27,7 +27,11 @@ DIST_FNAME = path.join(Cfg.PROJECTDIR, (Cfg.COREFC + "_dists.txt"))
 NEAR_FN = "NEAR_DIST"
 
 gp = Cfg.gp
-gprint = gp.addmessage
+if not Cfg.LOGMESSAGES:
+    gprint = gp.addmessage
+else:
+    gprint = lu.gprint
+
 
 
 def STEP2_build_network():
@@ -47,17 +51,17 @@ def STEP2_build_network():
         # adjacency file created from s1_getAdjacencies.py
         eucAdjFile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
         if not path.exists(eucAdjFile):
-            gprint('\nERROR: Euclidean adjacency file required from '
+            msg = ('\nERROR: Euclidean adjacency file required from '
                   'Step 1: ' + eucAdjFile)
-            exit(0)
+            lu.raise_error(msg)
 
         # ------------------------------------------------------------------
         # adjacency file created from s1_getAdjacencies.py
         cwdAdjFile = path.join(Cfg.DATAPASSDIR, "cwdAdj.csv")
         if not path.exists(cwdAdjFile):
-            gprint('\nERROR: Cost-weighted adjacency file required from'
+            msg=('\nERROR: Cost-weighted adjacency file required from'
                               'Step 1: ' + cwdAdjFile)
-            exit(0)
+            lu.raise_error(msg)
         #----------------------------------------------------------------------
 
         # Load eucDists matrix from file and npy.sort
@@ -265,18 +269,19 @@ def STEP2_build_network():
             msg =('\nERROR: There are less than two core '
                   'areas.\nThis means there is nothing to connect '
                   'with linkages. Bailing.')
-            exit(1)
+            lu.raise_error(msg)
+            
         # Set Cfg.LTB_LINKTYPE to valid corridor code
         linkTable[:, Cfg.LTB_LINKTYPE] = Cfg.LT_CORR
         # Make sure linkTable is sorted
         ind = npy.lexsort((linkTable[:, Cfg.LTB_CORE2],
               linkTable[:, Cfg.LTB_CORE1]))
         if len(linkTable) == 0:
-            gp.Adderror('\nERROR: There are no valid core area '
+            msg = ('\nERROR: There are no valid core area '
                             'pairs. This can happen when core area numbers in '
                             'your Conefor distances text file do not match '
                             'those in your core area feature class.')
-            exit(0)
+            lu.raise_error(msg)
 
         linkTable = linkTable[ind]
 
