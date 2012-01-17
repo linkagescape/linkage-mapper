@@ -21,8 +21,12 @@ import lm_util as lu
 
 import arcpy
 gp = arcpy.gp
-gprint = arcpy.AddMessage
 
+if not Cfg.LOGMESSAGES:
+    gprint = arcpy.AddMessage
+else:
+    gprint = lu.gprint
+    
 # Set local references to objects and constants from lm_config
 LTB_CORE1 = Cfg.LTB_CORE1
 LTB_CORE2 = Cfg.LTB_CORE2
@@ -47,9 +51,7 @@ def STEP7_calc_centrality():
         if not arcpy.Exists(prevLcpShapefile):
             msg = ('Cannot find an LCP shapefile from step 5.  Please '
                     'rerun that step and any previous ones if necessary.') 
-            gp.AddError(msg)
-            gp.AddMessage(gp.GetMessages(2))
-            exit(1)
+            lu.raise_error(msg)
 
         # Remove lcp shapefile from this step if run previously
         lcpShapefile = os.path.join(Cfg.DATAPASSDIR, "lcpLines_s7.shp")        
@@ -59,9 +61,7 @@ def STEP7_calc_centrality():
         if csPath == None:
             msg = ('Cannot find an installation of Circuitscape 3.5.5' 
                     '\nor greater in your Program Files directory.') 
-            gp.AddError(msg)
-            gp.AddMessage(gp.GetMessages(2))
-            exit(1)
+            lu.raise_error(msg)
         
         invalidFNs = ['fid','id','oid','shape']
         if Cfg.COREFN.lower() in invalidFNs:
@@ -70,9 +70,8 @@ def STEP7_calc_centrality():
             msg = ('ERROR: Core area field names ID, FID, SHAPE, and OID are'
                     ' reserved for ArcGIS. \nPlease choose another field- must'
                     ' be a positive integer.')
-            Cfg.gp.AddError(msg)
-            exit(1)
-
+            lu.raise_error(msg)
+            
         lu.dashline(1)            
         gprint('Mapping centrality of network cores and links'
                 '\nusing Circuitscape....')
@@ -92,8 +91,7 @@ def STEP7_calc_centrality():
         if numCorridorLinks == 0:
             dashline(1)
             msg =('\nThere are no linkages. Bailing.')
-            gp.AddError(msg)
-            exit(1)
+            lu.raise_error(msg)
             
         if linkTable.shape[1] < 16: # If linktable has no entries from prior
                                     # centrality or pinchpint analyses
@@ -195,6 +193,7 @@ def STEP7_calc_centrality():
                 msg = ('ERROR: No Circuitscape output found.\n'
                        'It looks like Circuitscape failed.')
                 arcpy.AddError(msg)
+                lu.write_log(msg)
                 exit(1)            
             currents = load_graph(currentList,graphType='graph/network',
                                   datatype='float64')

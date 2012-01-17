@@ -23,7 +23,11 @@ from lm_config import Config as Cfg
 import lm_util as lu
 
 gp = Cfg.gp
-gprint = gp.addmessage
+if not Cfg.LOGMESSAGES:
+    gprint = gp.addmessage
+else:
+    gprint = lu.gprint
+
 
 BNDCIRCENWD = path.join(Cfg.SCRATCHDIR, Cfg.BNDCIRCEN)
 BNDCIRWD = path.join(Cfg.SCRATCHDIR, Cfg.BNDCIR)
