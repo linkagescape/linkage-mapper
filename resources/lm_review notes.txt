@@ -1,0 +1,32 @@
+N.B. These notes were written a day after setup, so I may have missed something.
+DMK 5/28/2011
+
+
+Required Libraries
+******************
+pep8		easy_install pep8
+pyflakes	easy_install pyflakes
+pylint		easy_install pylint
+pycallgraph	easy_install pycallgraph
+SquareMap 	easy_install Squaremap
+runsnake	easy_install runsnake
+epydoc		easy_install epydoc
+
+pychecker	http://sourceforge.net/projects/pychecker/
+gprof2dot	http://gprof2dot.jrfonseca.googlecode.com/hg/gprof2dot.py (copy to C:\Python26\Scripts)
+wxpython	http://www.wxpython.org/download.php#stable (Unicode 32-bit for Python 2.6)
+
+
+
+
+pycallgraph & pyflakes
+======================
+Create batch files pycallgraph.bat & pyflakes.bat in C:\Python26\Scripts with the following code:
+
+@echo off
+rem Use python to execute the python script having the same name as this batch
+rem file, but without any extension, located in the same directory as this
+rem batch file
+python "%~dpn0" %*
+
+
