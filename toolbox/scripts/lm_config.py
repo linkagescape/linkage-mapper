@@ -8,7 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 
 import os
 import os.path as path
@@ -117,13 +117,12 @@ class Config():
             #TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # Will limit cw calcs. 
         
         SCRATCHDIR = path.join(PROJECTDIR, "scratch")
-        
+        SCRATCHGDB = path.join(SCRATCHDIR,"scratch.gdb")
         # Permanent copy of core area FC made at step 1 and used in all steps
         # COREDIR = path.join(DATAPASSDIR,"corecopy") 
         # COREFC = path.join(COREDIR,"core_copy.shp")
         # COREFN = "GRIDCODE"
         CORERAS = path.join(SCRATCHDIR,"core_ras")   
-
 
         
     elif script == "barrier_master.py":  #Barrier Mapper    
@@ -158,8 +157,10 @@ class Config():
     PREFIX = path.basename(PROJECTDIR)
     DATAPASSDIR = path.join(PROJECTDIR, "datapass")    
     OUTPUTDIR = path.join(PROJECTDIR, "output")
-    LOGDIR = path.join(PROJECTDIR, "logFiles")
-    MESSAGEDIR = path.join(LOGDIR, "Messages")
+    LOGDIR = path.join(PROJECTDIR, "run_history")
+    LOGDIR_OLD = path.join(PROJECTDIR, "logFiles")
+    MESSAGEDIR = path.join(LOGDIR, "log")
+    MESSAGEDIR_OLD = path.join(LOGDIR, "Messages")
     ADJACENCYDIR = path.join(DATAPASSDIR, "adj")
     ADJACENCYDIR_OLD = path.join(PROJECTDIR, "adj")
     CWDBASEDIR = path.join(DATAPASSDIR, "cwd")

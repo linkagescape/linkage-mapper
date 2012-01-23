@@ -6,7 +6,7 @@
 """
 
 __filename__ = "s8_pinchpoints.py"
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 
 import os.path as path
 import os
@@ -29,8 +29,6 @@ else:
     
 gp = arcpy.gp
 
-
-
 # Set local references to objects and constants from config file
 LTB_CORE1 = Cfg.LTB_CORE1
 LTB_CORE2 = Cfg.LTB_CORE2
@@ -41,7 +39,7 @@ LTB_EFFRESIST = Cfg.LTB_EFFRESIST
 LTB_CWDTORR = Cfg.LTB_CWDTORR
 
 DO_ALLPAIRS = Cfg.DO_ALLPAIRS
-DO_ADJACENTPAIRS = False
+DO_ADJACENTPAIRS = True
 NORMALIZECORECURRENTS = False
 SETCORESTONULL = True
 

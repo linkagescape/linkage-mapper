@@ -4,7 +4,7 @@
 """Contains functions called by linkage mapper and barrier mapper scripts."""  
 
 __filename__ = "lm_util.py"
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 
 import os
 import sys
@@ -20,7 +20,7 @@ import numpy as npy
 # try:
     # import arcpy
     # gp = arcpy.gp
-    # gprint = gp.addmessage    
+    # gprint = gp.addmessage        
     # gprint('arcpy in util')
     # arcgisscripting = arcpy
 import arcgisscripting
@@ -30,7 +30,8 @@ import arcgisscripting
 from lm_config import Config as Cfg
 
 gp = Cfg.gp
-gprint = gp.addmessage    
+
+#gprint = gp.addmessage    
 
 def get_linktable_row(linkid, linktable):
     """Returns the linkTable row index for a given link ID"""
@@ -55,7 +56,6 @@ def get_link_type_desc(linktypecode):
     NOTE: These must map to LT codes in lm_config (eg LT_CPLK)
 
     """
-    gp.addmessage('linktype', str(linktypecode))
     if linktypecode < 0:  # These are dropped links
         activelink = '0'
         if linktypecode == -1:
@@ -126,7 +126,6 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                disableLeastCostNoVal):
     """Inactivates links that fail to meet min or max length criteria"""
     try:
-        # dashline(1)
         numLinks = linktable.shape[0]
         numDroppedLinks = 0
         coreList = linktable[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1]
@@ -139,7 +138,7 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                     if (linktable[x, Cfg.LTB_LINKTYPE] > 0):
                         corex = str(int(linktable[x, Cfg.LTB_CORE1]))
                         corey = str(int(linktable[x, Cfg.LTB_CORE2]))
-                        gp.addmessage(
+                        gprint(
                             "The least-cost corridor between " + str(corex) +
                             " and " + str(corey) + " (link #" + linkid + ") "
                             "has an unknown length in cost distance units. "
@@ -153,7 +152,7 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
 
         # Check for corridors that are too long in Euclidean or cost-weighted
         # distance
-        if maxeud is not None or maxcwd is not None:
+        if (maxeud is not None) or (maxcwd is not None):
             for x in range(0, numLinks):
                 linkid = str(int(linktable[x, Cfg.LTB_LINKID]))
                 if maxeud is not None:
@@ -163,7 +162,7 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                             linktable[x, Cfg.LTB_LINKTYPE] != Cfg.LT_KEEP):
                             corex = str(int(coreList[x, 0]))
                             corey = str(int(coreList[x, 1]))
-                            gp.addmessage("Link #" + linkid +
+                            gprint("Link #" + linkid +
                                           " connecting cores " + str(corex) +
                                           " and " + str(corey) + " is  " +
                                           str(linktable[x, Cfg.LTB_EUCDIST]) +
@@ -173,23 +172,23 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                             linktable[x, Cfg.LTB_LINKTYPE] = Cfg.LT_TLEC
                             numDroppedLinks = numDroppedLinks + 1
 
-                    if maxcwd is not None:
-                        # Check only enabled corridor links
-                        if (linktable[x, Cfg.LTB_LINKTYPE] > 0) and (
-                            linktable[x, Cfg.LTB_LINKTYPE] != Cfg.LT_KEEP):
-                            if (linktable[x, Cfg.LTB_CWDIST] > maxcwd):
-                                corex = str(int(linktable[x, Cfg.LTB_CORE1]))
-                                corey = str(int(linktable[x, Cfg.LTB_CORE2]))
-                                gp.addmessage(
-                                    "Link #" + linkid + " connecting cores " +
-                                    str(corex) + " and " + str(corey) +
-                                    " is " +
-                                    str(linktable[x, Cfg.LTB_CWDIST]) +
-                                    " units long- too long in cost-distance "
-                                    "units.")
-                                #  Disable link
-                                linktable[x, Cfg.LTB_LINKTYPE] = Cfg.LT_TLLC
-                                numDroppedLinks = numDroppedLinks + 1
+                if maxcwd is not None:
+                    # Check only enabled corridor links
+                    if (linktable[x, Cfg.LTB_LINKTYPE] > 0) and (
+                        linktable[x, Cfg.LTB_LINKTYPE] != Cfg.LT_KEEP):
+                        if (linktable[x, Cfg.LTB_CWDIST] > maxcwd):
+                            corex = str(int(linktable[x, Cfg.LTB_CORE1]))
+                            corey = str(int(linktable[x, Cfg.LTB_CORE2]))
+                            gprint(
+                                "Link #" + linkid + " connecting cores " +
+                                str(corex) + " and " + str(corey) +
+                                " is " +
+                                str(linktable[x, Cfg.LTB_CWDIST]) +
+                                " units long- too long in cost-distance "
+                                "units.")
+                            #  Disable link
+                            linktable[x, Cfg.LTB_LINKTYPE] = Cfg.LT_TLLC
+                            numDroppedLinks = numDroppedLinks + 1
 
         if mineud is not None or mincwd is not None:
             for x in range(0, numLinks):
@@ -201,7 +200,7 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                             linktable[x, Cfg.LTB_LINKTYPE] != Cfg.LT_KEEP):
                             corex = str(int(coreList[x, 0]))
                             corey = str(int(coreList[x, 1]))
-                            gp.addmessage(
+                            gprint(
                                 "Link #" + linkid + " connecting cores " +
                                 str(corex) + " and " + str(corey) + " is "
                                 "only " + str(linktable[x, Cfg.LTB_EUCDIST]) +
@@ -218,7 +217,7 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                             if (linktable[x, Cfg.LTB_LINKTYPE] > 0):
                                 corex = str(int(linktable[x, Cfg.LTB_CORE1]))
                                 corey = str(int(linktable[x, Cfg.LTB_CORE2]))
-                                gp.addmessage(
+                                gprint(
                                     "Link #" + linkid + " connecting cores " +
                                     str(corex) + " and " + str(corey) +
                                     " is only " +
@@ -264,28 +263,33 @@ def get_core_list(coreFC, coreFN):
         
         # Get the number of core shapes
         gp.Extent = gp.Describe(coreFC).Extent
-        shapeCount = int(gp.GetCount_management(coreFC).GetOutput(0))
-
-        if shapeCount < 2:
-            dashline(1)
-            msg =('\nERROR: Less than two core areas detected. This can '
-                   '\nresult when resistance and core area maps are missing'
-                   '\nspatial reference data or are in different projections.'
-                   '\nBailing because there is nothing to connect.')
-            gp.AddError(msg)
-            exit(1)
+        # shapeCount = int(gp.GetCount_management(coreFC).GetOutput(0))
 
         # Get core data into numpy array
-        coreList = npy.zeros((shapeCount, 2))
+#        coreList = npy.zeros((shapeCount, 2))
+        coreList = npy.zeros((1, 2))
         cur = gp.SearchCursor(coreFC)
         row = cur.Next()
         i = 0
         while row:
+            if i > 0:
+                coreList = npy.append(coreList,  npy.zeros((1, 2)), axis=0)
             coreList[i, 0] = row.GetValue(coreFN)
             coreList[i, 1] = row.GetValue(coreFN)
             row = cur.Next()
             i = i + 1
+        
         del cur, row
+        coreCount=coreList.shape[0]
+        if coreCount < 2:
+            dashline(1)
+            msg =('\nERROR: Less than two core areas detected. This can '
+                   '\nhappen if you have selected a core area in ArcMap. It '
+                   '\ncan also happen when resistance and core area maps are missing'
+                   '\nspatial reference data or are in different projections.'
+                   '\nBailing because there is nothing to connect.')
+            raise_error(msg)
+
         gp.extent = "MAXOF"  # For downstream operations
         return coreList
         
@@ -332,12 +336,12 @@ def elapsed_time(start_time):
         mins = mins - hours * 60
         secs = secs - mins * 60 - hours * 3600
         if mins == 0:
-            gp.addmessage('That took ' + str(secs) + ' seconds.\n')
+            gprint('That took ' + str(secs) + ' seconds.\n')
         elif hours == 0:
-            gp.addmessage('That took ' + str(mins) + ' minutes and ' +
+            gprint('That took ' + str(mins) + ' minutes and ' +
                               str(secs) + ' seconds.\n')
         else:
-            gp.addmessage('That took ' + str(hours) + ' hours ' +
+            gprint('That took ' + str(hours) + ' hours ' +
                               str(mins) + ' minutes and ' + str(secs) +
                               ' seconds.\n')
         return now
@@ -352,7 +356,7 @@ def report_pct_done(current, goal, last):
         pctDone = ((float(current) / goal) * 100)
         pctDone = 10 * (npy.floor(pctDone/10))
         if pctDone - last >= 10:
-            gp.addmessage(str(int(pctDone)) + " percent done")        
+            gprint(str(int(pctDone)) + " percent done")        
             return 10*int((npy.floor(pctDone/10)))
         else:
             return last
@@ -364,22 +368,22 @@ def report_links(linktable):
     """Prints number of links in a link table"""
     try:
         numLinks = linktable.shape[0]
-        gp.addmessage('There are ' + str(numLinks) + ' links in the '
+        gprint('There are ' + str(numLinks) + ' links in the '
                           'table.')
         linkTypes = linktable[:, Cfg.LTB_LINKTYPE]
         numCorridorLinks = sum(linkTypes == Cfg.LT_CORR) + sum(linkTypes ==
                            Cfg.LT_NNC) + sum(linkTypes == Cfg.LT_KEEP) 
         numComponentLinks = sum(linkTypes == Cfg.LT_CLU)
         if numComponentLinks > 0:
-            gp.addmessage('This includes ' + str(numCorridorLinks) +
+            gprint('This includes ' + str(numCorridorLinks) +
                               ' potential corridor links and ' +
                           str(numComponentLinks) + ' component links.')
         elif numCorridorLinks > 0:
-            gp.addmessage('This includes ' + str(numCorridorLinks) +
+            gprint('This includes ' + str(numCorridorLinks) +
                               ' potential corridor links.')
         else:
             numCorridorLinks = 0
-            gp.addmessage('\n***NOTE: There are NO corridors to map!')
+            gprint('\n***NOTE: There are NO corridors to map!')
             dashline(2)
 
     except arcgisscripting.ExecuteError:
@@ -415,14 +419,14 @@ def get_adj_using_shift_method(alloc):
 
     """
     cellSize = gp.Describe(alloc).MeanCellHeight
-    gp.CellSize = cellSize
+    gp.cellSize = cellSize
 
-    posShift = gp.CellSize
-    negShift = -1 * float(gp.CellSize)
+    posShift = gp.cellSize
+    negShift = -1 * float(gp.cellSize)
 
     gp.workspace = Cfg.SCRATCHDIR
 
-    gp.addmessage('Calculating adjacencies crossing horizontal allocation '
+    gprint('Calculating adjacencies crossing horizontal allocation '
                   'boundaries...')
     start_time = time.clock()
     gp.Shift_management(alloc, "alloc_r", posShift, "0")
@@ -431,7 +435,7 @@ def get_adj_using_shift_method(alloc):
     adjTable_r = get_allocs_from_shift(gp.workspace, alloc, alloc_r)
     start_time = elapsed_time(start_time)
 
-    gp.addmessage('Calculating adjacencies crossing upper-left diagonal '
+    gprint('Calculating adjacencies crossing upper-left diagonal '
                       'allocation boundaries...')
     gp.Shift_management(alloc, "alloc_ul", negShift, posShift)
 
@@ -439,7 +443,7 @@ def get_adj_using_shift_method(alloc):
     adjTable_ul = get_allocs_from_shift(gp.workspace, alloc, alloc_ul)
     start_time = elapsed_time(start_time)
 
-    gp.addmessage('Calculating adjacencies crossing upper-right diagonal '
+    gprint('Calculating adjacencies crossing upper-right diagonal '
                       'allocation boundaries...')
     gp.Shift_management(alloc, "alloc_ur", posShift, posShift)
 
@@ -447,7 +451,7 @@ def get_adj_using_shift_method(alloc):
     adjTable_ur = get_allocs_from_shift(gp.workspace, alloc, alloc_ur)
     start_time = elapsed_time(start_time)
 
-    gp.addmessage('Calculating adjacencies crossing vertical allocation '
+    gprint('Calculating adjacencies crossing vertical allocation '
                       'boundaries...')
     gp.Shift_management(alloc, "alloc_u", "0", posShift)
 
@@ -866,8 +870,7 @@ def create_lcp_shapefile(linktable, sourceCore, targetCore, lcpLoop):
                     msg = ('ERROR: Could not remove LCP shapefile ' +
                            lcpShapefile + '. Was it open in ArcMap?\n You may '
                            'need to re-start ArcMap to release the file lock.')
-                    gp.AddError(msg)
-                    exit(1)
+                    raise_error(msg)
 
             gp.copy_management(lcplineDslv, lcpShapefile)
         else:
@@ -911,9 +914,7 @@ def get_lcp_shapefile(lastStep, thisStep):
                             dashline(1)
                             msg = ('ERROR: Could not find LCP shapefile from a '
                                     '\nstep previous to step '+ str(thisStep)+'.')
-                            gp.AddError(msg)
-                            exit(1)                                       
-                    
+                            raise_error(msg)                                      
                     
         else:
             oldLcpShapefile = os.path.join(
@@ -999,8 +1000,8 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
                        'directory: ' + outputLcpShapefile +
                        '. Is it open in ArcMap?\n You may '
                        'need to re-start ArcMap to release the file lock.')
-                gp.AddError(msg)
-                exit(1)
+                raise_error(msg)                
+
         gp.copy_management(lcpShapefile, outputLcpShapefile)
 
         return linkTableTemp
@@ -1063,23 +1064,22 @@ def delete_row_col(A, delrow, delcol):
     return A[keeprows][:, keepcols]
 
 
+
 def components_no_sparse(G):
     """Returns components of a graph while avoiding use of sparse matrices
 
     From gapdt.py by Viral Shah
 
     """
-    try:
+    try:       
         U, V = npy.where(G)
         n = G.shape[0]
         D = npy.arange(0, n, dtype='int32')
         star = npy.zeros(n, 'int32')
-
         all_stars = False
         while True:
             star = check_stars(D, star)
             D = conditional_hooking(D, star, U, V)
-
             star = check_stars(D, star)
             D = unconditional_hooking(D, star, U, V)
 
@@ -1095,7 +1095,7 @@ def components_no_sparse(G):
         raise_python_error(__filename__)
 
 
-def relabel(oldlabel, offset=0):
+def relabel(oldlabel, offset=0): # same as gapdt
     """Utility for components code
 
     From gapdt.py by Viral Shah
@@ -1110,40 +1110,69 @@ def relabel(oldlabel, offset=0):
     newlabel[perm] = npy.copy(newlabel)
     return newlabel - 1 + offset
 
+    
 
-def conditional_hooking(D, star, u, v):
-    """Utility for components code
+# def conditional_hooking(D, star, u, v):
+    # """Utility for components code
+
+    # From gapdt.py by Viral Shah
+
+    # """
+    # Du = D[u]
+    # Dv = D[v]
+
+    # hook = npy.where((Du == D[Du]) & (Dv < Du))
+    # Du = Du[hook]
+    # Dv = Dv[hook]
+
+    # D[Du] = Dv
+    # return D
+
+def conditional_hooking (D, star, u, v):
+    """Utility for components code (updated Jan 2012)
 
     From gapdt.py by Viral Shah
 
     """
     Du = D[u]
     Dv = D[v]
-
-    hook = npy.where((Du == D[Du]) & (Dv < Du))
-    Du = Du[hook]
-    Dv = Dv[hook]
-
-    D[Du] = Dv
-    return D
-
-
-def unconditional_hooking(D, star, u, v):
-    """Utility for components code
-
-    From gapdt.py by Viral Shah
-
-    """
-    Du = D[u]
-    Dv = D[v]
-
-    hook = npy.where((star[u] == 1) & (Du != Dv))
+    
+    hook = npy.where ((star[u] == 1) & (Du > Dv))
     D[Du[hook]] = Dv[hook]
 
     return D
 
 
-def check_stars(D, star):
+# def unconditional_hookingold(D, star, u, v):
+    # """Utility for components code
+
+    # From gapdt.py by Viral Shah
+
+    # """
+    # Du = D[u]
+    # Dv = D[v]
+
+    # hook = npy.where((star[u] == 1) & (Du != Dv))
+    # D[Du[hook]] = Dv[hook]
+    # return D
+
+
+def unconditional_hooking (D, star, u, v):
+    """Utility for components code (updated Jan 2012)
+
+    From gapdt.py by Viral Shah
+
+    """
+
+    Du = D[u]
+    Dv = D[v]
+    
+    hook = npy.where((star[u] == 1) & (Du != Dv))
+    D[Du[hook]] = Dv[hook]
+
+    return D
+        
+def check_stars(D, star): # same as gapdt
     """Utility for components code
 
     From gapdt.py by Viral Shah
@@ -1155,6 +1184,7 @@ def check_stars(D, star):
     star[D[D[notstars]]] = 0
     star = star[D]
     return star
+
 
 
 def pointer_jumping(D):
@@ -1193,6 +1223,44 @@ def load_link_table(linkTableFile):
 ############################################################################
 ## Output Functions ########################################################
 ############################################################################
+def gprint(string):
+    gp.addmessage(string)
+    if Cfg.LOGMESSAGES:
+        try:
+            Cfg.logFile.write(string + '\n')
+        except:
+            pass
+
+def create_log_file(messageDir, toolName, inParameters):
+    ft = tuple(time.localtime())
+    timeNow = time.ctime()
+    fileName = ('%s_%s_%s_%s%s_%s.txt' % (ft[0], ft[1], ft[2], ft[3], ft[4], toolName))
+    filePath = os.path.join(messageDir,fileName)
+    try:
+        logFile=open(filePath,'a')
+    except:
+        logFile=open(filePath,'w')
+    logFile.write('*'*70 + '\n')
+    logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
+    logFile.write('Start time:\t%s \n' % (timeNow))
+    logFile.write('Parameters:\t%s \n\n' % (inParameters))
+#    logFile.close()  
+    return logFile  
+
+def write_log(string):
+    try:
+        Cfg.logFile.write('\n' + string + '\n')
+    except:
+        pass
+            
+def close_log_file():
+    timeNow = time.ctime()
+    try:
+        Cfg.logFile.write('\nStop time:\t\t%s \n\n' % (timeNow))    
+        Cfg.logFile.close()    
+    except:
+        pass
+    
 def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
     """Writes link tables to pass link data between steps """
     try:
@@ -1405,8 +1473,7 @@ def write_link_maps(linkTableFile, step):
                 msg = ('ERROR: Could not remove shapefile ' +
                        coreLinksShapefile + '. Was it open in ArcMap?\n You may '
                        'need to re-start ArcMap to release the file lock.')
-                gp.AddError(msg)
-                exit(1)
+                raise_error(msg)
 
         # make coreLinks.shp using linkCoords table
         # will contain linework between each pair of connected cores
@@ -1505,6 +1572,7 @@ def write_link_maps(linkTableFile, step):
 ############################################################################
 ## File and Path Management Functions ######################################
 ############################################################################
+    
 def createfolder(lmfolder):
     """Creates folder if it doesn't exist."""
     if not os.path.exists(lmfolder):
@@ -1528,8 +1596,15 @@ def move_old_results():
         oldFolder = Cfg.LCCBASEDIR_OLD
         newFolder = Cfg.LCCBASEDIR
         move_results_folder(oldFolder, newFolder) 
+       
+        oldFolder = Cfg.LOGDIR_OLD
+        newFolder = Cfg.LOGDIR
+        move_results_folder(oldFolder, newFolder) 
 
-
+        oldFolder = Cfg.MESSAGEDIR_OLD
+        newFolder = Cfg.MESSAGEDIR
+        move_results_folder(oldFolder, newFolder) 
+        
     except:
         raise_python_error(__filename__)
         
@@ -1614,7 +1689,7 @@ def get_cwd_path(core):
                          "cwd_" + str(core))
     else:
         return os.path.join(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM, "cwd_"
-                         + str(core))
+                         + str(core))# + ".img"
 
                          
 def get_focal_path(core,radius):
@@ -1640,9 +1715,7 @@ def check_project_dir():
         msg = ('ERROR: Project directory "' + Cfg.PROJECTDIR +
                '" is too deep.  Please choose a shallow directory'
                '(something like "C:\ANBO").')
-        gp.AddError(msg)
-        gp.AddMessage(gp.GetMessages(2))
-        exit(1)
+        raise_error(msg)
     return
 
 
@@ -1656,28 +1729,28 @@ def get_prev_step_link_table(step):
             if step == 7:
                 prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
                                              'linkTable_s8.csv')
-                gp.addmessage('\nLooking for ' + prevStepLinkTable)
+                gprint('\nLooking for ' + prevStepLinkTable)
 
                 if os.path.exists(prevStepLinkTable):
                     return prevStepLinkTable
             else:
                 prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
                                              'linkTable_s7.csv')
-                gp.addmessage('\nLooking for ' + prevStepLinkTable)
+                gprint('\nLooking for ' + prevStepLinkTable)
 
                 if os.path.exists(prevStepLinkTable):
                     return prevStepLinkTable
 
             prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
                                              'linkTable_s5.csv')
-            gp.addmessage('\nLooking for ' + prevStepLinkTable)
+            gprint('\nLooking for ' + prevStepLinkTable)
 
             if os.path.exists(prevStepLinkTable):
                 return prevStepLinkTable
 
             prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
                                              'linkTable_s4.csv')
-            gp.addmessage('\nLooking for ' + prevStepLinkTable)
+            gprint('\nLooking for ' + prevStepLinkTable)
 
             if os.path.exists(prevStepLinkTable):
                 return prevStepLinkTable
@@ -1688,14 +1761,14 @@ def get_prev_step_link_table(step):
         if step == 6:
             prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
                                              'linkTable_s5.csv')
-            gp.addmessage('\nLooking for ' + prevStepLinkTable)
+            gprint('\nLooking for ' + prevStepLinkTable)
 
             if os.path.exists(prevStepLinkTable):
                 return prevStepLinkTable
 
             prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
                                              'linkTable_s4.csv')
-            gp.addmessage('\nLooking for ' + prevStepLinkTable)
+            gprint('\nLooking for ' + prevStepLinkTable)
 
             if os.path.exists(prevStepLinkTable):
                 return prevStepLinkTable
@@ -1705,7 +1778,7 @@ def get_prev_step_link_table(step):
         if step == 5:
             prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR,
                                              'linkTable_s4.csv')
-            gp.addmessage('\nLooking for ' + prevStepLinkTable)
+            gprint('\nLooking for ' + prevStepLinkTable)
 
             if os.path.exists(prevStepLinkTable):
                 return prevStepLinkTable
@@ -1714,7 +1787,7 @@ def get_prev_step_link_table(step):
 
         prevStepLinkTable = os.path.join(Cfg.DATAPASSDIR, 'linkTable_s' +
                                          str(prevStep) + '.csv')
-        gp.addmessage('\nLooking for ' + Cfg.DATAPASSDIR +
+        gprint('\nLooking for ' + Cfg.DATAPASSDIR +
                           '\linkTable_s' + str(prevStep) + '.csv')
         if os.path.exists(prevStepLinkTable):
             return prevStepLinkTable
@@ -1722,8 +1795,7 @@ def get_prev_step_link_table(step):
             msg = ('\nERROR: Could not find a linktable from step previous to '
                    'step #' + str(step) + ' in datapass directory.  See above '
                    'for valid linktable files.')
-            gp.AddError(msg)
-            exit(1)
+            raise_error(msg)
 
     except arcgisscripting.ExecuteError:
         raise_geoproc_error(__filename__)
@@ -1875,8 +1947,7 @@ def get_cs_path():
 
 ############################################################################
 ##Error Checking and Handling Functions ####################################
-############################################################################  
-    
+############################################################################      
 def print_failures(statement, failures):
     """ Reports ArcGIS call that's failing and decides whether to restart 
         iteration.
@@ -1885,10 +1956,25 @@ def print_failures(statement, failures):
     dashline(1)
     gprint('***Problem encountered executing statement:')
     gprint('"' + statement + '"')  
+    drive, depth = get_dir_depth(Cfg.PROJECTDIR)
+    if drive.lower() != 'c' or depth > 3:
+        gprint('(Note: ArcGIS errors are more likely when writing to remote '
+            'drives or deep file structures. We recommend shallow '
+            'project directories on local drives, like C:\puma. '
+            'They may also result from conflicts with anti-virus '
+            'software.\n')
     failures = failures + 1
     return failures
-    
 
+def get_dir_depth(dir):    
+    import string
+    realpath = os.path.normpath(dir)
+    drive = realpath[0]
+    depth = 0
+    for i in range(0, len(realpath)):
+        if realpath[i] == os.path.sep:
+            depth = depth + 1
+    return drive,depth
 def check_steps():
     """Check to make sure there are no skipped steps in a sequence of chosen
     steps (except step 4 which is optional)
@@ -1904,8 +1990,7 @@ def check_steps():
             dashline(1)
             msg = ("Error: You can start or stop at different steps, but you "
                    "can't SKIP any except for step 4.\n")
-            gp.AddError(msg)
-            exit(0)
+            raise_error(msg)
         except:
             raise_python_error(__filename__)
     return
@@ -1920,8 +2005,7 @@ def check_cores(FC,FN):
             msg = ('ERROR: Core area field name "ID", "FID", "OID", and "Shape" are reserved '
                     'for ArcGIS. Please choose another field- must be a '
                     'positive integer.')
-            gp.AddError(msg)
-            exit(1)      
+            raise_error(msg) 
 
         fieldList = gp.ListFields(FC)
         for field in fieldList:
@@ -1932,15 +2016,13 @@ def check_cores(FC,FN):
                     dashline(1)
                     msg = ('ERROR: Core area field must be in Short Integer '
                             'format.')
-                    gp.AddError(msg)
-                    exit(1)                   
+                    raise_error(msg)                  
 
         coreList = get_core_list(FC,FN)
         if npy.amin(coreList) < 1:
             dashline(1)
             msg = ('ERROR: Core area field must contain only positive integers. ')
-            gp.AddError(msg)
-            exit(1)
+            raise_error(msg)
 
     except arcgisscripting.ExecuteError:
         raise_geoproc_error(__filename__)
@@ -1953,81 +2035,150 @@ def check_cores(FC,FN):
 def hiccup_test(count, statement):
     """Re-tries ArcGIS calls in case of server problems or other 'hiccups'."""
     try:
-        if count < 10:
-            sleepTime = 10 * count
+        if count < 20:
             count = count + 1
-            dashline(1)
-            if count == 1:
-                gp.addmessage('Failed to execute ' + statement + ' on try '
-                                  '#' + str(count) + '.\n Could be an ArcGIS '
-                                  'hiccup.')
-                # dashline(2)
-                gp.addmessage("Here's the error being reported: ")
-
+            gp.AddWarning('-------------------------------------------------')
+            if count < 7:
+                sleepTime = 10*count
+            else:
+                sleepTime = 60
+            gp.AddWarning('Failed to execute ' + statement + ' on try '
+                              '#' + str(count) + '.\nCould be an ArcGIS '
+                              'hiccup.')
+            drive, depth = get_dir_depth(Cfg.PROJECTDIR)
+            if drive.lower() != 'c' or depth > 3:
+                gp.AddWarning('(Note: ArcGIS errors are more likely when writing '
+                    'to remote drives or deep file structures. We recommend shallow '
+                    'project directories on local drives, like C:\Puma.)\n'
+                    'It is possible they also result fromc conflicts with '
+                    'anti-virus software.\n')
+                    
+            if gp.MaxSeverity > 1:
+                gp.AddWarning("Here's the error being reported: ")
                 for msg in range(0, gp.MessageCount):
                     if gp.GetSeverity(msg) == 2:
                         gp.AddReturnMessage(msg)
-                    print gp.AddReturnMessage(msg)
-                    # dashline(2)
-            else:
-                gp.addmessage('Failed again executing ' + statement +
-                                  ' on try #' + str(count) +
-                                  '.\n Could be an ArcGIS hiccup- scroll up '
-                                  'for error description.')
+                # dashline(2)              
+            # else:
+                # gp.AddWarning('Failed again executing ' + statement +
+                                  # ' on try #' + str(count) +
+                                  # '.\n Could be an ArcGIS hiccup- see above '
+                                  # 'for error description.')
+            gp.AddWarning("Will try again. ")
+            gp.AddWarning('---------TRYING AGAIN IN ' +
+                                   str(int(sleepTime)) + ' SECONDS---------\n')
+            snooze(sleepTime)
+            return count, True
+        # elif count < 20:
+            # sleepTime = 60
+            # count = count + 1
+            # #gp.AddWarning('-------------------------------------------------')
+            # gp.AddWarning('Failed to execute ' + statement + ' on try #' +
+                          # str(count) + '.\n Could be an ArcGIS hiccup.  Trying'
+                          # ' again in 60 seconds.\n')
+            # time.sleep(sleepTime)
+            # return count, True
 
-                gp.addmessage('---------Trying again in ' +
-                                  str(sleepTime) + ' seconds---------\n')
-            time.sleep(sleepTime)
-            return count, True
         else:
-            sleepTime = 60
+            sleepTime = 300
             count = count + 1
-            dashline(1)
-            gp.addmessage('Failed to execute ' + statement + ' on try #' +
-                          str(count) + '.\n Could be an ArcGIS hiccup.  Trying'
-                          'again in 1 minute.\n')
-            time.sleep(sleepTime)
-            return count, True
+            gp.AddWarning('Failed to execute ' + statement + ' on try #' +
+                        str(count) + '.\n Could be an ArcGIS hiccup.  Trying'
+                        ' one last time in 5 minutes.\n')
+            snooze(sleepTime)
+ 
+            return count, False
+                        
     except:
         raise_python_error(__filename__)
 
+def snooze(sleepTime):
+    for i in range(1,int(sleepTime)+1):
+        time.sleep(1)
+        test = gp.cellSize
+        #gp.refreshcatalog(Cfg.PROJECTDIR)  # Dummy operation to get user 
+                                            # interrupt back
 
-def raise_geoproc_error(filename):
-    """Handle geoprocessor errors and provide details to user"""
-    dashline(1)
+def raise_geoproc_warning(filename):
+    """Handle geoprocessor errors and provide details to user if re-trying"""
     tb = sys.exc_info()[2]  # get the traceback object
     # tbinfo contains the error's line number and the code
     tbinfo = traceback.format_tb(tb)[0]
     line = tbinfo.split(", ")[1]
-
-    gp.AddError("Geoprocessing error on **" + line + "** of " + filename + " "
+    msg = ("Geoprocessing error reported on **" + line + "** of " + filename + " "
                 "in Linkage Mapper Version " + str(__version__) + ":")
-
-    dashline(1)
+    gp.AddWarning(msg)
+    write_log(msg)
     for msg in range(0, gp.MessageCount):
         if gp.GetSeverity(msg) == 2:
             gp.AddReturnMessage(msg)
-        # dashline(2)
-        print gp.AddReturnMessage(msg)
-        # dashline(2)
-    exit(0)
+        #print gp.AddReturnMessage(msg)
+        write_log(msg)
+    exit(1)
 
 
-def raise_python_error(filename):
-    """Handle python errors and provide details to user"""
-    dashline(1)
+def raise_python_warning(filename):
+    """Handle python errors and provide details to user if re-trying"""
     tb = sys.exc_info()[2]  # get the traceback object
     # tbinfo contains the error's line number and the code
     tbinfo = traceback.format_tb(tb)[0]
     line = tbinfo.split(", ")[1]
 
     err = traceback.format_exc().splitlines()[-1]
-
-    gp.AddError("Python error on **" + line + "** of " + filename + " "
+    msg = ("Python error on **" + line + "** of " + filename + " "
                 "in Linkage Mapper Version " + str(__version__) + ":")
-    gp.AddError(err)
+    gp.AddWarning(msg)
+    gp.AddWarning(err)
+    write_log(msg)
+    write_log(err)
+    exit(1)
 
-    # dashline(2)
+    
+    
+def raise_geoproc_error(filename):
+    """Handle geoprocessor errors and provide details to user"""
+    dashline()
+    tb = sys.exc_info()[2]  # get the traceback object
+    # tbinfo contains the error's line number and the code
+    tbinfo = traceback.format_tb(tb)[0]
+    line = tbinfo.split(", ")[1]
+    msg = ("Geoprocessing error on **" + line + "** of " + filename + " "
+                "in Linkage Mapper Version " + str(__version__) + ":")
+    gp.AddError(msg)
+    write_log(msg)
+    
+    dashline(1)
+    for msg in range(0, gp.MessageCount):
+        if gp.GetSeverity(msg) == 2:
+            gp.AddReturnMessage(msg)
+        write_log(msg)
+    close_log_file()
+    exit(1)
+
+
+def raise_python_error(filename):
+    """Handle python errors and provide details to user"""
+    dashline()
+    tb = sys.exc_info()[2]  # get the traceback object
+    # tbinfo contains the error's line number and the code
+    tbinfo = traceback.format_tb(tb)[0]
+    line = tbinfo.split(", ")[1]
+
+    err = traceback.format_exc().splitlines()[-1]
+    msg = ("Python error on **" + line + "** of " + filename + " "
+                "in Linkage Mapper Version " + str(__version__) + ":")
+    gp.AddError(msg)
+    gp.AddError(err)
+    write_log(msg)
+    write_log(err)
+    close_log_file()
+    exit(1)
+
+    
+def raise_error(msg):
+    gp.AddError(msg)    
+    write_log(msg)
+    close_log_file()
     exit(0)
 
 
@@ -2040,10 +2191,10 @@ def dashline(lspace=0):
 
     """
     if lspace == 1:
-        gp.addmessage('\n')
-    gp.addmessage('---------------------------------')
+        gprint('\n')
+    gprint('---------------------------------')
     if lspace == 2:
-        gp.addmessage('\n')
+        gprint('\n')
 
         
 ############################################################################

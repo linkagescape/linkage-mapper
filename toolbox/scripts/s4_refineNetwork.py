@@ -10,7 +10,7 @@ nearest neighboring cluster
 """
 
 __filename__ = "s4_refineNetwork.py"
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 
 # Note: because cwds calculated in step 3, constellation links just connect
 # core pairs, not all cores in 1 constellation to all cores in another.
@@ -25,6 +25,8 @@ import numpy as npy
 from lm_config import Config as Cfg
 import lm_util as lu
 
+gprint = lu.gprint
+
 def STEP4_refine_network():
     """Allows user to only connect each core area to its N
     nearest neighbors, then connect any disjunct clusters ('constellations')
@@ -32,6 +34,7 @@ def STEP4_refine_network():
 
     """
     try:
+
         lu.dashline(1)
         Cfg.gp.addmessage('Running script ' + __filename__)
         Cfg.gp.Workspace = Cfg.OUTPUTDIR
@@ -49,7 +52,7 @@ def STEP4_refine_network():
                               ' or too short to map.')
             disableLeastCostNoVal = True
             linkTable,numDroppedLinks = lu.drop_links(
-                linkTable, Cfg.MAXEUCDIST, 0, Cfg.MINEUCDIST, 0,
+                linkTable, Cfg.MAXEUCDIST, 0, Cfg.MAXCOSTDIST, 0,
                 disableLeastCostNoVal)
 
         rows, cols = npy.where(

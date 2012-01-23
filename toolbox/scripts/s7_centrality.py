@@ -6,7 +6,7 @@
 """
 
 __filename__ = "s7_centrality.py"
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 
 import os.path as path
 import os
@@ -15,7 +15,11 @@ import shutil
 import arcgisscripting
 import numpy as npy
 import subprocess
-            
+# import scipy
+# time.sleep(5)
+# from scipy import sparse as sp
+# blarg
+# time.sleep(5)            
 from lm_config import Config as Cfg
 import lm_util as lu
 
@@ -26,7 +30,7 @@ if not Cfg.LOGMESSAGES:
     gprint = arcpy.AddMessage
 else:
     gprint = lu.gprint
-    
+
 # Set local references to objects and constants from lm_config
 LTB_CORE1 = Cfg.LTB_CORE1
 LTB_CORE2 = Cfg.LTB_CORE2
@@ -137,7 +141,6 @@ def STEP7_calc_centrality():
         configFN = 'Circuitscape_network.ini'
         outConfigFile = path.join(CONFIGDIR, configFN)
         lu.writeCircuitscapeConfigFile(outConfigFile, options)
-
         
         delRows = npy.asarray(npy.where(linkTable[:,LTB_LINKTYPE] < 1))
         delRowsVector = npy.zeros((delRows.shape[1]), dtype="int32")
@@ -150,81 +153,50 @@ def STEP7_calc_centrality():
         graphList[:,1] = LT[:,LTB_CORE2]
         graphList[:,2] = LT[:,LTB_CWDIST]
 
-        # Construct graph from list of nodes and resistances        
-        # NOTE graph is in NODE NAME ORDER
-        G, nodeNames = make_graph_from_list(graphList)  
-        
-        # Find connected components in graph
-        components = lu.components_no_sparse(G) 
-        # Currently, need to solve one component at a time with Circuitscape
-        for component in range (1, npy.max(components) + 1):
-            if npy.max(components) > 1:
-                inComp = npy.where(components[:] == component)
-                notInComp = npy.where(components[:] != component)
-                componentGraph = lu.delete_row_col(G,notInComp,notInComp)
-                componentNodeNames = nodeNames[inComp]
-            else:
-                componentGraph = G
-                componentNodeNames = nodeNames
-
-            rows,cols, = npy.where(componentGraph)
-            data = componentGraph[rows,cols]
-            numEntries = len(data)
-            
-            graphListComponent = npy.zeros((numEntries,3),dtype = 'Float64')
-            graphListComponent[:,0] = componentNodeNames[rows]
-            graphListComponent[:,1] = componentNodeNames[cols]
-            graphListComponent[:,2] = data
-
-            write_graph(options['habitat_file'] ,graphListComponent)                
-            if npy.max(components) > 1:
-                gprint('\nCalculating current flow centrality for component '
-                        + str(component) + '\n using Circuitscape...')
-            else:
-                gprint('\nCalculating current flow centrality '
-                       'using Circuitscape...')                
+        write_graph(options['habitat_file'] ,graphList)                
+        gprint('\nCalculating current flow centrality using Circuitscape...')                
 #            subprocess.check_call(systemCall, shell=True)
-            subprocess.call([csPath, outConfigFile], shell=True)                     
+        subprocess.call([csPath, outConfigFile], shell=True)                     
             
-            outputFN = 'Circuitscape_network_branch_currents_cum.txt'
-            currentList = path.join(OUTCENTRALITYDIR, outputFN)
-            if not arcpy.Exists(currentList):
-                lu.dashline(1)
-                msg = ('ERROR: No Circuitscape output found.\n'
-                       'It looks like Circuitscape failed.')
-                arcpy.AddError(msg)
-                lu.write_log(msg)
-                exit(1)            
-            currents = load_graph(currentList,graphType='graph/network',
-                                  datatype='float64')
+        outputFN = 'Circuitscape_network_branch_currents_cum.txt'
+        currentList = path.join(OUTCENTRALITYDIR, outputFN)
+        if not arcpy.Exists(currentList):
+            lu.dashline(1)
+            msg = ('ERROR: No Circuitscape output found.\n'
+                   'It looks like Circuitscape failed.')
+            arcpy.AddError(msg)
+            lu.write_log(msg)
+            exit(1)            
+        currents = load_graph(currentList,graphType='graph/network',
+                              datatype='float64')
                        
-            numLinks = currents.shape[0]
-            for x in range(0,numLinks):
-                corex = currents[x,0] 
-                corey = currents[x,1] 
-                
-                #linkId = LT[x,LTB_LINKID]
-                row = lu.get_links_from_core_pairs(linkTable, corex, corey)
-                #row = lu.get_linktable_row(linkId, linkTable)
-                linkTable[row,Cfg.LTB_CURRENT] = currents[x,2] 
+        numLinks = currents.shape[0]
+        for x in range(0,numLinks):
+            corex = currents[x,0] 
+            corey = currents[x,1] 
+            
+            #linkId = LT[x,LTB_LINKID]
+            row = lu.get_links_from_core_pairs(linkTable, corex, corey)
+            #row = lu.get_linktable_row(linkId, linkTable)
+            linkTable[row,Cfg.LTB_CURRENT] = currents[x,2] 
         
-            coreCurrentFN = 'Circuitscape_network_node_currents_cum.txt'
-            nodeCurrentList = path.join(OUTCENTRALITYDIR, coreCurrentFN)
-            nodeCurrents = load_graph(nodeCurrentList,graphType='graph/network',
-                                  datatype='float64')        
+        coreCurrentFN = 'Circuitscape_network_node_currents_cum.txt'
+        nodeCurrentList = path.join(OUTCENTRALITYDIR, coreCurrentFN)
+        nodeCurrents = load_graph(nodeCurrentList,graphType='graph/network',
+                              datatype='float64')        
 
-            numNodeCurrents = nodeCurrents.shape[0]
-            rows = gp.UpdateCursor(coreCopy)
+        numNodeCurrents = nodeCurrents.shape[0]
+        rows = gp.UpdateCursor(coreCopy)
+        row = rows.Next()
+        while row:
+            coreID = row.getvalue(Cfg.COREFN)
+            for i in range (0, numNodeCurrents):
+                if coreID == nodeCurrents[i,0]:
+                    row.SetValue("CF_Central", nodeCurrents[i,1])
+                    break
+            rows.UpdateRow(row)
             row = rows.Next()
-            while row:
-                coreID = row.getvalue(Cfg.COREFN)
-                for i in range (0, numNodeCurrents):
-                    if coreID == nodeCurrents[i,0]:
-                        row.SetValue("CF_Central", nodeCurrents[i,1])
-                        break
-                rows.UpdateRow(row)
-                row = rows.Next()
-            del row, rows          
+        del row, rows          
         gprint('Done with centrality calculations.')
 
         finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=5,

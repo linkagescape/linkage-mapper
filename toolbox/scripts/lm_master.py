@@ -11,7 +11,7 @@ Numpy
 """
 
 __filename__ = "lm_master.py"
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 
 import os.path as path
 import os
@@ -43,7 +43,11 @@ def lm_master():
 
     """
     try:
-        installD = gp.GetInstallInfo("desktop")
+
+        # Move results from earlier versions to new directory structure
+        lu.move_old_results()
+        
+        # Create output directories if they don't exist
         if gp.Exists(Cfg.OUTPUTDIR):
             gp.RefreshCatalog(Cfg.OUTPUTDIR)
         lu.createfolder(Cfg.OUTPUTDIR)
@@ -56,6 +60,7 @@ def lm_master():
         
         Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
         
+        installD = gp.GetInstallInfo("desktop")        
         gprint('\nLinkage Mapper Version ' + str(__version__))
         try:
             gprint('on ArcGIS '+ installD['ProductName'] + ' ' + 
@@ -76,17 +81,19 @@ def lm_master():
         elif Cfg.STEP3:
             gprint('Starting at step 3.')
             firststep = 3
+            linkTableFile = lu.get_prev_step_link_table(step=3)  # Check exists
         elif Cfg.STEP4:
             gprint('Starting at step 4.')
             firststep = 4
+            linkTableFile = lu.get_prev_step_link_table(step=4)  # Check exists
         elif Cfg.STEP5:
             gprint('Starting at step 5.')
             firststep = 5
+            linkTableFile = lu.get_prev_step_link_table(step=5)  # Check exists
         lu.clean_up_link_tables(firststep)
 
-        # Move adj and cwd results from earlier versions to datapass directory
-        lu.move_old_results()
         gp.OverwriteOutput = True
+        
         
         # Make a local grid copy of resistance raster for cwd runs-
         # will run faster than gdb.
@@ -146,9 +153,14 @@ def lm_master():
         
         gp.addmessage('\nDONE!\n')
         
-        gprint('Script completed successfully. You can'
-              ' ignore any failure messages from ArcGIS below.')
-        return
+        # severity = gp.MaxSeverity
+        # gprint(str(severity))
+        # test=gp.GetMessages(2)
+        # if severity>1: 
+            # gprint('Linkage Mapper SUCCEEDED. You can ignore any failure '
+                    # 'messages from ArcGIS below.')
+
+        return 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.raise_geoproc_error(__filename__)

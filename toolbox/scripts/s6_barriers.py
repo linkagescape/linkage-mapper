@@ -9,7 +9,7 @@
 """
 
 __filename__ = "s6_barriers.py"
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 
 import os.path as path
 import time
@@ -59,7 +59,7 @@ def STEP6_calc_barriers():
         arcpy.env.workspace = Cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = Cfg.SCRATCHDIR
         arcpy.RefreshCatalog(Cfg.PROJECTDIR)
-        prefix = path.basename(Cfg.PROJECTDIR)        
+        PREFIX = path.basename(Cfg.PROJECTDIR)        
         # For speed:
         arcpy.env.pyramid = "NONE"
         arcpy.env.rasterStatistics = "NONE"
@@ -68,10 +68,10 @@ def STEP6_calc_barriers():
         # surface
         arcpy.OverWriteOutput = True            
         gp.Extent = gp.Describe(Cfg.RESRAST).Extent
-        gp.CellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight
-        if gp.CellSize > startRadius or startRadius > endRadius:
+        gp.cellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight
+        if gp.cellSize > startRadius or startRadius > endRadius:
             msg = ('Error: minimum detection radius must be greater than '
-                    'cell size (' + str(gp.CellSize) +
+                    'cell size (' + str(gp.cellSize) +
                     ') \nand less than or equal to maximum detection radius.') 
             lu.raise_error(msg)
             # gp.AddError(msg)
@@ -208,7 +208,9 @@ def STEP6_calc_barriers():
                     else:
                         # How to combine across linkages?  For now take max....                                                   
                         tempMosaicRaster = path.join(Cfg.SCRATCHDIR,"mos_temp")
-                        gp.Mosaic_management(barrierRaster, tempMosaicRaster,
+                        # gp.Mosaic_management(barrierRaster, tempMosaicRaster,
+                                             # "MAXIMUM", "MATCH")
+                        arcpy.Mosaic_management(barrierRaster, tempMosaicRaster,
                                              "MAXIMUM", "MATCH")
 
                     if not Cfg.SAVEBARRIERRASTERS:
@@ -246,10 +248,10 @@ def STEP6_calc_barriers():
             
             mosaicFN = "barriers" + str(radius)
             #fixme- write final to geodatabase instead
-            mosaicFN = prefix + "_barriers" + str(radius)
+            mosaicFN = PREFIX + "_barriers" + str(radius)
             #mosaicRaster = path.join(Cfg.BARRIERBASEDIR, mosaicFN)
             gp.Extent = gp.Describe(Cfg.RESRAST).Extent
-            # gp.CellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight
+            # gp.cellSize = gp.Describe(Cfg.RESRAST).MeanCellHeight
 
             # gp.SetNull_sa(tempMosaicRaster, tempMosaicRaster, mosaicRaster, 
                           # "VALUE < 0")
@@ -271,7 +273,7 @@ def STEP6_calc_barriers():
                                   
             #Place a copy in output geodatabase
             arcpy.env.workspace = Cfg.BARRIERGDB
-            maxRasterFN = prefix + "_bar_max" + str(outerRadius)
+            maxRasterFN = PREFIX + "_bar_max" + str(outerRadius)
             gp.CopyRaster_management(maxRaster, maxRasterFN)
             
             # Create pared-down version of maximum- remove pixels that
@@ -293,7 +295,7 @@ def STEP6_calc_barriers():
             output.save(outRaster2)
             
 #            gp.SetNull_sa(maxRaster, outRaster, outRaster2, "")
-            outRasterFN = prefix + "_bar_trm" + str(outerRadius)
+            outRasterFN = PREFIX + "_bar_trm" + str(outerRadius)
             outRasterPath= path.join(Cfg.BARRIERGDB, outRasterFN)
             gp.CopyRaster_management(outRaster2, outRasterFN)            
 
@@ -307,7 +309,7 @@ def STEP6_calc_barriers():
                 #radiusFN = "barriers" + str(radius)
                 #radiusRaster = path.join(Cfg.BARRIERBASEDIR, radiusFN)            
                 #Fixme: run speed test with gdb mosaicking above and here
-                radiusFN = prefix + "_barriers" + str(radius)
+                radiusFN = PREFIX + "_barriers" + str(radius)
                 radiusRaster = path.join(Cfg.BARRIERGDB, radiusFN)
 
                 if radius == startRadius:
@@ -319,7 +321,7 @@ def STEP6_calc_barriers():
                                          "MAXIMUM", "MATCH")
             # Copy result to output geodatabase
             arcpy.env.workspace = Cfg.BARRIERGDB
-            mosaicFN = prefix + "_bar_radii"
+            mosaicFN = PREFIX + "_bar_radii"
             gp.CopyRaster_management(mosaicRaster, mosaicFN)
         
             #GROWN OUT rasters
@@ -339,7 +341,7 @@ def STEP6_calc_barriers():
                                          "MAXIMUM", "MATCH")
             # Copy result to output geodatabase
             arcpy.env.workspace = Cfg.BARRIERGDB
-            maxMosaicFN = prefix + "_bar_radii_max"                                    
+            maxMosaicFN = PREFIX + "_bar_radii_max"                                    
             gp.CopyRaster_management(maxMosaicRaster, maxMosaicFN)
             
             #GROWN OUT AND TRIMMED rasters
@@ -347,7 +349,7 @@ def STEP6_calc_barriers():
             arcpy.env.workspace = Cfg.BARRIERBASEDIR            
             trimMosaicRaster = path.join(Cfg.BARRIERBASEDIR,trimMosaicFN)
             for radius in range (startRadius, endRadius + 1, radiusStep):
-                radiusFN = prefix + "_bar_trm" + str(radius)
+                radiusFN = PREFIX + "_bar_trm" + str(radius)
                 #fixme- do this when only a single radius too
                 radiusRaster = path.join(Cfg.BARRIERGDB, radiusFN) 
                 gprint(radiusRaster)                
@@ -360,7 +362,7 @@ def STEP6_calc_barriers():
                                          "MAXIMUM", "MATCH")
             # Copy result to output geodatabase
             arcpy.env.workspace = Cfg.BARRIERGDB
-            trimMosaicFN = prefix + "_bar_radii_trm" 
+            trimMosaicFN = PREFIX + "_bar_radii_trm" 
             gp.CopyRaster_management(trimMosaicRaster, trimMosaicFN)
     
         arcpy.env.workspace = Cfg.BARRIERGDB

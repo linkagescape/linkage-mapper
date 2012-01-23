@@ -9,7 +9,7 @@ cost-weighted distance space
 """
 
 __filename__ = "s1_getAdjacencies.py"
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 
 import shutil
 import time
@@ -131,7 +131,8 @@ def cwadjacency():
 
     """
     try:
-        alloc_rasFN = "Cwd_alloc_ras"
+        ALLOC_RASFN = "CWD_alloc_ras"
+
         gprint('\nCalculating cost-weighted distance adjacency')
         outcsvfile = path.join(Cfg.DATAPASSDIR, "cwdAdj.csv")
         outcsvLogfile = path.join(Cfg.LOGDIR, "cwdAdj_STEP1.csv")
@@ -169,7 +170,7 @@ def cwadjacency():
         if not gp.exists(Cfg.CWDGDB):
             gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.CWDGDB))
         outDistanceRaster = path.join(Cfg.CWDGDB, PREFIX + "_cwd")
-        alloc_ras = path.join(Cfg.ADJACENCYDIR, alloc_rasFN)
+        alloc_ras = path.join(Cfg.ADJACENCYDIR, ALLOC_RASFN)
 
         count = 0
         statement = ('gp.Costallocation_sa(Cfg.CORERAS, bResistance, '
@@ -211,7 +212,7 @@ def euadjacency():
 
     """
     try:
-        alloc_rasFN = "Euc_alloc_ras"
+        ALLOC_RASFN = "Euc_alloc_ras"
         lu.dashline()
         gprint('Calculating Euclidean adjacency')
         outcsvfile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
@@ -236,7 +237,7 @@ def euadjacency():
 
         gp.scratchworkspace = gp.workspace
         outDistanceRaster = path.join(Cfg.ADJACENCYDIR, "euc")
-        alloc_ras = path.join(Cfg.ADJACENCYDIR, alloc_rasFN)
+        alloc_ras = path.join(Cfg.ADJACENCYDIR, ALLOC_RASFN)
         count = 0
         statement = ('gp.EucAllocation_sa(Cfg.CORERAS, alloc_ras, "","", '
                      'cellSizeEuclidean, "", outDistanceRaster, "")')

@@ -10,7 +10,7 @@ Numpy
 """
 
 __filename__ = "Circuitscape_master.py"
-__version__ = "0.7.6"
+__version__ = "0.7.7"
 
 import os.path as path
 import arcgisscripting
@@ -34,6 +34,7 @@ def circuitscape_master():
     
     """
     try:
+        lu.createfolder(Cfg.LOGDIR)
         lu.createfolder(Cfg.MESSAGEDIR)
         Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
         gp.OutputCoordinateSystem = gp.describe(Cfg.COREFC).SpatialReference
