@@ -71,9 +71,7 @@ def STEP2_build_network():
             eucdist_file = Cfg.S2EUCDISTFILE
         
         eucDists_in = npy.loadtxt(eucdist_file, dtype='Float64', comments='#')
-        #gprint(str(eucDists.shape)) 
-        #gprint(str(eucDists.shape[1]))
-        #gprint(str(eucDists.size))
+
         if eucDists_in.size == 3:  # If just one line in file
             eucDists = npy.zeros((1,3),dtype = 'Float64')
             eucDists[0,:] = eucDists_in
