@@ -186,12 +186,15 @@ def calc_lccs(normalize):
                 if arcpy:
                     lcDist = float(linkTable[link,Cfg.LTB_CWDIST])
                     if normalize:
-                        statement = 'outras = Raster(cwdRaster1) + Raster(cwdRaster2) - lcDist; outras.save(lccNormRaster)'
+                        statement = ('outras = Raster(cwdRaster1) + Raster('
+                            'cwdRaster2) - lcDist; outras.save(lccNormRaster)')
                     else:
-                        statement = 'outras =Raster(cwdRaster1) + Raster(cwdRaster2); outras.save(lccNormRaster)'
+                        statement = ('outras =Raster(cwdRaster1) + Raster('
+                                    'cwdRaster2); outras.save(lccNormRaster)')
                 else:
                     if normalize:
-                        expression = (cwdRaster1 + " + " + cwdRaster2 + " - " + lcDist)
+                        expression = (cwdRaster1 + " + " + cwdRaster2 + " - " 
+                                      + lcDist)
                     else:
                         expression = (cwdRaster1 + " + " + cwdRaster2) 
                     statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
@@ -302,7 +305,7 @@ def calc_lccs(normalize):
                 exec statement
             except:
                 count,tryAgain = lu.hiccup_test(count,statement)
-                if not tryAgain:
+                if not tryAgain:    
                     exec statement
             else: break
 
@@ -311,7 +314,8 @@ def calc_lccs(normalize):
         # convert mosaic raster to integer
         intRaster = outputGDB + '\\' + PREFIX + mosaicBaseName + "_int"
         if arcpy:
-            statement = 'outras = Int(Raster(mosaicRaster) + 0.5); outras.save(intRaster)'
+            statement = ('outras = Int(Raster(mosaicRaster) + 0.5); '
+                        'outras.save(intRaster)')
         else:
             expression = "int(" + mosaicRaster + " + 0.5)"
             statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
@@ -334,7 +338,8 @@ def calc_lccs(normalize):
         if writeTruncRaster == True:
             # -----------------------------------------------------------------
             # Set anything beyond Cfg.CWDTHRESH to NODATA.
-            truncRaster = outputGDB + '\\' + PREFIX + mosaicBaseName + "_truncated_values"
+            truncRaster = (outputGDB + '\\' + PREFIX + mosaicBaseName + 
+                          "_truncated_values")
             count = 0
             if arcpy:
                 statement = ('outRas = Raster(intRaster) * '
@@ -381,7 +386,8 @@ def calc_lccs(normalize):
         linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s5.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
-        linkTableFinalFile = path.join(Cfg.OUTPUTDIR, PREFIX + "_linkTable_s5.csv")
+        linkTableFinalFile = path.join(Cfg.OUTPUTDIR, PREFIX + 
+                                       "_linkTable_s5.csv")
         lu.write_link_table(finalLinkTable, linkTableFinalFile)
         gprint('Copy of final linkTable written to '+
                           linkTableFinalFile)
@@ -440,6 +446,14 @@ def calc_lccs(normalize):
 
     return
 
+
+def delay_restart(failures):
+    gprint('That was try #' + str(failures) + ' of 10 for this corridor.')
+    gprint('Restarting iteration in ' + str(10*failures) + ' seconds. ')
+    lu.dashline(2)
+    lu.snooze(10*failures)
+    
+
 def randomerror():
     """ Used to test error recovery.
     
@@ -448,15 +462,8 @@ def randomerror():
     if generateError == True:
         gprint('Rolling dice for random error')
         import random
-        test = random.randrange(1, 6)
+        test = random.randrange(1, 7)
         if test == 2:
             gprint('Creating artificial error')
             blarg
-    return    
-
-def delay_restart(failures):
-    gprint('That was try #' + str(failures) + ' of 10 for this corridor.')
-    gprint('Restarting iteration in ' + str(10*failures) + ' seconds. ')
-    lu.dashline(2)
-    lu.snooze(10*failures)
-    
+    return        

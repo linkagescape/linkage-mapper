@@ -285,8 +285,9 @@ def get_core_list(coreFC, coreFN):
             dashline(1)
             msg =('\nERROR: Less than two core areas detected. This can '
                    '\nhappen if you have selected a core area in ArcMap. It '
-                   '\ncan also happen when resistance and core area maps are missing'
-                   '\nspatial reference data or are in different projections.'
+                   '\ncan also happen when resistance and core area maps are '
+                   '\nmissing spatial reference data or are in different '
+                   '\nprojections. '
                    '\nBailing because there is nothing to connect.')
             raise_error(msg)
 
@@ -310,7 +311,8 @@ def get_core_targets(core, linktable):
         targetList[:, 1] = linktable[:, Cfg.LTB_CORE2]
         # Copy of Cfg.LTB_LINKTYPE column
         validPair = linktable[:, Cfg.LTB_LINKTYPE]
-        validPair = npy.where((validPair == Cfg.LT_KEEP), Cfg.LT_CORR, validPair)
+        validPair = npy.where((validPair == Cfg.LT_KEEP), Cfg.LT_CORR, 
+                               validPair)
         validPair = npy.where((validPair == Cfg.LT_CORR), 1, 0)  # map corridor.
         targetList[:, 0] = npy.multiply(targetList[:, 0], validPair)
         targetList[:, 1] = npy.multiply(targetList[:, 1], validPair)
@@ -913,7 +915,8 @@ def get_lcp_shapefile(lastStep, thisStep):
                         if lastStep == 2: # No previous shapefile found
                             dashline(1)
                             msg = ('ERROR: Could not find LCP shapefile from a '
-                                    '\nstep previous to step '+ str(thisStep)+'.')
+                                    '\nstep previous to step '+ str(thisStep)
+                                     +'.')
                             raise_error(msg)                                      
                     
         else:
@@ -989,8 +992,8 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
         # delete cursor and row points to remove locks on the data
         del row, rows
 
-        outputLcpShapefile = os.path.join(Cfg.OUTPUTDIR, Cfg.PREFIX + "_lcpLines_s" +
-                                          str(thisStep) + ".shp")
+        outputLcpShapefile = os.path.join(Cfg.OUTPUTDIR, Cfg.PREFIX + 
+                                        "_lcpLines_s" + str(thisStep) + ".shp")
         if gp.exists(outputLcpShapefile):
             try:
                 gp.delete_management(outputLcpShapefile)
@@ -1294,7 +1297,8 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
         else: #Called from pinch point or centrality tool, has 16 columns
             outFile.write("#link,coreId1,coreId2,cluster1,cluster2,linkType,"
                            "eucDist,lcDist,eucAdj,cwdAdj,lcpLength,"
-                           "cwdToEucRatio,cwdToPathRatio,Eff_Resist,CWDTORRatio,CF_Centrality\n")
+                           "cwdToEucRatio,cwdToPathRatio,Eff_Resist,"
+                           "CWDTORRatio,CF_Centrality\n")
 
             for x in range(0, numLinks):
                 for y in range(0, 15):
@@ -1962,7 +1966,7 @@ def print_failures(statement, failures):
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
             'They may also result from conflicts with anti-virus '
-            'software.\n')
+            'software.)\n')
     failures = failures + 1
     return failures
 
@@ -2050,7 +2054,7 @@ def hiccup_test(count, statement):
                 gp.AddWarning('(Note: ArcGIS errors are more likely when writing '
                     'to remote drives or deep file structures. We recommend shallow '
                     'project directories on local drives, like C:\Puma.)\n'
-                    'It is possible they also result fromc conflicts with '
+                    'It is possible they also result from conflicts with '
                     'anti-virus software.\n')
                     
             if gp.MaxSeverity > 1:
@@ -2095,10 +2099,11 @@ def hiccup_test(count, statement):
 def snooze(sleepTime):
     for i in range(1,int(sleepTime)+1):
         time.sleep(1)
-        test = gp.cellSize
-        #gp.refreshcatalog(Cfg.PROJECTDIR)  # Dummy operation to get user 
-                                            # interrupt back
-
+        try:
+            gp.refreshcatalog(Cfg.PROJECTDIR)  # Dummy operation to give user 
+        except:                                # ability to cancel
+            pass
+            
 def raise_geoproc_warning(filename):
     """Handle geoprocessor errors and provide details to user if re-trying"""
     tb = sys.exc_info()[2]  # get the traceback object

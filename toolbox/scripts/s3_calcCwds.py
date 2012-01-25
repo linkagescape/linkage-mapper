@@ -531,7 +531,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 randomerror()
             except:
                 failures = lu.print_failures(statement, failures)
-                if failures < 10:
+                if failures < 20:
                     return None,failures,lcpLoop
                 else: exec statement
         else:
@@ -559,7 +559,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             randomerror()
         except:
             failures = lu.print_failures(statement, failures)
-            if failures < 2:
+            if failures < 20:
                 return None,failures,lcpLoop
             else: exec statement
 
@@ -580,7 +580,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 
         except:
             failures = lu.print_failures(statement, failures)
-            if failures < 10:
+            if failures < 20:
                 return None,failures,lcpLoop
             else: exec statement
             
@@ -596,7 +596,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             randomerror()
         except:
             failures = lu.print_failures(statement, failures)
-            if failures < 10:
+            if failures < 20:
                 return None,failures,lcpLoop
             else:    
                 msg = ('ERROR in Zonal Stats.  This seems to be an ArcGIS'
@@ -664,7 +664,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     randomerror()
                 except:
                     failures = lu.print_failures(statement, failures)
-                    if failures < 10:
+                    if failures < 20:
                         return None,failures,lcpLoop
                     else: exec statement
 
@@ -739,7 +739,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         randomerror()
                     except:
                         failures = lu.print_failures(statement, failures)
-                        if failures < 1:
+                        if failures < 20:
                             return None,failures,lcpLoop
                         else: exec statement                                                  
 
@@ -752,7 +752,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     except:
                         statement = 'test_for_intermediate_core'
                         failures = lu.print_failures(statement, failures)
-                        if failures < 10:
+                        if failures < 20:
                             return None,failures,lcpLoop
                         else: 
                             coreDetected = test_for_intermediate_core(
@@ -795,22 +795,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         gprint('****Failed in step 3. Details follow.****')
         lu.raise_python_error(__filename__)
 
-        
-def randomerror():
-    """ Used to test error recovery.
-    
-    """    
-    generateError = False # Set to True to create random errors
-    if generateError == True:
-        gprint('Rolling dice for random error')
-        import random
-        test = random.randrange(1, 4)
-        if test == 2:
-            gprint('Creating artificial error')
-            blarg
-    return    
-
-    
+            
 def test_for_intermediate_core(workspace,lcpRas,corePairRas):
     """ Test if there is an intermediate core by seeing if least-cost
         path and remaining cores intersect
@@ -864,7 +849,7 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
         lu.raise_python_error(__filename__)    
 
 def delay_restart(failures):
-    gprint('That was try #' + str(failures) + ' of 10 for this core area.')
+    gprint('That was try #' + str(failures) + ' of 20 for this core area.')
     if failures < 7:
         gprint('Restarting iteration in ' + str(10*failures) + ' seconds. ')
         lu.dashline(2)
@@ -890,4 +875,17 @@ def test_for_intermediate_core_old_method(workspace,lcpRas,corePairRas):
         return False
         
 
+def randomerror():
+    """ Used to test error recovery.
+    
+    """    
+    generateError = False # Set to True to create random errors
+    if generateError == True:
+        gprint('Rolling dice for random error')
+        import random
+        test = random.randrange(1, 9)
+        if test == 2:
+            gprint('Creating artificial error')
+            blarg
+    return    
     
