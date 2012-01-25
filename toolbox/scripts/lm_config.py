@@ -249,6 +249,6 @@ class Config():
     gp.CheckOutExtension("Spatial")
     gp.OverwriteOutput = True
 
-    #Temporary resistance raster copy to be created in lm_master
+    #Temporary resistance raster copy to be created in master scripts
     RESRAST  = path.join(SCRATCHDIR, 'resrast')
     

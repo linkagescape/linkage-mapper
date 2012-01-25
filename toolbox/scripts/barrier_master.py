@@ -18,9 +18,10 @@ from lm_config import Config as Cfg
 import lm_util as lu
 import s6_barriers as s6 
 
-gp = Cfg.gp
+import arcpy
+
 if not Cfg.LOGMESSAGES:
-    gprint = gp.addmessage
+    gprint = arcpy.AddMessage
 else:
     gprint = lu.gprint
 
@@ -41,17 +42,22 @@ def bar_master():
 
         # Delete final ouptut geodatabase
         lu.delete_dir(Cfg.BARRIERGDB)
-        if not gp.exists(Cfg.BARRIERGDB):
+        if not arcpy.Exists(Cfg.BARRIERGDB):
             # Create output geodatabase
-            Cfg.gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.BARRIERGDB))        
+            arcpy.CreateFileGDB_management(Cfg.OUTPUTDIR, path.basename(Cfg.BARRIERGDB))        
                 
         lu.createfolder(Cfg.OUTPUTDIR)
+        lu.delete_dir(Cfg.SCRATCHDIR)
         lu.createfolder(Cfg.SCRATCHDIR) 
+
+        arcpy.env.extent = Cfg.RESRAST_IN
+        arcpy.env.snapRaster = Cfg.RESRAST_IN
 
         gprint('\nMaking local copy of resistance raster.')
         try:
-            gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
+            arcpy.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
         except: # This sometimes fails due to bad file locks
+            gprint('Copy failed, using original raster.')
             Cfg.RESRAST = Cfg.RESRAST_IN        
      
         s6.STEP6_calc_barriers()
@@ -60,7 +66,7 @@ def bar_master():
         lu.delete_dir(Cfg.SCRATCHDIR)
         if Cfg.SAVEBARRIERDIR ==  False:
             lu.delete_dir(Cfg.BARRIERBASEDIR)
-        gp.addmessage('\nDONE!\n')
+        gprint('\nDONE!\n')
 
 
     # Return GEOPROCESSING specific errors
@@ -73,3 +79,14 @@ def bar_master():
 
 if __name__ == "__main__":
     bar_master()
+
+    
+    
+        # desc = arcpy.Describe(Cfg.RESRAST_IN)
+
+        # if hasattr(desc, "name"):
+            # gprint ("Name:        " + desc.name)
+
+        # if hasattr(desc, "catalogPath"):
+            # gprint ("CatalogPath: " + desc.catalogPath)
+    
