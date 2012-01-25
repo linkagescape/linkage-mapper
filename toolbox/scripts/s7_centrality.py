@@ -15,16 +15,11 @@ import shutil
 import arcgisscripting
 import numpy as npy
 import subprocess
-# import scipy
-# time.sleep(5)
-# from scipy import sparse as sp
-# blarg
-# time.sleep(5)            
+          
 from lm_config import Config as Cfg
 import lm_util as lu
 
 import arcpy
-gp = arcpy.gp
 
 if not Cfg.LOGMESSAGES:
     gprint = arcpy.AddMessage
@@ -48,7 +43,7 @@ def STEP7_calc_centrality():
         lu.dashline(0)
         gprint('Running script ' + __filename__)
             
-        gp.workspace = Cfg.SCRATCHDIR
+        arcpy.env.workspace = Cfg.SCRATCHDIR
 
         # Check for valid LCP shapefile
         prevLcpShapefile = lu.get_lcp_shapefile(None, thisStep = 7)
@@ -85,8 +80,8 @@ def STEP7_calc_centrality():
         # surface
         coreCopy =  path.join(Cfg.SCRATCHDIR, 'cores.shp')
 
-        gp.CopyFeatures_management(Cfg.COREFC, coreCopy)
-        gp.AddField_management(coreCopy, "CF_Central", "DOUBLE", "10", "2")
+        arcpy.CopyFeatures_management(Cfg.COREFC, coreCopy)
+        arcpy.AddField_management(coreCopy, "CF_Central", "DOUBLE", "10", "2")
 
         inLinkTableFile = lu.get_prev_step_link_table(step=7)
         linkTable = lu.load_link_table(inLinkTableFile)
@@ -186,16 +181,16 @@ def STEP7_calc_centrality():
                               datatype='float64')        
 
         numNodeCurrents = nodeCurrents.shape[0]
-        rows = gp.UpdateCursor(coreCopy)
-        row = rows.Next()
-        while row:
-            coreID = row.getvalue(Cfg.COREFN)
+        rows = arcpy.UpdateCursor(coreCopy)
+        row = rows.newRow()
+        for row in rows:
+            coreID = row.getValue(Cfg.COREFN)
             for i in range (0, numNodeCurrents):
                 if coreID == nodeCurrents[i,0]:
-                    row.SetValue("CF_Central", nodeCurrents[i,1])
+                    row.setValue("CF_Central", nodeCurrents[i,1])
                     break
-            rows.UpdateRow(row)
-            row = rows.Next()
+            rows.updateRow(row)
+            #row = rows.newRow()
         del row, rows          
         gprint('Done with centrality calculations.')
 
@@ -213,10 +208,10 @@ def STEP7_calc_centrality():
         finalCoreFile = os.path.join(Cfg.CORECENTRALITYGDB,
                                      PREFIX + '_Cores')
         #copy core area map to gdb.
-        if not gp.exists(Cfg.CORECENTRALITYGDB):
-            gp.createfilegdb(Cfg.OUTPUTDIR, 
+        if not arcpy.Exists(Cfg.CORECENTRALITYGDB):
+            arcpy.CreateFileGDB_management(Cfg.OUTPUTDIR, 
                              path.basename(Cfg.CORECENTRALITYGDB))             
-        gp.CopyFeatures_management(coreCopy, finalCoreFile)
+        arcpy.CopyFeatures_management(coreCopy, finalCoreFile)
         
         gprint('Creating shapefiles with linework for links.')
         lu.write_link_maps(linkTableFinalFile, step=7)

@@ -103,10 +103,12 @@ def lm_master():
         gp.rasterstatistics = "NONE"
         
         gprint('\nMaking temporary copy of resistance raster for this run.')
+        gp.Extent = gp.Describe(Cfg.RESRAST_IN).Extent        
+        gp.SnapRaster = Cfg.RESRAST_IN
         gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)  
 
-        gp.Extent = gp.Describe(Cfg.RESRAST).Extent        
-        gp.SnapRaster = Cfg.RESRAST
+        # gp.Extent = gp.Describe(Cfg.RESRAST).Extent        
+        # gp.SnapRaster = Cfg.RESRAST
 
         if (Cfg.STEP1) or (Cfg.STEP3):
             # Make core raster file
