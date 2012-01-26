@@ -146,8 +146,11 @@ class Config():
         RESRAST_IN = sys.argv[6]
         CWDCUTOFF = sys.argv[7] # To clip resistance rasters for Circuitscape
         SQUARERESISTANCES = str2bool(sys.argv[8]) # Square resistance values 
-        DO_ALLPAIRS = str2bool(sys.argv[9]) # Do all-pair current calculations 
-                                            # in raster linkage map 
+        DO_ADJACENTPAIRS = str2bool(sys.argv[9])  # Do adjacent pair corridor
+                                                  # pinchpoint calculations
+                                                  # using raster CWD maps
+        DO_ALLPAIRS = str2bool(sys.argv[10]) # Do all-pair current calculations 
+                                            # using raster corridor map 
         SCRATCHDIR = path.join(PROJECTDIR, "scratch_cs")        
         
     
