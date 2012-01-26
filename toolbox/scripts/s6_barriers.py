@@ -15,18 +15,15 @@ import os.path as path
 import time
 import shutil
 
-import arcgisscripting
 import numpy as npy
 
 from lm_config import Config as Cfg
 import lm_util as lu
 
 import arcpy
-
 from arcpy.sa import *
 
-# Set local references to objects and constants from bar_config
-gp = arcpy.gp
+# Set local references to objects and constants from config file
 if not Cfg.LOGMESSAGES:
     gprint = arcpy.AddMessage
 else:

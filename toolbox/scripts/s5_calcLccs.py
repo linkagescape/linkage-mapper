@@ -24,6 +24,7 @@ try:
     import arcpy
     gp = arcpy.gp
     from arcpy.sa import *
+    arcgisscripting = arcpy
 except:
     arcpy = False
     gp = Cfg.gp
@@ -112,10 +113,10 @@ def calc_lccs(normalize):
             # re-check for links that are too long or in case script run out of
             # sequence with more stringent settings
             gprint('Double-checking for corridors that are too long to map.')
-            disableLeastCostNoVal = True
+            DISABLE_LEAST_COST_NO_VAL = True
             linkTable,numDroppedLinks = lu.drop_links(
                 linkTable, Cfg.MAXEUCDIST, Cfg.MINEUCDIST, Cfg.MAXCOSTDIST,
-                Cfg.MINCOSTDIST, disableLeastCostNoVal)
+                Cfg.MINCOSTDIST, DISABLE_LEAST_COST_NO_VAL)
 
         # Added to try to speed up:
         gp.pyramid = "NONE"

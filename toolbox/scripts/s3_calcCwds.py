@@ -15,8 +15,6 @@ __version__ = "0.7.7"
 import os.path as path
 import shutil
 import time
-
-import arcgisscripting
 import numpy as npy
 
 from lm_config import Config as Cfg
@@ -27,6 +25,7 @@ try:
     import arcpy
     from arcpy.sa import *
     gp=arcpy.gp
+    arcgisscripting = arcpy
 except:
     arcpy = False
     import arcgisscripting
@@ -181,7 +180,7 @@ def STEP3_calc_cwds():
             gp.CreateFolder_management(path.dirname(Cfg.CWDBASEDIR),
                                            path.basename(Cfg.CWDBASEDIR))
             gp.CreateFolder_management(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM)
-            if maxCoreNum > 100:
+            if maxCoreNum > 99:
                 maxDirCount = int(maxCoreNum/100)
                 for dirCount in range(1, maxDirCount + 1):
                     ccwdir = Cfg.CWDSUBDIR_NM + str(dirCount)
@@ -193,10 +192,10 @@ def STEP3_calc_cwds():
         
         # Drop links that are too long
         gprint('\nChecking for corridors that are too long to map.')
-        disableLeastCostNoVal = False
+        DISABLE_LEAST_COST_NO_VAL = False
         linkTable,numDroppedLinks = lu.drop_links(linkTable, Cfg.MAXEUCDIST, 0,
                                                   Cfg.MAXCOSTDIST, 0,
-                                                  disableLeastCostNoVal)
+                                                  DISABLE_LEAST_COST_NO_VAL)
         # ------------------------------------------------------------------
         # Bounding boxes
         if (Cfg.BUFFERDIST) is not None:
@@ -392,11 +391,11 @@ def STEP3_calc_cwds():
                                             1000)
 
         # Drop links that are too long
-        disableLeastCostNoVal = True
+        DISABLE_LEAST_COST_NO_VAL = True
         linkTable,numDroppedLinks = lu.drop_links(linkTable, Cfg.MAXEUCDIST,
                                                Cfg.MINEUCDIST, Cfg.MAXCOSTDIST,
                                                Cfg.MINCOSTDIST,
-                                               disableLeastCostNoVal)
+                                               DISABLE_LEAST_COST_NO_VAL)
 
         # Write link table file
         outlinkTableFile = lu.get_this_step_link_table(step=3)

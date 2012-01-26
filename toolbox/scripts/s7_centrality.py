@@ -12,7 +12,6 @@ import os.path as path
 import os
 import time
 import shutil
-import arcgisscripting
 import numpy as npy
 import subprocess
           
@@ -106,8 +105,6 @@ def STEP7_calc_centrality():
 
         linkTable[:, Cfg.LTB_CURRENT] = -1
         
-        # set up directory for centrality output
-
         coresToProcess = npy.unique(linkTable[:, LTB_CORE1:LTB_CORE2 + 1])
         maxCoreNum = max(coresToProcess)
         del coresToProcess
@@ -117,7 +114,8 @@ def STEP7_calc_centrality():
         coreList = linkTable[:,LTB_CORE1:LTB_CORE2+1]
         coreList = npy.sort(coreList)
         #gprint('There are ' + str(len(npy.unique(coreList))) ' core areas.')
-            
+
+        # set up directory for centrality         
         INCENTRALITYDIR = Cfg.CENTRALITYBASEDIR
         OUTCENTRALITYDIR = path.join(Cfg.CENTRALITYBASEDIR, 
                                      Cfg.CIRCUITOUTPUTDIR_NM)

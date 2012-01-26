@@ -53,7 +53,7 @@ def circuitscape_master():
 
         lu.createfolder(Cfg.SCRATCHDIR) 
 
-        if Cfg.DOPINCH == True:
+        if Cfg.DO_ALLPAIRS == True:
             #  Fixme: move raster path to config
             S5CORRIDORRAS = os.path.join(Cfg.OUTPUTGDB,Cfg.PREFIX + 
                                          "_lcc_mosaic_int") 
@@ -61,7 +61,7 @@ def circuitscape_master():
                 msg = ('ERROR: Corridor raster created in step 5 is required'
                         '\nfor all-pair analyses, but was not found.')
                 lu.raise_error(msg)
-            
+        if Cfg.DOPINCH == True:
             # Make a local grid copy of resistance raster-
             # will run faster than gdb.
             lu.delete_data(Cfg.RESRAST)
@@ -69,11 +69,14 @@ def circuitscape_master():
                 msg = ('ERROR: Resistance raster is required for pinch point'
                         ' analyses, but was not found.')
                 lu.raise_error(msg)
-                        
+                  
+            arcpy.env.extent = Cfg.RESRAST_IN
+            arcpy.env.snapRaster = Cfg.RESRAST_IN
             gprint('\nMaking local copy of resistance raster.')
             try:
                 gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
             except: # This sometimes fails due to bad file locks
+                gprint('Copy failed, using original resistance raster.')
                 Cfg.RESRAST = Cfg.RESRAST_IN
                     
         

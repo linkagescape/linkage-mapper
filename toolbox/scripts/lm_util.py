@@ -123,14 +123,14 @@ def get_links_from_core_pairs(linktable, firstCore, secondCore):
 
 
 def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
-               disableLeastCostNoVal):
+               DISABLE_LEAST_COST_NO_VAL):
     """Inactivates links that fail to meet min or max length criteria"""
     try:
         numLinks = linktable.shape[0]
         numDroppedLinks = 0
         coreList = linktable[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1]
         coreList = npy.sort(coreList)
-        if disableLeastCostNoVal:
+        if DISABLE_LEAST_COST_NO_VAL:
             for x in range(0, numLinks):
                 linkid = str(int(linktable[x, Cfg.LTB_LINKID]))
                 if linktable[x, Cfg.LTB_CWDIST] == -1:

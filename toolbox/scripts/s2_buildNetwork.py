@@ -291,10 +291,10 @@ def STEP2_build_network():
 
         # Drop links that are too long
         gprint('\nChecking for corridors that are too long to map.')
-        disableLeastCostNoVal = False
+        DISABLE_LEAST_COST_NO_VAL = False
         linkTable, numDroppedLinks = lu.drop_links(linkTable, Cfg.MAXEUCDIST,
                                                    0, Cfg.MINEUCDIST, 0,
-                                                   disableLeastCostNoVal)
+                                                   DISABLE_LEAST_COST_NO_VAL)
         if numDroppedLinks > 0:
             lu.dashline(1)
             gprint('Removed ' + str(numDroppedLinks) +

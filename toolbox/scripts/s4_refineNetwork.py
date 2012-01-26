@@ -50,10 +50,10 @@ def STEP4_refine_network():
             # sequence with more stringent settings
             Cfg.gp.addmessage('Double-checking for corridors that are too long'
                               ' or too short to map.')
-            disableLeastCostNoVal = True
+            DISABLE_LEAST_COST_NO_VAL = True
             linkTable,numDroppedLinks = lu.drop_links(
                 linkTable, Cfg.MAXEUCDIST, 0, Cfg.MAXCOSTDIST, 0,
-                disableLeastCostNoVal)
+                DISABLE_LEAST_COST_NO_VAL)
 
         rows, cols = npy.where(
                      linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] > 0)
