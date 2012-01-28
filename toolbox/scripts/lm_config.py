@@ -8,7 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.7.7"
+__version__ = "0.7.7beta"
 
 import os
 import os.path as path
@@ -135,6 +135,7 @@ class Config():
         if RADIUSSTEP == '#':
             RADIUSSTEP = 0
         SCRATCHDIR = path.join(PROJECTDIR, "scratch_bar")
+        STEP1 = False
 
     else:
         TOOL = 'pinchpoint_mapper'
@@ -152,13 +153,15 @@ class Config():
         DO_ALLPAIRS = str2bool(sys.argv[10]) # Do all-pair current calculations 
                                             # using raster corridor map 
         SCRATCHDIR = path.join(PROJECTDIR, "scratch_cs")        
-        
+        STEP1 = False
     
     LOGMESSAGES = True
     
     # File names, directory paths & folder names
     PREFIX = path.basename(PROJECTDIR)
     DATAPASSDIR = path.join(PROJECTDIR, "datapass")    
+    CWDADJFILE = path.join(DATAPASSDIR, "cwdAdj.csv")
+    EUCADJFILE = path.join(DATAPASSDIR, "eucAdj.csv")
     OUTPUTDIR = path.join(PROJECTDIR, "output")
     LOGDIR = path.join(PROJECTDIR, "run_history")
     LOGDIR_OLD = path.join(PROJECTDIR, "logFiles")
@@ -201,6 +204,7 @@ class Config():
     OUTPUTGDB_OLD = path.join(OUTPUTDIR, "linkages.gdb")
     CWDGDB = path.join(OUTPUTDIR,"cwd.gdb")
     LINKMAPGDB = path.join(OUTPUTDIR,"link_maps.gdb")
+    LOGLINKMAPGDB = path.join(LOGDIR,"link_maps.gdb")
     BARRIERGDB = path.join(OUTPUTDIR, "barriers.gdb")
     PINCHGDB = path.join(OUTPUTDIR, "pinchpoints.gdb")
     CORECENTRALITYGDB = path.join(OUTPUTDIR, "core_centrality.gdb")

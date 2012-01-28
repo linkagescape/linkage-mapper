@@ -9,7 +9,7 @@ cost-weighted distance space
 """
 
 __filename__ = "s1_getAdjacencies.py"
-__version__ = "0.7.7"
+__version__ = "0.7.7beta"
 
 import shutil
 import time
@@ -134,7 +134,7 @@ def cwadjacency():
         ALLOC_RASFN = "CWD_alloc_ras"
 
         gprint('\nCalculating cost-weighted distance adjacency')
-        outcsvfile = path.join(Cfg.DATAPASSDIR, "cwdAdj.csv")
+        outcsvfile = Cfg.CWDADJFILE
         outcsvLogfile = path.join(Cfg.LOGDIR, "cwdAdj_STEP1.csv")
         PREFIX = Cfg.PREFIX
         
@@ -215,7 +215,7 @@ def euadjacency():
         ALLOC_RASFN = "Euc_alloc_ras"
         lu.dashline()
         gprint('Calculating Euclidean adjacency')
-        outcsvfile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
+        outcsvfile = Cfg.EUCADJFILE
         outcsvLogfile = path.join(Cfg.LOGDIR, "eucAdj_STEP1.csv")
 
         # ----------------------------------------------

@@ -9,7 +9,7 @@
 """
 
 __filename__ = "s6_barriers.py"
-__version__ = "0.7.7"
+__version__ = "0.7.7beta"
 
 import os.path as path
 import time
@@ -95,7 +95,7 @@ def STEP6_calc_barriers():
         
         coresToProcess = npy.unique(linkTable[:, LTB_CORE1:LTB_CORE2 + 1])
         maxCoreNum = max(coresToProcess)
-        del coresToProcess
+        
 
         # Set up focal directories.
         # To keep there from being > 100 grids in any one directory,
@@ -114,13 +114,34 @@ def STEP6_calc_barriers():
             arcpy.CreateFolder_management(path.dirname(path1),
                                        path.basename(path1))            
             
-            if maxCoreNum > 100:
+            # if maxCoreNum > 100:
+                # maxDirCount = int(maxCoreNum/100)
+                # focalDirBaseName = dir2
+                # for dir in range(1, maxDirCount + 1):
+                    # focalDir = focalDirBaseName + str(dir)
+                    # arcpy.CreateFolder_management(path2, focalDir)
+
+                    
+            if maxCoreNum > 99:
+                gprint('Creating subdirectories')
                 maxDirCount = int(maxCoreNum/100)
                 focalDirBaseName = dir2
-                for dir in range(1, maxDirCount + 1):
-                    focalDir = focalDirBaseName + str(dir)
-                    arcpy.CreateFolder_management(path2, focalDir)
-
+                for dirCount in range(1, maxDirCount + 1):
+                    floor = dirCount * 100
+                    ceiling = 99 + dirCount * 100 
+                    ind = npy.where(coresToProcess < ceiling)
+                    lowCores = coresToProcess[ind]
+                    if lowCores.shape[0] > 0:
+                        ind = npy.where(lowCores > floor)
+                        medCores = lowCores[ind]
+                        if medCores.shape[0] > 0:
+                            focalDir = focalDirBaseName + str(dirCount)
+                            gprint('...' + focalDir)
+                            arcpy.CreateFolder_management(path2, focalDir)
+                    
+                    
+                    
+                    
         # Create resistance raster with filled-in Nodata values for later use
         arcpy.env.extent = Cfg.RESRAST
         resistFillRaster = path.join(Cfg.SCRATCHDIR, "resist_fill")
@@ -155,7 +176,6 @@ def STEP6_calc_barriers():
                     cwdRaster2 = lu.get_cwd_path(corey)
                     focalRaster1 = lu.get_focal_path(corex,radius)
                     focalRaster2 = lu.get_focal_path(corey,radius)
-                    
                     barrierRaster = path.join(cbarrierdir, "b" + str(radius) 
                                               + "_" + str(corex) + "_" +
                                               str(corey))
@@ -185,7 +205,7 @@ def STEP6_calc_barriers():
                         outFocalStats = arcpy.sa.FocalStatistics(cwdRaster2, 
                                         InNeighborhood, "MINIMUM","DATA")
                         outFocalStats.save(focalRaster2)                    
-                    #Calculate potential benefit per pixel restored                                                
+                    #Calculate potential benefit per pixel restored 
                     statement = ('outras = ((lcDist - Raster(focalRaster1) - '
                                  'Raster(focalRaster2) - dia) / dia); '
                                  'outras.save(barrierRaster)')
