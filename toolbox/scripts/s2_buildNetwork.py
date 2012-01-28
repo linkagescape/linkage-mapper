@@ -9,13 +9,14 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.7.7"
+__version__ = "0.7.7beta"
 
 import os.path as path
 
 import arcgisscripting
 import numpy as npy
 import time
+import gc
 
 from lm_config import Config as Cfg
 import lm_util as lu
@@ -25,7 +26,11 @@ SIMPLIFY_CORES = Cfg.SIMPLIFY_CORES
 NEAR_TBL = path.join(Cfg.SCRATCHDIR, "neartbl.dbf")
 DIST_FNAME = path.join(Cfg.PROJECTDIR, (Cfg.COREFC + "_dists.txt"))
 NEAR_FN = "NEAR_DIST"
-
+EUCADJMATRIXFILE = path.join(Cfg.SCRATCHDIR, "eucAdj.npy")
+CWDADJMATRIXFILE = path.join(Cfg.SCRATCHDIR, "cwdcAdj.npy")
+DISTMATRIXFILE = path.join(Cfg.SCRATCHDIR, "distances.npy")
+EUCADJFILE = Cfg.EUCADJFILE
+CWDADJFILE = Cfg.CWDADJFILE        
 gp = Cfg.gp
 if not Cfg.LOGMESSAGES:
     gprint = gp.addmessage
@@ -45,28 +50,26 @@ def STEP2_build_network():
         outlinkTableFile = lu.get_this_step_link_table(step=2)
 
         # Warning flag for missing distances in conefor file
-        dropFlag = False
+        # dropFlag = False
 
         # ------------------------------------------------------------------
         # adjacency file created from s1_getAdjacencies.py
-        eucAdjFile = path.join(Cfg.DATAPASSDIR, "eucAdj.csv")
-        if not path.exists(eucAdjFile):
+        if not path.exists(EUCADJFILE):
             msg = ('\nERROR: Euclidean adjacency file required from '
-                  'Step 1: ' + eucAdjFile)
+                  'Step 1: ' + EUCADJFILE)
             lu.raise_error(msg)
-
+            
         # ------------------------------------------------------------------
         # adjacency file created from s1_getAdjacencies.py
-        cwdAdjFile = path.join(Cfg.DATAPASSDIR, "cwdAdj.csv")
-        if not path.exists(cwdAdjFile):
+        if not path.exists(CWDADJFILE):
             msg=('\nERROR: Cost-weighted adjacency file required from'
-                              'Step 1: ' + cwdAdjFile)
+                              'Step 1: ' + CWDADJFILE)
             lu.raise_error(msg)
         #----------------------------------------------------------------------
 
         # Load eucDists matrix from file and npy.sort
         if Cfg.S2EUCDISTFILE is None:
-            eucdist_file = generate_distance_file(cwdAdjFile,eucAdjFile)
+            eucdist_file = generate_distance_file(CWDADJFILE,EUCADJFILE)
         else:
             eucdist_file = Cfg.S2EUCDISTFILE
         
@@ -108,148 +111,84 @@ def STEP2_build_network():
         gprint('Removed ' + str(numDistsOld - numDists) +
                           ' duplicate core pairs in Euclidean distance table.'
                           '\n')
-        maxeudistid = max(eucDists[:, 1])
+        maxEucDistID = max(eucDists[:, 1])
         gprint('After removing duplicates and distances that exceed'
                           ' maximum, \nthere are ' + str(numDists) +
                           ' pairwise distances.  Max core ID number is ' +
-                          str(int(maxeudistid)) + '.')
-        # lu.dashline(2)
+                          str(int(maxEucDistID)) + '.')
 
 
         # Begin creating and manipulating linktables
         # zeros and many other array functions are imported from numpy
-        distlinkTable = npy.zeros((len(eucDists), 10))
-        # this kind of indexing is from numpy too
-        distlinkTable[:, 1:3] = eucDists[:, 0:2]
-        # Cfg.LTB_EUCDIST is just a number from the index table above.
-        # It is just used to specify the column where euclidean distances are
-        # stored
-        distlinkTable[:, Cfg.LTB_EUCDIST] = eucDists[:, 2]
+        linkTable = npy.zeros((len(eucDists), 10), dtype='int32')
+        linkTable[:, 1:3] = eucDists[:, 0:2]
+        linkTable[:, Cfg.LTB_EUCDIST] = eucDists[:, 2]
 
         #----------------------------------------------------------------------
         # Get adjacencies using adj files from step 1.
-        adjList = npy.loadtxt(cwdAdjFile, dtype='int32', comments='#',
-                          delimiter=',')  # creates a numpy array
-
-        if len(adjList) == adjList.size:  # Just one connection
-            cwdAdjList = npy.zeros((1, 3), dtype='int32')
-            cwdAdjList[:, 0:3] = adjList[0:3]
-        else:
-            cwdAdjList = adjList
-        cwdAdjList = cwdAdjList[:, 1:3]  # Drop first column
-        cwdAdjList = npy.sort(cwdAdjList)
+        cwdAdjTable = get_adj_list(CWDADJFILE)
+        cwdAdjList=[]
+        for i in range(0,len(cwdAdjTable)):
+            listEntry=(str(cwdAdjTable[i,0])+'_'+str(cwdAdjTable[i,1]))
+            cwdAdjList.append(listEntry)
         gprint('Cost-weighted adjacency file loaded.')
-        maxCwdAdjCoreID = max(cwdAdjList[:, 1])
+        maxCwdAdjCoreID = max(cwdAdjTable[:, 1])
+        del cwdAdjTable
+        
+        eucAdjTable = get_adj_list(EUCADJFILE)
+        eucAdjList=[]
+        for i in range(0,len(eucAdjTable)):
+            listEntry=(str(eucAdjTable[i,0])+'_'+str(eucAdjTable[i,1]))
+            eucAdjList.append(listEntry)
+        maxEucAdjCoreID = max(eucAdjTable[:, 1])      
+        del eucAdjTable
+        
+        maxCoreId = max(maxEucAdjCoreID, maxCwdAdjCoreID, maxEucDistID)
 
-        # Create Numpy array
-        adjList = npy.loadtxt(eucAdjFile, dtype='int32', comments='#',
-                              delimiter=',')
-
-        if len(adjList) == adjList.size:  # Just one connection
-            eucAdjList = npy.zeros((1, 3), dtype='int32')
-            eucAdjList[:, 0:3] = adjList[0:3]
-        else:
-            eucAdjList = adjList
-        eucAdjList = eucAdjList[:, 1:3]  # Drop first column
-        eucAdjList = npy.sort(eucAdjList)
-        gprint('Euclidean adjacency file loaded')
-        maxEucAdjCoreID = max(eucAdjList[:, 1])
-
-        maxCoreId = max(maxEucAdjCoreID, maxCwdAdjCoreID, maxeudistid)
-
-        cwdAdjMatrix = npy.zeros((maxCoreId + 1, maxCoreId + 1),
-                             dtype='int32')
-        for x in range(0, len(cwdAdjList)):
-            cwdAdjMatrix[cwdAdjList[x, 0], cwdAdjList[x, 1]] = 1
-        cwdAdjMatrix[0, :] = 0  # 0 values for core Ids are invalid
-        cwdAdjMatrix[0, :] = 0
-
-        eucAdjMatrix = npy.zeros((maxCoreId + 1, maxCoreId + 1),
-                             dtype='int32')
-        for x in range(0, len(eucAdjList)):
-            eucAdjMatrix[eucAdjList[x, 0], eucAdjList[x, 1]] = 1
-        eucAdjMatrix[0, :] = 0  # 0 values for core Ids are invalid
-        eucAdjMatrix[0, :] = 0
-
-        distanceMatrix = npy.zeros((maxCoreId + 1, maxCoreId + 1),
-                                   dtype='int32')
-
-        for x in range(0, len(eucDists)):
-            distanceMatrix[eucDists[x, 0], eucDists[x, 1]] = (
-                int(eucDists[x, 2]))
-
+        del eucDists
+        
+        gprint('Creating link table')        
+        linkTable[:, Cfg.LTB_CWDADJ] = -1  # Euc adjacency not evaluated
+        linkTable[:, Cfg.LTB_EUCADJ] = -1        
+        for x in range(0, linkTable.shape[0]):
+            listEntry=(str(linkTable[x, Cfg.LTB_CORE1])+'_'+str(linkTable[x, Cfg.LTB_CORE2]))
+            if listEntry in cwdAdjList:
+                linkTable[:, Cfg.LTB_CWDADJ] = 1
+            else:
+                linkTable[:, Cfg.LTB_CWDADJ] = 0                
+            if listEntry in eucAdjList:
+                linkTable[:, Cfg.LTB_EUCADJ] = 1
+            else:
+                linkTable[:, Cfg.LTB_EUCADJ] = 0
+        
         if Cfg.S2ADJMETH_CW and Cfg.S2ADJMETH_EU:  # "Keep all adjacent links"
             gprint("\nKeeping all adjacent links\n")
-            adjMatrix = eucAdjMatrix
-            adjMatrix = adjMatrix + cwdAdjMatrix
-            adjMatrix = npy.where(adjMatrix == 2, 1, adjMatrix)
-            difference = npy.where(distanceMatrix, 1, 0)
-            difference = difference - adjMatrix
-
-            if npy.amin(difference) < 0:
-                dropFlag = True
-
-            del difference
-            # Drop anything not adjacent
-            distanceMatrix = npy.multiply(distanceMatrix, adjMatrix)
+            rows = []
+            for row in range(0, linkTable.shape[0]):
+                if linkTable[row, Cfg.LTB_EUCADJ] == 0 and linkTable[row, Cfg.LTB_CWDADJ] == 0:
+                    rows.append(row)
+            linkTable = lu.delete_row(linkTable, rows)    
 
         elif Cfg.S2ADJMETH_CW:
             gprint("\nKeeping cost-weighted adjacent links\n")
-            difference = npy.where(distanceMatrix, 1, 0)
-            difference = difference - cwdAdjMatrix
-            if npy.amin(difference) < 0:
-                dropFlag = True
-            # Drop anything not cwd adjacent
-            distanceMatrix = npy.multiply(distanceMatrix, cwdAdjMatrix)
-
+            delRows = npy.asarray(npy.where(linkTable[:, Cfg.LTB_CWDADJ] == 0))
+            delRowsVector = npy.zeros((delRows.shape[1]), dtype="int32")
+            delRowsVector[:] = delRows[0, :]            
+            linkTable = lu.delete_row(linkTable, delRowsVector)                
+            
         else:
             gprint("\nKeeping Euclidean adjacent links\n")
-            difference = npy.where(distanceMatrix, 1, 0)
-            difference = difference - eucAdjMatrix
-            if npy.amin(difference) < 0:
-                dropFlag = True
-            del difference
-            # Drop anything not euc adjacent
-            distanceMatrix = npy.multiply(distanceMatrix, eucAdjMatrix)
+            delRows = npy.asarray(npy.where(linkTable[:, Cfg.LTB_EUCADJ] == 0))
+            delRowsVector = npy.zeros((delRows.shape[1]), dtype="int32")
+            delRowsVector[:] = delRows[0, :]            
+            linkTable = lu.delete_row(linkTable, delRowsVector)                
 
-        #----------------------------------------------------------------------
-        # OK, we have distance matrix (which now defines which pairs can be
-        # potential links).  Use it to create link table.
-        gprint('creating link table')
-        # Get rid of 0 index- we don't have any valid core ids with 0 values
-        distanceMatrix = lu.delete_row_col(distanceMatrix, 0, 0)
-        rows, cols = npy.where(distanceMatrix)
-        linkTable = npy.zeros((len(rows), 10), dtype='int32')
-
-        linkTable[:, Cfg.LTB_CWDADJ] = -1  # Euc adjacency not evaluated
-        linkTable[:, Cfg.LTB_EUCADJ] = -1        
-        
-        for x in range(0, len(rows)):
-            linkTable[x, Cfg.LTB_CORE1] = rows[x] + 1
-            linkTable[x, Cfg.LTB_CORE2] = cols[x] + 1
-            linkTable[x, Cfg.LTB_EUCDIST] = distanceMatrix[rows[x], cols[x]]
-        del distanceMatrix
-
-        # Get rid of 0 index- we don't have any valid core ids with 0
-        # values
-        eucAdjMatrix = lu.delete_row_col(eucAdjMatrix, 0, 0)
-        for x in range(0, len(rows)):
-            linkTable[x, Cfg.LTB_EUCADJ] = eucAdjMatrix[rows[x], cols[x]]
-        del eucAdjMatrix
-
-        # Get rid of 0 index- we don't have any valid core ids with 0
-        # values
-        cwdAdjMatrix = lu.delete_row_col(cwdAdjMatrix, 0, 0)
-        for x in range(0, len(rows)):
-            linkTable[x, Cfg.LTB_CWDADJ] = cwdAdjMatrix[rows[x], cols[x]]
-        del cwdAdjMatrix
-
-        if dropFlag:
-            lu.dashline(1)
-            gprint('NOTE: At least one adjacent link was dropped '
-                          'because there was no Euclidean ')
-            gprint('distance value in the input distance file from '
-                          'Conefor extension.')
+        # if dropFlag:
+            # lu.dashline(1)
+            # gprint('NOTE: At least one adjacent link was dropped '
+                          # 'because there was no Euclidean ')
+            # gprint('distance value in the input distance file from '
+                          # 'Conefor extension.')
             # lu.dashline(2)
 
 
@@ -260,6 +199,7 @@ def STEP2_build_network():
         # for adjacent cores from s1_getAdjacencies.py
         linkTable[:, Cfg.LTB_CWDIST] = -1
 
+        
         # Get list of core IDs, based on core area shapefile.
         coreList = lu.get_core_list(Cfg.COREFC, Cfg.COREFN)
         if len(npy.unique(coreList[:, 1])) < 2:
@@ -316,8 +256,8 @@ def STEP2_build_network():
             lu.write_link_maps(outlinkTableFile, step=2)
         gprint('Linework shapefiles written.')
         
-        if dropFlag:
-            print_conefor_warning()
+        # if dropFlag:
+            # print_conefor_warning()
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
@@ -344,7 +284,7 @@ def get_adj_list(adjFile):
         else:
             outAdjList = inAdjList
         outAdjList = outAdjList[:, 1:3]  # Drop first column
-        outAdjList = npy.sort(outAdjList)
+        outAdjList = npy.sort(outAdjList) #sorts left-right
         return outAdjList
 
     except arcgisscripting.ExecuteError:
@@ -359,7 +299,7 @@ def get_adj_list(adjFile):
         lu.raise_python_error(__filename__)
     
     
-def generate_distance_file(cwdAdjFile,eucAdjFile):
+def generate_distance_file(CWDADJFILE,EUCADJFILE):
     """Use ArcGIS to create Conefor distance file
 
     Requires ArcInfo license.
@@ -400,7 +340,7 @@ def generate_distance_file(cwdAdjFile,eucAdjFile):
         output = []
         csvseparator = "\t"
 
-        adjList = get_full_adj_list(cwdAdjFile,eucAdjFile)
+        adjList = get_full_adj_list(CWDADJFILE,EUCADJFILE)
         sourceCores = npy.unique(adjList[:,0])
 
         gprint('\nFinding distances between cores using Generate Near Table.')
@@ -472,10 +412,10 @@ def print_conefor_warning():
         'calculated using a different core area shapefile or the wrong field\n'
         'in the same core area shapefile.\n')
 
-def get_full_adj_list(cwdAdjFile,eucAdjFile):       
+def get_full_adj_list(CWDADJFILE,EUCADJFILE):       
     try:    
-        cwdAdjList = get_adj_list(cwdAdjFile)
-        eucAdjList = get_adj_list(eucAdjFile)
+        cwdAdjList = get_adj_list(CWDADJFILE)
+        eucAdjList = get_adj_list(EUCADJFILE)
         adjList = npy.append(eucAdjList, cwdAdjList, axis=0)
         adjList = npy.sort(adjList)
         

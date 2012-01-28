@@ -6,7 +6,7 @@
 """
 
 __filename__ = "s8_pinchpoints.py"
-__version__ = "0.7.7"
+__version__ = "0.7.7beta"
 
 import os.path as path
 import os

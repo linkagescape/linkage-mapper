@@ -11,13 +11,14 @@ Numpy
 """
 
 __filename__ = "lm_master.py"
-__version__ = "0.7.7"
+__version__ = "0.7.7beta"
 
 import os.path as path
 import os
 
 import arcgisscripting
 
+import numpy as npy
 from lm_config import Config as Cfg
 import lm_util as lu
 import s1_getAdjacencies as s1
@@ -69,7 +70,7 @@ def lm_master():
                 
         # Check core ID field.
         lu.check_cores(Cfg.COREFC, Cfg.COREFN) 
-        
+                        
         # Identify first step cleanup link tables from that point
         lu.dashline(1)
         if Cfg.STEP1:

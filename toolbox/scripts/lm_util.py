@@ -4,7 +4,7 @@
 """Contains functions called by linkage mapper and barrier mapper scripts."""  
 
 __filename__ = "lm_util.py"
-__version__ = "0.7.7"
+__version__ = "0.7.7beta"
 
 import os
 import sys
@@ -1693,7 +1693,7 @@ def get_cwd_path(core):
                          "cwd_" + str(core))
     else:
         return os.path.join(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM, "cwd_"
-                         + str(core))# + ".img"
+                         + str(core))
 
                          
 def get_focal_path(core,radius):
@@ -1862,7 +1862,13 @@ def copy_final_link_maps(step):
                                     str(step) + '.shp')
 
         if not gp.exists(Cfg.LINKMAPGDB):
-            gp.createfilegdb(Cfg.OUTPUTDIR, os.path.basename(Cfg.LINKMAPGDB))
+            gp.createfilegdb(os.path.dirname(Cfg.LINKMAPGDB), 
+                             os.path.basename(Cfg.LINKMAPGDB))
+
+        if not gp.exists(Cfg.LOGLINKMAPGDB):
+            gp.createfilegdb(os.path.dirname(Cfg.LOGLINKMAPGDB), 
+                             os.path.basename(Cfg.LOGLINKMAPGDB))
+
         if gp.exists(coreLinksShapefile):
             gp.MakeFeatureLayer(coreLinksShapefile, "flinks")
             field = "Active"
@@ -1901,18 +1907,28 @@ def copy_final_link_maps(step):
         # Move stick and lcp maps for each step to log directory to reduce
         # clutter in output
         for i in range(2, 9):
+            # delete log file from pre 0.7.7 versions
+            oldLogLinkFile = os.path.join(Cfg.LOGDIR, PREFIX + '_sticks_s' 
+                                        + str(i) + '.shp')
+            delete_data(oldLogLinkFile)
+
             oldLinkFile = os.path.join(Cfg.OUTPUTDIR, PREFIX + '_sticks_s' 
                                         + str(i) + '.shp')
-            logLinkFile = os.path.join(Cfg.LOGDIR, PREFIX + '_sticks_s' 
+            logLinkFile = os.path.join(Cfg.LOGLINKMAPGDB, PREFIX + '_sticks_s' 
                                         + str(i) + '.shp')
             if gp.exists(oldLinkFile):
                 try:
                     move_map(oldLinkFile, logLinkFile)
                 except:
                     pass
+                    
+            # delete log file from pre 0.7.7 versions
+            oldLogLcpShapeFile = os.path.join(Cfg.LOGDIR, PREFIX + '_lcpLines_s' +
+                                           str(i) + '.shp')
+            delete_data(oldLogLcpShapeFile)
             oldLcpShapeFile = os.path.join(Cfg.OUTPUTDIR, PREFIX + '_lcpLines_s'
                                            + str(i) + '.shp')
-            logLcpShapeFile = os.path.join(Cfg.LOGDIR, PREFIX + '_lcpLines_s' +
+            logLcpShapeFile = os.path.join(Cfg.LOGLINKMAPGDB, PREFIX + '_lcpLines_s' +
                                            str(i) + '.shp')
             if gp.exists(oldLcpShapeFile):
                 try:
@@ -2003,12 +2019,27 @@ def check_steps():
 def check_cores(FC,FN):
     """Checks for positive integer core IDs with appropriate naming."""
     try:
+        
+        if not Cfg.STEP1:
+            try:
+                adjList = npy.loadtxt(Cfg.EUCADJFILE, dtype='string', 
+                                         comments = "x", delimiter=',')             
+                prevCoreFN =adjList[0,1]    
+            except: # If file not found
+                prevCoreFN = Cfg.COREFN 
+            if prevCoreFN != Cfg.COREFN:
+                msg = ('\nError: Core field name must be the same as used in '
+                        'Linkage Mapper step 1 ("' + prevCoreFN + '"). '
+                        '\nPlease make sure you are using the same core area '
+                        'file and resistance raster as well.')
+                raise_error(msg)     
+        
         invalidFNs = ['fid','id','oid','shape']
         if FN.lower() in invalidFNs:
             dashline(1)
-            msg = ('ERROR: Core area field name "ID", "FID", "OID", and "Shape" are reserved '
-                    'for ArcGIS. Please choose another field- must be a '
-                    'positive integer.')
+            msg = ('ERROR: Core area field name "ID", "FID", "OID", and "Shape" '
+                   'are reserved for ArcGIS. Please choose another field- '
+                    'must be a positive integer.')
             raise_error(msg) 
 
         fieldList = gp.ListFields(FC)

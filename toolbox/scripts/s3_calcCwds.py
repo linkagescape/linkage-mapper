@@ -10,7 +10,7 @@ extent of cwd calculations and speed computation.
 """
 
 __filename__ = "s3_calcCwds.py"
-__version__ = "0.7.7"
+__version__ = "0.7.7beta"
 
 import os.path as path
 import shutil
@@ -121,9 +121,8 @@ def STEP3_calc_cwds():
         lu.report_links(linkTable)
 
         coresToProcess = npy.unique(
-            linkTable[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1])
+                                linkTable[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1])
         maxCoreNum = max(coresToProcess)
-        del coresToProcess
 
         
         # Identify cores to map from LinkTable
@@ -180,12 +179,21 @@ def STEP3_calc_cwds():
             gp.CreateFolder_management(path.dirname(Cfg.CWDBASEDIR),
                                            path.basename(Cfg.CWDBASEDIR))
             gp.CreateFolder_management(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM)
+            
             if maxCoreNum > 99:
                 maxDirCount = int(maxCoreNum/100)
                 for dirCount in range(1, maxDirCount + 1):
-                    ccwdir = Cfg.CWDSUBDIR_NM + str(dirCount)
-                    gprint(ccwdir)
-                    gp.CreateFolder_management(Cfg.CWDBASEDIR, ccwdir)
+                    floor = dirCount * 100
+                    ceiling = 99 + dirCount * 100 
+                    ind = npy.where(coresToProcess < ceiling)
+                    lowCores = coresToProcess[ind]
+                    if lowCores.shape[0] > 0:
+                        ind = npy.where(lowCores > floor)
+                        medCores = lowCores[ind]
+                        if medCores.shape[0] > 0:
+                            ccwdir = Cfg.CWDSUBDIR_NM + str(dirCount)
+                            gprint('...' + ccwdir)
+                            gp.CreateFolder_management(Cfg.CWDBASEDIR, ccwdir)
                         
         # make a feature layer for input cores to select from
         gp.MakeFeatureLayer(Cfg.COREFC, Cfg.FCORES)
@@ -291,6 +299,7 @@ def STEP3_calc_cwds():
             gp.buffer_analysis(Cfg.BNDCIRCEN, Cfg.BNDCIR, "radius")
 
             gprint('Extracting raster....')
+            lu.delete_data(Cfg.BOUNDRESIS)
             count = 0
             statement = (
                 'gp.ExtractByMask_sa(Cfg.RESRAST, Cfg.BNDCIR, Cfg.BOUNDRESIS)')
@@ -522,7 +531,9 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
             # Clip out bounded area of resistance raster for cwd
             # calculations from focal core
+
             bResistance = "bResistance"
+            lu.delete_data(bResistance)
             statement = (
                 'gp.ExtractByMask_sa(Cfg.BOUNDRESIS, Cfg.BNDFC, bResistance)')
             try: 
@@ -544,6 +555,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Create raster that just has source core in it
         # Note: this seems faster than setnull with LI grid.
         SRCRASTER = 'source'
+        lu.delete_data(SRCRASTER)
         if arcpy:
             statement = (
                   'conRaster = Con(Raster(Cfg.CORERAS) == int(sourceCore), 1);'
@@ -565,6 +577,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Cost distance raster creation
         gp.Extent = "MINOF"
         
+        lu.delete_data(path.join(Cfg.SCRATCHDIR,"BACK")) 
         if arcpy:
             statement = ('outCostDist = CostDistance(SRCRASTER, bResistance, '
                         'Cfg.TMAXCWDIST, "BACK");'
@@ -587,7 +600,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Extract cost distances from source core to target cores
         # Fixme: there will be redundant calls to b-a when already
         # done a-b
-
+        lu.delete_data(ZNSTATS)
         statement = ('gp.zonalstatisticsastable_sa('
                       'Cfg.CORERAS, "VALUE", outDistanceRaster, ZNSTATS)')
         try:  
@@ -648,12 +661,12 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                                
                 # Create raster that just has target core in it
                 TARGETRASTER = 'targ'
+                lu.delete_data(TARGETRASTER)
                 try: 
                     if arcpy:
                         statement = ('conRaster = Con(Raster('
                                     'Cfg.CORERAS) == int(targetCore), 1);'
-                                    'conRaster.save(TARGETRASTER)')
-                        
+                                    'conRaster.save(TARGETRASTER)')                        
                     else:
                         expression = ("con(" + Cfg.CORERAS + " == " +  
                         str(int(targetCore)) + ",1)")
@@ -667,44 +680,55 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         return None,failures,lcpLoop
                     else: exec statement
 
-                try:
-                    # Cost path maps the least cost path
-                    # between source and target
-                    lcpRas = path.join(Cfg.SCRATCHDIR,"lcp") 
-                    try:                                                 
-                        if arcpy:
-                            outCostPath = CostPath(TARGETRASTER, 
-                                  outDistanceRaster, "BACK", "BEST_SINGLE", "")
-                            outCostPath.save(lcpRas)
-                        else:
-                            gp.CostPath_sa(TARGETRASTER, outDistanceRaster, 
-                                            "BACK",  lcpRas, "BEST_SINGLE", "")                    
-                    except: # Try one more time
-                        if arcpy:
-                            outCostPath = CostPath(TARGETRASTER, 
-                                  outDistanceRaster, "BACK", "BEST_SINGLE", "")
-                            outCostPath.save(lcpRas)
-                        else:
-                            gp.CostPath_sa(TARGETRASTER, outDistanceRaster, 
-                                            "BACK",  lcpRas, "BEST_SINGLE", "")                    
+
+                # Cost path maps the least cost path
+                # between source and target
+                lcpRas = path.join(Cfg.SCRATCHDIR,"lcp") 
+                lu.delete_data(lcpRas)
+                
+                if arcpy:
+                    statement = ('outCostPath = CostPath(TARGETRASTER,' 
+                          'outDistanceRaster, "BACK", "BEST_SINGLE", ""); '
+                          'outCostPath.save(lcpRas)')
+                    
+                else:
+                    statement = ('gp.CostPath_sa(TARGETRASTER, outDistanceRaster,'
+                                   ' "BACK",  lcpRas, "BEST_SINGLE", "")')                    
+                try: 
+                    exec statement
+                    randomerror()
                 except:
-                    link = lu.get_links_from_core_pairs(linkTable,
-                                                        sourceCore,
-                                                        targetCore)
-                    # Not picked up by above cwd calc code
-                    if (Cfg.MAXCOSTDIST is not None
-                        and linkTable[link,Cfg.LTB_CWDIST] == -1):
-                        msg = ("Cost path failed.  Should not have "
-                               "gotten to this point. Link "
-                               "#" + str(int(link)) +
-                               ".\nThis is mysterious.  "
-                               "Please report error.\n")
+                    failures = lu.print_failures(statement, failures)
+                    gprint('failures='+str(failures))
+                    if failures < 20:
+                        return None,failures,lcpLoop
                     else:
                         lu.dashline(1)
-                        msg = ("Error in COST PATH function for link "
-                               "#" + str(int(link)) +
-                               ".\nPlease report error.\n")
-                    lu.raise_error(msg)
+                        gprint('\nCost path is failing for Link #'
+                           + str(int(link)) + ' connecting core areas ' +
+                            str(int(sourceCore)) + ' and ' +
+                            str(int(targetCore)) + '\n.'
+                            'Retrying one more time in 5 minutes.')                    
+                        lu.snooze(300) 
+                        exec statement
+                    # except:
+                    # # Not picked up by above cwd calc code
+                    # link = lu.get_links_from_core_pairs(linkTable,
+                                                        # sourceCore,
+                                                        # targetCore)
+                    # if (Cfg.MAXCOSTDIST is not None
+                        # and linkTable[link,Cfg.LTB_CWDIST] == -1):
+                        # msg = ("Cost path failed.  Should not have "
+                               # "gotten to this point. Link "
+                               # "#" + str(int(link)) +
+                               # ".\nThis is mysterious.  "
+                               # "Please report error.\n")
+                    # else:
+                        # lu.dashline(1)
+                        # msg = ("Error in COST PATH function for link "
+                               # "#" + str(int(link)) +
+                               # ".\nPlease report error.\n")
+                    # lu.raise_error(msg)
                         
                 # fixme: may be fastest to not do selection, do
                 # EXTRACTBYMASK, getvaluelist, use code snippet at end
@@ -887,4 +911,5 @@ def randomerror():
             gprint('Creating artificial error')
             blarg
     return    
+
     

@@ -10,7 +10,7 @@ Numpy
 """
 
 __filename__ = "Circuitscape_master.py"
-__version__ = "0.7.7"
+__version__ = "0.7.7beta"
 
 import os.path as path
 import arcgisscripting
@@ -37,6 +37,10 @@ def circuitscape_master():
         lu.createfolder(Cfg.LOGDIR)
         lu.createfolder(Cfg.MESSAGEDIR)
         Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
+        
+        # Check core ID field.
+        lu.check_cores(Cfg.COREFC, Cfg.COREFN) 
+        
         gp.OutputCoordinateSystem = gp.describe(Cfg.COREFC).SpatialReference
         gp.pyramid = "NONE"
         gp.rasterstatistics = "NONE"              
