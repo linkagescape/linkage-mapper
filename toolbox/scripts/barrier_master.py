@@ -10,7 +10,7 @@ Numpy
 """
 
 __filename__ = "barrier_master.py"
-__version__ = "0.7.7"
+__version__ = "0.7.7beta"
 
 import os.path as path
 import arcgisscripting
@@ -39,7 +39,7 @@ def bar_master():
                 
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
-
+        
         # Delete final ouptut geodatabase
         lu.delete_dir(Cfg.BARRIERGDB)
         if not arcpy.Exists(Cfg.BARRIERGDB):
