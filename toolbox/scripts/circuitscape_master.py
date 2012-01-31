@@ -10,7 +10,7 @@ Numpy
 """
 
 __filename__ = "Circuitscape_master.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os.path as path
 import arcgisscripting
@@ -56,7 +56,8 @@ def circuitscape_master():
             lu.raise_error(msg)
 
         lu.createfolder(Cfg.SCRATCHDIR) 
-
+        lu.createfolder(Cfg.ARCSCRATCHDIR)
+        
         if Cfg.DO_ALLPAIRS == True:
             #  Fixme: move raster path to config
             S5CORRIDORRAS = os.path.join(Cfg.OUTPUTGDB,Cfg.PREFIX + 
@@ -107,8 +108,10 @@ def circuitscape_master():
                                         Cfg.CIRCUITOUTPUTDIR_NM)
             gp.CreateFolder_management(Cfg.CIRCUITBASEDIR, 
                                         Cfg.CIRCUITCONFIGDIR_NM)                 
+            
             lu.clean_out_workspace(Cfg.PINCHGDB)
-                        
+            lu.delete_data(Cfg.PINCHGDB)
+            
             s8.STEP8_calc_pinchpoints()            
 
             lu.delete_dir(Cfg.SCRATCHDIR)

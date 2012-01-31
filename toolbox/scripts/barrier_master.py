@@ -10,7 +10,7 @@ Numpy
 """
 
 __filename__ = "barrier_master.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os.path as path
 import arcgisscripting
@@ -49,11 +49,13 @@ def bar_master():
         lu.createfolder(Cfg.OUTPUTDIR)
         lu.delete_dir(Cfg.SCRATCHDIR)
         lu.createfolder(Cfg.SCRATCHDIR) 
-
+        lu.createfolder(Cfg.ARCSCRATCHDIR)
+        
         arcpy.env.extent = Cfg.RESRAST_IN
         arcpy.env.snapRaster = Cfg.RESRAST_IN
 
         gprint('\nMaking local copy of resistance raster.')
+        lu.delete_data(Cfg.RESRAST)
         try:
             arcpy.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
         except: # This sometimes fails due to bad file locks
