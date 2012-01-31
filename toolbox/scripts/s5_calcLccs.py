@@ -9,7 +9,7 @@ pairs specified in linkTable and cwd layers
 """
 
 __filename__ = "s5_calcLccs.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os.path as path
 import time
@@ -125,15 +125,15 @@ def calc_lccs(normalize):
         # set up directories for normalized lcc and mosaic grids
         dirCount = 0
         gprint("Creating output folder: " + Cfg.LCCBASEDIR)
-        if path.exists(Cfg.LCCBASEDIR):
-            shutil.rmtree(Cfg.LCCBASEDIR)
+        lu.delete_dir(Cfg.LCCBASEDIR)
         gp.CreateFolder_management(path.dirname(Cfg.LCCBASEDIR),
                                        path.basename(Cfg.LCCBASEDIR))
         gp.CreateFolder_management(Cfg.LCCBASEDIR, Cfg.LCCNLCDIR_NM)
         clccdir = path.join(Cfg.LCCBASEDIR, Cfg.LCCNLCDIR_NM)
-        gp.CreateFolder_management(Cfg.LCCBASEDIR,
-                                       path.basename(Cfg.LCCMOSAICDIR))
-        mosaicRaster = path.join(Cfg.LCCMOSAICDIR, "nlcc_mos")
+        # mosaicGDB = path.join(Cfg.LCCBASEDIR, "mosaic.gdb")
+        # gp.createfilegdb(Cfg.LCCBASEDIR, "mosaic.gdb")
+        #mosaicRaster = mosaicGDB + '\\' + "nlcc_mos" # Full path 
+        mosaicRaster = path.join(Cfg.LCCBASEDIR,'mos')
         gprint("")
         if normalize == True:
             gprint('Normalized least-cost corridors will be written '
@@ -212,9 +212,11 @@ def calc_lccs(normalize):
                     else: exec statement
                                
                 gp.Extent = "MAXOF"
+                
                 if numGridsWritten == 0 and dirCount == 0:
                     #If this is the first grid then copy rather than mosaic
                     gp.CopyRaster_management(lccNormRaster, mosaicRaster)
+                
                 else:
                     count = 0
                     if arcpy:
@@ -234,6 +236,7 @@ def calc_lccs(normalize):
 
                 endTime = time.clock()
                 processTime = round((endTime - start_time), 2)
+
                 if normalize == True:
                     printText = "Normalized and mosaicked "
                 else:
@@ -269,8 +272,6 @@ def calc_lccs(normalize):
                         numGridsWritten = 0
                         clccdir = path.join(Cfg.LCCBASEDIR, 
                                             Cfg.LCCNLCDIR_NM + str(dirCount))
-                        #clccdir = path.join(clccdir, str(dirCount))
-                        #clccdir = clccdir+str(dirCount)
                         gprint("Creating output folder: " + clccdir)
                         gp.CreateFolder_management(Cfg.LCCBASEDIR,
                                                        path.basename(clccdir))
@@ -284,6 +285,8 @@ def calc_lccs(normalize):
         # ---------------------------------------------------------------------
 
         # Create output geodatabase
+        lu.delete_data(outputGDB)
+        lu.snooze(10)
         if not gp.exists(outputGDB):
             gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(outputGDB))
         gp.workspace = outputGDB

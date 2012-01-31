@@ -9,7 +9,7 @@ cost-weighted distance space
 """
 
 __filename__ = "s1_getAdjacencies.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import shutil
 import time
@@ -29,13 +29,8 @@ else:
     gprint = lu.gprint
 
 
-BNDCIRCENWD = path.join(Cfg.SCRATCHDIR, Cfg.BNDCIRCEN)
-BNDCIRWD = path.join(Cfg.SCRATCHDIR, Cfg.BNDCIR)
-EUC_BNDCIRCEN = "euc" + Cfg.BNDCIRCEN
-EUC_BNDCIRCENWD = path.join(Cfg.SCRATCHDIR, EUC_BNDCIRCEN)
-EUC_BNDCIR = "euc" + Cfg.BNDCIR
-EUC_BNDCIRWD = path.join(Cfg.SCRATCHDIR, EUC_BNDCIR)
-
+BNDCIRCEN = Cfg.BNDCIRCEN
+BNDCIR = Cfg.BNDCIR
 
 def STEP1_get_adjacencies():
     """Determines adjacencies between core areas in either or both
@@ -48,7 +43,7 @@ def STEP1_get_adjacencies():
 
         # Default behavior is to use same cell size as resistance raster,
         # but this can be changed here.
-        gp.scratchWorkspace = Cfg.SCRATCHDIR
+        gp.scratchWorkspace = Cfg.ARCSCRATCHDIR
         gp.workspace = Cfg.PROJECTDIR
 
         gprint('Adjacency files will be written to ' +
@@ -79,24 +74,10 @@ def STEP1_get_adjacencies():
             boundingCirclePointArray = npy.zeros((0, 5), dtype='float32')
             circlePointData = lu.get_bounding_circle_data(extentBoxList, 0, 0,
                                                           Cfg.BUFFERDIST)
-            lu.make_points(Cfg.SCRATCHDIR, circlePointData, Cfg.BNDCIRCEN)            
+            lu.make_points(Cfg.SCRATCHDIR, circlePointData, path.basename(BNDCIRCEN))            
             
-            lu.delete_data(BNDCIRWD)
-            gp.buffer_analysis(path.join(Cfg.SCRATCHDIR, Cfg.BNDCIRCEN),
-                                             BNDCIRWD, "radius")
-            # boundingCirclePointArray  = npy.zeros((0, 5),dtype='float32')
-            # circlePointData = lu.get_bounding_circle_data(extentBoxList, 0,
-            #                                               0, Cfg.BUFFERDIST)
-
-            # euc bounding circle- at the moment just limits extent of
-            # euclidean allocation calculations
-            boundingCirclePointArray = npy.zeros((0, 5), dtype='float32')
-            # no buffer needed
-            circlePointData = lu.get_bounding_circle_data(
-                extentBoxList, 0, 0, 0)
-            lu.make_points(Cfg.SCRATCHDIR, circlePointData, EUC_BNDCIRCEN)
-            lu.delete_data(EUC_BNDCIRWD)
-            gp.buffer_analysis(EUC_BNDCIRCENWD, EUC_BNDCIRWD, "radius")
+            lu.delete_data(BNDCIR)
+            gp.buffer_analysis(BNDCIRCEN, BNDCIR, "radius")
 
             del boundingCirclePointArray
 
@@ -145,7 +126,7 @@ def cwadjacency():
             # Clip resistance raster using bounding circle
             start_time = time.clock()
             bResistance = path.join(Cfg.SCRATCHDIR, "bResistance")
-            gp.ExtractByMask_sa(Cfg.RESRAST, BNDCIRWD,
+            gp.ExtractByMask_sa(Cfg.RESRAST, BNDCIR,
                                     bResistance)
             gprint('\nReduced resistance raster extracted using '
                               'bounding circle.')
@@ -165,13 +146,15 @@ def cwadjacency():
         gprint('Processing cell size: ' + gp.CellSize)
 
         gp.workspace = Cfg.ADJACENCYDIR
-        gp.scratchworkspace = gp.workspace
+        gp.scratchworkspace = Cfg.ARCSCRATCHDIR
         
         if not gp.exists(Cfg.CWDGDB):
             gp.createfilegdb(Cfg.OUTPUTDIR, path.basename(Cfg.CWDGDB))
         outDistanceRaster = path.join(Cfg.CWDGDB, PREFIX + "_cwd")
         alloc_ras = path.join(Cfg.ADJACENCYDIR, ALLOC_RASFN)
-
+        lu.delete_data(alloc_ras)
+        lu.delete_data(outDistanceRaster)
+        
         count = 0
         statement = ('gp.Costallocation_sa(Cfg.CORERAS, bResistance, '
                      'alloc_ras, Cfg.TMAXCWDIST, Cfg.CORERAS, "VALUE", '
@@ -186,7 +169,7 @@ def cwadjacency():
             else:
                 break
 
-        gp.scratchworkspace = Cfg.SCRATCHDIR
+        gp.scratchworkspace = Cfg.ARCSCRATCHDIR
         gprint('\nCost-weighted distance allocation done.')
         start_time = lu.elapsed_time(start_time)
         adjshiftwrite(alloc_ras, outcsvfile, outcsvLogfile)
@@ -224,20 +207,19 @@ def euadjacency():
         gprint('Starting Euclidean adjacency processing...')
         # Euclidean cell size
         cellSizeEuclidean = gp.Describe(Cfg.RESRAST).MeanCellHeight
-        # gprint('Euclidean cell size set equal to resistance '
-                      # 'raster cell size (' +
-                      # str(cellSizeEuclidean) + ').')
 
-        # core_rastmp = 'core_rastmp'
         oldextent = gp.extent
         if Cfg.BUFFERDIST is not None:
-            gp.extent = gp.Describe(BNDCIRWD).extent
+            gp.extent = gp.Describe(BNDCIR).extent
 
         start_time = time.clock()
 
-        gp.scratchworkspace = gp.workspace
+        gp.scratchworkspace = Cfg.ARCSCRATCHDIR
         outDistanceRaster = path.join(Cfg.ADJACENCYDIR, "euc")
         alloc_ras = path.join(Cfg.ADJACENCYDIR, ALLOC_RASFN)
+        lu.delete_data(alloc_ras)
+        lu.delete_data(outDistanceRaster)
+        
         count = 0
         statement = ('gp.EucAllocation_sa(Cfg.CORERAS, alloc_ras, "","", '
                      'cellSizeEuclidean, "", outDistanceRaster, "")')
@@ -251,7 +233,7 @@ def euadjacency():
             else:
                 break
 
-        gp.scratchworkspace = Cfg.SCRATCHDIR
+        gp.scratchworkspace = Cfg.ARCSCRATCHDIR
         gprint('\nEuclidean distance allocation done.')
         start_time = lu.elapsed_time(start_time)
         gp.extent = oldextent

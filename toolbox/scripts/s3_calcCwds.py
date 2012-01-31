@@ -10,7 +10,7 @@ extent of cwd calculations and speed computation.
 """
 
 __filename__ = "s3_calcCwds.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os.path as path
 import shutil
@@ -36,12 +36,6 @@ if not Cfg.LOGMESSAGES:
 else:
     gprint = lu.gprint
    
-BNDCIRCENS = "boundingCircleCenters.shp"
-Cfg.BNDCIRS = "boundingCircles.shp"
-Cfg.BNDFC = "boundingFeature.shp"
-ZNSTATS = path.join(Cfg.SCRATCHDIR, "zonestats.dbf")
-
-Cfg.BOUNDRESIS = "boundResis"
 
 def write_cores_to_map(x, coresToMap):
     """ Save core list at start of loop to allow a run to be re-started 
@@ -93,7 +87,6 @@ def STEP3_calc_cwds():
             # gprint('Max cost-weighted distance for CWD calcs set '
                               # 'to ' + str(Cfg.TMAXCWDIST) + '\n')
 
-        # FIXME: because it's integer, it fills in 0 if not entered.
         if (Cfg.BUFFERDIST) is not None:
             gprint('Bounding circles plus a buffer of ' +
                               str(float(Cfg.BUFFERDIST)) + ' map units will '
@@ -110,10 +103,10 @@ def STEP3_calc_cwds():
         gp.mask = Cfg.RESRAST
         if arcpy:
             arcpy.env.workspace = Cfg.SCRATCHDIR      
-            arcpy.env.scratchWorkspace = Cfg.SCRATCHDIR
+            arcpy.env.scratchWorkspace = Cfg.ARCSCRATCHDIR
         else:
             gp.workspace = Cfg.SCRATCHDIR     
-            gp.scratchWorkspace = Cfg.SCRATCHDIR
+            gp.scratchWorkspace = Cfg.ARCSCRATCHDIR
             
         # Load linkTable (created in previous script)
         linkTableFile = lu.get_prev_step_link_table(step=3)
@@ -143,11 +136,11 @@ def STEP3_calc_cwds():
         if rerun == True: 
             # If picking up a failed run, make sure needed files are there
             lu.dashline(1)
-            gprint ('\n**** RESTART MODE ENABLED ****\n')   
-            gprint ('**** NOTE: This mode picks up step 3 where\n'
-                    'a previous run left off due to a crash or\n' 
-                    'user abort.  It assumes you are using exactly\n' 
-                    'the same settings as the terminated run.****\n')
+            gprint ('\n****** RESTART MODE ENABLED ******\n')   
+            gprint ('**** NOTE: This mode picks up step 3 where a\n'
+                    'previous run left off due to a crash or user\n' 
+                    'abort.  It assumes you are using the same input\n' 
+                    'data used in the terminated run.****\n')
             lu.dashline(0)
             time.sleep(20)
             savedLinkTableFile = path.join(Cfg.DATAPASSDIR, 
@@ -168,14 +161,12 @@ def STEP3_calc_cwds():
             
             #remove cwd directory
             lu.delete_dir(Cfg.CWDBASEDIR)
-                
+   
             # Set up cwd directories. To keep there from being > 100 grids 
             # in any one directory, outputs are written to:
             # cwd\cw for cores 1-99, cwd\cw1 for cores 100-199, etc.
-            
-
             gprint("\nCreating cost-weighted distance output folders:")
-            gprint(path.join(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM))
+            
             gp.CreateFolder_management(path.dirname(Cfg.CWDBASEDIR),
                                            path.basename(Cfg.CWDBASEDIR))
             gp.CreateFolder_management(Cfg.CWDBASEDIR, Cfg.CWDSUBDIR_NM)
@@ -194,7 +185,7 @@ def STEP3_calc_cwds():
                             ccwdir = Cfg.CWDSUBDIR_NM + str(dirCount)
                             gprint('...' + ccwdir)
                             gp.CreateFolder_management(Cfg.CWDBASEDIR, ccwdir)
-                        
+        del coresToProcess                
         # make a feature layer for input cores to select from
         gp.MakeFeatureLayer(Cfg.COREFC, Cfg.FCORES)
         
@@ -269,10 +260,12 @@ def STEP3_calc_cwds():
 
             gprint('\nCreating bounding circles using buffer '
                               'analysis.')
+                              
+            dir, BNDCIRCENS = path.split(Cfg.BNDCIRCENS)
             lu.make_points(Cfg.SCRATCHDIR, boundingCirclePointArray,
                            BNDCIRCENS)
             lu.delete_data(Cfg.BNDCIRS)
-            gp.buffer_analysis(BNDCIRCENS, Cfg.BNDCIRS, "radius")
+            gp.buffer_analysis(Cfg.BNDCIRCENS, Cfg.BNDCIRS, "radius")
             gp.deletefield (Cfg.BNDCIRS, "BUFF_DIST")
 
             gprint('Successfully created bounding circles around '
@@ -294,7 +287,8 @@ def STEP3_calc_cwds():
             circlePointData=lu.get_bounding_circle_data(extentBoxList, 0,
                                                         0, Cfg.BUFFERDIST)
 
-            lu.make_points(Cfg.SCRATCHDIR, circlePointData, Cfg.BNDCIRCEN)
+            dir, BNDCIRCEN = path.split(Cfg.BNDCIRCEN)                                                        
+            lu.make_points(Cfg.SCRATCHDIR, circlePointData, BNDCIRCEN)
             lu.delete_data(Cfg.BNDCIR)
             gp.buffer_analysis(Cfg.BNDCIRCEN, Cfg.BNDCIR, "radius")
 
@@ -451,17 +445,25 @@ def STEP3_calc_cwds():
         
 def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):    
     try:
-        gp.scratchWorkspace = Cfg.SCRATCHDIR
-        gp.Workspace = Cfg.SCRATCHDIR  
-
-        gp.Extent = "MINOF"
-        #gp.Workspace = workspace
-        ZNSTATS = path.join(Cfg.SCRATCHDIR, "zonestats.dbf")
-                
-        write_cores_to_map(x, coresToMap)             
-
-        # This is the focal core we're running cwd out from
+        # This is the focal core area we're running cwd out from
         sourceCore = int(coresToMap[x])
+        
+        # Create temporary scratch directory just this focal core 
+        coreDir = path.join(Cfg.SCRATCHDIR, 'core' + str(sourceCore))
+        lu.delete_dir(coreDir)
+        lu.createfolder(coreDir)
+        
+        if arcpy:
+            gp = arcpy.gp
+            arcpy.env.workspace = coreDir      
+            arcpy.env.scratchWorkspace = Cfg.ARCSCRATCHDIR
+        else:
+            gp = Cfg.gp
+            gp.workspace = coreDir
+            gp.scratchWorkspace = Cfg.ARCSCRATCHDIR
+        gp.Extent = "MINOF"
+
+        write_cores_to_map(x, coresToMap)             
 
         # Get target cores based on linktable with reinstated links
         # (we temporarily disable them below by adding 1000)
@@ -484,7 +486,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             failures = 0
             return linkTable, failures, lcpLoop
 
-
         lu.dashline(0)
         gprint('Target core areas for core area #' +
                           str(sourceCore) + ' = ' + str(targetCores))
@@ -495,9 +496,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # we'll be connecting each core area to.
         if Cfg.BUFFERDIST is not None:
             # fixme: move outside of loop   # new circle
-            gp.workspace = Cfg.SCRATCHDIR
-            gp.MakeFeatureLayer(path.join(gp.workspace, Cfg.BNDCIRS),
-                                "fGlobalBoundingFeat")
+            gp.MakeFeatureLayer(Cfg.BNDCIRS,"fGlobalBoundingFeat")
 
             start_time = time.clock()
             # loop through targets and get bounding circles that
@@ -523,7 +522,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     "fGlobalBoundingFeat", "ADD_TO_SELECTION", field +
                     " = '" + cores_x_y + "'")
 
-            lu.delete_data(Cfg.BNDFC) # fixme: necessary?
+            lu.delete_data(path.join(coreDir,Cfg.BNDFC)) 
             # fixme: may not be needed- can we just clip raster
             # using selected?
             gp.CopyFeatures_management("fGlobalBoundingFeat",
@@ -531,8 +530,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
             # Clip out bounded area of resistance raster for cwd
             # calculations from focal core
-
-            bResistance = "bResistance"
+            bResistance = path.join(coreDir,"bResistance")
             lu.delete_data(bResistance)
             statement = (
                 'gp.ExtractByMask_sa(Cfg.BOUNDRESIS, Cfg.BNDFC, bResistance)')
@@ -544,18 +542,20 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 if failures < 20:
                     return None,failures,lcpLoop
                 else: exec statement
+            
         else:
             bResistance = Cfg.BOUNDRESIS
 
         # ---------------------------------------------------------
         # CWD Calculations
         outDistanceRaster = lu.get_cwd_path(sourceCore)
+        lu.delete_data(outDistanceRaster)
         start_time = time.clock()
 
         # Create raster that just has source core in it
         # Note: this seems faster than setnull with LI grid.
         SRCRASTER = 'source'
-        lu.delete_data(SRCRASTER)
+        lu.delete_data(path.join(coreDir,SRCRASTER))
         if arcpy:
             statement = (
                   'conRaster = Con(Raster(Cfg.CORERAS) == int(sourceCore), 1);'
@@ -564,7 +564,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             expression = ("con(" + Cfg.CORERAS + " == " +  
                            str(int(sourceCore)) + ",1)")
             statement = ('gp.SingleOutputMapAlgebra_sa(expression, SRCRASTER)')
-
+        
         try: 
             exec statement
             randomerror()
@@ -577,7 +577,8 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Cost distance raster creation
         gp.Extent = "MINOF"
         
-        lu.delete_data(path.join(Cfg.SCRATCHDIR,"BACK")) 
+        lu.delete_data(path.join(coreDir,"BACK")) 
+
         if arcpy:
             statement = ('outCostDist = CostDistance(SRCRASTER, bResistance, '
                         'Cfg.TMAXCWDIST, "BACK");'
@@ -585,24 +586,25 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         else:
             statement = ('gp.CostDistance_sa(SRCRASTER, bResistance, '
                      'outDistanceRaster, Cfg.TMAXCWDIST, "BACK")')                                       
-        
         try: 
             exec statement
             randomerror()
-                
+        
         except:
             failures = lu.print_failures(statement, failures)
             if failures < 20:
                 return None,failures,lcpLoop
             else: exec statement
-            
+
         start_time = time.clock()
         # Extract cost distances from source core to target cores
         # Fixme: there will be redundant calls to b-a when already
         # done a-b
+        ZNSTATS = path.join(coreDir, "zonestats.dbf")
         lu.delete_data(ZNSTATS)
         statement = ('gp.zonalstatisticsastable_sa('
                       'Cfg.CORERAS, "VALUE", outDistanceRaster, ZNSTATS)')
+
         try:  
             exec statement
             randomerror()
@@ -611,11 +613,10 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             if failures < 20:
                 return None,failures,lcpLoop
             else:    
-                msg = ('ERROR in Zonal Stats.  This seems to be an ArcGIS'
-                       ' bug or a problem with intermediate files being open'
-                       ' in ArcMap.\n  Please make sure no intermediate files'
-                       ' (e.g., CWD maps) are open, then restart ArcMap and'
-                       ' try again.')
+                msg = ('ERROR in Zonal Stats. Restarting ArcMap '
+                   'then restarting Linkage Mapper at step 3 usually\n'
+                   'solves this one so please restart and try again.')
+                       
                 lu.raise_error(msg)
         
         tableRows = gp.searchcursor(ZNSTATS)
@@ -661,7 +662,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                                
                 # Create raster that just has target core in it
                 TARGETRASTER = 'targ'
-                lu.delete_data(TARGETRASTER)
+                lu.delete_data(path.join(coreDir,TARGETRASTER))
                 try: 
                     if arcpy:
                         statement = ('conRaster = Con(Raster('
@@ -683,14 +684,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
                 # Cost path maps the least cost path
                 # between source and target
-                lcpRas = path.join(Cfg.SCRATCHDIR,"lcp") 
+                lcpRas = path.join(coreDir,"lcp") 
                 lu.delete_data(lcpRas)
                 
                 if arcpy:
                     statement = ('outCostPath = CostPath(TARGETRASTER,' 
                           'outDistanceRaster, "BACK", "BEST_SINGLE", ""); '
-                          'outCostPath.save(lcpRas)')
-                    
+                          'outCostPath.save(lcpRas)')                    
                 else:
                     statement = ('gp.CostPath_sa(TARGETRASTER, outDistanceRaster,'
                                    ' "BACK",  lcpRas, "BEST_SINGLE", "")')                    
@@ -711,24 +711,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                             'Retrying one more time in 5 minutes.')                    
                         lu.snooze(300) 
                         exec statement
-                    # except:
-                    # # Not picked up by above cwd calc code
-                    # link = lu.get_links_from_core_pairs(linkTable,
-                                                        # sourceCore,
-                                                        # targetCore)
-                    # if (Cfg.MAXCOSTDIST is not None
-                        # and linkTable[link,Cfg.LTB_CWDIST] == -1):
-                        # msg = ("Cost path failed.  Should not have "
-                               # "gotten to this point. Link "
-                               # "#" + str(int(link)) +
-                               # ".\nThis is mysterious.  "
-                               # "Please report error.\n")
-                    # else:
-                        # lu.dashline(1)
-                        # msg = ("Error in COST PATH function for link "
-                               # "#" + str(int(link)) +
-                               # ".\nPlease report error.\n")
-                    # lu.raise_error(msg)
                         
                 # fixme: may be fastest to not do selection, do
                 # EXTRACTBYMASK, getvaluelist, use code snippet at end
@@ -754,7 +736,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                               str(int(sourceCore)))
 
                     gp.extent = gp.Describe(Cfg.BOUNDRESIS).extent
-                    corePairRas = path.join(Cfg.SCRATCHDIR,"s3corepair")
+                    corePairRas = path.join(coreDir,"s3corepair")
                     statement = ('gp.FeatureToRaster_conversion(Cfg.FCORES, '
                                 'Cfg.COREFN, corePairRas, gp.cellSize)')                    
                     try: 
@@ -769,7 +751,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     #------------------------------------------
                     # Intermediate core test
                     try:
-                        coreDetected = test_for_intermediate_core(gp.workspace, 
+                        coreDetected = test_for_intermediate_core(coreDir, 
                                                 lcpRas, corePairRas)
                         randomerror()
                     except:
@@ -779,7 +761,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                             return None,failures,lcpLoop
                         else: 
                             coreDetected = test_for_intermediate_core(
-                                        gp.workspace, lcpRas, corePairRas)
+                                        coreDir, lcpRas, corePairRas)
                                         
                     if coreDetected:
                         lu.dashline()
@@ -798,12 +780,12 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
                 # Create lcp shapefile.  lcploop just keeps track of
                 # whether this is first time function is called.
-                lcpLoop = lu.create_lcp_shapefile(linkTable,
-                                                  sourceCore,
-                                                  targetCore,
+                lcpLoop = lu.create_lcp_shapefile(coreDir, linkTable,
+                                                  sourceCore, targetCore,
                                                   lcpLoop)
         # Made it through, so reset failure count and return.        
         failures = 0
+        lu.delete_dir(coreDir)
         return linkTable, failures, lcpLoop
         
     # Return GEOPROCESSING specific errors
