@@ -9,7 +9,7 @@
 """
 
 __filename__ = "s6_barriers.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os.path as path
 import time
@@ -57,7 +57,7 @@ def STEP6_calc_barriers():
             radiusStep = 1
         linkTableFile = lu.get_prev_step_link_table(step=6)
         arcpy.env.workspace = Cfg.SCRATCHDIR
-        arcpy.env.scratchWorkspace = Cfg.SCRATCHDIR
+        arcpy.env.scratchWorkspace = Cfg.ARCSCRATCHDIR
         arcpy.RefreshCatalog(Cfg.PROJECTDIR)
         PREFIX = path.basename(Cfg.PROJECTDIR)        
         # For speed:
@@ -141,7 +141,7 @@ def STEP6_calc_barriers():
                     
                     
                     
-                    
+        del coresToProcess            
         # Create resistance raster with filled-in Nodata values for later use
         arcpy.env.extent = Cfg.RESRAST
         resistFillRaster = path.join(Cfg.SCRATCHDIR, "resist_fill")

@@ -8,7 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 __filename__ = "lm_config.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os
 import os.path as path
@@ -117,6 +117,7 @@ class Config():
             #TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # Will limit cw calcs. 
         
         SCRATCHDIR = path.join(PROJECTDIR, "scratch")
+        ARCSCRATCHDIR = path.join(SCRATCHDIR, "arcscratch")
         SCRATCHGDB = path.join(SCRATCHDIR,"scratch.gdb")
         # Permanent copy of core area FC made at step 1 and used in all steps
         # COREDIR = path.join(DATAPASSDIR,"corecopy") 
@@ -135,6 +136,7 @@ class Config():
         if RADIUSSTEP == '#':
             RADIUSSTEP = 0
         SCRATCHDIR = path.join(PROJECTDIR, "scratch_bar")
+        ARCSCRATCHDIR = path.join(SCRATCHDIR, "arcscratch")
         STEP1 = False
 
     else:
@@ -153,6 +155,7 @@ class Config():
         DO_ALLPAIRS = str2bool(sys.argv[10]) # Do all-pair current calculations 
                                             # using raster corridor map 
         SCRATCHDIR = path.join(PROJECTDIR, "scratch_cs")        
+        ARCSCRATCHDIR = path.join(SCRATCHDIR, "arcscratch")
         STEP1 = False
     
     LOGMESSAGES = True
@@ -176,6 +179,7 @@ class Config():
     LCCBASEDIR_OLD = path.join(PROJECTDIR, "nlcc")
     LCCNLCDIR_NM = "nlc"
     LCCMOSAICDIR = path.join(LCCBASEDIR, "mosaic")
+    MOSAICGDB = path.join(LCCMOSAICDIR, "mosaic.gdb")
     FOCALSUBDIR1_NM = "focalr"
     FOCALSUBDIR2_NM = "f"
     FOCALGRID_NM = "focal"
@@ -208,9 +212,12 @@ class Config():
     BARRIERGDB = path.join(OUTPUTDIR, "barriers.gdb")
     PINCHGDB = path.join(OUTPUTDIR, "pinchpoints.gdb")
     CORECENTRALITYGDB = path.join(OUTPUTDIR, "core_centrality.gdb")
-    BNDCIRCEN = "boundingCircleCenter.shp"
-    BNDCIR = "boundingCircle.shp"
-    
+    BNDCIRCEN = path.join(SCRATCHDIR,"boundingCircleCenter.shp")
+    BNDCIRCENS = path.join(SCRATCHDIR,"boundingCircleCenters.shp")
+    BNDCIR = path.join(SCRATCHDIR,"boundingCircle.shp")
+    BNDCIRS = path.join(SCRATCHDIR,"boundingCircles.shp") 
+    BNDFC = "boundingFeature.shp"
+    BOUNDRESIS = path.join(SCRATCHDIR,"boundResis")
     
     # Link table column numbers
     LTB_LINKID = 0  # Link ID

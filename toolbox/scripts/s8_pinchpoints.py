@@ -6,7 +6,7 @@
 """
 
 __filename__ = "s8_pinchpoints.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os.path as path
 import os
@@ -65,7 +65,7 @@ def STEP8_calc_pinchpoints():
 
         arcpy.OverWriteOutput = True            
         arcpy.env.workspace = Cfg.SCRATCHDIR
-        arcpy.env.scratchWorkspace = Cfg.SCRATCHDIR
+        arcpy.env.scratchWorkspace = Cfg.ARCSCRATCHDIR
         # For speed:
         arcpy.env.pyramid = "NONE"
         arcpy.env.rasterstatistics = "NONE"
@@ -141,7 +141,7 @@ def STEP8_calc_pinchpoints():
             # Square resistance values
             squaredRaster = path.join(Cfg.SCRATCHDIR,'res_sqr')
             arcpy.env.workspace = Cfg.SCRATCHDIR
-            arcpy.env.scratchWorkspace = Cfg.SCRATCHDIR
+            arcpy.env.scratchWorkspace = Cfg.ARCSCRATCHDIR
             outRas = Raster(resRaster) * Raster(resRaster)
             outRas.save(squaredRaster)
             resRaster = squaredRaster    
@@ -313,8 +313,17 @@ def STEP8_calc_pinchpoints():
             outputGDB = path.join(Cfg.OUTPUTDIR, path.basename(Cfg.PINCHGDB))
             outputRaster = path.join(outputGDB, 
                                      PREFIX + "_current_adjacent_pairs")            
-            arcpy.CopyRaster_management(mosaicRaster, outputRaster)
-
+            lu.delete_data(outputRaster)
+            statement = 'arcpy.CopyRaster_management(mosaicRaster, outputRaster)'
+            count = 0
+            while True:
+                try: exec statement
+                except:
+                    count,tryAgain = lu.hiccup_test(count,statement)
+                    if not tryAgain: exec statement
+                else: break
+            
+            
             gprint('Building output statistics and pyramids ' 
                                   'for corridor pinch point raster\n')        
             lu.build_stats(outputRaster)
@@ -351,7 +360,7 @@ def STEP8_calc_pinchpoints():
                 'core area pairs using Circuitscape')
         lu.dashline(0)
         arcpy.env.workspace = Cfg.SCRATCHDIR
-        arcpy.env.scratchWorkspace = Cfg.SCRATCHDIR 
+        arcpy.env.scratchWorkspace = Cfg.ARCSCRATCHDIR
         arcpy.env.extent = Cfg.RESRAST
         arcpy.env.cellSize = Cfg.RESRAST
         

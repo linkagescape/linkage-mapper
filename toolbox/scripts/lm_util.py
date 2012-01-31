@@ -4,7 +4,7 @@
 """Contains functions called by linkage mapper and barrier mapper scripts."""  
 
 __filename__ = "lm_util.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os
 import sys
@@ -13,6 +13,7 @@ import traceback
 import ConfigParser
 import shutil
 import gc
+import glob
 
 import numpy as npy
 
@@ -780,7 +781,7 @@ def make_points(workspace, pointArray, outFC):
 ## LCP Shapefile Functions #################################################
 ############################################################################
 
-def create_lcp_shapefile(linktable, sourceCore, targetCore, lcpLoop):
+def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
     """Creates lcp shapefile.
 
     Shows locations of least-cost path lines attributed with corridor
@@ -788,14 +789,17 @@ def create_lcp_shapefile(linktable, sourceCore, targetCore, lcpLoop):
 
     """
     try:
+        gp.workspace = ws
         rows = get_links_from_core_pairs(linktable, sourceCore, targetCore)
         link = rows[0]
 
-        lcpline = os.path.join(Cfg.SCRATCHDIR, "lcpline.shp")
-        gp.RasterToPolyline_conversion("lcp", lcpline, "NODATA", "",
+        lcpline = os.path.join(ws, "lcpline.shp")
+        lcpRas = os.path.join(ws, "lcp")
+#        gprint(lcpRas)
+        gp.RasterToPolyline_conversion(lcpRas, lcpline, "NODATA", "",
                                            "NO_SIMPLIFY")
 
-        lcplineDslv = os.path.join(Cfg.SCRATCHDIR, "lcplineDslv.shp")
+        lcplineDslv = os.path.join(ws, "lcplineDslv.shp")
         gp.Dissolve_management(lcpline, lcplineDslv)
 
         gp.AddField_management(lcplineDslv, "Link_ID", "SHORT", "5")
@@ -1113,23 +1117,6 @@ def relabel(oldlabel, offset=0): # same as gapdt
     newlabel[perm] = npy.copy(newlabel)
     return newlabel - 1 + offset
 
-    
-
-# def conditional_hooking(D, star, u, v):
-    # """Utility for components code
-
-    # From gapdt.py by Viral Shah
-
-    # """
-    # Du = D[u]
-    # Dv = D[v]
-
-    # hook = npy.where((Du == D[Du]) & (Dv < Du))
-    # Du = Du[hook]
-    # Dv = Dv[hook]
-
-    # D[Du] = Dv
-    # return D
 
 def conditional_hooking (D, star, u, v):
     """Utility for components code (updated Jan 2012)
@@ -1144,21 +1131,6 @@ def conditional_hooking (D, star, u, v):
     D[Du[hook]] = Dv[hook]
 
     return D
-
-
-# def unconditional_hookingold(D, star, u, v):
-    # """Utility for components code
-
-    # From gapdt.py by Viral Shah
-
-    # """
-    # Du = D[u]
-    # Dv = D[v]
-
-    # hook = npy.where((star[u] == 1) & (Du != Dv))
-    # D[Du[hook]] = Dv[hook]
-    # return D
-
 
 def unconditional_hooking (D, star, u, v):
     """Utility for components code (updated Jan 2012)
@@ -1644,7 +1616,7 @@ def delete_dir(dir):
             pass
     try: #Try again following cleanup attempt
         gp.RefreshCatalog(dir)
-        shutil.rmtree(dir)       
+        shutil.rmtree(dir) 
     except:
         pass
     return
@@ -1653,7 +1625,7 @@ def clean_out_workspace(ws):
     try:
         if gp.exists(ws):
             gp.workspace = ws
-            gprint('\nDeleting contents of '+str(ws))
+            # gprint('\nDeleting contents of '+str(ws))
             fcs = gp.ListFeatureClasses()
             for fc in fcs:
                 fcPath = os.path.join(ws,fc)
@@ -1661,14 +1633,22 @@ def clean_out_workspace(ws):
                     gp.delete_management(fcPath)
                 except:
                     pass
-            rasters = gp.ListRasters()
 
+            rasters = gp.ListRasters()
             for raster in rasters:
                 rasterPath = os.path.join(ws,raster)
                 try:
                     gp.delete_management(rasterPath)
-                except:
-                    pass
+                except: pass
+
+            fileList = os.listdir(ws)
+            for item in fileList:
+                try:
+                    os.remove(os.path.join(ws,item))
+                except: # if directory
+                    try:
+                        shutil.rmtree(os.path.join(ws,item))
+                    except: pass                    
         gc.collect() 
         return
     except arcgisscripting.ExecuteError:
@@ -1680,6 +1660,20 @@ def delete_data(dataset):
     try:
         if gp.Exists(dataset):
             gp.delete_management(dataset)
+            
+            # Users are reporting stray vat and other files.  Below is attempt
+            # to rid directory of them as they may be causing grid write 
+            # problems.
+            dir = os.path.dirname(dataset)
+            base = os.path.basename(dataset)
+            baseName, extension = os.path.splitext(base)
+            basepath = os.path.join(dir,baseName)
+            fileList = glob.glob(basepath + '.*')
+            for item in fileList:
+                try:
+                    os.remove(item)
+                except:
+                    pass
             gc.collect()             
     except:
         pass
@@ -1831,7 +1825,9 @@ def clean_up_link_tables(step):
                                     str(stepNum) + '.csv')
             if os.path.isfile(filename):
                 os.remove(filename)
-
+            lcpFC = os.path.join(Cfg.DATAPASSDIR,'lcpLines_s' +
+                                    str(stepNum) + '.shp')
+            delete_data(lcpFC)                        
         filename = os.path.join(Cfg.OUTPUTDIR, 'linkTable_final.csv')
         if os.path.isfile(filename):
             os.remove(filename)
@@ -1862,6 +1858,8 @@ def copy_final_link_maps(step):
                                     str(step) + '.shp')
 
         if not gp.exists(Cfg.LINKMAPGDB):
+            gprint(os.path.dirname(Cfg.LINKMAPGDB))
+            gprint(os.path.basename(Cfg.LINKMAPGDB))
             gp.createfilegdb(os.path.dirname(Cfg.LINKMAPGDB), 
                              os.path.basename(Cfg.LINKMAPGDB))
 
@@ -1915,7 +1913,7 @@ def copy_final_link_maps(step):
             oldLinkFile = os.path.join(Cfg.OUTPUTDIR, PREFIX + '_sticks_s' 
                                         + str(i) + '.shp')
             logLinkFile = os.path.join(Cfg.LOGLINKMAPGDB, PREFIX + '_sticks_s' 
-                                        + str(i) + '.shp')
+                                        + str(i))
             if gp.exists(oldLinkFile):
                 try:
                     move_map(oldLinkFile, logLinkFile)
@@ -1929,7 +1927,7 @@ def copy_final_link_maps(step):
             oldLcpShapeFile = os.path.join(Cfg.OUTPUTDIR, PREFIX + '_lcpLines_s'
                                            + str(i) + '.shp')
             logLcpShapeFile = os.path.join(Cfg.LOGLINKMAPGDB, PREFIX + '_lcpLines_s' +
-                                           str(i) + '.shp')
+                                           str(i))
             if gp.exists(oldLcpShapeFile):
                 try:
                     move_map(oldLcpShapeFile, logLcpShapeFile)

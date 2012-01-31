@@ -9,7 +9,7 @@ adjacencies of core areas
 """
 
 __filename__ = "s2_buildNetwork.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os.path as path
 
@@ -351,7 +351,8 @@ def generate_distance_file(CWDADJFILE,EUCADJFILE):
                            # "NO_LOCATION", "NO_ANGLE", "ALL", "0")
         # start_time = lu.elapsed_time(start_time)
         
-        gprint('There are '+str(len(adjList))+' core pairs to process.')
+        gprint('There are '+str(len(adjList))+' adjacent core pairs to '
+               'process.')
         pctDone = 0
         start_time = time.clock()
         for x in range(0,len(adjList)):

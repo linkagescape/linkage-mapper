@@ -6,7 +6,7 @@
 """
 
 __filename__ = "s7_centrality.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os.path as path
 import os

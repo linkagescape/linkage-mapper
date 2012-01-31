@@ -11,7 +11,7 @@ Numpy
 """
 
 __filename__ = "lm_master.py"
-__version__ = "0.7.7beta"
+__version__ = "0.7.7beta-a"
 
 import os.path as path
 import os
@@ -44,9 +44,11 @@ def lm_master():
 
     """
     try:
-
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
+        gp.OverwriteOutput = True
+        gp.pyramid = "NONE"
+        gp.rasterstatistics = "NONE"
         
         # Create output directories if they don't exist
         if gp.Exists(Cfg.OUTPUTDIR):
@@ -55,9 +57,13 @@ def lm_master():
         lu.createfolder(Cfg.LOGDIR)
         lu.createfolder(Cfg.MESSAGEDIR)
         lu.createfolder(Cfg.DATAPASSDIR)
-        # Create fresh scratch directory
+        # Create fresh scratch directory if not restarting in midst of step 3
+        # if Cfg.S2EUCDISTFILE != None:
+            # if Cfg.S2EUCDISTFILE.lower() == "restart": pass
+        # else:        
         lu.delete_dir(Cfg.SCRATCHDIR)
         lu.createfolder(Cfg.SCRATCHDIR)
+        lu.createfolder(Cfg.ARCSCRATCHDIR)
         
         Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
         
@@ -93,27 +99,23 @@ def lm_master():
             linkTableFile = lu.get_prev_step_link_table(step=5)  # Check exists
         lu.clean_up_link_tables(firststep)
 
-        gp.OverwriteOutput = True
-        
-        
         # Make a local grid copy of resistance raster for cwd runs-
         # will run faster than gdb.
         # Don't know if raster is in a gdb if entered from TOC
         lu.delete_data(Cfg.RESRAST)
-        gp.pyramid = "NONE"
-        gp.rasterstatistics = "NONE"
-        
         gprint('\nMaking temporary copy of resistance raster for this run.')
         gp.Extent = gp.Describe(Cfg.RESRAST_IN).Extent        
         gp.SnapRaster = Cfg.RESRAST_IN
-        gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)  
-
-        # gp.Extent = gp.Describe(Cfg.RESRAST).Extent        
-        # gp.SnapRaster = Cfg.RESRAST
-
+        try:
+            gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)  
+        except: # This sometimes fails due to bad file locks
+            gprint('Copy failed, using original raster.')
+            Cfg.RESRAST = Cfg.RESRAST_IN 
+        
         if (Cfg.STEP1) or (Cfg.STEP3):
             # Make core raster file
             gprint('\nMaking temporary raster of core file for this run.')
+            lu.delete_data(Cfg.CORERAS)
             gp.FeatureToRaster_conversion(Cfg.COREFC, Cfg.COREFN, 
                           Cfg.CORERAS, gp.Describe(Cfg.RESRAST).MeanCellHeight)        
          # #   gp.RasterToPolygon_conversion(Cfg.CORERAS, Cfg.COREFC, 
@@ -123,14 +125,15 @@ def lm_master():
             if gp.Exists(finalgdb) and Cfg.STEP5:
                 try:
                     lu.clean_out_workspace(finalgdb)
-
+                    lu.delete_data(finalgdb)
                 except:
                     lu.dashline(1)
                     msg = ('ERROR: Could not remove contents of geodatabase ' +
                            finalgdb + '. Is it open in ArcMap?\n You may '
                            'need to re-start ArcMap to release the file lock.')
                     lu.raise_error(msg)
-                    
+                
+                
         # Delete final output geodatabase
         delete_final_gdb(Cfg.OUTPUTGDB_OLD)
         delete_final_gdb(Cfg.OUTPUTGDB)
