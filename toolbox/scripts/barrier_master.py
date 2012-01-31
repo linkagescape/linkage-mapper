@@ -56,11 +56,7 @@ def bar_master():
 
         gprint('\nMaking local copy of resistance raster.')
         lu.delete_data(Cfg.RESRAST)
-        try:
-            arcpy.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
-        except: # This sometimes fails due to bad file locks
-            gprint('Copy failed, using original raster.')
-            Cfg.RESRAST = Cfg.RESRAST_IN        
+        arcpy.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
      
         s6.STEP6_calc_barriers()
         
