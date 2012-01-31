@@ -78,11 +78,7 @@ def circuitscape_master():
             arcpy.env.extent = Cfg.RESRAST_IN
             arcpy.env.snapRaster = Cfg.RESRAST_IN
             gprint('\nMaking local copy of resistance raster.')
-            try:
-                gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
-            except: # This sometimes fails due to bad file locks
-                gprint('Copy failed, using original resistance raster.')
-                Cfg.RESRAST = Cfg.RESRAST_IN
+            gp.CopyRaster_management(Cfg.RESRAST_IN, Cfg.RESRAST)          
                     
         
         if Cfg.DOCENTRALITY == True:             
