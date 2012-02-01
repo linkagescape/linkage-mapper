@@ -9,9 +9,6 @@ nearest neighboring cluster
 
 """
 
-__filename__ = "s4_refineNetwork.py"
-__version__ = "0.7.7beta-a"
-
 # Note: because cwds calculated in step 3, constellation links just connect
 # core pairs, not all cores in 1 constellation to all cores in another.
 # Could use previous (now discarded) combo code to mosaic CWDS if wanted.
@@ -25,7 +22,10 @@ import numpy as npy
 from lm_config import Config as Cfg
 import lm_util as lu
 
+_filename = path.basename(__file__)
+
 gprint = lu.gprint
+
 
 def STEP4_refine_network():
     """Allows user to only connect each core area to its N
@@ -36,7 +36,7 @@ def STEP4_refine_network():
     try:
 
         lu.dashline(1)
-        Cfg.gp.addmessage('Running script ' + __filename__)
+        Cfg.gp.addmessage('Running script ' + _filename)
         Cfg.gp.Workspace = Cfg.OUTPUTDIR
 
         linkTableFile = lu.get_prev_step_link_table(step=4)
@@ -217,11 +217,11 @@ def STEP4_refine_network():
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         Cfg.gp.addmessage('****Failed in step 4. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         Cfg.gp.addmessage('****Failed in step 4. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
     return
