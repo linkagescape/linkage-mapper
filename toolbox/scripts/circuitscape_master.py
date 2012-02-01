@@ -9,8 +9,6 @@ Numpy
 
 """
 
-__filename__ = "Circuitscape_master.py"
-__version__ = "0.7.7beta-a"
 
 import os.path as path
 import arcgisscripting
@@ -22,6 +20,8 @@ import os
 
 import s8_pinchpoints as s8 
 import s7_centrality as s7
+
+_filename = path.basename(__file__)
 
 gp = Cfg.gp
 if not Cfg.LOGMESSAGES:
@@ -118,11 +118,11 @@ def circuitscape_master():
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
        
         
 if __name__ == "__main__":

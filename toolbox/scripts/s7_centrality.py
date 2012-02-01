@@ -5,9 +5,6 @@
        s3_calcCwds.py.
 """
 
-__filename__ = "s7_centrality.py"
-__version__ = "0.7.7beta-a"
-
 import os.path as path
 import os
 import time
@@ -19,6 +16,10 @@ from lm_config import Config as Cfg
 import lm_util as lu
 
 import arcpy
+
+_filename = path.basename(__file__)
+
+arcpy.CheckOutExtension("spatial")
 
 if not Cfg.LOGMESSAGES:
     gprint = arcpy.AddMessage
@@ -40,7 +41,7 @@ def STEP7_calc_centrality():
     """
     try:        
         lu.dashline(0)
-        gprint('Running script ' + __filename__)
+        gprint('Running script ' + _filename)
             
         arcpy.env.workspace = Cfg.SCRATCHDIR
 
@@ -221,13 +222,13 @@ def STEP7_calc_centrality():
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
     return
     
@@ -274,7 +275,7 @@ def make_graph_from_list(graphList):
     except:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
             
     
     

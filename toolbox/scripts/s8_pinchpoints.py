@@ -5,9 +5,6 @@
        s3_calcCwds.py.
 """
 
-__filename__ = "s8_pinchpoints.py"
-__version__ = "0.7.7beta-a"
-
 import os.path as path
 import os
 import time
@@ -20,6 +17,10 @@ import gc
 
 import arcpy
 from arcpy.sa import *
+
+_filename = path.basename(__file__)
+
+arcpy.CheckOutExtension("spatial")
 from lm_config import Config as Cfg
 import lm_util as lu
 
@@ -53,7 +54,7 @@ def STEP8_calc_pinchpoints():
     try:     
         gc.collect()
         lu.dashline(0)
-        gprint('Running script ' + __filename__)        
+        gprint('Running script ' + _filename)        
 
         CSPATH = lu.get_cs_path()
         if CSPATH == None:
@@ -454,13 +455,13 @@ def STEP8_calc_pinchpoints():
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
         
         
@@ -484,13 +485,13 @@ def export_ras_to_npy(raster,npyFile):
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
     
 def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     try:
@@ -509,13 +510,13 @@ def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
     
 def write_header(raster,numpyArray,numpyFile):
         ncols=numpyArray.shape[1]

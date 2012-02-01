@@ -8,9 +8,6 @@
     linkage mapper step 3.
 """
 
-__filename__ = "s6_barriers.py"
-__version__ = "0.7.7beta-a"
-
 import os.path as path
 import time
 import shutil
@@ -22,6 +19,10 @@ import lm_util as lu
 
 import arcpy
 from arcpy.sa import *
+
+_filename = path.basename(__file__)
+
+arcpy.CheckOutExtension("spatial")
 
 # Set local references to objects and constants from config file
 if not Cfg.LOGMESSAGES:
@@ -47,7 +48,7 @@ def STEP6_calc_barriers():
     
     
         lu.dashline(0)
-        gprint('Running script ' + __filename__)
+        gprint('Running script ' + _filename)
 
         startRadius = float(Cfg.STARTRADIUS) 
         endRadius = float(Cfg.ENDRADIUS) 
@@ -408,13 +409,13 @@ def STEP6_calc_barriers():
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 6. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 6. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
     return
     

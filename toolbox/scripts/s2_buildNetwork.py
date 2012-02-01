@@ -8,9 +8,6 @@ adjacencies of core areas
 
 """
 
-__filename__ = "s2_buildNetwork.py"
-__version__ = "0.7.7beta-a"
-
 import os.path as path
 
 import arcgisscripting
@@ -20,6 +17,9 @@ import gc
 
 from lm_config import Config as Cfg
 import lm_util as lu
+
+_filename = path.basename(__file__)
+
 
 ###
 SIMPLIFY_CORES = Cfg.SIMPLIFY_CORES
@@ -46,7 +46,7 @@ def STEP2_build_network():
     """
     try:
         lu.dashline(1)
-        gprint('Running script ' + __filename__)
+        gprint('Running script ' + _filename)
         outlinkTableFile = lu.get_this_step_link_table(step=2)
 
         # Warning flag for missing distances in conefor file
@@ -263,13 +263,13 @@ def STEP2_build_network():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
     return
 
@@ -290,13 +290,13 @@ def get_adj_list(adjFile):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
     
     
 def generate_distance_file(CWDADJFILE,EUCADJFILE):
@@ -393,13 +393,13 @@ def generate_distance_file(CWDADJFILE,EUCADJFILE):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
         
 def print_conefor_warning():
@@ -445,13 +445,13 @@ def get_full_adj_list(CWDADJFILE,EUCADJFILE):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
 
 

@@ -7,15 +7,14 @@ Assigns input parameters from ToolBox to variables, and sets constants
 
 """
 
-__filename__ = "lm_config.py"
-__version__ = "0.7.7beta-a"
-
 import os
 import os.path as path
 import sys
 
 import arcgisscripting
+import lm_version as ver
 
+_filename = path.basename(__file__)
 
 def str2bool(pstr):
     """Convert ESRI boolean string to Python boolean type"""
@@ -57,6 +56,8 @@ import time, sys, os, string
     
 class Config():
     """Class to enscapulate all global constants"""
+    
+    releaseNum = ver.releaseNum
 
     # Model inputs from ArcGIS tool
     PARAMS = sys.argv
