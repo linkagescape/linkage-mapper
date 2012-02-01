@@ -9,8 +9,6 @@ extent of cwd calculations and speed computation.
 
 """
 
-__filename__ = "s3_calcCwds.py"
-__version__ = "0.7.7beta-a"
 
 import os.path as path
 import shutil
@@ -20,10 +18,12 @@ import numpy as npy
 from lm_config import Config as Cfg
 import lm_util as lu
 
+_filename = path.basename(__file__)
     
 try:
     import arcpy
     from arcpy.sa import *
+    arcpy.CheckOutExtension("spatial")
     gp=arcpy.gp
     arcgisscripting = arcpy
 except:
@@ -58,7 +58,7 @@ def write_cores_to_map(x, coresToMap):
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
     
 
@@ -70,7 +70,7 @@ def STEP3_calc_cwds():
     """
     try:
         lu.dashline(1)
-        gprint('Running script ' + __filename__)
+        gprint('Running script ' + _filename)
         lu.dashline(0)
 
         # Super secret setting to re-start failed run.  Enter 'RESTART' as the
@@ -431,13 +431,13 @@ def STEP3_calc_cwds():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
     return
 
@@ -792,13 +792,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
             
 def test_for_intermediate_core(workspace,lcpRas,corePairRas):
@@ -845,13 +845,13 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.raise_python_error(__filename__)    
+        lu.print_python_error(_filename)    
 
 def delay_restart(failures):
     gprint('That was try #' + str(failures) + ' of 20 for this core area.')

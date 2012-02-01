@@ -8,9 +8,6 @@ cost-weighted distance space
 
 """
 
-__filename__ = "s1_getAdjacencies.py"
-__version__ = "0.7.7beta-a"
-
 import shutil
 import time
 import os.path as path
@@ -21,6 +18,8 @@ import arcgisscripting
 
 from lm_config import Config as Cfg
 import lm_util as lu
+
+_filename = path.basename(__file__)
 
 gp = Cfg.gp
 if not Cfg.LOGMESSAGES:
@@ -39,7 +38,7 @@ def STEP1_get_adjacencies():
     """
     try:
         lu.dashline(1)
-        gprint('Running script ' + __filename__)        
+        gprint('Running script ' + _filename)        
 
         # Default behavior is to use same cell size as resistance raster,
         # but this can be changed here.
@@ -95,13 +94,13 @@ def STEP1_get_adjacencies():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
     return
 
 
@@ -179,13 +178,13 @@ def cwadjacency():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
 
 def euadjacency():
@@ -248,14 +247,14 @@ def euadjacency():
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
 
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
 
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
 
 def adjshiftwrite(araster, csvfile, logfile):

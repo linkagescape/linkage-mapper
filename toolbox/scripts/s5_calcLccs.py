@@ -8,9 +8,6 @@ pairs specified in linkTable and cwd layers
 
 """
 
-__filename__ = "s5_calcLccs.py"
-__version__ = "0.7.7beta-a"
-
 import os.path as path
 import time
 import shutil
@@ -20,11 +17,14 @@ import numpy as npy
 from lm_config import Config as Cfg
 import lm_util as lu
 
+_filename = path.basename(__file__)
+
 try:
     import arcpy
     gp = arcpy.gp
     from arcpy.sa import *
     arcgisscripting = arcpy
+    arcpy.CheckOutExtension("spatial")
 except:
     arcpy = False
     gp = Cfg.gp
@@ -57,7 +57,7 @@ def STEP5_calc_lccs():
     except:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
         
 def calc_lccs(normalize):
@@ -77,7 +77,7 @@ def calc_lccs(normalize):
             writeTruncRaster = False
 
         lu.dashline(1)
-        gprint('Running script ' + __filename__)
+        gprint('Running script ' + _filename)
         linkTableFile = lu.get_prev_step_link_table(step=5)
         gp.workspace = Cfg.SCRATCHDIR
 
@@ -440,13 +440,13 @@ def calc_lccs(normalize):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
     return
 

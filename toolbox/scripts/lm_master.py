@@ -10,9 +10,6 @@ Numpy
 
 """
 
-__filename__ = "lm_master.py"
-__version__ = "0.7.7beta-a"
-
 import os.path as path
 import os
 
@@ -26,6 +23,10 @@ import s2_buildNetwork as s2
 import s3_calcCwds as s3
 import s4_refineNetwork as s4
 import s5_calcLccs as s5
+
+_filename = path.basename(__file__)
+#__version__ = "$Revision$"
+
 
 gp = Cfg.gp
 
@@ -68,7 +69,7 @@ def lm_master():
         Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
         
         installD = gp.GetInstallInfo("desktop")        
-        gprint('\nLinkage Mapper Version ' + str(__version__))
+        gprint('\nLinkage Mapper Version ' + Cfg.releaseNum)
         try:
             gprint('on ArcGIS '+ installD['ProductName'] + ' ' + 
                 installD['Version'] + ' Service Pack ' + installD['SPNumber'])
@@ -165,11 +166,11 @@ def lm_master():
         return 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
 if __name__ == "__main__":
     lm_master()

@@ -9,9 +9,6 @@ Numpy
 
 """
 
-__filename__ = "barrier_master.py"
-__version__ = "0.7.7beta-a"
-
 import os.path as path
 import arcgisscripting
 from lm_config import Config as Cfg
@@ -19,6 +16,8 @@ import lm_util as lu
 import s6_barriers as s6 
 
 import arcpy
+
+_filename = path.basename(__file__)
 
 if not Cfg.LOGMESSAGES:
     gprint = arcpy.AddMessage
@@ -69,11 +68,11 @@ def bar_master():
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        lu.raise_geoproc_error(__filename__)
+        lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
-        lu.raise_python_error(__filename__)
+        lu.print_python_error(_filename)
 
 if __name__ == "__main__":
     bar_master()
