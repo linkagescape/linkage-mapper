@@ -5,6 +5,7 @@
 
 import os.path as path
 import os
+import inspect
 import sys
 import time
 import traceback
@@ -15,7 +16,7 @@ import glob
 
 import numpy as npy
 
-_filename = path.basename(__file__)
+_filename = 'lm_util.py'
 
 # arcpy- will require some rejiggering e.g. add field.
 # try:
@@ -26,8 +27,12 @@ _filename = path.basename(__file__)
     # arcgisscripting = arcpy
 import arcgisscripting
 
-
-
+try:
+    import arcpy
+    arc10 = True
+except:
+    arc10 = False
+    
 from lm_config import Config as Cfg
 
 gp = Cfg.gp
@@ -518,7 +523,7 @@ def get_allocs_from_shift(workspace, alloc, alloc_sh):
             try:
                 exec statement
             except:
-                count, tryAgain = hiccup_test(count, statement)
+                count, tryAgain = retry_arc_error(count, statement)
                 if not tryAgain:
                     exec statement
             else:
@@ -1304,7 +1309,7 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
             outFile.write("\n# Step 3 - Calculate Cost-Weighted Distances and "
                            "Least-Cost Paths: " + str(Cfg.STEP3))
             outFile.write("\n# Drop Corridors that Intersect Core Areas: "
-                           + Cfg.S3DROPLCCS)
+                           + str(Cfg.S3DROPLCCS))
             outFile.write("\n# Step 4 - Refine Network: " + str(Cfg.STEP4))
             outFile.write("\n# Option A - Number of Connected Nearest Neighbors: "
                            + str(Cfg.S4MAXNN))
@@ -1549,7 +1554,7 @@ def write_link_maps(linkTableFile, step):
 ## File and Path Management Functions ######################################
 ############################################################################
     
-def createfolder(lmfolder):
+def create_dir(lmfolder):
     """Creates folder if it doesn't exist."""
     if not os.path.exists(lmfolder):
         gp.CreateFolder_management(os.path.dirname(lmfolder),
@@ -1625,6 +1630,7 @@ def clean_out_workspace(ws):
     try:
         if gp.exists(ws):
             gp.workspace = ws
+            gp.OverwriteOutput = True
             # gprint('\nDeleting contents of '+str(ws))
             fcs = gp.ListFeatureClasses()
             for fc in fcs:
@@ -1649,7 +1655,8 @@ def clean_out_workspace(ws):
                     try:
                         shutil.rmtree(os.path.join(ws,item))
                     except: pass                    
-        gc.collect() 
+        gc.collect()
+        gp.refreshcatalog(os.path.dirname(ws))
         return
     except arcgisscripting.ExecuteError:
         print_geoproc_error(_filename)
@@ -1678,6 +1685,16 @@ def delete_data(dataset):
     except:
         pass
 
+
+# def delete_readonly(path):
+    # gp.refreshcatalog(path)
+    # import stat
+    # fileList = os.listdir(path)
+    # for item in fileList:
+        # os.chmod(os.path.join(path,item), stat.S_IWRITE)
+        # os.remove(os.path.join(path,item))
+    # os.chmod(path, stat.S_IWRITE)
+    # os.rmdir(path)
 
 def get_cwd_path(core):
     """Returns the path for the cwd raster corresponding to a core area """
@@ -1858,8 +1875,6 @@ def copy_final_link_maps(step):
                                     str(step) + '.shp')
 
         if not gp.exists(Cfg.LINKMAPGDB):
-            gprint(os.path.dirname(Cfg.LINKMAPGDB))
-            gprint(os.path.basename(Cfg.LINKMAPGDB))
             gp.createfilegdb(os.path.dirname(Cfg.LINKMAPGDB), 
                              os.path.basename(Cfg.LINKMAPGDB))
 
@@ -1974,15 +1989,36 @@ def print_failures(statement, failures):
     dashline(1)
     gprint('***Problem encountered executing statement:')
     gprint('"' + statement + '"')  
+    if gp.MaxSeverity > 1:
+        gp.AddWarning("Here's the error being reported: ")
+        for msg in range(0, gp.MessageCount):
+            if gp.GetSeverity(msg) == 2:
+                gp.AddReturnMessage(msg)
+
+    else:
+        tb = sys.exc_info()[2]  # get the traceback object
+        # tbinfo contains the error's line number and the code
+        tbinfo = traceback.format_tb(tb)[0]
+        line = tbinfo.split(", ")[1]
+        filename = inspect.getfile( inspect.currentframe() )
+        gp.AddWarning("The following error is being reported at "
+                        + line + " of " + filename + ":")
+        err = traceback.format_exc().splitlines()[-1]
+        gp.AddWarning(err + '\n')
+        write_log(err)        
+        
+    failures = failures + 1
+    return failures
+
+def print_drive_warning():
     drive, depth = get_dir_depth(Cfg.PROJECTDIR)
     if drive.lower() != 'c' or depth > 3:
-        gprint('(Note: ArcGIS errors are more likely when writing to remote '
+        gp.AddWarning('(Note: ArcGIS errors are more likely when writing to remote '
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
             'They may also result from conflicts with anti-virus '
             'software.)\n')
-    failures = failures + 1
-    return failures
+
 
 def get_dir_depth(dir):    
     import string
@@ -2064,7 +2100,7 @@ def check_cores(FC,FN):
     
     
     
-def hiccup_test(count, statement):
+def retry_arc_error(count, statement):
     """Re-tries ArcGIS calls in case of server problems or other 'hiccups'."""
     try:
         if count < 20:
@@ -2075,21 +2111,30 @@ def hiccup_test(count, statement):
             else:
                 sleepTime = 60
             gp.AddWarning('Failed to execute ' + statement + ' on try '
-                              '#' + str(count) + '.\nCould be an ArcGIS '
-                              'hiccup.')
-            drive, depth = get_dir_depth(Cfg.PROJECTDIR)
-            if drive.lower() != 'c' or depth > 3:
-                gp.AddWarning('(Note: ArcGIS errors are more likely when writing '
-                    'to remote drives or deep file structures. We recommend shallow '
-                    'project directories on local drives, like C:\Puma.)\n'
-                    'It is possible they also result from conflicts with '
-                    'anti-virus software.\n')
+                              '#' + str(count) + '.\n')
                     
             if gp.MaxSeverity > 1:
-                gp.AddWarning("Here's the error being reported: ")
+                gp.AddWarning("The following ArcGIS error is being reported: ")
                 for msg in range(0, gp.MessageCount):
                     if gp.GetSeverity(msg) == 2:
                         gp.AddReturnMessage(msg)
+                        #gp.AddWarning(msg) # won't work for 9.3
+                print_drive_warning()
+
+            else:
+                tb = sys.exc_info()[2]  # get the traceback object
+                # tbinfo contains the error's line number and the code
+                tbinfo = traceback.format_tb(tb)[0]
+                line = tbinfo.split(", ")[1]
+                filename = inspect.getfile( inspect.currentframe() )
+                msg = ("The following error is being reported at "
+                                + line + " of " + filename + ":")
+                err = traceback.format_exc().splitlines()[-1]
+                gp.AddWarning(msg)
+                gp.AddWarning(err + '\n')
+                write_log(msg)     
+                write_log(err) 
+                
             gp.AddWarning("Will try again. ")
             gp.AddWarning('---------TRYING AGAIN IN ' +
                                    str(int(sleepTime)) + ' SECONDS---------\n')
@@ -2112,10 +2157,8 @@ def hiccup_test(count, statement):
 def snooze(sleepTime):
     for i in range(1,int(sleepTime)+1):
         time.sleep(1)
-        try:
-            gp.refreshcatalog(Cfg.PROJECTDIR)  # Dummy operation to give user 
-        except:                                # ability to cancel
-            pass
+        # Dummy operations to give user ability to cancel:
+        installD = gp.GetInstallInfo("desktop")  
             
 def print_geoproc_warning(filename):
     """Handle geoprocessor errors and provide details to user if re-trying"""
@@ -2141,14 +2184,14 @@ def print_python_warning(filename):
     # tbinfo contains the error's line number and the code
     tbinfo = traceback.format_tb(tb)[0]
     line = tbinfo.split(", ")[1]
-
+    filename = inspect.getfile( inspect.currentframe() )
+    msg=("The following error is being reported at "
+                    + line + " of " + filename + ":")
     err = traceback.format_exc().splitlines()[-1]
-    msg = ("Python error on **" + line + "** of " + filename + " "
-                "in Linkage Mapper Version " + str(Cfg.releaseNum) + ":")
     gp.AddWarning(msg)
-    gp.AddWarning(err)
+    gp.AddWarning(err + '\n')
     write_log(msg)
-    write_log(err)
+    write_log(err)        
     exit(1)
 
     

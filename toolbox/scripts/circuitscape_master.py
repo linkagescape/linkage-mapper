@@ -34,8 +34,8 @@ def circuitscape_master():
     
     """
     try:
-        lu.createfolder(Cfg.LOGDIR)
-        lu.createfolder(Cfg.MESSAGEDIR)
+        lu.create_dir(Cfg.LOGDIR)
+        lu.create_dir(Cfg.MESSAGEDIR)
         Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
         
         # Check core ID field.
@@ -55,8 +55,8 @@ def circuitscape_master():
                     'network centrality analysis.')
             lu.raise_error(msg)
 
-        lu.createfolder(Cfg.SCRATCHDIR) 
-        lu.createfolder(Cfg.ARCSCRATCHDIR)
+        lu.create_dir(Cfg.SCRATCHDIR) 
+        lu.create_dir(Cfg.ARCSCRATCHDIR)
         
         if Cfg.DO_ALLPAIRS == True:
             #  Fixme: move raster path to config
@@ -85,7 +85,7 @@ def circuitscape_master():
             gprint("Creating output folder: " + Cfg.CENTRALITYBASEDIR)
             if path.exists(Cfg.CENTRALITYBASEDIR):
                 shutil.rmtree(Cfg.CENTRALITYBASEDIR)
-            lu.createfolder(Cfg.CENTRALITYBASEDIR)
+            lu.create_dir(Cfg.CENTRALITYBASEDIR)
             gp.CreateFolder_management(Cfg.CENTRALITYBASEDIR, 
                                         Cfg.CIRCUITOUTPUTDIR_NM)
             gp.CreateFolder_management(Cfg.CENTRALITYBASEDIR, 
@@ -99,7 +99,7 @@ def circuitscape_master():
         if Cfg.DOPINCH == True:     
             gprint("Creating output folder: " + Cfg.CIRCUITBASEDIR)
             lu.delete_dir(Cfg.CIRCUITBASEDIR)
-            lu.createfolder(Cfg.CIRCUITBASEDIR)
+            lu.create_dir(Cfg.CIRCUITBASEDIR)
             gp.CreateFolder_management(Cfg.CIRCUITBASEDIR, 
                                         Cfg.CIRCUITOUTPUTDIR_NM)
             gp.CreateFolder_management(Cfg.CIRCUITBASEDIR, 

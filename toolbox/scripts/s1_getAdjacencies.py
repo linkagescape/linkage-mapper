@@ -19,7 +19,7 @@ import arcgisscripting
 from lm_config import Config as Cfg
 import lm_util as lu
 
-_filename = path.basename(__file__)
+_filename = 's1_getAdjacencies.py'
 
 gp = Cfg.gp
 if not Cfg.LOGMESSAGES:
@@ -162,7 +162,7 @@ def cwadjacency():
             try:
                 exec statement
             except:
-                count, tryAgain = lu.hiccup_test(count, statement)
+                count, tryAgain = lu.retry_arc_error(count, statement)
                 if not tryAgain:
                     exec statement
             else:
@@ -226,7 +226,7 @@ def euadjacency():
             try:
                 exec statement
             except:
-                count, tryAgain = lu.hiccup_test(count, statement)
+                count, tryAgain = lu.retry_arc_error(count, statement)
                 if not tryAgain:
                     exec statement
             else:

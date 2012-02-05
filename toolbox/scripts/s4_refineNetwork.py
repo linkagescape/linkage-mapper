@@ -22,7 +22,7 @@ import numpy as npy
 from lm_config import Config as Cfg
 import lm_util as lu
 
-_filename = path.basename(__file__)
+_filename = 's4_refineNetwork.py'
 
 gprint = lu.gprint
 

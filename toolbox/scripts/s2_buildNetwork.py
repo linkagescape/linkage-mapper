@@ -18,7 +18,7 @@ import gc
 from lm_config import Config as Cfg
 import lm_util as lu
 
-_filename = path.basename(__file__)
+_filename = 's2_buildNetwork.py'
 
 
 ###

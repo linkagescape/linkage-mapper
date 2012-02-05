@@ -14,7 +14,7 @@ import sys
 import arcgisscripting
 import lm_version as ver
 
-_filename = path.basename(__file__)
+_filename = 'lm_config.py'
 
 def str2bool(pstr):
     """Convert ESRI boolean string to Python boolean type"""
@@ -82,7 +82,7 @@ class Config():
         S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[7])       
         S2EUCDISTFILE = nullstring(sys.argv[8])       
         STEP3 = str2bool(sys.argv[9])
-        S3DROPLCCS = sys.argv[10]  # Drop LCC's passing through intermediate cores      
+        S3DROPLCCS = str2bool(sys.argv[10])  # Drop LCC's passing through intermediate cores      
         STEP4 = str2bool(sys.argv[11])
         S4MAXNN = int(sys.argv[12])  # No of connected nearest neighbors
         S4DISTTYPE_CW, S4DISTTYPE_EU = setadjmeth(sys.argv[13])  # NN Unit

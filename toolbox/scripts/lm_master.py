@@ -10,11 +10,11 @@ Numpy
 
 """
 
-import os.path as path
-import os
 
 import arcgisscripting
 
+import os.path as path
+import os
 import numpy as npy
 from lm_config import Config as Cfg
 import lm_util as lu
@@ -24,7 +24,7 @@ import s3_calcCwds as s3
 import s4_refineNetwork as s4
 import s5_calcLccs as s5
 
-_filename = path.basename(__file__)
+_filename = 'lm_master.py'
 #__version__ = "$Revision$"
 
 
@@ -45,6 +45,7 @@ def lm_master():
 
     """
     try:
+        
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
         gp.OverwriteOutput = True
@@ -54,17 +55,17 @@ def lm_master():
         # Create output directories if they don't exist
         if gp.Exists(Cfg.OUTPUTDIR):
             gp.RefreshCatalog(Cfg.OUTPUTDIR)
-        lu.createfolder(Cfg.OUTPUTDIR)
-        lu.createfolder(Cfg.LOGDIR)
-        lu.createfolder(Cfg.MESSAGEDIR)
-        lu.createfolder(Cfg.DATAPASSDIR)
+        lu.create_dir(Cfg.OUTPUTDIR)
+        lu.create_dir(Cfg.LOGDIR)
+        lu.create_dir(Cfg.MESSAGEDIR)
+        lu.create_dir(Cfg.DATAPASSDIR)
         # Create fresh scratch directory if not restarting in midst of step 3
         # if Cfg.S2EUCDISTFILE != None:
             # if Cfg.S2EUCDISTFILE.lower() == "restart": pass
         # else:        
         lu.delete_dir(Cfg.SCRATCHDIR)
-        lu.createfolder(Cfg.SCRATCHDIR)
-        lu.createfolder(Cfg.ARCSCRATCHDIR)
+        lu.create_dir(Cfg.SCRATCHDIR)
+        lu.create_dir(Cfg.ARCSCRATCHDIR)
         
         Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
         
@@ -120,13 +121,12 @@ def lm_master():
 
         def delete_final_gdb(finalgdb):
             if gp.Exists(finalgdb) and Cfg.STEP5:
-                try:
-                    lu.clean_out_workspace(finalgdb)
-                    lu.delete_data(finalgdb)
-                except:
+                lu.clean_out_workspace(finalgdb)
+                lu.delete_data(finalgdb)
+                if gp.Exists(finalgdb):
                     lu.dashline(1)
                     msg = ('ERROR: Could not remove contents of geodatabase ' +
-                           finalgdb + '. Is it open in ArcMap?\n You may '
+                           finalgdb + '. \nIs it open in ArcMap? You may '
                            'need to re-start ArcMap to release the file lock.')
                     lu.raise_error(msg)
                 

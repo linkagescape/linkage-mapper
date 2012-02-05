@@ -31,8 +31,8 @@ def bar_master():
     
     """
     try:
-        lu.createfolder(Cfg.LOGDIR)
-        lu.createfolder(Cfg.MESSAGEDIR)
+        lu.create_dir(Cfg.LOGDIR)
+        lu.create_dir(Cfg.MESSAGEDIR)
 
         Cfg.logFile=lu.create_log_file(Cfg.MESSAGEDIR, Cfg.TOOL, Cfg.PARAMS)
                 
@@ -45,10 +45,10 @@ def bar_master():
             # Create output geodatabase
             arcpy.CreateFileGDB_management(Cfg.OUTPUTDIR, path.basename(Cfg.BARRIERGDB))        
                 
-        lu.createfolder(Cfg.OUTPUTDIR)
+        lu.create_dir(Cfg.OUTPUTDIR)
         lu.delete_dir(Cfg.SCRATCHDIR)
-        lu.createfolder(Cfg.SCRATCHDIR) 
-        lu.createfolder(Cfg.ARCSCRATCHDIR)
+        lu.create_dir(Cfg.SCRATCHDIR) 
+        lu.create_dir(Cfg.ARCSCRATCHDIR)
         
         arcpy.env.extent = Cfg.RESRAST_IN
         arcpy.env.snapRaster = Cfg.RESRAST_IN
