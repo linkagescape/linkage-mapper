@@ -17,7 +17,7 @@ import numpy as npy
 from lm_config import Config as Cfg
 import lm_util as lu
 
-_filename = s5_calcLccs.py
+_filename = 's5_calcLccs.py'
 
 try:
     import arcpy
