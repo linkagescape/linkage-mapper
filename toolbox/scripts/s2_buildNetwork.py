@@ -263,13 +263,13 @@ def STEP2_build_network():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
     return
 
@@ -290,13 +290,13 @@ def get_adj_list(adjFile):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
     
     
 def generate_distance_file(CWDADJFILE,EUCADJFILE):
@@ -314,12 +314,12 @@ def generate_distance_file(CWDADJFILE,EUCADJFILE):
             COREFC_SIMP = path.join(Cfg.SCRATCHDIR, "CoreFC_Simp.shp")
             tolerance = float(gp.CellSize) / 3
             
-            arc10 = True
             try:
+                import arcpy
                 import arcpy.cartography as CA
             except:
-                arc10 = False
-            if arc10 == True:
+                arcpy = False
+            if arcpy:
                 CA.SimplifyPolygon(Cfg.COREFC, COREFC_SIMP,"POINT_REMOVE", 
                                     tolerance, "#", "NO_CHECK")
             else:
@@ -393,13 +393,13 @@ def generate_distance_file(CWDADJFILE,EUCADJFILE):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
         
 def print_conefor_warning():
@@ -445,13 +445,13 @@ def get_full_adj_list(CWDADJFILE,EUCADJFILE):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
 
 

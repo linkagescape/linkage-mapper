@@ -217,11 +217,11 @@ def STEP4_refine_network():
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         Cfg.gp.addmessage('****Failed in step 4. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         Cfg.gp.addmessage('****Failed in step 4. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
     return

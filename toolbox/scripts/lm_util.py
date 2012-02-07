@@ -53,7 +53,7 @@ def get_linktable_row(linkid, linktable):
                     return linktablerow
         return -1  # Not found
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def get_link_type_desc(linktypecode):
@@ -125,7 +125,7 @@ def get_links_from_core_pairs(linktable, firstCore, secondCore):
                 rows = npy.append(rows, link)
         return rows
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
@@ -235,7 +235,7 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                                 numDroppedLinks = numDroppedLinks + 1
         return linktable, numDroppedLinks
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def get_zonal_minimum(dbfFile):
@@ -255,9 +255,9 @@ def get_zonal_minimum(dbfFile):
         del rows
         return coreMin
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def get_core_list(coreFC, coreFN):
@@ -301,9 +301,9 @@ def get_core_list(coreFC, coreFN):
         return coreList
         
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
     
 
 
@@ -327,9 +327,9 @@ def get_core_targets(core, linktable):
         targetList = targetList[rows, 1 - cols]
         targetList = npy.unique(npy.asarray(targetList))
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
     return targetList
 
 
@@ -354,7 +354,7 @@ def elapsed_time(start_time):
                               ' seconds.\n')
         return now
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def report_pct_done(current, goal, last):
@@ -369,7 +369,7 @@ def report_pct_done(current, goal, last):
         else:
             return last
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def report_links(linktable):
@@ -395,9 +395,9 @@ def report_links(linktable):
             dashline(2)
 
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
     return numCorridorLinks + numComponentLinks
 
     
@@ -507,9 +507,9 @@ def combine_adjacency_tables(adjTable_r, adjTable_u, adjTable_ur, adjTable_ul):
 
         return adjTable
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def get_allocs_from_shift(workspace, alloc, alloc_sh):
@@ -533,9 +533,9 @@ def get_allocs_from_shift(workspace, alloc, alloc_sh):
         return allocLookupTable[:, 1:3]
 
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 # Try this in script 4 too... and anything else with minras...
@@ -572,9 +572,9 @@ def get_alloc_lookup_table(workspace, combine_ras):
 
         return allocLookupTable
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 ############################################################################
@@ -610,9 +610,9 @@ def new_extent(fc, field, value):
         del searchRow
         del searchRows
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
     # return [xMin,yMin,xMax,yMax]
     # "%s %s %s %s" % tuple(lstExt)
@@ -647,9 +647,9 @@ def get_centroids(shapefile, field):
         return pointArray
 
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def get_bounding_circle_data(extentBoxList, corex, corey, distbuff):
@@ -687,9 +687,9 @@ def get_bounding_circle_data(extentBoxList, corex, corey, distbuff):
             radius = radius + int(distbuff)
         circlePointData[0, :] = [centX, centY, corex, corey, radius]
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
     return circlePointData
 
@@ -718,9 +718,9 @@ def get_extent_box_coords(fieldValue=None):
         boxData = npy.zeros((1, 5), dtype='float32')
         boxData[0, :] = [fieldValue, ulx, lrx, uly, lry]
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
     return boxData
 
@@ -776,9 +776,9 @@ def make_points(workspace, pointArray, outFC):
         gp.workspace = wkspbefore
 
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
     return
 
 
@@ -890,9 +890,9 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
         return lcpLoop
 
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
         
 def get_lcp_shapefile(lastStep, thisStep):
@@ -934,9 +934,9 @@ def get_lcp_shapefile(lastStep, thisStep):
         return oldLcpShapefile
         
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
         
 
 def update_lcp_shapefile(linktable, lastStep, thisStep):
@@ -1019,9 +1019,9 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
         return linkTableTemp
 
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 ############################################################################
@@ -1039,7 +1039,7 @@ def delete_row(A, delrow):
         keeprows = npy.delete(npy.arange(0, m), delrow)
         keepcols = npy.arange(0, n)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
     return A[keeprows][:, keepcols]
 
 
@@ -1055,7 +1055,7 @@ def delete_col(A, delcol):
         keeprows = npy.arange(0, m)
         keepcols = npy.delete(npy.arange(0, n), delcol)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
     return A[keeprows][:, keepcols]
 
 
@@ -1072,7 +1072,7 @@ def delete_row_col(A, delrow, delcol):
         keeprows = npy.delete(npy.arange(0, m), delrow)
         keepcols = npy.delete(npy.arange(0, n), delcol)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
     return A[keeprows][:, keepcols]
 
 
@@ -1104,7 +1104,7 @@ def components_no_sparse(G):
             if sum(star) == n:
                 all_stars = True
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def relabel(oldlabel, offset=0): # same as gapdt
@@ -1197,7 +1197,7 @@ def load_link_table(linkTableFile):
             linktable = linkTable1
         return linktable
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 ############################################################################
@@ -1352,9 +1352,9 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
                            
         outFile.close()
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
     return
 
 
@@ -1545,9 +1545,9 @@ def write_link_maps(linkTableFile, step):
         return
 
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 ############################################################################
@@ -1587,7 +1587,7 @@ def move_old_results():
         move_results_folder(oldFolder, newFolder) 
         
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
         
         
 def move_results_folder(oldFolder, newFolder):        
@@ -1595,7 +1595,7 @@ def move_results_folder(oldFolder, newFolder):
         if (os.path.exists(oldFolder) and not os.path.exists(newFolder)):
             os.rename(oldFolder, newFolder)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
         
 
 def delete_file(file):
@@ -1659,9 +1659,9 @@ def clean_out_workspace(ws):
         gp.refreshcatalog(os.path.dirname(ws))
         return
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
         
 def delete_data(dataset):
     try:
@@ -1813,9 +1813,9 @@ def get_prev_step_link_table(step):
             raise_error(msg)
 
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def get_this_step_link_table(step):
@@ -1826,9 +1826,9 @@ def get_this_step_link_table(step):
         return filename
 
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def clean_up_link_tables(step):
@@ -1860,9 +1860,9 @@ def clean_up_link_tables(step):
             os.remove(filename)
             
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def copy_final_link_maps(step):
@@ -1950,9 +1950,9 @@ def copy_final_link_maps(step):
                     pass
         return
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
 
 
 def move_map(oldMap, newMap):
@@ -1981,7 +1981,7 @@ def get_cs_path():
 ############################################################################
 ##Error Checking and Handling Functions ####################################
 ############################################################################      
-def print_failures(statement, failures):
+def print_arcgis_failures(statement, failures):
     """ Reports ArcGIS call that's failing and decides whether to restart 
         iteration.
     
@@ -1989,24 +1989,9 @@ def print_failures(statement, failures):
     dashline(1)
     gprint('***Problem encountered executing statement:')
     gprint('"' + statement + '"')  
-    if gp.MaxSeverity > 1:
-        gp.AddWarning("Here's the error being reported: ")
-        for msg in range(0, gp.MessageCount):
-            if gp.GetSeverity(msg) == 2:
-                gp.AddReturnMessage(msg)
-
-    else:
-        tb = sys.exc_info()[2]  # get the traceback object
-        # tbinfo contains the error's line number and the code
-        tbinfo = traceback.format_tb(tb)[0]
-        line = tbinfo.split(", ")[1]
-        filename = inspect.getfile( inspect.currentframe() )
-        gp.AddWarning("The following error is being reported at "
-                        + line + " of " + filename + ":")
-        err = traceback.format_exc().splitlines()[-1]
-        gp.AddWarning(err + '\n')
-        write_log(err)        
-        
+    
+    print_warnings()
+            
     failures = failures + 1
     return failures
 
@@ -2016,7 +2001,7 @@ def print_drive_warning():
         gp.AddWarning('(Note: ArcGIS errors are more likely when writing to remote '
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
-            'They may also result from conflicts with anti-virus '
+            'Errors may also result from conflicts with anti-virus '
             'software.)\n')
 
 
@@ -2029,6 +2014,8 @@ def get_dir_depth(dir):
         if realpath[i] == os.path.sep:
             depth = depth + 1
     return drive,depth
+    
+    
 def check_steps():
     """Check to make sure there are no skipped steps in a sequence of chosen
     steps (except step 4 which is optional)
@@ -2046,7 +2033,7 @@ def check_steps():
                    "can't SKIP any except for step 4.\n")
             raise_error(msg)
         except:
-            print_python_error(_filename)
+            exit_with_python_error(_filename)
     return
 
 
@@ -2093,11 +2080,9 @@ def check_cores(FC,FN):
             raise_error(msg)
 
     except arcgisscripting.ExecuteError:
-        print_geoproc_error(_filename)
+        exit_with_geoproc_error(_filename)
     except:
-        print_python_error(_filename)
-    
-    
+        exit_with_python_error(_filename)
     
     
 def retry_arc_error(count, statement):
@@ -2105,36 +2090,17 @@ def retry_arc_error(count, statement):
     try:
         if count < 20:
             count = count + 1
-            gp.AddWarning('-------------------------------------------------')
             if count < 7:
                 sleepTime = 10*count
             else:
                 sleepTime = 60
+
+            gp.AddWarning('-------------------------------------------------')
             gp.AddWarning('Failed to execute ' + statement + ' on try '
                               '#' + str(count) + '.\n')
-                    
-            if gp.MaxSeverity > 1:
-                gp.AddWarning("The following ArcGIS error is being reported: ")
-                for msg in range(0, gp.MessageCount):
-                    if gp.GetSeverity(msg) == 2:
-                        gp.AddReturnMessage(msg)
-                        #gp.AddWarning(msg) # won't work for 9.3
-                print_drive_warning()
-
-            else:
-                tb = sys.exc_info()[2]  # get the traceback object
-                # tbinfo contains the error's line number and the code
-                tbinfo = traceback.format_tb(tb)[0]
-                line = tbinfo.split(", ")[1]
-                filename = inspect.getfile( inspect.currentframe() )
-                msg = ("The following error is being reported at "
-                                + line + " of " + filename + ":")
-                err = traceback.format_exc().splitlines()[-1]
-                gp.AddWarning(msg)
-                gp.AddWarning(err + '\n')
-                write_log(msg)     
-                write_log(err) 
-                
+            
+            print_warnings()
+            
             gp.AddWarning("Will try again. ")
             gp.AddWarning('---------TRYING AGAIN IN ' +
                                    str(int(sleepTime)) + ' SECONDS---------\n')
@@ -2152,51 +2118,49 @@ def retry_arc_error(count, statement):
             return count, False
                         
     except:
-        print_python_error(_filename)
+        exit_with_python_error(_filename)
+                
+                
+def print_warnings():
+    tb = sys.exc_info()[2]  # get the traceback object
+    # tbinfo contains the error's line number and the code
+    tbinfo = traceback.format_tb(tb)[0]
+    line = tbinfo.split(", ")[1]
+    filename = tbinfo.split(", ")[0]
+    filename = filename.rsplit("File ")[1]
 
+    if gp.MaxSeverity > 1:
+        msg = ("The following ArcGIS error is being reported "
+                    "on line " + line + " of " + filename + ":")
+        gp.AddWarning(msg) 
+        write_log(msg) 
+        gp.AddWarning(gp.GetMessages(2))
+        # for msg in range(0, gp.MessageCount):
+            # if gp.GetSeverity(msg) == 2:
+                # gp.AddReturnMessage(msg)
+                # write_log(msg)     
+        write_log(gp.GetMessages(2))
+        print_drive_warning()
+        
+    else:
+        msg = ("The following error is being reported at "
+                        + line + " of " + filename + ":")
+        err = traceback.format_exc().splitlines()[-1]
+        gp.AddWarning(msg)
+        gp.AddWarning(err + '\n')
+        write_log(msg)     
+        write_log(err) 
+            
+            
 def snooze(sleepTime):
     for i in range(1,int(sleepTime)+1):
         time.sleep(1)
         # Dummy operations to give user ability to cancel:
         installD = gp.GetInstallInfo("desktop")  
             
-def print_geoproc_warning(filename):
-    """Handle geoprocessor errors and provide details to user if re-trying"""
-    tb = sys.exc_info()[2]  # get the traceback object
-    # tbinfo contains the error's line number and the code
-    tbinfo = traceback.format_tb(tb)[0]
-    line = tbinfo.split(", ")[1]
-    msg = ("Geoprocessing error reported on **" + line + "** of " + filename + " "
-                "in Linkage Mapper Version " + str(Cfg.releaseNum) + ":")
-    gp.AddWarning(msg)
-    write_log(msg)
-    for msg in range(0, gp.MessageCount):
-        if gp.GetSeverity(msg) == 2:
-            gp.AddReturnMessage(msg)
-        #print gp.AddReturnMessage(msg)
-        write_log(msg)
-    exit(1)
-
-
-def print_python_warning(filename):
-    """Handle python errors and provide details to user if re-trying"""
-    tb = sys.exc_info()[2]  # get the traceback object
-    # tbinfo contains the error's line number and the code
-    tbinfo = traceback.format_tb(tb)[0]
-    line = tbinfo.split(", ")[1]
-    filename = inspect.getfile( inspect.currentframe() )
-    msg=("The following error is being reported at "
-                    + line + " of " + filename + ":")
-    err = traceback.format_exc().splitlines()[-1]
-    gp.AddWarning(msg)
-    gp.AddWarning(err + '\n')
-    write_log(msg)
-    write_log(err)        
-    exit(1)
-
+   
     
-    
-def print_geoproc_error(filename):
+def exit_with_geoproc_error(filename):
     """Handle geoprocessor errors and provide details to user"""
     dashline()
     tb = sys.exc_info()[2]  # get the traceback object
@@ -2217,7 +2181,7 @@ def print_geoproc_error(filename):
     exit(1)
 
 
-def print_python_error(filename):
+def exit_with_python_error(filename):
     """Handle python errors and provide details to user"""
     dashline()
     tb = sys.exc_info()[2]  # get the traceback object

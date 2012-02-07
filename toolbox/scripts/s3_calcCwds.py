@@ -58,7 +58,7 @@ def write_cores_to_map(x, coresToMap):
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
     
 
@@ -415,13 +415,13 @@ def STEP3_calc_cwds():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
     return
 
@@ -524,7 +524,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 exec statement
                 randomerror()
             except:
-                failures = lu.print_failures(statement, failures)
+                failures = lu.print_arcgis_failures(statement, failures)
                 if failures < 20:
                     return None,failures,lcpLoop
                 else: exec statement
@@ -555,7 +555,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             exec statement
             randomerror()
         except:
-            failures = lu.print_failures(statement, failures)
+            failures = lu.print_arcgis_failures(statement, failures)
             if failures < 20:
                 return None,failures,lcpLoop
             else: exec statement
@@ -577,7 +577,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             randomerror()
         
         except:
-            failures = lu.print_failures(statement, failures)
+            failures = lu.print_arcgis_failures(statement, failures)
             if failures < 20:
                 return None,failures,lcpLoop
             else: exec statement
@@ -595,7 +595,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             exec statement
             randomerror()
         except:
-            failures = lu.print_failures(statement, failures)
+            failures = lu.print_arcgis_failures(statement, failures)
             if failures < 20:
                 return None,failures,lcpLoop
             else:    
@@ -662,7 +662,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     exec statement
                     randomerror()
                 except:
-                    failures = lu.print_failures(statement, failures)
+                    failures = lu.print_arcgis_failures(statement, failures)
                     if failures < 20:
                         return None,failures,lcpLoop
                     else: exec statement
@@ -684,7 +684,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     exec statement
                     randomerror()
                 except:
-                    failures = lu.print_failures(statement, failures)
+                    failures = lu.print_arcgis_failures(statement, failures)
                     if failures < 20:
                         return None,failures,lcpLoop
                     else:
@@ -728,7 +728,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         exec statement
                         randomerror()
                     except:
-                        failures = lu.print_failures(statement, failures)
+                        failures = lu.print_arcgis_failures(statement, failures)
                         if failures < 20:
                             return None,failures,lcpLoop
                         else: exec statement                                                  
@@ -741,7 +741,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         randomerror()
                     except:
                         statement = 'test_for_intermediate_core'
-                        failures = lu.print_failures(statement, failures)
+                        failures = lu.print_arcgis_failures(statement, failures)
                         if failures < 20:
                             return None,failures,lcpLoop
                         else: 
@@ -777,13 +777,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
             
 def test_for_intermediate_core(workspace,lcpRas,corePairRas):
@@ -832,13 +832,13 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.print_python_error(_filename)    
+        lu.exit_with_python_error(_filename)    
 
 def delay_restart(failures):
     gprint('That was try #' + str(failures) + ' of 20 for this core area.')
@@ -873,12 +873,18 @@ def randomerror():
     """    
     generateError = False # Set to True to create random errors
     if generateError == True:
-        gprint('Rolling dice for random error')
+        gprint('\n***Rolling dice for random error***')
         import random
-        test = random.randrange(1, 4)
+        test = random.randrange(1, 30)
         if test == 2:
-            gprint('Creating artificial error')
-            blarg
-    return    
+            gprint('Creating artificial ArcGIS error')
+            gp.MosaicToNewRaster_management(
+                            "rasterString","mosaicDir","mosFN", "", 
+                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM", 
+                            "MATCH")
+        elif test == 3:
+            gprint('Creating artificial python error')
+            artificialPythonError
+    return        
 
     

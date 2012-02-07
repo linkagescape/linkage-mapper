@@ -222,13 +222,13 @@ def STEP7_calc_centrality():
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
     return
     
@@ -275,7 +275,7 @@ def make_graph_from_list(graphList):
     except:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
             
     
     

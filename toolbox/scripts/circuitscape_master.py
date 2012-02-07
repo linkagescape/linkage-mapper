@@ -118,11 +118,11 @@ def circuitscape_master():
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
        
         
 if __name__ == "__main__":

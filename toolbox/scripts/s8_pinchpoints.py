@@ -456,13 +456,13 @@ def STEP8_calc_pinchpoints():
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
         
         
@@ -486,13 +486,13 @@ def export_ras_to_npy(raster,npyFile):
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
     
 def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     try:
@@ -511,13 +511,13 @@ def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
     
 def write_header(raster,numpyArray,numpyFile):
         ncols=numpyArray.shape[1]
