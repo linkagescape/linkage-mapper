@@ -242,7 +242,7 @@ def calc_lccs(normalize):
                 while True:
                     try: 
                         exec statement
-                        randomerror2()
+                        randomerror()
                     except:
                         count,tryAgain = lu.retry_arc_error(count,statement)
                         lu.delete_data(mosaicRaster)
@@ -482,29 +482,7 @@ def calc_lccs(normalize):
         lu.exit_with_python_error(_filename)
 
     return
-    
-
-def randomerror2():
-    """ Used to test error recovery.
-    
-    """    
-    generateError = True # Set to True to create random errors
-    if generateError == True:
-        gprint('\n***Rolling dice for random error***')
-        import random
-        test = random.randrange(1, 4)
-        if test == 2:
-            gprint('Creating artificial ArcGIS error')
-            gp.MosaicToNewRaster_management(
-                            "rasterString","mosaicDir","mosFN", "", 
-                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM", 
-                            "MATCH")
-            exec statement
-        elif test == 3:
-            gprint('Creating artificial python error')
-            artificialPythonError
-    return           
-    
+       
     
 def randomerror():
     """ Used to test error recovery.
