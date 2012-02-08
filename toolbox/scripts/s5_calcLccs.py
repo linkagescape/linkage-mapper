@@ -29,7 +29,7 @@ except:
     arcpy = False
     gp = cfg.gp
     import arcgisscripting
-    arcObj = Cfg.gp
+    arcObj = cfg.gp
 
 gprint = lu.gprint
 
@@ -158,7 +158,7 @@ def calc_lccs(normalize):
                 continue
             
             start_time = time.clock() 
-            mosaicDir = path.join(Cfg.LCCBASEDIR,'mos'+str(x+1))
+            mosaicDir = path.join(cfg.LCCBASEDIR,'mos'+str(x+1))
 
             lu.create_dir(mosaicDir)
             mosFN = 'mos'
@@ -190,13 +190,13 @@ def calc_lccs(normalize):
             #if not gp.Exists(lccRaster):
 
             link = lu.get_links_from_core_pairs(linkTable, corex, corey)
-                lcDist = str(linkTable[link,cfg.LTB_CWDIST])
+            lcDist = str(linkTable[link,cfg.LTB_CWDIST])
 
             # Normalized lcc rasters are created by adding cwd rasters and
             # subtracting the least cost distance between them.
             count = 0
             if arcpy:
-                    lcDist = float(linkTable[link,cfg.LTB_CWDIST])
+                lcDist = float(linkTable[link,cfg.LTB_CWDIST])
                 if normalize:
                     statement = ('outras = Raster(cwdRaster1) + Raster('
                         'cwdRaster2) - lcDist; outras.save(lccNormRaster)')
@@ -244,7 +244,7 @@ def calc_lccs(normalize):
                         lu.delete_data(mosaicRaster)
                         lu.delete_dir(mosaicDir)
                         # Try a new directory
-                        mosaicDir = path.join(Cfg.LCCBASEDIR,'mos'+str(x+1)+ '_' + str(count))
+                        mosaicDir = path.join(cfg.LCCBASEDIR,'mos'+str(x+1)+ '_' + str(count))
                         lu.create_dir(mosaicDir)
                         mosaicRaster = path.join(mosaicDir,mosFN)                        
                         if not tryAgain:    
@@ -254,7 +254,7 @@ def calc_lccs(normalize):
             endTime = time.clock()
             processTime = round((endTime - start_time), 2)
 
-                if normalize:
+            if normalize:
                 printText = "Normalized and mosaicked "
             else:
                 printText = "Mosaicked NON-normalized "
@@ -270,12 +270,12 @@ def calc_lccs(normalize):
                 corex1 = int(coreList[y,0])
                 corey1 = int(coreList[y,1])
                 if corex1 == corex and corey1 == corey:
-                    linkTable[y,Cfg.LTB_LINKTYPE] = (
-                        linkTable[y,Cfg.LTB_LINKTYPE] + 1000)
-                        linkTable[y,cfg.LTB_LINKTYPE] = (
+                    linkTable[y,cfg.LTB_LINKTYPE] = (
+                        linkTable[y,cfg.LTB_LINKTYPE] + 1000)
+                    linkTable[y,cfg.LTB_LINKTYPE] = (
                             linkTable[y,cfg.LTB_LINKTYPE] + 1000)
                 elif corex1==corey and corey1==corex:
-                        linkTable[y,cfg.LTB_LINKTYPE] = (
+                    linkTable[y,cfg.LTB_LINKTYPE] = (
                             linkTable[y,cfg.LTB_LINKTYPE] + 1000)
 
 
@@ -288,11 +288,11 @@ def calc_lccs(normalize):
                     # because otherwise Arc slows to a crawl
                     dirCount = dirCount + 1
                     numGridsWritten = 0
-                        clccdir = path.join(cfg.LCCBASEDIR,
-                                            cfg.LCCNLCDIR_NM + str(dirCount))
+                    clccdir = path.join(cfg.LCCBASEDIR,
+                                        cfg.LCCNLCDIR_NM + str(dirCount))
                     gprint("Creating output folder: " + clccdir)
-                        gp.CreateFolder_management(cfg.LCCBASEDIR,
-                                                   path.basename(clccdir))
+                    gp.CreateFolder_management(cfg.LCCBASEDIR,
+                                               path.basename(clccdir))
 
             if numGridsWritten > 1 or dirCount > 0:                                       
                 lu.delete_data(lastMosaicRaster)
