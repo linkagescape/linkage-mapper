@@ -3,18 +3,22 @@
 
 """Linkage Mapper configuration module.
 
-Assigns input parameters from ToolBox to variables, and sets constants
+Assigns input parameters from ToolBox to variables, and sets constants.
 
 """
 
-import os
 import os.path as path
-import sys
 
 import arcgisscripting
-import lm_version as ver
 
-_filename = 'lm_config.py'
+import lm_version as ver
+import lm_settings 
+
+GP_NULL = '#'
+LINKAGE_MAPPER = 'linkage_mapper'
+BARRIER_TOOL = 'barrier_mapper'
+CIRCUITSCAPE = 'circuitscape'
+
 
 def str2bool(pstr):
     """Convert ESRI boolean string to Python boolean type"""
@@ -37,219 +41,128 @@ def setadjmeth(inparam):
 
 def nullfloat(innum):
     """Convert ESRI float or null to Python float"""
-    if innum == '#':
+    if innum == GP_NULL:
         nfloat = None
     else:
         nfloat = float(innum)
     return nfloat
 
+
 def nullstring(arg_string):
     """Convert ESRI nullstring to Python null"""
-    if arg_string == '#':
+    if arg_string == GP_NULL:
         arg_string = None
     return arg_string
-    
-    
-    
-import time, sys, os, string
-    
-    
-class Config():
-    """Class to enscapulate all global constants"""
-    
-    releaseNum = ver.releaseNum
 
-    # Model inputs from ArcGIS tool
-    PARAMS = sys.argv
-    scriptDir, script = path.split(str(sys.argv[0]))
-    if script == "lm_master.py":
-        TOOL = 'linkage_mapper'
-        PROJECTDIR = sys.argv[1]  # Project directory
-        COREFC = sys.argv[2]  # Core area feature class
-        COREFN = sys.argv[3]  # Core area field name
-        RESRAST_IN = sys.argv[4]  # Resistance raster
 
-        # Processing steps inputs
-        STEP1 = str2bool(sys.argv[5])
-      
-        ### SETTING BOTH ADJ METHODS TO TRUE FOR S1 IN FUTURE RELEASES ###
-        # S1ADJMETH_CW, S1ADJMETH_EU = setadjmeth(sys.argv[6])
-
-        S1ADJMETH_CW = True
-        S1ADJMETH_EU = True
-        
-        STEP2 = str2bool(sys.argv[6])
-        S2ADJMETH_CW, S2ADJMETH_EU = setadjmeth(sys.argv[7])       
-        S2EUCDISTFILE = nullstring(sys.argv[8])       
-        STEP3 = str2bool(sys.argv[9])
-        S3DROPLCCS = str2bool(sys.argv[10])  # Drop LCC's passing through intermediate cores      
-        STEP4 = str2bool(sys.argv[11])
-        S4MAXNN = int(sys.argv[12])  # No of connected nearest neighbors
-        S4DISTTYPE_CW, S4DISTTYPE_EU = setadjmeth(sys.argv[13])  # NN Unit
-        S4CONNECT = str2bool(sys.argv[14])
-        STEP5 = str2bool(sys.argv[15])
-
-        # Optional input parameters
-        BUFFERDIST = nullfloat(sys.argv[16])
-        MAXCOSTDIST = nullfloat(sys.argv[17])
-        if MAXCOSTDIST == 0:
-            MAXCOSTDIST = None
-        MAXEUCDIST = nullfloat(sys.argv[18])
-        if MAXEUCDIST == 0:
-            MAXEUCDIST = None
-        
-        ### USER SETTABLE 
-        CALCNONNORMLCCS = False # Add extra step to mosaic non-normalized 
-                               # LCCs in s5 (for WHCWG use)
-        WRITETRUNCRASTER = True # Write a truncated version of mosaicked raster
-        CWDTHRESH = 200000  # CWD corridor width in a truncated raster. 
-        MINCOSTDIST = None
-        MINEUCDIST = None
-        SAVENORMLCCS = False  # Set to True to save individual norm LCC grids 
-        SIMPLIFY_CORES = True # Simplifies core areas before calculating 
-                              # pairwise euclidean distances
-        ### END USER SETTABLE 
-        
-        
-        if MAXCOSTDIST is None:
-            TMAXCWDIST = None
-        elif CWDTHRESH is not None:
-            TMAXCWDIST = None # Max is disabled for now- see line below.
-            #TMAXCWDIST = MAXCOSTDIST + CWDTHRESH  # Will limit cw calcs. 
-        
-        SCRATCHDIR = path.join(PROJECTDIR, "scratch")
-        ARCSCRATCHDIR = path.join(SCRATCHDIR, "arcscratch")
-        SCRATCHGDB = path.join(SCRATCHDIR,"scratch.gdb")
-        # Permanent copy of core area FC made at step 1 and used in all steps
-        # COREDIR = path.join(DATAPASSDIR,"corecopy") 
-        # COREFC = path.join(COREDIR,"core_copy.shp")
-        # COREFN = "GRIDCODE"
-        CORERAS = path.join(SCRATCHDIR,"core_ras")   
-
-        
-    elif script == "barrier_master.py":  #Barrier Mapper    
-        TOOL = 'barrier_mapper'
-        PROJECTDIR = sys.argv[1]  # Project directory
-        RESRAST_IN = sys.argv[2]
-        STARTRADIUS = sys.argv[3]  # 
-        ENDRADIUS = sys.argv[4]  # 
-        RADIUSSTEP = sys.argv[5]  # 
-        if RADIUSSTEP == '#':
-            RADIUSSTEP = 0
-        SCRATCHDIR = path.join(PROJECTDIR, "scratch_bar")
-        ARCSCRATCHDIR = path.join(SCRATCHDIR, "arcscratch")
-        STEP1 = False
-
-    else:
-        TOOL = 'pinchpoint_mapper'
-        PROJECTDIR = sys.argv[1]  # Project directory
-        COREFC = sys.argv[2]
-        COREFN = sys.argv[3]
-        DOCENTRALITY = str2bool(sys.argv[4])
-        DOPINCH = str2bool(sys.argv[5])
-        RESRAST_IN = sys.argv[6]
-        CWDCUTOFF = sys.argv[7] # To clip resistance rasters for Circuitscape
-        SQUARERESISTANCES = str2bool(sys.argv[8]) # Square resistance values 
-        DO_ADJACENTPAIRS = str2bool(sys.argv[9])  # Do adjacent pair corridor
-                                                  # pinchpoint calculations
-                                                  # using raster CWD maps
-        DO_ALLPAIRS = str2bool(sys.argv[10]) # Do all-pair current calculations 
-                                            # using raster corridor map 
-        SCRATCHDIR = path.join(PROJECTDIR, "scratch_cs")        
-        ARCSCRATCHDIR = path.join(SCRATCHDIR, "arcscratch")
-        STEP1 = False
-    
-    LOGMESSAGES = True
-    
+def config_global(config, arg):    
+    """Configure global variables for all tools"""    
+    config.PARAMS = arg
+    config.releaseNum = ver.releaseNum
+    config.LOGMESSAGES = True
     # File names, directory paths & folder names
-    PREFIX = path.basename(PROJECTDIR)
-    DATAPASSDIR = path.join(PROJECTDIR, "datapass")    
-    CWDADJFILE = path.join(DATAPASSDIR, "cwdAdj.csv")
-    EUCADJFILE = path.join(DATAPASSDIR, "eucAdj.csv")
-    OUTPUTDIR = path.join(PROJECTDIR, "output")
-    LOGDIR = path.join(PROJECTDIR, "run_history")
-    LOGDIR_OLD = path.join(PROJECTDIR, "logFiles")
-    MESSAGEDIR = path.join(LOGDIR, "log")
-    MESSAGEDIR_OLD = path.join(LOGDIR, "Messages")
-    ADJACENCYDIR = path.join(DATAPASSDIR, "adj")
-    ADJACENCYDIR_OLD = path.join(PROJECTDIR, "adj")
-    CWDBASEDIR = path.join(DATAPASSDIR, "cwd")
-    CWDBASEDIR_OLD = path.join(PROJECTDIR, "cwd")
-    CWDSUBDIR_NM = "cw"
-    LCCBASEDIR = path.join(DATAPASSDIR, "nlcc")
-    LCCBASEDIR_OLD = path.join(PROJECTDIR, "nlcc")
-    LCCNLCDIR_NM = "nlc"
-    LCCMOSAICDIR = path.join(LCCBASEDIR, "mosaic")
-    MOSAICGDB = path.join(LCCMOSAICDIR, "mosaic.gdb")
-    FOCALSUBDIR1_NM = "focalr"
-    FOCALSUBDIR2_NM = "f"
-    FOCALGRID_NM = "focal"
-    BARRIERBASEDIR = path.join(PROJECTDIR, "barrier_tmp")
-    BARRIERDIR_NM = "bar"
-    BARRIERMOSAICDIR = "mosaic"
-    CIRCUITBASEDIR = path.join(PROJECTDIR, "pinchpt_tmp")
-    CENTRALITYBASEDIR = path.join(PROJECTDIR, "centrality_tmp")
+    proj_dir = arg[1]
+    config.PROJECTDIR = proj_dir  # Project directory
+    config.SCRATCHDIR = path.join(proj_dir, "scratch_cs")
+    config.ARCSCRATCHDIR = path.join(config.SCRATCHDIR, "arcscratch")
+    config.PREFIX = path.basename(proj_dir)
+    config.DATAPASSDIR = path.join(proj_dir, "datapass")
+    config.CWDADJFILE = path.join(config.DATAPASSDIR, "cwdAdj.csv")
+    config.EUCADJFILE = path.join(config.DATAPASSDIR, "eucAdj.csv")
+    config.OUTPUTDIR = path.join(proj_dir, "output")
+    config.LOGDIR = path.join(proj_dir, "run_history")
+    config.LOGDIR_OLD = path.join(proj_dir, "logFiles")
+    config.logFile = None
+    config.MESSAGEDIR = path.join(config.LOGDIR, "log")
+    config.MESSAGEDIR_OLD = path.join(config.LOGDIR, "Messages")
+    config.ADJACENCYDIR = path.join(config.DATAPASSDIR, "adj")
+    config.ADJACENCYDIR_OLD = path.join(proj_dir, "adj")
+    config.CWDBASEDIR = path.join(config.DATAPASSDIR, "cwd")
+    config.CWDBASEDIR_OLD = path.join(proj_dir, "cwd")
+    config.CWDSUBDIR_NM = "cw"
+    config.LCCBASEDIR = path.join(config.DATAPASSDIR, "nlcc")
+    config.LCCBASEDIR_OLD = path.join(proj_dir, "nlcc")
+    config.LCCNLCDIR_NM = "nlc"
+    config.LCCMOSAICDIR = path.join(config.LCCBASEDIR, "mosaic")
+    config.MOSAICGDB = path.join(config.LCCMOSAICDIR, "mosaic.gdb")
+    config.FOCALSUBDIR1_NM = "focalr"
+    config.FOCALSUBDIR2_NM = "f"
+    config.FOCALGRID_NM = "focal"
+    config.BARRIERBASEDIR = path.join(proj_dir, "barrier_tmp")
+    config.BARRIERDIR_NM = "bar"
+    config.BARRIERMOSAICDIR = "mosaic"
+    config.CIRCUITBASEDIR = path.join(proj_dir, "pinchpt_tmp")
+    config.CENTRALITYBASEDIR = path.join(proj_dir, "centrality_tmp")
 
-    CIRCUITCONFIGDIR_NM = "config"
-    CIRCUITOUTPUTDIR_NM =  "output"
-        
-    
-    SAVEFOCALRASTERS = False # Save individual focal grids for barrier analysis
-    SAVEBARRIERRASTERS = False # Save individual barrier grids
-    SAVECURRENTMAPS = False# Save individual current maps from Circuitscape
-    SAVECIRCUITDIR = False
-    SAVEBARRIERDIR =  False
-    SAVECENTRALITYDIR = False
-    SAVECURRENTMAPS = False     
-    
-    FCORES = "fcores"
+    config.CIRCUITCONFIGDIR_NM = "config"
+    config.CIRCUITOUTPUTDIR_NM = "output"
 
-    OUTPUTGDB = path.join(OUTPUTDIR, "corridors.gdb")
-    EXTRAGDB = path.join(OUTPUTDIR, "extra.gdb")
-    OUTPUTGDB_OLD = path.join(OUTPUTDIR, "linkages.gdb")
-    CWDGDB = path.join(OUTPUTDIR,"cwd.gdb")
-    LINKMAPGDB = path.join(OUTPUTDIR,"link_maps.gdb")
-    LOGLINKMAPGDB = path.join(LOGDIR,"link_maps.gdb")
-    BARRIERGDB = path.join(OUTPUTDIR, "barriers.gdb")
-    PINCHGDB = path.join(OUTPUTDIR, "pinchpoints.gdb")
-    CORECENTRALITYGDB = path.join(OUTPUTDIR, "core_centrality.gdb")
-    BNDCIRCEN = path.join(SCRATCHDIR,"boundingCircleCenter.shp")
-    BNDCIRCENS = path.join(SCRATCHDIR,"boundingCircleCenters.shp")
-    BNDCIR = path.join(SCRATCHDIR,"boundingCircle.shp")
-    BNDCIRS = path.join(SCRATCHDIR,"boundingCircles.shp") 
-    BNDFC = "boundingFeature.shp"
-    BOUNDRESIS = path.join(SCRATCHDIR,"boundResis")
-    
+    # Save individual focal grids for barrier analysis
+    config.SAVEFOCALRASTERS = False
+
+    config.SAVEBARRIERRASTERS = False  # Save individual barrier grids
+
+    # Save individual current maps from Circuitscape
+    config.SAVECURRENTMAPS = False
+
+    config.SAVECIRCUITDIR = False
+    config.SAVEBARRIERDIR = False
+    config.SAVECENTRALITYDIR = False
+    config.SAVECURRENTMAPS = False
+
+    config.FCORES = "fcores"
+
+    config.OUTPUTGDB = path.join(config.OUTPUTDIR, "corridors.gdb")
+    config.EXTRAGDB = path.join(config.OUTPUTDIR, "extra.gdb")
+    config.OUTPUTGDB_OLD = path.join(config.OUTPUTDIR, "linkages.gdb")
+    config.CWDGDB = path.join(config.OUTPUTDIR, "cwd.gdb")
+    config.LINKMAPGDB = path.join(config.OUTPUTDIR, "link_maps.gdb")
+    config.LOGLINKMAPGDB = path.join(config.LOGDIR, "link_maps.gdb")
+    config.BARRIERGDB = path.join(config.OUTPUTDIR, "barriers.gdb")
+    config.PINCHGDB = path.join(config.OUTPUTDIR, "pinchpoints.gdb")
+    config.CORECENTRALITYGDB = path.join(config.OUTPUTDIR,
+                                         "core_centrality.gdb")
+    config.BNDCIRCEN = path.join(config.SCRATCHDIR,
+                                 "boundingCircleCenter.shp")
+    config.BNDCIRCENS = path.join(config.SCRATCHDIR,
+                                  "boundingCircleCenters.shp")
+    config.BNDCIR = path.join(config.SCRATCHDIR, "boundingCircle.shp")
+    config.BNDCIRS = path.join(config.SCRATCHDIR, "boundingCircles.shp")
+    config.BNDFC = "boundingFeature.shp"
+    config.BOUNDRESIS = path.join(config.SCRATCHDIR, "boundResis")
+
     # Link table column numbers
-    LTB_LINKID = 0  # Link ID
-    LTB_CORE1 = 1  # Core ID of 1st core area link connects
-    LTB_CORE2 = 2  # Core ID of 2nd core area link connects
-    LTB_CLUST1 = 3  # Component ID of 1st core area link connects
-    LTB_CLUST2 = 4  # Component ID of 2nd core area link connects
-    LTB_LINKTYPE = 5
-    LTB_EUCDIST = 6
-    LTB_CWDIST = 7
-    LTB_EUCADJ = 8
-    LTB_CWDADJ = 9
-    LTB_LCPLEN = 10
-    LTB_CWDEUCR = 11
-    LTB_CWDPATHR = 12
-    LTB_EFFRESIST = 13
-    LTB_CWDTORR = 14
-    LTB_CURRENT = 15
-    
+    config.LTB_LINKID = 0  # Link ID
+    config.LTB_CORE1 = 1  # Core ID of 1st core area link connects
+    config.LTB_CORE2 = 2  # Core ID of 2nd core area link connects
+    config.LTB_CLUST1 = 3  # Component ID of 1st core area link connects
+    config.LTB_CLUST2 = 4  # Component ID of 2nd core area link connects
+    config.LTB_LINKTYPE = 5
+    config.LTB_EUCDIST = 6
+    config.LTB_CWDIST = 7
+    config.LTB_EUCADJ = 8
+    config.LTB_CWDADJ = 9
+    config.LTB_LCPLEN = 10
+    config.LTB_CWDEUCR = 11
+    config.LTB_CWDPATHR = 12
+    config.LTB_EFFRESIST = 13
+    config.LTB_CWDTORR = 14
+    config.LTB_CURRENT = 15
+
     # Linkage type values (NOTE- these map to codes in get_linktype_desc)
-    LT_CPLK = -1  # Not_nearest N neighbors
-    LT_TLEC = -11  # Too long Euclidean distance
-    LT_TLLC = -12  # Too long Cost-Weighted distance
-    LT_TSEC = -13  # Too short Euclidean distance
-    LT_TSLC = -14  # Too short Cost-Weighted distance
-    LT_INT = -15  # Intermediate corea area detected
-    LT_CORR = 1  # Connects cores (corridor)
-    LT_NNC = 10  # Corridor connecting N Nearest Neighbors
-    LT_CLU = 20  # Connects_constellations (corridor)
-    LT_NNCT = 30  # TEMP NN corridor links (s4), may be able to get rid of this
-    LT_KEEP = 100 #user retained despite length
+    config.LT_CPLK = -1  # Not_nearest N neighbors
+    config.LT_TLEC = -11  # Too long Euclidean distance
+    config.LT_TLLC = -12  # Too long Cost-Weighted distance
+    config.LT_TSEC = -13  # Too short Euclidean distance
+    config.LT_TSLC = -14  # Too short Cost-Weighted distance
+    config.LT_INT = -15  # Intermediate corea area detected
+    config.LT_CORR = 1  # Connects cores (corridor)
+    config.LT_NNC = 10  # Corridor connecting N Nearest Neighbors
+    config.LT_CLU = 20  # Connects_constellations (corridor)
+    config.LT_KEEP = 100  # user retained despite length
+    # TEMP NN corridor links (s4), may be able to get rid of this
+    config.LT_NNCT = 30
+
     # 1 corridor
     # 10 NN corridor
     # 11 1st nn (future)
@@ -258,12 +171,119 @@ class Config():
     # 21 1st nn constel (future)
     # 22 2nd nn constel etc (future)
     # 30 temp saved nnconstel.  maybe able to get rid of this
-    
-    # Create single geoprocessor object to be used throughout
-    gp = arcgisscripting.create(9.3)
-    gp.CheckOutExtension("Spatial")
-    gp.OverwriteOutput = True
 
     #Temporary resistance raster copy to be created in master scripts
-    RESRAST  = path.join(SCRATCHDIR, 'resrast')
-    
+    config.RESRAST = path.join(config.SCRATCHDIR, 'resrast')
+
+
+def config_lm(config, arg, scratch_dir):
+    """ Configure global variables for Linkage Mapper"""
+    config.TOOL = LINKAGE_MAPPER
+    config.COREFC = arg[2]  # Core area feature class
+    config.COREFN = arg[3]  # Core area field name
+    config.RESRAST_IN = arg[4]  # Resistance raster
+
+    # Processing steps inputs
+    config.STEP1 = str2bool(arg[5])
+
+    ### SETTING BOTH ADJ METHODS TO TRUE FOR S1 IN FUTURE RELEASES ###
+    # config.S1ADJMETH_CW, config.S1ADJMETH_EU = setadjmeth(arg[6])
+
+    config.S1ADJMETH_CW = True
+    config.S1ADJMETH_EU = True
+
+    config.STEP2 = str2bool(arg[6])
+    config.S2ADJMETH_CW, config.S2ADJMETH_EU = setadjmeth(arg[7])
+    config.S2EUCDISTFILE = nullstring(arg[8])
+    config.STEP3 = str2bool(arg[9])
+    # Drop LCC's passing through intermediate cores
+    config.S3DROPLCCS = str2bool(arg[10])
+    config.STEP4 = str2bool(arg[11])
+    config.S4MAXNN = int(arg[12])  # No of connected nearest neighbors
+    # NN Unit
+    config.S4DISTTYPE_CW, config.S4DISTTYPE_EU = setadjmeth(arg[13])
+    config.S4CONNECT = str2bool(arg[14])
+    config.STEP5 = str2bool(arg[15])
+
+    # Optional input parameters
+    config.BUFFERDIST = nullfloat(arg[16])
+    config.MAXCOSTDIST = nullfloat(arg[17])
+    if config.MAXCOSTDIST == 0:
+        config.MAXCOSTDIST = None
+    config.MAXEUCDIST = nullfloat(arg[18])
+    if config.MAXEUCDIST == 0:
+        config.MAXEUCDIST = None
+   
+    for setting in dir(lm_settings):
+        if setting == setting.upper():
+            setting_value = getattr(lm_settings, setting)
+            setattr(config, setting, setting_value)
+
+    if config.MAXCOSTDIST is None:
+        config.TMAXCWDIST = None
+    elif config.CWDTHRESH is not None:
+        config.TMAXCWDIST = None  # Max is disabled for now- see line below
+        # Will limit cw calc
+        # config.TMAXCWDIST = MAXCOSTDIST + CWDTHRESH
+
+    config.SCRATCHGDB = path.join(scratch_dir, "scratch.gdb")
+    # Permanent copy of core area FC made at step 1 and used in all steps
+    # config.COREDIR = path.join(config.DATAPASSDIR, "corecopy")
+    # config.COREFC = path.join(config.COREDIR, "core_copy.shp")
+    # config.COREFN = "GRIDCODE"
+    config.CORERAS = path.join(config.SCRATCHDIR, "core_ras")
+
+
+def config_barrier(config, arg):
+    """Configure global variables for Barrier tool"""
+    config.TOOL = BARRIER_TOOL
+    config.RESRAST_IN = arg[2]
+    config.STARTRADIUS = arg[3]
+    config.ENDRADIUS = arg[4]
+    config.RADIUSSTEP = arg[5]
+    if config.RADIUSSTEP == GP_NULL:
+        config.RADIUSSTEP = 0
+    config.STEP1 = False
+
+
+def config_circuitscape(config, arg):
+    """Configure global variables for Circuitscape"""
+    config.TOOL = CIRCUITSCAPE
+    config.COREFC = arg[2]
+    config.COREFN = arg[3]
+    config.DOCENTRALITY = str2bool(arg[4])
+    config.DOPINCH = str2bool(arg[5])
+    config.RESRAST_IN = arg[6]
+    config.CWDCUTOFF = nullfloat(arg[7])  # CDW cutoff distance
+    config.SQUARERESISTANCES = str2bool(arg[8])  # Square resistance values
+
+    # Do adjacent pair corridor pinchpoint calculations using raster CWD maps
+    config.DO_ADJACENTPAIRS = str2bool(arg[9])
+    # Do all-pair current calculations using raster corridor map
+    config.DO_ALLPAIRS = str2bool(arg[10])
+
+    config.STEP1 = False
+
+
+class Configure(object):
+    """Class container to hold global variables"""
+    def __init__(self):
+        """Initialize class and create single geoprocessor object"""        
+        self.gp = arcgisscripting.create(9.3)
+        self.gp.CheckOutExtension("Spatial")
+        self.gp.OverwriteOutput = True
+
+    def configure(self, tool, arg):
+        """Setup variables for Configure class"""
+        config_global(self, arg)
+        if tool == LINKAGE_MAPPER:
+            config_lm(self, arg, self.SCRATCHDIR)
+        elif tool == BARRIER_TOOL:
+            config_barrier(self, arg)
+        elif tool == CIRCUITSCAPE:
+            config_circuitscape(self, arg)
+        else:
+            raise RuntimeError('Undefined tool to configure')
+
+
+tool_env = Configure()  # Class instance that is use by tool modules

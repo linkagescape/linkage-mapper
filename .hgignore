@@ -1,1 +1,5 @@
-relre:.pyc
+# use regular expression syntax
+syntax: relre
+
+.pyc
+.py~

@@ -19,12 +19,10 @@ import time
 import arcgisscripting
 import numpy as npy
 
-from lm_config import Config as Cfg
+from lm_config import tool_env as cfg
 import lm_util as lu
 
-_filename = 's4_refineNetwork.py'
-
-gprint = lu.gprint
+_filename = path.basename(__file__)
 
 
 def STEP4_refine_network():
@@ -36,8 +34,8 @@ def STEP4_refine_network():
     try:
 
         lu.dashline(1)
-        Cfg.gp.addmessage('Running script ' + _filename)
-        Cfg.gp.Workspace = Cfg.OUTPUTDIR
+        cfg.gp.addmessage('Running script ' + _filename)
+        cfg.gp.Workspace = cfg.OUTPUTDIR
 
         linkTableFile = lu.get_prev_step_link_table(step=4)
 
@@ -45,40 +43,40 @@ def STEP4_refine_network():
         numLinks = linkTable.shape[0]
         lu.report_links(linkTable)
 
-        if not Cfg.STEP3:
+        if not cfg.STEP3:
             # re-check for links that are too long in case script run out of
             # sequence with more stringent settings
-            Cfg.gp.addmessage('Double-checking for corridors that are too long'
+            cfg.gp.addmessage('Double-checking for corridors that are too long'
                               ' or too short to map.')
             DISABLE_LEAST_COST_NO_VAL = True
             linkTable,numDroppedLinks = lu.drop_links(
-                linkTable, Cfg.MAXEUCDIST, 0, Cfg.MAXCOSTDIST, 0,
+                linkTable, cfg.MAXEUCDIST, 0, cfg.MAXCOSTDIST, 0,
                 DISABLE_LEAST_COST_NO_VAL)
 
         rows, cols = npy.where(
-                     linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] > 0)
-        # == Cfg.LT_CORR
-            # or 
-            # linkTable[:,Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] == Cfg.LT_KEEP)
+                     linkTable[:,cfg.LTB_LINKTYPE:cfg.LTB_LINKTYPE + 1] > 0)
+        # == cfg.LT_CORR
+            # or
+            # linkTable[:,cfg.LTB_LINKTYPE:cfg.LTB_LINKTYPE + 1] == cfg.LT_KEEP)
         corridorLinks = linkTable[rows,:]
         coresToProcess = npy.unique(
-            corridorLinks[:, Cfg.LTB_CORE1:Cfg.LTB_CORE2 + 1])
+            corridorLinks[:, cfg.LTB_CORE1:cfg.LTB_CORE2 + 1])
 
-        if Cfg.S4DISTTYPE_EU:
-            distCol = Cfg.LTB_EUCDIST
+        if cfg.S4DISTTYPE_EU:
+            distCol = cfg.LTB_EUCDIST
         else:
-            distCol = Cfg.LTB_CWDIST
+            distCol = cfg.LTB_CWDIST
 
         # Flag links that do not connect any core areas to their nearest
-        # N neighbors. (N = Cfg.S4MAXNN)
+        # N neighbors. (N = cfg.S4MAXNN)
         lu.dashline(1)
-        Cfg.gp.addmessage('Connecting each core area to its nearest ' +
-                          str(Cfg.S4MAXNN) + ' nearest neighbors.')
+        cfg.gp.addmessage('Connecting each core area to its nearest ' +
+                          str(cfg.S4MAXNN) + ' nearest neighbors.')
 
         # Code written assuming NO duplicate core pairs
         for core in coresToProcess:
             rows,cols = npy.where(
-                corridorLinks[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1] == core)
+                corridorLinks[:,cfg.LTB_CORE1:cfg.LTB_CORE2+1] == core)
             distsFromCore = corridorLinks[rows,:]
 
             # Sort by distance from target core
@@ -86,17 +84,17 @@ def STEP4_refine_network():
             distsFromCore = distsFromCore[ind]
 
             # Set N nearest neighbor connections to Nearest Neighbor (NNCT)
-            maxRange = min(len(rows), Cfg.S4MAXNN)
+            maxRange = min(len(rows), cfg.S4MAXNN)
             for link in range (0, maxRange):
-                linkId = distsFromCore[link, Cfg.LTB_LINKID]
+                linkId = distsFromCore[link, cfg.LTB_LINKID]
                 # assumes linktable sequentially numbered with no gaps
-                linkTable[linkId - 1, Cfg.LTB_LINKTYPE] = Cfg.LT_NNCT
+                linkTable[linkId - 1, cfg.LTB_LINKTYPE] = cfg.LT_NNCT
 
         # Connect constellations (aka compoments or clusters)
         # Fixme: needs testing.  Move to function.
-        if Cfg.S4CONNECT:
+        if cfg.S4CONNECT:
             lu.dashline(1)
-            Cfg.gp.addmessage('Connecting constellations')
+            cfg.gp.addmessage('Connecting constellations')
 
             # linkTableComp has 4 extra cols to track COMPONENTS
             numLinks = linkTable.shape[0]
@@ -108,17 +106,17 @@ def STEP4_refine_network():
             # renumber cores to save memory for this next step.  Place in
             # columns 10 and 11
             for coreInd in range(0, len(coresToProcess)):
-                # here, cols are 0 for Cfg.LTB_CORE1 and 1 for Cfg.LTB_CORE2
+                # here, cols are 0 for cfg.LTB_CORE1 and 1 for cfg.LTB_CORE2
                 rows, cols = npy.where(
-                    linkTableComp[:,Cfg.LTB_CORE1:Cfg.LTB_CORE2+1] ==
+                    linkTableComp[:,cfg.LTB_CORE1:cfg.LTB_CORE2+1] ==
                     coresToProcess[coreInd])
                 # want results in cols 10 and 11- These are NEW core numbers
                 # (0 - numcores)
                 linkTableComp[rows, cols + 10] = coreInd
 
             rows, cols = npy.where(
-                linkTableComp[:, Cfg.LTB_LINKTYPE:Cfg.LTB_LINKTYPE + 1] ==
-                Cfg.LT_NNCT)
+                linkTableComp[:, cfg.LTB_LINKTYPE:cfg.LTB_LINKTYPE + 1] ==
+                cfg.LT_NNCT)
             # The new, improved corridorLinks- only NN links
             corridorLinksComp = linkTableComp[rows, :]
             # These are NEW core numbers (range from 0 to numcores)
@@ -129,8 +127,8 @@ def STEP4_refine_network():
                           dtype="int32")
             rows = corridorLinksComp[:,10].astype('int32')
             cols = corridorLinksComp[:,11].astype('int32')
-            vals = npy.where(corridorLinksComp[:,Cfg.LTB_LINKTYPE] ==
-                         Cfg.LT_NNCT, Cfg.LT_CORR, 0)
+            vals = npy.where(corridorLinksComp[:,cfg.LTB_LINKTYPE] ==
+                         cfg.LT_NNCT, cfg.LT_CORR, 0)
 
             Graph[rows,cols] = vals
             Graph = Graph + Graph.T
@@ -150,8 +148,8 @@ def STEP4_refine_network():
             # Additional column indexes for linkTableComp
             component1Col = 12
             component2Col = 13
-            linkTableComp[:,Cfg.LTB_CLUST1] = linkTableComp[:,component1Col]
-            linkTableComp[:,Cfg.LTB_CLUST2] = linkTableComp[:,component2Col]
+            linkTableComp[:,cfg.LTB_CLUST1] = linkTableComp[:,component1Col]
+            linkTableComp[:,cfg.LTB_CLUST2] = linkTableComp[:,component2Col]
 
             # Sort by distance
             ind = npy.argsort(linkTableComp[:,distCol])
@@ -161,12 +159,12 @@ def STEP4_refine_network():
             # until all constellations connected.
             for row in range(0,numLinks):
                 if ((linkTableComp[row,distCol] > 0) and
-                    ((linkTableComp[row,Cfg.LTB_LINKTYPE] == Cfg.LT_CORR) or
-                    (linkTableComp[row,Cfg.LTB_LINKTYPE] == Cfg.LT_KEEP)) and
+                    ((linkTableComp[row,cfg.LTB_LINKTYPE] == cfg.LT_CORR) or
+                    (linkTableComp[row,cfg.LTB_LINKTYPE] == cfg.LT_KEEP)) and
                     (linkTableComp[row,component1Col] !=
                      linkTableComp[row,component2Col])):
                     # Make this an inter-component link
-                    linkTableComp[row,Cfg.LTB_LINKTYPE] = Cfg.LT_CLU
+                    linkTableComp[row,cfg.LTB_LINKTYPE] = cfg.LT_CLU
                     newComp = min(linkTableComp
                                   [row,component1Col:component2Col + 1])
                     oldComp = max(linkTableComp
@@ -182,25 +180,25 @@ def STEP4_refine_network():
             linkTable = lu.delete_col(linkTableComp,[10, 11, 12, 13])
 
             # Re-sort link table by link ID
-            ind = npy.argsort(linkTable[:,Cfg.LTB_LINKID])
+            ind = npy.argsort(linkTable[:,cfg.LTB_LINKID])
             linkTable = linkTable[ind]
 
         # At end, any non-constellation links that are not NN's get dropped
-        # (too long to be in Cfg.S4MAXNN, not a component link)
-        rows = npy.where(linkTable[:,Cfg.LTB_LINKTYPE] == Cfg.LT_CORR)
-        linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_CPLK
+        # (too long to be in cfg.S4MAXNN, not a component link)
+        rows = npy.where(linkTable[:,cfg.LTB_LINKTYPE] == cfg.LT_CORR)
+        linkTable[rows,cfg.LTB_LINKTYPE] = cfg.LT_CPLK
 
         # set NNCT links to NN corridor links (NNC), get rid
         # of extra columns, re-sort linktable
-        rows = npy.where(linkTable[:,Cfg.LTB_LINKTYPE] == Cfg.LT_NNCT)
-        linkTable[rows,Cfg.LTB_LINKTYPE] = Cfg.LT_NNC
+        rows = npy.where(linkTable[:,cfg.LTB_LINKTYPE] == cfg.LT_NNCT)
+        linkTable[rows,cfg.LTB_LINKTYPE] = cfg.LT_NNC
 
         # Write linkTable to disk
         outlinkTableFile = lu.get_this_step_link_table(step=4)
         # lu.dashline(1)
-        Cfg.gp.addmessage('\nWriting ' + outlinkTableFile)
+        cfg.gp.addmessage('\nWriting ' + outlinkTableFile)
         lu.write_link_table(linkTable, outlinkTableFile)
-        linkTableLogFile = path.join(Cfg.LOGDIR, "linkTable_s4.csv")
+        linkTableLogFile = path.join(cfg.LOGDIR, "linkTable_s4.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
         start_time = time.clock()
@@ -208,7 +206,7 @@ def STEP4_refine_network():
         start_time = lu.elapsed_time(start_time)
 
         # lu.dashline()
-        Cfg.gp.addmessage('Creating shapefiles with linework for links.')
+        cfg.gp.addmessage('Creating shapefiles with linework for links.')
         try:
             lu.write_link_maps(outlinkTableFile, step=4)
         except:
@@ -216,12 +214,12 @@ def STEP4_refine_network():
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        Cfg.gp.addmessage('****Failed in step 4. Details follow.****')
+        cfg.gp.addmessage('****Failed in step 4. Details follow.****')
         lu.print_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
-        Cfg.gp.addmessage('****Failed in step 4. Details follow.****')
+        cfg.gp.addmessage('****Failed in step 4. Details follow.****')
         lu.print_python_error(_filename)
 
     return
