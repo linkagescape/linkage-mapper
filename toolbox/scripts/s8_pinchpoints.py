@@ -259,6 +259,7 @@ def STEP8_calc_pinchpoints():
                 currentRaster = currentRaster2
                 arcpy.env.extent = "MAXOF"
                 if linkLoop == 1:
+                    lu.delete_data(mosaicRaster)
                     arcpy.CopyRaster_management(currentRaster,
                                                  mosaicRaster)
                 else:
@@ -297,7 +298,7 @@ def STEP8_calc_pinchpoints():
             while True:
                 try: exec statement
                 except:
-                    count,tryAgain = lu.hiccup_test(count,statement)
+                    count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain: exec statement
                 else: break
 

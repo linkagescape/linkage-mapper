@@ -155,7 +155,7 @@ def cwadjacency():
             try:
                 exec statement
             except:
-                count, tryAgain = lu.hiccup_test(count, statement)
+                count, tryAgain = lu.retry_arc_error(count, statement)
                 if not tryAgain:
                     exec statement
             else:
@@ -218,7 +218,7 @@ def euadjacency():
             try:
                 exec statement
             except:
-                count, tryAgain = lu.hiccup_test(count, statement)
+                count, tryAgain = lu.retry_arc_error(count, statement)
                 if not tryAgain:
                     exec statement
             else:

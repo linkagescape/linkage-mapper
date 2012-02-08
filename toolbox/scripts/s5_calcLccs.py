@@ -24,10 +24,12 @@ try:
     from arcpy.sa import *
     arcgisscripting = arcpy
     arcpy.CheckOutExtension("spatial")
+    arcObj = arcpy
 except:
     arcpy = False
     gp = cfg.gp
     import arcgisscripting
+    arcObj = Cfg.gp
 
 gprint = lu.gprint
 
@@ -75,7 +77,15 @@ def calc_lccs(normalize):
         lu.dashline(1)
         gprint('Running script ' + _filename)
         linkTableFile = lu.get_prev_step_link_table(step=5)
-        gp.workspace = cfg.SCRATCHDIR
+        if arcpy:
+            arcpy.env.workspace = cfg.SCRATCHDIR
+            arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
+            arcpy.env.overwriteOutput = True            
+            arcpy.RefreshTOC()
+        else:        
+            gp.workspace = cfg.SCRATCHDIR
+            gp.scratchWorkspace = cfg.ARCSCRATCHDIR
+            gp.OverwriteOutput = True            
 
         if cfg.MAXEUCDIST is not None:
             gprint('Max Euclidean distance between cores')
@@ -129,7 +139,6 @@ def calc_lccs(normalize):
         # mosaicGDB = path.join(cfg.LCCBASEDIR, "mosaic.gdb")
         # gp.createfilegdb(cfg.LCCBASEDIR, "mosaic.gdb")
         #mosaicRaster = mosaicGDB + '\\' + "nlcc_mos" # Full path
-        mosaicRaster = path.join(cfg.LCCBASEDIR,'mos')
         gprint("")
         if normalize:
             gprint('Normalized least-cost corridors will be written '
@@ -145,134 +154,156 @@ def calc_lccs(normalize):
         x = 0
         endIndex = numLinks
         while x < endIndex:
-        #for x in range(0,numLinks):
-            if failures > 0:
+            if (linkTable[x, cfg.LTB_LINKTYPE] < 1): # If not a valid link
+                x = x + 1
+                failures = 0
+                continue
+            
+            start_time = time.clock() 
+            mosaicDir = path.join(cfg.LCCBASEDIR, 'mos'+str(x))
+            if failures > 0: # If this is a retry
+                lu.delete_data(mosaicRaster)
+                lu.delete_dir(mosaicDir)
                 delay_restart(failures)
 
-            linkId = str(int(linkTable[x,cfg.LTB_LINKID]))
-            if (linkTable[x,cfg.LTB_LINKTYPE] > 0):
-                # source and target cores
-                corex=int(coreList[x,0])
-                corey=int(coreList[x,1])
+            lu.create_dir(mosaicDir)
+            mosaicRaster = path.join(mosaicDir,'mos')
+            
+            linkId = str(int(linkTable[x, cfg.LTB_LINKID]))
 
-                # Get cwd rasters for source and target cores
-                cwdRaster1 = lu.get_cwd_path(corex)
-                cwdRaster2 = lu.get_cwd_path(corey)
+            # source and target cores
+            corex=int(coreList[x,0])
+            corey=int(coreList[x,1])
 
-                if not gp.Exists(cwdRaster1):
-                    msg =('\nError: cannot find cwd raster:\n' + cwdRaster1)
-                if not gp.Exists(cwdRaster2):
-                    msg =('\nError: cannot find cwd raster:\n' + cwdRaster2)
-                    lu.raise_error(msg)
+            # Get cwd rasters for source and target cores
+            cwdRaster1 = lu.get_cwd_path(corex)
+            cwdRaster2 = lu.get_cwd_path(corey)
 
+            if not gp.Exists(cwdRaster1):
+                msg =('\nError: cannot find cwd raster:\n' + cwdRaster1) 
+            if not gp.Exists(cwdRaster2):
+                msg =('\nError: cannot find cwd raster:\n' + cwdRaster2) 
+                lu.raise_error(msg)
 
-                lccNormRaster = path.join(clccdir, str(corex) + "_" +
-                                          str(corey))
-                gp.Extent = "MINOF"
+            
+            lccNormRaster = path.join(clccdir, str(corex) + "_" +
+                                      str(corey))
+            gp.Extent = "MINOF"
 
-                # FIXME: need to check for this?:
-                # if exists already, don't re-create
-                #if not gp.Exists(lccRaster):
+            # FIXME: need to check for this?:
+            # if exists already, don't re-create
+            #if not gp.Exists(lccRaster):
 
-                link = lu.get_links_from_core_pairs(linkTable, corex, corey)
+            link = lu.get_links_from_core_pairs(linkTable, corex, corey)
                 lcDist = str(linkTable[link,cfg.LTB_CWDIST])
 
-                # Normalized lcc rasters are created by adding cwd rasters and
-                # subtracting the least cost distance between them.
-                count = 0
-                if arcpy:
+            # Normalized lcc rasters are created by adding cwd rasters and
+            # subtracting the least cost distance between them.
+            count = 0
+            if arcpy:
                     lcDist = float(linkTable[link,cfg.LTB_CWDIST])
-                    if normalize:
-                        statement = ('outras = Raster(cwdRaster1) + Raster('
-                            'cwdRaster2) - lcDist; outras.save(lccNormRaster)')
-                    else:
-                        statement = ('outras =Raster(cwdRaster1) + Raster('
-                                    'cwdRaster2); outras.save(lccNormRaster)')
+                if normalize:
+                    statement = ('outras = Raster(cwdRaster1) + Raster('
+                        'cwdRaster2) - lcDist; outras.save(lccNormRaster)')
                 else:
-                    if normalize:
-                        expression = (cwdRaster1 + " + " + cwdRaster2 + " - "
-                                      + lcDist)
-                    else:
-                        expression = (cwdRaster1 + " + " + cwdRaster2)
-                    statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
-                         'lccNormRaster)')
-
-                start_time = time.clock()
+                    statement = ('outras =Raster(cwdRaster1) + Raster('
+                                'cwdRaster2); outras.save(lccNormRaster)')
+            else:
+                if normalize:
+                    expression = (cwdRaster1 + " + " + cwdRaster2 + " - " 
+                                  + lcDist)
+                else:
+                    expression = (cwdRaster1 + " + " + cwdRaster2) 
+                statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
+                     'lccNormRaster)')
+            count = 0
+            while True:
                 try:
                     exec statement
                     randomerror()
                 except:
-                    if failures < 10:
-                        failures = lu.print_failures(statement, failures)
-                        continue
-                    else: exec statement
-
-                gp.Extent = "MAXOF"
-
-                if numGridsWritten == 0 and dirCount == 0:
-                    #If this is the first grid then copy rather than mosaic
-                    gp.CopyRaster_management(lccNormRaster, mosaicRaster)
-
-                else:
-                    count = 0
-                    if arcpy:
-                        statement = ('arcpy.Mosaic_management(lccNormRaster, '
-                                     'mosaicRaster,"MINIMUM", "MATCH")')
-                    else:
-                        statement = ('gp.Mosaic_management(lccNormRaster, '
-                                     'mosaicRaster, "MINIMUM", "MATCH")')
+                    count,tryAgain = lu.retry_arc_error(count,statement)
+                    randomerror()
+                    if not tryAgain:    
+                        exec statement
+                else: break
+                           
+            gp.Extent = "MAXOF"
+            
+            if numGridsWritten == 0 and dirCount == 0:
+                #If this is the first grid then copy rather than mosaic
+                gp.CopyRaster_management(lccNormRaster, mosaicRaster)
+            else:
+                rasterString = '"'+lccNormRaster+";"+lastMosaicRaster+'"'
+                # if arcpy:
+                statement = ('arcObj.MosaicToNewRaster_management('
+                            'rasterString,mosaicDir,"mos", "", '
+                            '"32_BIT_FLOAT", gp.cellSize, "1", "MINIMUM", '
+                            '"MATCH")') 
+                count = 0
+                while True:
                     try:
                         exec statement
                         randomerror()
                     except:
-                        if failures < 10:
-                            failures = lu.print_failures(statement, failures)
-                            continue
-                        else: exec statement
-
-                endTime = time.clock()
-                processTime = round((endTime - start_time), 2)
+                        lu.delete_data(path.join(mosaicDir,"mos"))
+                        count,tryAgain = lu.retry_arc_error(count,statement)
+                        if not tryAgain:    
+                            exec statement
+                    else: break
+                                        
+            endTime = time.clock()
+            processTime = round((endTime - start_time), 2)
 
                 if normalize:
-                    printText = "Normalized and mosaicked "
-                else:
-                    printText = "Mosaicked NON-normalized "
-                gprint(printText + "corridor for link "
-                                  "#" + str(linkId)
-                                  + " connecting core areas " + str(corex) +
-                                  " and " + str(corey)+ " in " +
-                                  str(processTime) + " seconds.")
+                printText = "Normalized and mosaicked "
+            else:
+                printText = "Mosaicked NON-normalized "
+            gprint(printText + "corridor for link "
+                              "#" + str(linkId)
+                              + " connecting core areas " + str(corex) +
+                              " and " + str(corey)+ " in " +
+                              str(processTime) + " seconds.")
 
-                if not SAVENORMLCCS:
-                    lu.delete_data(lccNormRaster)
 
-                # temporarily disable links in linktable - don't want to mosaic
-                # them twice
-                for y in range (x+1,numLinks):
-                    corex1 = int(coreList[y,0])
-                    corey1 = int(coreList[y,1])
-                    if corex1 == corex and corey1 == corey:
+            # temporarily disable links in linktable - don't want to mosaic
+            # them twice
+            for y in range (x+1,numLinks):
+                corex1 = int(coreList[y,0])
+                corey1 = int(coreList[y,1])
+                if corex1 == corex and corey1 == corey:
+                    linkTable[y,Cfg.LTB_LINKTYPE] = (
+                        linkTable[y,Cfg.LTB_LINKTYPE] + 1000)
                         linkTable[y,cfg.LTB_LINKTYPE] = (
                             linkTable[y,cfg.LTB_LINKTYPE] + 1000)
-                    elif corex1==corey and corey1==corex:
+                elif corex1==corey and corey1==corex:
                         linkTable[y,cfg.LTB_LINKTYPE] = (
                             linkTable[y,cfg.LTB_LINKTYPE] + 1000)
 
 
-                numGridsWritten = numGridsWritten + 1
-                if SAVENORMLCCS:
-                    if numGridsWritten == 100:
-                        # We only write up to 100 grids to any one folder
-                        # because otherwise Arc slows to a crawl
-                        dirCount = dirCount + 1
-                        numGridsWritten = 0
+            numGridsWritten = numGridsWritten + 1
+            if not SAVENORMLCCS:
+                lu.delete_data(lccNormRaster)
+            else:
+                if numGridsWritten == 100:
+                    # We only write up to 100 grids to any one folder
+                    # because otherwise Arc slows to a crawl
+                    dirCount = dirCount + 1
+                    numGridsWritten = 0
                         clccdir = path.join(cfg.LCCBASEDIR,
                                             cfg.LCCNLCDIR_NM + str(dirCount))
-                        gprint("Creating output folder: " + clccdir)
+                    gprint("Creating output folder: " + clccdir)
                         gp.CreateFolder_management(cfg.LCCBASEDIR,
-                                                       path.basename(clccdir))
+                                                   path.basename(clccdir))
+
+            if numGridsWritten > 1 or dirCount > 0:                                       
+                lu.delete_data(lastMosaicRaster)
+                lu.delete_dir(path.dirname(lastMosaicRaster))
+
+            lastMosaicRaster = mosaicRaster
             x = x + 1
             failures = 0
+
 
         #rows that were temporarily disabled
         rows = npy.where(linkTable[:,cfg.LTB_LINKTYPE]>1000)
@@ -285,7 +316,11 @@ def calc_lccs(normalize):
         lu.snooze(10)
         if not gp.exists(outputGDB):
             gp.createfilegdb(cfg.OUTPUTDIR, path.basename(outputGDB))
-        gp.workspace = outputGDB
+
+        if arcpy:
+            arcpy.env.workspace = outputGDB
+        else:        
+            gp.workspace = outputGDB
 
         gp.pyramid = "NONE"
         gp.rasterstatistics = "NONE"
@@ -295,16 +330,19 @@ def calc_lccs(normalize):
         count = 0
         if arcpy:
             mosRaster = outputGDB + '\\' + PREFIX + mosaicBaseName  # Full path
+            lu.delete_data(mosRaster)
             statement = 'arcpy.CopyRaster_management(mosaicRaster, mosRaster)'
         else:
             mosRaster = PREFIX + mosaicBaseName
+            lu.delete_data(mosRaster)
             statement = 'gp.CopyRaster_management(mosaicRaster, mosRaster)'
 
         while True:
             try:
                 exec statement
+                randomerror()
             except:
-                count,tryAgain = lu.hiccup_test(count,statement)
+                count,tryAgain = lu.retry_arc_error(count,statement)
                 if not tryAgain:
                     exec statement
             else: break
@@ -323,11 +361,12 @@ def calc_lccs(normalize):
         while True:
             try:
                 exec statement
+                randomerror()
             except:
-                count,tryAgain = lu.hiccup_test(count,statement)
+                count,tryAgain = lu.retry_arc_error(count,statement)
                 if not tryAgain: exec statement
             else: break
-        # ---------------------------------------------------------------------
+        # ---------------------------------------------------------------------       
 
 
         saveFloatRaster = False
@@ -350,17 +389,18 @@ def calc_lccs(normalize):
                               + str(cfg.CWDTHRESH) + ",1)))")
                 statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
                                                           'truncRaster)')
+            count = 0
             while True:
                 try:
                     exec statement
+                    randomerror()
                 except:
-                    count,tryAgain = lu.hiccup_test(count,statement)
+                    count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain: exec statement
                 else: break
         # ---------------------------------------------------------------------
 
 
-        start_time = time.clock()
         gprint('Writing final LCP maps...')
         if cfg.STEP4:
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=4,
@@ -373,7 +413,7 @@ def calc_lccs(normalize):
             # Use presence of previous linktable files to figure this out.
             # Linktable name includes step number.
             prevLinkTableFile = lu.get_prev_step_link_table(step=5)
-            prevStepInd = len(prevLinkTableFile)-5
+            prevStepInd = len(prevLinkTableFile) - 5
             lastStep = prevLinkTableFile[prevStepInd]
 
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep,
@@ -462,7 +502,7 @@ def randomerror():
     if generateError:
         gprint('Rolling dice for random error')
         import random
-        test = random.randrange(1, 7)
+        test = random.randrange(1, 3)
         if test == 2:
             gprint('Creating artificial error')
             blarg

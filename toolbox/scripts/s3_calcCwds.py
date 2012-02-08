@@ -99,10 +99,11 @@ def STEP3_calc_cwds():
         gp.Extent = "MINOF"
         gp.mask = cfg.RESRAST
         if arcpy:
+            arcpy.env.overwriteOutput = True
             arcpy.env.workspace = cfg.SCRATCHDIR
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         else:
-            gp.workspace = cfg.SCRATCHDIR
+            gp.OverwriteOutput = True
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
 
         # Load linkTable (created in previous script)
@@ -126,11 +127,10 @@ def STEP3_calc_cwds():
             cfg.S3DROPLCCSic = False
         else:
             cfg.S3DROPLCCSic = cfg.S3DROPLCCS
-
         gprint('Number of core areas to connect:' +
                           str(numCoresToMap))
 
-        if rerun == True:
+        if rerun:
             # If picking up a failed run, make sure needed files are there
             lu.dashline(1)
             gprint ('\n****** RESTART MODE ENABLED ******\n')
@@ -295,9 +295,11 @@ def STEP3_calc_cwds():
             statement = (
                 'gp.ExtractByMask_sa(cfg.RESRAST, cfg.BNDCIR, cfg.BOUNDRESIS)')
             while True:
-                try: exec statement
+                try: 
+                    exec statement
+                    randomerror()
                 except:
-                    count,tryAgain = lu.hiccup_test(count,statement)
+                    count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain: exec statement
                 else: break
             gprint('\nReduced resistance raster extracted using '
@@ -311,22 +313,10 @@ def STEP3_calc_cwds():
         # Rasterize core areas to speed cost distance calcs
         # lu.dashline(1)
         gprint("Creating core area raster.")
-        # core_rastmp="core_rastmp"
 
         gp.SelectLayerByAttribute(cfg.FCORES, "CLEAR_SELECTION")
         gp.cellSize = gp.Describe(cfg.BOUNDRESIS).MeanCellHeight
-        # lu.delete_data(cfg.CORERAS)
         gp.extent = gp.Describe(cfg.BOUNDRESIS).extent
-        # count = 0
-        # statement = ('gp.FeatureToRaster_conversion(cfg.FCORES, '
-                     # 'cfg.COREFN, cfg.CORERAS, gp.cellSize)')
-        # while True:
-            # try: exec statement
-            # except:
-                # count,tryAgain = lu.hiccup_test(count,statement)
-                # if not tryAgain: exec statement
-            # else: break
-
 
         if rerun == True:
             # saved linktable replaces the one now in memory
@@ -340,7 +330,6 @@ def STEP3_calc_cwds():
             lu.dashline(0)
 
         gp.extent = "MINOF"
-
 
         #----------------------------------------------------------------------
         # Loop through cores, do cwd calcs for each
@@ -356,13 +345,6 @@ def STEP3_calc_cwds():
             # make a copy:
             linkTablePassed = linkTableMod.copy()
 
-            # Tried to re-call this whenever any error happened.  Originally
-            # cfg.BNDCIRS
-            # layer caused problems. made copy but code got messier.  See
-            # s3_calcCwds_Attempt_to_wrap_hiccup.py
-            # What's below may be best approach.  Wrap in generic retry code,
-            # with hiccup calls targeted for especially problematic geoproc
-            # tasks
             (linkTableReturned, failures, lcpLoop) = do_cwd_calcs(x,
                         linkTablePassed, coresToMap, lcpLoop, failures)
 
@@ -383,6 +365,7 @@ def STEP3_calc_cwds():
                 # If iteration failed, try again after a wait period
                 delay_restart(failures)
         #----------------------------------------------------------------------
+        
         linkTable = linkTableMod
 
         # reinstate temporarily disabled links
@@ -448,16 +431,18 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Create temporary scratch directory just this focal core
         coreDir = path.join(cfg.SCRATCHDIR, 'core' + str(sourceCore))
         lu.delete_dir(coreDir)
-        lu.createfolder(coreDir)
+        lu.create_dir(coreDir)
 
         if arcpy:
             gp = arcpy.gp
             arcpy.env.workspace = coreDir
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
+            arcpy.env.overwriteOutput = True            
         else:
             gp = cfg.gp
             gp.workspace = coreDir
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
+            gp.OverwriteOutput = True
         gp.Extent = "MINOF"
 
         write_cores_to_map(x, coresToMap)
@@ -696,7 +681,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     randomerror()
                 except:
                     failures = lu.print_failures(statement, failures)
-                    gprint('failures='+str(failures))
                     if failures < 20:
                         return None,failures,lcpLoop
                     else:
@@ -816,9 +800,11 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
             expression = (lcpRas + " + " + corePairRas)
             statement = ('gp.SingleOutputMapAlgebra_sa(expression, "addRas")')
         while True:
-            try: exec statement
+            try: 
+                exec statement
+                randomerror()
             except:
-                count,tryAgain = lu.hiccup_test(count,statement)
+                count,tryAgain = lu.retry_arc_error(count,statement)
                 if not tryAgain: exec statement
             else: break
         #addRasPath = path.join(workspace,"addRas")
@@ -885,7 +871,7 @@ def randomerror():
     if generateError == True:
         gprint('Rolling dice for random error')
         import random
-        test = random.randrange(1, 9)
+        test = random.randrange(1, 4)
         if test == 2:
             gprint('Creating artificial error')
             blarg

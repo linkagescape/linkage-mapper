@@ -22,9 +22,11 @@ _filename = path.basename(__file__)
 
 
 def STEP6_calc_barriers():
+    """Detects influential barriers given CWD calculations from
+       s3_calcCwds.py.
+
     """
-    Detects influential barriers given CWD calculations from s3_calcCwds.py.
-    """
+
 # Fixme: add option to save individual barrier files?
     gprint = lu.gprint
     try:
@@ -401,5 +403,3 @@ def STEP6_calc_barriers():
         lu.print_python_error(_filename)
 
     return
-
-

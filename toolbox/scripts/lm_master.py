@@ -50,17 +50,17 @@ def lm_master():
         # Create output directories if they don't exist
         if gp.Exists(cfg.OUTPUTDIR):
             gp.RefreshCatalog(cfg.OUTPUTDIR)
-        lu.createfolder(cfg.OUTPUTDIR)
-        lu.createfolder(cfg.LOGDIR)
-        lu.createfolder(cfg.MESSAGEDIR)
-        lu.createfolder(cfg.DATAPASSDIR)
+        lu.create_dir(cfg.OUTPUTDIR)
+        lu.create_dir(cfg.LOGDIR)
+        lu.create_dir(cfg.MESSAGEDIR)
+        lu.create_dir(cfg.DATAPASSDIR)
         # Create fresh scratch directory if not restarting in midst of step 3
         # if cfg.S2EUCDISTFILE != None:
             # if cfg.S2EUCDISTFILE.lower() == "restart": pass
         # else:
         lu.delete_dir(cfg.SCRATCHDIR)
-        lu.createfolder(cfg.SCRATCHDIR)
-        lu.createfolder(cfg.ARCSCRATCHDIR)
+        lu.create_dir(cfg.SCRATCHDIR)
+        lu.create_dir(cfg.ARCSCRATCHDIR)
         cfg.logFile = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, cfg.PARAMS)
 
         installD = gp.GetInstallInfo("desktop")
@@ -117,13 +117,12 @@ def lm_master():
         def delete_final_gdb(finalgdb):
             """Deletes final geodatabase"""
             if gp.Exists(finalgdb) and cfg.STEP5:
-                try:
-                    lu.clean_out_workspace(finalgdb)
-                    lu.delete_data(finalgdb)
-                except:
+                lu.clean_out_workspace(finalgdb)
+                lu.delete_data(finalgdb)
+                if gp.Exists(finalgdb):
                     lu.dashline(1)
                     msg = ('ERROR: Could not remove contents of geodatabase ' +
-                           finalgdb + '. Is it open in ArcMap?\n You may '
+                           finalgdb + '. \nIs it open in ArcMap? You may '
                            'need to re-start ArcMap to release the file lock.')
                     lu.raise_error(msg)
 
@@ -155,7 +154,7 @@ def lm_master():
         # severity = gp.MaxSeverity
         # gprint(str(severity))
         # test=gp.GetMessages(2)
-        # if severity>1:
+        # if severity > 1:
             # gprint('Linkage Mapper SUCCEEDED. You can ignore any failure '
                     # 'messages from ArcGIS below.')
          

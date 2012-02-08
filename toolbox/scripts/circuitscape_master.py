@@ -82,7 +82,7 @@ def circuitscape_master():
             gprint("Creating output folder: " + cfg.CENTRALITYBASEDIR)
             if path.exists(cfg.CENTRALITYBASEDIR):
                 shutil.rmtree(cfg.CENTRALITYBASEDIR)
-            lu.createfolder(cfg.CENTRALITYBASEDIR)
+            lu.create_dir(cfg.CENTRALITYBASEDIR)
             gp.CreateFolder_management(cfg.CENTRALITYBASEDIR,
                                         cfg.CIRCUITOUTPUTDIR_NM)
             gp.CreateFolder_management(cfg.CENTRALITYBASEDIR,
@@ -96,7 +96,7 @@ def circuitscape_master():
         if cfg.DOPINCH:
             gprint("Creating output folder: " + cfg.CIRCUITBASEDIR)
             lu.delete_dir(cfg.CIRCUITBASEDIR)
-            lu.createfolder(cfg.CIRCUITBASEDIR)
+            lu.create_dir(cfg.CIRCUITBASEDIR)
             gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
                                         cfg.CIRCUITOUTPUTDIR_NM)
             gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
