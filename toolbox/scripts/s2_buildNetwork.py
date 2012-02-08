@@ -74,7 +74,7 @@ def STEP2_build_network():
             eucdist_file = Cfg.S2EUCDISTFILE
         
         eucDists_in = npy.loadtxt(eucdist_file, dtype='Float64', comments='#')
-
+        
         if eucDists_in.size == 3:  # If just one line in file
             eucDists = npy.zeros((1,3),dtype = 'Float64')
             eucDists[0,:] = eucDists_in
@@ -123,7 +123,7 @@ def STEP2_build_network():
         linkTable = npy.zeros((len(eucDists), 10), dtype='int32')
         linkTable[:, 1:3] = eucDists[:, 0:2]
         linkTable[:, Cfg.LTB_EUCDIST] = eucDists[:, 2]
-
+        
         #----------------------------------------------------------------------
         # Get adjacencies using adj files from step 1.
         cwdAdjTable = get_adj_list(CWDADJFILE)
@@ -153,13 +153,13 @@ def STEP2_build_network():
         for x in range(0, linkTable.shape[0]):
             listEntry=(str(linkTable[x, Cfg.LTB_CORE1])+'_'+str(linkTable[x, Cfg.LTB_CORE2]))
             if listEntry in cwdAdjList:
-                linkTable[:, Cfg.LTB_CWDADJ] = 1
+                linkTable[x, Cfg.LTB_CWDADJ] = 1
             else:
-                linkTable[:, Cfg.LTB_CWDADJ] = 0                
+                linkTable[x, Cfg.LTB_CWDADJ] = 0                
             if listEntry in eucAdjList:
-                linkTable[:, Cfg.LTB_EUCADJ] = 1
+                linkTable[x, Cfg.LTB_EUCADJ] = 1
             else:
-                linkTable[:, Cfg.LTB_EUCADJ] = 0
+                linkTable[x, Cfg.LTB_EUCADJ] = 0
         
         if Cfg.S2ADJMETH_CW and Cfg.S2ADJMETH_EU:  # "Keep all adjacent links"
             gprint("\nKeeping all adjacent links\n")
