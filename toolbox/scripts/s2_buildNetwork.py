@@ -58,7 +58,7 @@ def STEP2_build_network():
             eucdist_file = cfg.S2EUCDISTFILE
 
         eucDists_in = npy.loadtxt(eucdist_file, dtype='Float64', comments='#')
-
+        
         if eucDists_in.size == 3:  # If just one line in file
             eucDists = npy.zeros((1, 3), dtype='Float64')
             eucDists[0, :] = eucDists_in
@@ -106,7 +106,7 @@ def STEP2_build_network():
         linkTable = npy.zeros((len(eucDists), 10), dtype='int32')
         linkTable[:, 1:3] = eucDists[:, 0:2]
         linkTable[:, cfg.LTB_EUCDIST] = eucDists[:, 2]
-
+        
         #----------------------------------------------------------------------
         # Get adjacencies using adj files from step 1.
         cwdAdjTable = get_adj_list(cfg.CWDADJFILE)
@@ -246,13 +246,13 @@ def STEP2_build_network():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
     return
 
@@ -274,13 +274,13 @@ def get_adj_list(adjFile):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
 
 def generate_distance_file():
@@ -298,12 +298,12 @@ def generate_distance_file():
             COREFC_SIMP = path.join(cfg.SCRATCHDIR, "CoreFC_Simp.shp")
             tolerance = float(gp.CellSize) / 3
 
-            arc10 = True
             try:
+                import arcpy
                 import arcpy.cartography as CA
             except:
-                arc10 = False
-            if arc10:
+                arcpy = False
+            if arcpy:
                 CA.SimplifyPolygon(cfg.COREFC, COREFC_SIMP, "POINT_REMOVE",
                                     tolerance, "#", "NO_CHECK")
             else:
@@ -377,13 +377,13 @@ def generate_distance_file():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
 
 def print_conefor_warning():
@@ -430,10 +430,10 @@ def get_full_adj_list():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)

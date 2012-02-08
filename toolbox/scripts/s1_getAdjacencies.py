@@ -87,13 +87,13 @@ def STEP1_get_adjacencies():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
     return
 
 
@@ -170,13 +170,13 @@ def cwadjacency():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
 
 def euadjacency():
@@ -238,14 +238,14 @@ def euadjacency():
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
 
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
 
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
 
 def adjshiftwrite(araster, csvfile, logfile):

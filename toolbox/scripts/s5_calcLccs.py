@@ -55,11 +55,11 @@ def STEP5_calc_lccs():
     except:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
 
 def calc_lccs(normalize):
-    try:
+    try:  
         if normalize == True:
             mosaicBaseName = "_lcc_mosaic"
             writeTruncRaster = cfg.WRITETRUNCRASTER
@@ -150,24 +150,19 @@ def calc_lccs(normalize):
         coreList = linkTable[:,cfg.LTB_CORE1:cfg.LTB_CORE2+1]
         coreList = npy.sort(coreList)
 
-        failures = 0
         x = 0
         endIndex = numLinks
         while x < endIndex:
             if (linkTable[x, cfg.LTB_LINKTYPE] < 1): # If not a valid link
                 x = x + 1
-                failures = 0
                 continue
             
             start_time = time.clock() 
-            mosaicDir = path.join(cfg.LCCBASEDIR, 'mos'+str(x))
-            if failures > 0: # If this is a retry
-                lu.delete_data(mosaicRaster)
-                lu.delete_dir(mosaicDir)
-                delay_restart(failures)
+            mosaicDir = path.join(Cfg.LCCBASEDIR,'mos'+str(x+1))
 
             lu.create_dir(mosaicDir)
-            mosaicRaster = path.join(mosaicDir,'mos')
+            mosFN = 'mos'
+            mosaicRaster = path.join(mosaicDir,mosFN)
             
             linkId = str(int(linkTable[x, cfg.LTB_LINKID]))
 
@@ -223,7 +218,6 @@ def calc_lccs(normalize):
                     randomerror()
                 except:
                     count,tryAgain = lu.retry_arc_error(count,statement)
-                    randomerror()
                     if not tryAgain:    
                         exec statement
                 else: break
@@ -234,10 +228,10 @@ def calc_lccs(normalize):
                 #If this is the first grid then copy rather than mosaic
                 gp.CopyRaster_management(lccNormRaster, mosaicRaster)
             else:
+                
                 rasterString = '"'+lccNormRaster+";"+lastMosaicRaster+'"'
-                # if arcpy:
                 statement = ('arcObj.MosaicToNewRaster_management('
-                            'rasterString,mosaicDir,"mos", "", '
+                            'rasterString,mosaicDir,mosFN, "", '
                             '"32_BIT_FLOAT", gp.cellSize, "1", "MINIMUM", '
                             '"MATCH")') 
                 count = 0
@@ -246,8 +240,13 @@ def calc_lccs(normalize):
                         exec statement
                         randomerror()
                     except:
-                        lu.delete_data(path.join(mosaicDir,"mos"))
                         count,tryAgain = lu.retry_arc_error(count,statement)
+                        lu.delete_data(mosaicRaster)
+                        lu.delete_dir(mosaicDir)
+                        # Try a new directory
+                        mosaicDir = path.join(Cfg.LCCBASEDIR,'mos'+str(x+1)+ '_' + str(count))
+                        lu.create_dir(mosaicDir)
+                        mosaicRaster = path.join(mosaicDir,mosFN)                        
                         if not tryAgain:    
                             exec statement
                     else: break
@@ -264,7 +263,6 @@ def calc_lccs(normalize):
                               + " connecting core areas " + str(corex) +
                               " and " + str(corey)+ " in " +
                               str(processTime) + " seconds.")
-
 
             # temporarily disable links in linktable - don't want to mosaic
             # them twice
@@ -302,7 +300,6 @@ def calc_lccs(normalize):
 
             lastMosaicRaster = mosaicRaster
             x = x + 1
-            failures = 0
 
 
         #rows that were temporarily disabled
@@ -476,34 +473,33 @@ def calc_lccs(normalize):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
-        lu.print_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_filename)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
-        lu.print_python_error(_filename)
+        lu.exit_with_python_error(_filename)
 
     return
-
-
-def delay_restart(failures):
-    gprint('That was try #' + str(failures) + ' of 10 for this corridor.')
-    gprint('Restarting iteration in ' + str(10*failures) + ' seconds. ')
-    lu.dashline(2)
-    lu.snooze(10*failures)
-
-
+       
+    
 def randomerror():
     """ Used to test error recovery.
 
     """
     generateError = False # Set to True to create random errors
     if generateError:
-        gprint('Rolling dice for random error')
+        gprint('\n***Rolling dice for random error***')
         import random
-        test = random.randrange(1, 3)
+        test = random.randrange(1, 8)
         if test == 2:
-            gprint('Creating artificial error')
-            blarg
-    return
+            gprint('Creating artificial ArcGIS error')
+            gp.MosaicToNewRaster_management(
+                            "rasterString","mosaicDir","mosFN", "", 
+                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM", 
+                            "MATCH")
+        elif test == 3:
+            gprint('Creating artificial python error')
+            artificialPythonError
+    return           
