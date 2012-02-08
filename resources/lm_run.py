@@ -1,22 +1,30 @@
 #!/usr/bin/env python2.5
 
 """Script to run Linkage Mapper"""
-import arcgisscripting
+import sys
+import os.path as path
+
+
+_filename = path.basename(__file__)
 
 
 def main():
     """Runs Linkage Mapper with coded inputs"""
-    gp = arcgisscripting.create(9.3)
-
-    gp.AddToolbox("..\\toolbox\\Linkage Mapper.tbx")
-    gp.Workspace = "C:\\lm_test"
-
-    gp.MapLinkages(
-        "demoProject", "/demoData/Cores.shp", "core_ID", 
-        "/demoData/resistances", "true", "true", 
-        "Cost-Weighted & Euclidean", "C:/lm_test/demoData/distances_Cores.txt",
-        "true", "true", "false", "4", "Cost-Weighted", "false", "true", 
-        "100000", "100000", "100000")
+    proj_dir = "V:\\demoProject"
+    core_fc = "V:\\demoData\\Cores.shp"
+    core_fl = "core_ID"
+    resis_rast = "V:\\demoData\\resistances"
+    # distance_file = "V:\\demoData\\distances_Cores.txt"
+    
+    arg = (_filename, proj_dir, core_fc, core_fl, resis_rast, "true", "true",
+            "Cost-Weighted & Euclidean", "#",
+            "true", "true", "false", "4", "Cost-Weighted", "false", "true",
+            "100000", "100000", "100000")
+    sys.argv = arg
+    
+    sys.path.append('..//toolbox//scripts')
+    import lm_master
+    lm_master.lm_master()
 
 
 if __name__ == "__main__":
