@@ -10,7 +10,6 @@ Numpy
 
 """
 
-import os.path as path
 import sys
 
 import arcgisscripting
@@ -23,7 +22,7 @@ import s3_calcCwds as s3
 import s4_refineNetwork as s4
 import s5_calcLccs as s5
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "lm_master.py"
 #__version__ = "$Revision$"
 
 
@@ -157,16 +156,15 @@ def lm_master():
         # if severity > 1:
             # gprint('Linkage Mapper SUCCEEDED. You can ignore any failure '
                     # 'messages from ArcGIS below.')
-         
+
         return
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 if __name__ == "__main__":
     lm_master()
-    
