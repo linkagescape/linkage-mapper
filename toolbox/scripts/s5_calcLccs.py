@@ -16,7 +16,7 @@ import numpy as npy
 from lm_config import tool_env as cfg
 import lm_util as lu
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "s5_calcLccs.py"
 
 try:
     import arcpy
@@ -45,7 +45,7 @@ def STEP5_calc_lccs():
         calc_lccs(normalize)
 
         #Code to allow extra iteration to mosaic NON-normalized LCCs
-        if cfg.CALCNONNORMLCCS == True:
+        if cfg.CALCNONNORMLCCS:
             normalize = False
             lu.dashline(1)
             gprint('\n**EXTRA STEP 5 RUN to mosaic NON-normalized corridors**')
@@ -55,12 +55,12 @@ def STEP5_calc_lccs():
     except:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 def calc_lccs(normalize):
     try:  
-        if normalize == True:
+        if normalize:
             mosaicBaseName = "_lcc_mosaic"
             writeTruncRaster = cfg.WRITETRUNCRASTER
             outputGDB = cfg.OUTPUTGDB
@@ -75,7 +75,7 @@ def calc_lccs(normalize):
             writeTruncRaster = False
 
         lu.dashline(1)
-        gprint('Running script ' + _filename)
+        gprint('Running script ' + _SCRIPT_NAME)
         linkTableFile = lu.get_prev_step_link_table(step=5)
         if arcpy:
             arcpy.env.workspace = cfg.SCRATCHDIR
@@ -229,7 +229,8 @@ def calc_lccs(normalize):
                 gp.CopyRaster_management(lccNormRaster, mosaicRaster)
             else:
                 
-                rasterString = '"'+lccNormRaster+";"+lastMosaicRaster+'"'
+                rasterString = ('"' + lccNormRaster + ";" + lastMosaicRaster 
+                                + '"')
                 statement = ('arcObj.MosaicToNewRaster_management('
                             'rasterString,mosaicDir,mosFN, "", '
                             '"32_BIT_FLOAT", gp.cellSize, "1", "MINIMUM", '
@@ -473,13 +474,13 @@ def calc_lccs(normalize):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
     return
        

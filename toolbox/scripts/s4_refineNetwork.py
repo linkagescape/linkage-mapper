@@ -22,7 +22,7 @@ import numpy as npy
 from lm_config import tool_env as cfg
 import lm_util as lu
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "s4_refineNetwork.py"
 
 
 def STEP4_refine_network():
@@ -34,7 +34,7 @@ def STEP4_refine_network():
     try:
 
         lu.dashline(1)
-        cfg.gp.addmessage('Running script ' + _filename)
+        cfg.gp.addmessage('Running script ' + _SCRIPT_NAME)
         cfg.gp.Workspace = cfg.OUTPUTDIR
 
         linkTableFile = lu.get_prev_step_link_table(step=4)
@@ -215,11 +215,11 @@ def STEP4_refine_network():
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         cfg.gp.addmessage('****Failed in step 4. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         cfg.gp.addmessage('****Failed in step 4. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
     return

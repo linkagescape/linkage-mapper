@@ -20,7 +20,7 @@ import lm_util as lu
 import s6_barriers as s6
 
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "barrier_master.py"
 
 
 def bar_master():
@@ -68,11 +68,11 @@ def bar_master():
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 if __name__ == "__main__":
     bar_master()

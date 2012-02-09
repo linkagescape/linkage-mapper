@@ -11,20 +11,19 @@ extent of cwd calculations and speed computation.
 
 
 import os.path as path
-import shutil
 import time
 import numpy as npy
 
 from lm_config import tool_env as cfg
 import lm_util as lu
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "s3_calcCwds.py"
 
 try:
     import arcpy
     from arcpy.sa import *
     arcpy.CheckOutExtension("spatial")
-    gp=arcpy.gp
+    gp = arcpy.gp
     arcgisscripting = arcpy
 except:
     arcpy = False
@@ -55,7 +54,7 @@ def write_cores_to_map(x, coresToMap):
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 
@@ -67,7 +66,7 @@ def STEP3_calc_cwds():
     """
     try:
         lu.dashline(1)
-        gprint('Running script ' + _filename)
+        gprint('Running script ' + _SCRIPT_NAME)
         lu.dashline(0)
 
         # Super secret setting to re-start failed run.  Enter 'RESTART' as the
@@ -153,7 +152,7 @@ def STEP3_calc_cwds():
                 rerun = False
 
 
-        if rerun == False: # If picking up a failed run, use old folders
+        if not rerun: # If picking up a failed run, use old folders
             startIndex = 0
 
             #remove cwd directory
@@ -318,7 +317,7 @@ def STEP3_calc_cwds():
         gp.cellSize = gp.Describe(cfg.BOUNDRESIS).MeanCellHeight
         gp.extent = gp.Describe(cfg.BOUNDRESIS).extent
 
-        if rerun == True:
+        if rerun:
             # saved linktable replaces the one now in memory
             linkTable = lu.load_link_table(savedLinkTableFile)
             coresToMapSaved = npy.loadtxt(coreListFile, dtype='Float64',
@@ -411,13 +410,13 @@ def STEP3_calc_cwds():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
     return
 
@@ -773,13 +772,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 def test_for_intermediate_core(workspace,lcpRas,corePairRas):
@@ -828,13 +827,13 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
-        lu.exit_with_python_error(_filename)    
+        lu.exit_with_python_error(_SCRIPT_NAME)    
 
 def delay_restart(failures):
     gprint('That was try #' + str(failures) + ' of 20 for this core area.')
@@ -868,7 +867,7 @@ def randomerror():
 
     """
     generateError = False # Set to True to create random errors
-    if generateError == True:
+    if generateError:
         gprint('\n***Rolling dice for random error***')
         import random
         test = random.randrange(1, 30)
