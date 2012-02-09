@@ -21,7 +21,7 @@ import s7_centrality as s7
 import s8_pinchpoints as s8
 
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "circuitscape_master.py"
 
 
 def circuitscape_master():
@@ -115,11 +115,11 @@ def circuitscape_master():
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 if __name__ == "__main__":

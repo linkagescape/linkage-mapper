@@ -15,7 +15,7 @@ from lm_config import tool_env as cfg
 import lm_util as lu
 
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "s7_centrality.py"
 
 arcpy.CheckOutExtension("spatial")
 
@@ -29,7 +29,7 @@ def STEP7_calc_centrality():
     """
     try:
         lu.dashline(0)
-        gprint('Running script ' + _filename)
+        gprint('Running script ' + _SCRIPT_NAME)
 
         arcpy.env.workspace = cfg.SCRATCHDIR
 
@@ -210,13 +210,13 @@ def STEP7_calc_centrality():
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
     return
 
@@ -262,7 +262,7 @@ def make_graph_from_list(graphList):
     except:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 

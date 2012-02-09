@@ -18,7 +18,7 @@ from lm_config import tool_env as cfg
 import lm_util as lu
 
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "s6_barriers.py"
 
 
 def STEP6_calc_barriers():
@@ -33,7 +33,7 @@ def STEP6_calc_barriers():
         arcpy.CheckOutExtension("spatial")
 
         lu.dashline(0)
-        gprint('Running script ' + _filename)
+        gprint('Running script ' + _SCRIPT_NAME)
 
         startRadius = float(cfg.STARTRADIUS)
         endRadius = float(cfg.ENDRADIUS)
@@ -394,12 +394,12 @@ def STEP6_calc_barriers():
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 6. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 6. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
     return

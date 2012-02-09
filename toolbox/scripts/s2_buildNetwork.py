@@ -17,7 +17,7 @@ import time
 from lm_config import tool_env as cfg
 import lm_util as lu
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "s2_buildNetwork.py"
 
 gp = cfg.gp
 gprint = lu.gprint
@@ -30,7 +30,7 @@ def STEP2_build_network():
     """
     try:
         lu.dashline(1)
-        gprint('Running script ' + _filename)
+        gprint('Running script ' + _SCRIPT_NAME)
         outlinkTableFile = lu.get_this_step_link_table(step=2)
 
         # Warning flag for missing distances in conefor file
@@ -246,13 +246,13 @@ def STEP2_build_network():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
     return
 
@@ -274,13 +274,13 @@ def get_adj_list(adjFile):
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 def generate_distance_file():
@@ -377,13 +377,13 @@ def generate_distance_file():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 def print_conefor_warning():
@@ -430,10 +430,10 @@ def get_full_adj_list():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)

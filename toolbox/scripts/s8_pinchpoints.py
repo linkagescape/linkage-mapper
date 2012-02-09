@@ -17,7 +17,7 @@ from arcpy.sa import *
 from lm_config import tool_env as cfg
 import lm_util as lu
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "s8_pinchpoints.py"
 
 arcpy.CheckOutExtension("spatial")
 
@@ -32,7 +32,7 @@ def STEP8_calc_pinchpoints():
     try:
         gc.collect()
         lu.dashline(0)
-        gprint('Running script ' + _filename)
+        gprint('Running script ' + _SCRIPT_NAME)
 
         CSPATH = lu.get_cs_path()
         if CSPATH == None:
@@ -60,7 +60,7 @@ def STEP8_calc_pinchpoints():
         arcpy.snapraster = cfg.RESRAST
         resRaster = cfg.RESRAST
 
-        if cfg.DO_ADJACENTPAIRS == True:
+        if cfg.DO_ADJACENTPAIRS:
             prevLcpShapefile = lu.get_lcp_shapefile(None, thisStep = 8)
             if not arcpy.Exists(prevLcpShapefile):
                 msg = ('Cannot find an LCP shapefile from step 5.  Please '
@@ -76,7 +76,7 @@ def STEP8_calc_pinchpoints():
         numLinks = linkTable.shape[0]
         numCorridorLinks = lu.report_links(linkTable)
         if numCorridorLinks == 0:
-            dashline(1)
+            lu.dashline(1)
             msg =('\nThere are no linkages. Bailing.')
             lu.raise_error(msg)
 
@@ -116,7 +116,7 @@ def STEP8_calc_pinchpoints():
                                   cfg.CIRCUITOUTPUTDIR_NM)
         CONFIGDIR = path.join(INCIRCUITDIR, cfg.CIRCUITCONFIGDIR_NM)
 
-        if cfg.SQUARERESISTANCES == True:
+        if cfg.SQUARERESISTANCES:
             # Square resistance values
             squaredRaster = path.join(cfg.SCRATCHDIR,'res_sqr')
             arcpy.env.workspace = cfg.SCRATCHDIR
@@ -125,7 +125,7 @@ def STEP8_calc_pinchpoints():
             outRas.save(squaredRaster)
             resRaster = squaredRaster
 
-        if cfg.DO_ADJACENTPAIRS == True:
+        if cfg.DO_ADJACENTPAIRS:
             pctDone = 0
             linkLoop = 0
             lu.dashline(1)
@@ -277,7 +277,7 @@ def STEP8_calc_pinchpoints():
                 linkTable[link,cfg.LTB_EFFRESIST] = resistance
 
                 # Ratio
-                if cfg.SQUARERESISTANCES == True:
+                if cfg.SQUARERESISTANCES:
                     linkTable[link,cfg.LTB_CWDTORR] = -1
                 else:
                     linkTable[link,cfg.LTB_CWDTORR] = (linkTable[link,cfg.LTB_CWDIST] /
@@ -328,7 +328,7 @@ def STEP8_calc_pinchpoints():
 
             lu.delete_data(mosaicRaster)
 
-        if cfg.DO_ALLPAIRS == False:
+        if not cfg.DO_ALLPAIRS:
             # Clean up temporary files
             if not cfg.SAVECURRENTMAPS:
                 lu.delete_dir(OUTCIRCUITDIR)
@@ -433,13 +433,13 @@ def STEP8_calc_pinchpoints():
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 
@@ -463,13 +463,13 @@ def export_ras_to_npy(raster,npyFile):
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     try:
@@ -488,13 +488,13 @@ def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 def write_header(raster,numpyArray,numpyFile):
         ncols=numpyArray.shape[1]

@@ -18,7 +18,7 @@ import arcgisscripting
 from lm_config import tool_env as cfg
 import lm_util as lu
 
-_filename = path.basename(__file__)
+_SCRIPT_NAME = "s1_getAdjacencies.py"
 
 gp = cfg.gp
 gprint = lu.gprint
@@ -31,7 +31,7 @@ def STEP1_get_adjacencies():
     """
     try:
         lu.dashline(1)
-        gprint('Running script ' + _filename)
+        gprint('Running script ' + _SCRIPT_NAME)
 
         # Default behavior is to use same cell size as resistance raster,
         # but this can be changed here.
@@ -87,13 +87,13 @@ def STEP1_get_adjacencies():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
     return
 
 
@@ -170,13 +170,13 @@ def cwadjacency():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 def euadjacency():
@@ -238,14 +238,14 @@ def euadjacency():
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
 
-        lu.exit_with_geoproc_error(_filename)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
 
-        lu.exit_with_python_error(_filename)
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 def adjshiftwrite(araster, csvfile, logfile):
