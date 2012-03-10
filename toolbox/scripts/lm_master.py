@@ -41,6 +41,8 @@ def lm_master():
     try:
         gprint = lu.gprint
 
+
+        
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
         gp.OverwriteOutput = True
@@ -70,6 +72,9 @@ def lm_master():
                 installD['Version'] + ' Service Pack ' + installD['SPNumber'])
         except:
             pass
+            
+        # Set data frame spatial reference to coordinate system of input data 
+        lu.set_dataframe_sr()
 
         # Check core ID field and project directory name.
         lu.check_cores(cfg.COREFC, cfg.COREFN)
@@ -111,6 +116,12 @@ def lm_master():
             # Make core raster file
             gprint('\nMaking temporary raster of core file for this run.')
             lu.delete_data(cfg.CORERAS)
+            
+            
+            
+            gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
+
+           
             gp.FeatureToRaster_conversion(cfg.COREFC, cfg.COREFN,
                           cfg.CORERAS, gp.Describe(cfg.RESRAST).MeanCellHeight)
          # #   gp.RasterToPolygon_conversion(cfg.CORERAS, cfg.COREFC,
@@ -134,7 +145,7 @@ def lm_master():
         delete_final_gdb(cfg.EXTRAGDB)
         delete_final_gdb(cfg.LINKMAPGDB)
 
-        gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
+        
         # Run linkage mapper processing steps
         if cfg.STEP1:
             s1.STEP1_get_adjacencies()
