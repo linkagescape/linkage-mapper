@@ -3,6 +3,10 @@
 
 """Maps pinch points using Circuitscape given CWD calculations from
        s3_calcCwds.py.
+Reguired Software:
+ArcGIS 10 with Spatial Analyst extension
+Python 2.6
+Numpy
 """
 
 import os.path as path
@@ -21,6 +25,7 @@ _SCRIPT_NAME = "s8_pinchpoints.py"
 
 arcpy.CheckOutExtension("spatial")
 
+SETCORESTONULL = True
 gprint = lu.gprint
 
 
@@ -137,6 +142,8 @@ def STEP8_calc_pinchpoints():
                 linkId = str(int(linkTable[x,cfg.LTB_LINKID]))
                 if not (linkTable[x,cfg.LTB_LINKTYPE] > 0):
                     continue
+                linkDir = path.join(cfg.SCRATCHDIR, 'link' + linkId)
+                lu.create_dir(linkDir)
                 start_time1 = time.clock()
                 pctDone = lu.report_pct_done(linkLoop, numCorridorLinks,
                                              pctDone)
@@ -150,7 +157,7 @@ def STEP8_calc_pinchpoints():
                 cwdRaster1 = lu.get_cwd_path(corex)
                 cwdRaster2 = lu.get_cwd_path(corey)
 
-                lccNormRaster = path.join(cfg.SCRATCHDIR, 'lcc_norm')
+                lccNormRaster = path.join(linkDir, 'lcc_norm')
                 arcpy.env.extent = "MINOF"
 
                 link = lu.get_links_from_core_pairs(linkTable, corex,
@@ -167,24 +174,23 @@ def STEP8_calc_pinchpoints():
                 outRas.save(lccNormRaster)
 
                 #create raster mask
-                resMaskRaster = path.join(cfg.SCRATCHDIR, 'res_mask')
+                resMaskRaster = path.join(linkDir, 'res_mask')
 
                 #create raster mask
                 # expression = ("(con(" + lccNormRaster + " <= " +
-                              # str(cfg.CWDcfg.CUTOFF) + ", 1))")
-
-                outCon = arcpy.sa.Con(Raster(lccNormRaster) <= cfg.CUTOFF, 1)
+                              # str(cfg.CWDCUTOFF) + ", 1))")
+                outCon = arcpy.sa.Con(Raster(lccNormRaster) <= cfg.CWDCUTOFF, 1)
                 outCon.save(resMaskRaster)
                 # gp.singleOutputMapAlgebra_sa(expression, resMaskRaster)
 
                 # Convert to poly.  Use as mask to clip resistance raster.
-                resMaskPoly = path.join(cfg.SCRATCHDIR,
+                resMaskPoly = path.join(linkDir,
                                         'res_mask_poly.shp')
                 arcpy.RasterToPolygon_conversion(resMaskRaster, resMaskPoly,
                                               "NO_SIMPLIFY")
                 arcpy.env.extent = resMaskPoly
 
-                resClipRasterMasked = path.join(cfg.SCRATCHDIR,
+                resClipRasterMasked = path.join(linkDir,
                                                 'res_clip_m')
                 outRas = arcpy.sa.ExtractByMask(resRaster, resMaskPoly)
 
@@ -193,7 +199,7 @@ def STEP8_calc_pinchpoints():
                 resNpyFN = 'resistances_link_' + linkId + '.npy'
                 resNpyFile = path.join(INCIRCUITDIR, resNpyFN)
                 numElements = export_ras_to_npy(resClipRasterMasked,resNpyFile)
-                corePairRaster = path.join(cfg.SCRATCHDIR, 'core_pairs')
+                corePairRaster = path.join(linkDir, 'core_pairs')
 
                 arcpy.env.extent = resClipRasterMasked
                 # expression = ("con(" + cwdRaster1 + " == 0, " + str(corex)
@@ -231,32 +237,46 @@ def STEP8_calc_pinchpoints():
                                 creationflags = subprocess.CREATE_NEW_CONSOLE)
                 else:
                     subprocess.call([CSPATH, outConfigFile], shell=True)
-
-                # Read in results
-                currentFN = ('Circuitscape_link' + linkId
+                # Read in results                
+                currentFN = ('Circuitscape_link' + linkId 
                             + '_cum_curmap.npy')
                 currentMap = path.join(OUTCIRCUITDIR, currentFN)
+                
+                if not arcpy.Exists(currentMap):
+                    gprint('Circuitscape failed.  Trying again in 10 seconds.')
+                    lu.snooze(10)
+                    test = subprocess.call([CSPATH, outConfigFile], 
+                                creationflags = subprocess.CREATE_NEW_CONSOLE)
+                
+
+                    currentFN = ('Circuitscape_link' + linkId 
+                                + '_cum_curmap.npy')
+                    currentMap = path.join(OUTCIRCUITDIR, currentFN)
+                
                 if not arcpy.Exists(currentMap):
                     lu.dashline(1)
-                    msg = ('ERROR: It looks like Circuitscape failed.  If '
-                         '\nresistance raster values vary by > 6 orders of'
-                         '\nmagnitude, that may have caused this.')
+                    msg = ('ERROR: It looks like Circuitscape failed.  '
+                         '\nResistance raster values that vary by > 6 orders of'
+                         '\nmagnitude  can cause this, as can a mismatch in '
+                         '\ncore area and resistance raster extents.')
+
                     arcpy.AddError(msg)
                     lu.write_log(msg)
                     exit(1)
 
                 # Either set core areas to nodata in current map or
                 # divide each by its radius
-                currentRaster = path.join(cfg.SCRATCHDIR, "current")
+                currentRaster = path.join(linkDir, "current")
                 import_npy_to_ras(currentMap,corePairRaster,currentRaster)
 
                 arcpy.env.extent = currentRaster
 
-                # Set core areas to NoData in current map for color ramping
-                currentRaster2 = currentRaster + '2'
-                outCon = arcpy.sa.Con(arcpy.sa.IsNull(Raster(corePairRaster)), Raster(currentRaster))
-                outCon.save(currentRaster2)
-                currentRaster = currentRaster2
+                if SETCORESTONULL:
+                    # Set core areas to NoData in current map for color ramping
+                    currentRaster2 = currentRaster + '2'
+                    outCon = arcpy.sa.Con(arcpy.sa.IsNull(Raster(corePairRaster)), Raster(currentRaster))
+                    outCon.save(currentRaster2)
+                    currentRaster = currentRaster2
                 arcpy.env.extent = "MAXOF"
                 if linkLoop == 1:
                     lu.delete_data(mosaicRaster)
@@ -277,15 +297,14 @@ def STEP8_calc_pinchpoints():
                 linkTable[link,cfg.LTB_EFFRESIST] = resistance
 
                 # Ratio
-                if cfg.SQUARERESISTANCES:
-                    linkTable[link,cfg.LTB_CWDTORR] = -1
-                else:
-                    linkTable[link,cfg.LTB_CWDTORR] = (linkTable[link,cfg.LTB_CWDIST] /
-                                                 linkTable[link,cfg.LTB_EFFRESIST])
-
+                if not cfg.SQUARERESISTANCES:
+                    linkTable[link,cfg.LTB_CWDTORR] = (linkTable[link,
+                           cfg.LTB_CWDIST] / linkTable[link,cfg.LTB_EFFRESIST])
                 # Clean up
                 lu.delete_file(coreNpyFile)
                 lu.delete_file(resNpyFile)
+                lu.delete_data(currentRaster) 
+                lu.delete_dir(linkDir) 
                 gprint('Finished with link #' + str(linkId))
                 start_time1 = lu.elapsed_time(start_time1)
 
@@ -359,7 +378,7 @@ def STEP8_calc_pinchpoints():
         outCon.save(binaryCoreRaster)
         s5corridorRas = path.join(cfg.OUTPUTGDB,PREFIX + "_lcc_mosaic_int")
 
-        outCon = arcpy.sa.Con(Raster(s5corridorRas) <= cfg.CUTOFF, Raster(
+        outCon = arcpy.sa.Con(Raster(s5corridorRas) <= cfg.CWDCUTOFF, Raster(
                               resRaster), arcpy.sa.Con(Raster(
                               binaryCoreRaster) > 0, Raster(resRaster)))
 
@@ -371,8 +390,10 @@ def STEP8_calc_pinchpoints():
         s8CoreRasClipped = s8CoreRasPath + '_c'
 
         # Produce core raster with same extent as clipped resistance raster
-        outRas = Raster(s8CoreRasPath) * 1
-        outRas.save(s8CoreRasClipped)
+#bbb        outRas = Raster(s8CoreRasPath) * 1
+#bbb        outRas.save(s8CoreRasClipped)
+        outCon = arcpy.sa.Con(arcpy.sa.IsNull(Raster(s8CoreRasPath)), -9999, Raster(s8CoreRasPath))  #bbb added to ensure correct data type- nodata values were positive for cores otherwise
+        outCon.save(s8CoreRasClipped)
 
         resNpyFN = 'resistances.npy'
         resNpyFile = path.join(INCIRCUITDIR, resNpyFN)
@@ -385,6 +406,8 @@ def STEP8_calc_pinchpoints():
         arcpy.env.extent = "MINOF"
 
         options = lu.setCircuitscapeOptions()
+        options['scenario']='all-to-one'
+        options['scenario']='pairwise'
         options['habitat_file'] = resNpyFile
         options['point_file'] = coreNpyFile
         options['set_focal_node_currents_to_zero']=True
@@ -401,7 +424,10 @@ def STEP8_calc_pinchpoints():
 
         currentFNs = ['Circuitscape_cum_curmap.npy',
                       'Circuitscape_max_curmap.npy']
-        rasterSuffixes =  ["_cum_current_all_pairs","_max_current_all_pairs"]
+        if options['scenario']=='pairwise':
+            rasterSuffixes =  ["_cum_current_all_pairs","_max_current_all_pairs"]
+        else:
+            rasterSuffixes =  ["_cum_current_all_to_one","_max_current_all_to_one"]
         for i in range(0,2):
             currentFN = currentFNs[i]
             currentMap = path.join(OUTCIRCUITDIR, currentFN)
@@ -420,9 +446,17 @@ def STEP8_calc_pinchpoints():
                 lu.write_log(msg)
                 exit(1)
 
-            gprint('\nBuilding output statistics and pyramids '
-                    'for pinch point raster ' + str(i + 1))
+            #set core areas to nodata 
+            if SETCORESTONULL:                  
+                # Set core areas to NoData in current map for color ramping
+                outputRasterND = outputRaster + '_nodata_cores' 
+                outCon = arcpy.sa.SetNull(Raster(s8CoreRasClipped) > 0, Raster(outputRaster))   
+                outCon.save(outputRasterND)                
+
+            gprint('\nBuilding output statistics and pyramids ' 
+                    'for pinch point raster ' + str(i + 1))        
             lu.build_stats(outputRaster)
+            lu.build_stats(outputRasterND)
 
         # Clean up temporary files
         if not cfg.SAVECURRENTMAPS:
@@ -518,78 +552,3 @@ def write_header(raster,numpyArray,numpyFile):
         f.write('NODATA_value  ' + str(nodata) + '\n')
 
         f.close()
-
-
-        ### REMOVED FOR NOW- no speed improvement found with LI data
-        # cwdRaster = path.join(cfg.OUTPUTDIR,"cwd")
-        # if arcpy.Exists(lccMosaicRaster):
-            # resRasterLccMask = path.join(cfg.SCRATCHDIR, "res_lcc_mask")
-            # expression = ("(" + resRaster + " * (con(" + lccMosaicRaster +
-                           # "<= " + str(CWDcfg.CUTOFF) + ",1)))")
-            # arcpy.SingleOutputMapAlgebra_sa(expression, resRasterLccMask)
-            # resRaster = resRasterLccMask
-            # gprint('masked')
-        # elif arcpy.Exists(cwdRaster): # If linkages doesn't exist use cwd raster
-            # resRasterCwdMask = path.join(cfg.SCRATCHDIR, "res_cwd_mask")
-            # expression = ("(" + resRaster + " * (con(" + cwdRaster + "<= " +
-                                # str(CWDcfg.CUTOFF) + ",1)))")
-            # arcpy.SingleOutputMapAlgebra_sa(expression, resRasterCwdMask)
-            # resRaster = resRasterCwdMask
-            # gprint('masked cwd')
-
-                #to detect architecture:
-                # import platform
-                # gprint(str(platform.architecture()))
-                # gprint('done with prep')
-                # start_time = lu.elapsed_time(start_time)
-
-#time trial.  0 secs vs 7 in demo data.
-                # gprint('npy')
-                # start_time = time.clock()
-                # for i in range(1,20):
-                    # data = arcpy.RasterToNumPyArray(currentRaster)
-                    # outfile = "c://temp//test.npy"
-                    # npy.save(outfile, data)
-                # start_time = lu.elapsed_time(start_time)
-                # gprint('aasc')
-                # start_time = time.clock()
-                # for i in range(1,20):
-                    # outfile2 = "c://temp//test.asc"
-                    # arcpy.RasterToASCII_conversion(currentRaster,)
-                # start_time = lu.elapsed_time(start_time)
-
-
-                # ##################experimental- insert in place of reg code
-                    # resClipRasterMasked = path.join(cfg.SCRATCHDIR,
-                                                    # 'res_clip_m')
-                    # expression = (cwdRaster1 + " + " + cwdRaster2)
-                    # gp.singleOutputMapAlgebra_sa(expression, lccNormRaster)
-
-                    # gprint('lcdist='+str(lcDist))
-                    # expression = (resRaster + " + " + "( " + lccNormRaster + " / " + str(lcDist) + " )")
-                    # #expression = (resRaster + " * " + lccNormRaster)
-                    # gprint(expression)
-                    # squaredRaster = path.join(cfg.SCRATCHDIR,'res_sqr')
-                    # arcpy.env.workspace = cfg.SCRATCHDIR
-                    # arcpy.env.scratchWorkspace = cfg.SCRATCHDIR
-                    # gp.singleOutputMapAlgebra_sa(expression, squaredRaster)
-                    # resClipRasterMasked = squaredRaster
-                # ###################
-
-                # if NORMALIZECORECURRENTS == True:
-                    # # Experimental- spread current over core areas
-                    # # dividing by their 'diameter'.
-                    # corePairArray = arcpy.RasterToNumPyArray(corePairRaster)
-                    # # Get areas of cores:
-                    # numCellsX = (corePairArray==corex).sum()
-                    # numCellsY = (corePairArray==corey).sum()
-
-                    # diaX = 2 * npy.sqrt(numCellsX / math.pi)
-                    # diaY = 2 * npy.sqrt(numCellsY / math.pi)
-                    # expression = ("con(isnull("+corePairRaster+"), 1, con(" + corePairRaster + " == " + str(corex) + ", " + str(diaX) +
-                        # ", con(" + corePairRaster + " == " + str(corey) + ", " + str(diaY) + ")))")
-                    # divRaster = path.join(cfg.SCRATCHDIR, 'divRaster')
-                    # gp.SingleOutputMapAlgebra_sa(expression, divRaster)
-
-                    # expression = (currentRaster + " / " + divRaster)
-                    # gp.SingleOutputMapAlgebra_sa(expression, currentRaster)

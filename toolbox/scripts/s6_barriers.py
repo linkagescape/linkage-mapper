@@ -6,6 +6,10 @@
 
 """Detects influential barriers given CWD calculations from
     linkage mapper step 3.
+Reguired Software:
+ArcGIS 10 with Spatial Analyst extension
+Python 2.6
+Numpy
 """
 
 import os.path as path
@@ -107,7 +111,7 @@ def STEP6_calc_barriers():
                     # focalDir = focalDirBaseName + str(dir)
                     # arcpy.CreateFolder_management(path2, focalDir)
 
-
+            #FIXME: apply new code from s3 here.
             if maxCoreNum > 99:
                 gprint('Creating subdirectories')
                 maxDirCount = int(maxCoreNum/100)
@@ -146,12 +150,13 @@ def STEP6_calc_barriers():
                    ' map units...')
             if numCorridorLinks > 1:
                 gprint('0 percent done')
+            lastMosaicRaster = None
             for x in range(0,numLinks):
                 pctDone = lu.report_pct_done(linkLoop, numCorridorLinks,
                                             pctDone)
                 linkId = str(int(linkTable[x,cfg.LTB_LINKID]))
-                if ((linkTable[x,LTB_LINKTYPE] > 0) and
-                   (linkTable[x,LTB_LINKTYPE] < 1000)):
+                if ((linkTable[x,cfg.LTB_LINKTYPE] > 0) and
+                   (linkTable[x,cfg.LTB_LINKTYPE] < 1000)):
                     linkLoop = linkLoop + 1
                     # source and target cores
                     corex=int(coreList[x,0])
@@ -164,7 +169,7 @@ def STEP6_calc_barriers():
                     focalRaster2 = lu.get_focal_path(corey,radius)
                     barrierRaster = path.join(cbarrierdir, "b" + str(radius)
                                               + "_" + str(corex) + "_" +
-                                              str(corey))
+                                              str(corey)+'.tif') #bbb
                     arcpy.env.extent = cfg.RESRAST
                     arcpy.env.extent = "MINOF"
 
@@ -201,24 +206,53 @@ def STEP6_calc_barriers():
                         try:
                             exec statement
                         except:
-                            count,tryAgain = lu.hiccup_test(count,statement)
+                            count,tryAgain = lu.retry_arc_error(count,statement)
                             if not tryAgain:
                                 exec statement
                         else: break
 
-                    arcpy.env.workspace = cfg.SCRATCHDIR
-                    arcpy.env.workspace = cfg.SCRATCHDIR
-                    tempMosaicRaster = "mos_temp"
-                    if linkLoop == 1:
-                    #If this is the first grid then copy rather than mosaic
-                        arcpy.CopyRaster_management(barrierRaster,
-                                                 tempMosaicRaster)
 
-                    else:
-                        # How to combine across linkages?  For now take max....
-                        tempMosaicRaster = path.join(cfg.SCRATCHDIR,"mos_temp")
-                        arcpy.Mosaic_management(barrierRaster,
-                                         tempMosaicRaster, "MAXIMUM", "MATCH")
+                    mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1)) #xxx move
+                    lu.create_dir(mosaicDir)#xxx move
+                    mosFN = 'mos_temp'#.tif'#xxx change and move
+                    tempMosaicRaster = path.join(mosaicDir,mosFN)#xxx move
+                    arcpy.env.workspace = mosaicDir            
+
+
+
+                    if linkLoop == 1:
+                        #If this is the first grid then copy rather than mosaic
+                        arcpy.CopyRaster_management(barrierRaster, 
+                                                     tempMosaicRaster)
+
+                    else:                
+                        rasterString = '"'+barrierRaster+";"+lastMosaicRaster+'"'
+                        statement = ('arcpy.MosaicToNewRaster_management('
+                                    'rasterString,mosaicDir,mosFN, "", '
+                                    '"32_BIT_FLOAT", arcpy.env.cellSize, "1", "MAXIMUM", '
+                                    '"MATCH")') 
+                        
+                        count = 0
+                        while True:
+                            try:
+                                exec statement
+                            except:
+                                count,tryAgain = lu.retry_arc_error(count,statement)
+                                lu.delete_data(tempMosaicRaster)
+                                lu.delete_dir(mosaicDir)
+                                # Try a new directory
+                                mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1) + '_' + str(count)) #xxx 
+                                lu.create_dir(mosaicDir)#xxx 
+                                arcpy.env.workspace = mosaicDir            
+                                tempMosaicRaster = path.join(mosaicDir,mosFN)#xxx                
+                                if not tryAgain:    
+                                    exec statement
+                            else: break
+                    lu.delete_data(lastMosaicRaster)
+                    lastMosaicRaster = tempMosaicRaster
+
+
+
 
                     if not cfg.SAVEBARRIERRASTERS:
                         lu.delete_data(barrierRaster)
@@ -229,11 +263,11 @@ def STEP6_calc_barriers():
                         corex1 = int(coreList[y,0])
                         corey1 = int(coreList[y,1])
                         if corex1 == corex and corey1 == corey:
-                            linkTable[y,LTB_LINKTYPE] = (
-                                linkTable[y,LTB_LINKTYPE] + 1000)
+                            linkTable[y,cfg.LTB_LINKTYPE] = (
+                                linkTable[y,cfg.LTB_LINKTYPE] + 1000)
                         elif corex1==corey and corey1==corex:
-                            linkTable[y,LTB_LINKTYPE] = (
-                                linkTable[y,LTB_LINKTYPE] + 1000)
+                            linkTable[y,cfg.LTB_LINKTYPE] = (
+                                linkTable[y,cfg.LTB_LINKTYPE] + 1000)
 
                     if cfg.SAVEBARRIERRASTERS:
                         numGridsWritten = numGridsWritten + 1
@@ -247,9 +281,9 @@ def STEP6_calc_barriers():
                         arcpy.CreateFolder_management(cfg.BARRIERBASEDIR,
                                                    path.basename(cbarrierdir))
             #rows that were temporarily disabled
-            rows = npy.where(linkTable[:,LTB_LINKTYPE]>1000)
-            linkTable[rows,LTB_LINKTYPE] = (
-                linkTable[rows,LTB_LINKTYPE] - 1000)
+            rows = npy.where(linkTable[:,cfg.LTB_LINKTYPE]>1000)
+            linkTable[rows,cfg.LTB_LINKTYPE] = (
+                linkTable[rows,cfg.LTB_LINKTYPE] - 1000)
 
             # -----------------------------------------------------------------
 
@@ -330,7 +364,6 @@ def STEP6_calc_barriers():
             maxMosaicRaster = path.join(cfg.BARRIERBASEDIR,maxMosaicFN)
             arcpy.env.workspace = cfg.BARRIERBASEDIR
             for radius in range (startRadius, endRadius + 1, radiusStep):
-                gprint(str(radius))
                 radiusFN = "bar_max" + str(radius)
                 #fixme- do this when only a single radius too
                 radiusRaster = path.join(cfg.BARRIERBASEDIR, radiusFN)
@@ -353,7 +386,6 @@ def STEP6_calc_barriers():
                 radiusFN = PREFIX + "_bar_trm" + str(radius)
                 #fixme- do this when only a single radius too
                 radiusRaster = path.join(cfg.BARRIERGDB, radiusFN)
-                gprint(radiusRaster)
 
                 if radius == startRadius:
                 #If this is the first grid then copy rather than mosaic
@@ -378,8 +410,8 @@ def STEP6_calc_barriers():
             cbarrierdir = path.join(cfg.BARRIERBASEDIR, cfg.BARRIERDIR_NM)
             lu.delete_dir(cbarrierdir)
             for dir in range(1,dirCount+1):
-                cbarrierdir = path.join((cfg.BARRIERBASEDIR, cfg.BARRIERDIR_NM)
-                                        + str(dir))
+                cbarrierdir = path.join(cfg.BARRIERBASEDIR, cfg.BARRIERDIR_NM
+                                        + str(dir)) 
                 lu.delete_dir(cbarrierdir)
 
         if not cfg.SAVEFOCALRASTERS:
