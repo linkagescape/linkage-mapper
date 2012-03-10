@@ -3,6 +3,10 @@
 
 """Maps pinch points using Circuitscape given CWD calculations from
        s3_calcCwds.py.
+Reguired Software:
+ArcGIS 10 with Spatial Analyst extension
+Python 2.6
+Numpy
 """
 
 import os.path as path
@@ -137,8 +141,10 @@ def STEP7_calc_centrality():
 
         write_graph(options['habitat_file'] ,graphList)
         gprint('\nCalculating current flow centrality using Circuitscape...')
-#            subprocess.check_call(systemCall, shell=True)
-        subprocess.call([csPath, outConfigFile], shell=True)
+
+        subprocess.call([csPath, outConfigFile], shell=True)                     
+        #test = subprocess.call([csPath, outConfigFile],
+        #                        creationflags = subprocess.CREATE_NEW_CONSOLE) #bbb
 
         outputFN = 'Circuitscape_network_branch_currents_cum.txt'
         currentList = path.join(OUTCENTRALITYDIR, outputFN)
