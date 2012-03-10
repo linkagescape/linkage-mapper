@@ -114,9 +114,13 @@ def cwadjacency():
         # May need to set extent prior to core poly to raster conversion...
         # ----------------------------------------------
         # Cost-weighted allocation code
+        gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
+        gp.extent = gp.Describe(cfg.RESRAST).extent            
         if cfg.BUFFERDIST is not None:
             # Clip resistance raster using bounding circle
             start_time = time.clock()
+            gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight#xxx
+            gp.extent = gp.Describe(cfg.RESRAST).Extent#xxx            
             bResistance = path.join(cfg.SCRATCHDIR, "bResistance")
             gp.ExtractByMask_sa(cfg.RESRAST, cfg.BNDCIR,
                                     bResistance)
@@ -170,7 +174,7 @@ def cwadjacency():
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
-        lu.exit_with_python_error(_SCRIPT_NAME)
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:

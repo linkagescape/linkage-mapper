@@ -137,13 +137,13 @@ def STEP2_build_network():
             listEntry = (str(linkTable[x, cfg.LTB_CORE1]) + '_' +
                          str(linkTable[x, cfg.LTB_CORE2]))
             if listEntry in cwdAdjList:
-                linkTable[:, cfg.LTB_CWDADJ] = 1
+                linkTable[x, cfg.LTB_CWDADJ] = 1
             else:
-                linkTable[:, cfg.LTB_CWDADJ] = 0
+                linkTable[x, cfg.LTB_CWDADJ] = 0                
             if listEntry in eucAdjList:
-                linkTable[:, cfg.LTB_EUCADJ] = 1
+                linkTable[x, cfg.LTB_EUCADJ] = 1
             else:
-                linkTable[:, cfg.LTB_EUCADJ] = 0
+                linkTable[x, cfg.LTB_EUCADJ] = 0
 
         if cfg.S2ADJMETH_CW and cfg.S2ADJMETH_EU:  # "Keep all adjacent links"
             gprint("\nKeeping all adjacent links\n")
