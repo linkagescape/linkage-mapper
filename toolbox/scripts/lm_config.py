@@ -63,7 +63,7 @@ def config_global(config, arg):
     # File names, directory paths & folder names
     proj_dir = arg[1]
     config.PROJECTDIR = proj_dir  # Project directory
-    config.SCRATCHDIR = path.join(proj_dir, "scratch_cs")
+    config.SCRATCHDIR = path.join(proj_dir, "scratch")
     config.ARCSCRATCHDIR = path.join(config.SCRATCHDIR, "arcscratch")
     config.PREFIX = path.basename(proj_dir)
     config.DATAPASSDIR = path.join(proj_dir, "datapass")
@@ -73,6 +73,7 @@ def config_global(config, arg):
     config.LOGDIR = path.join(proj_dir, "run_history")
     config.LOGDIR_OLD = path.join(proj_dir, "logFiles")
     config.logFile = None
+    config.logFilePath = None
     config.MESSAGEDIR = path.join(config.LOGDIR, "log")
     config.MESSAGEDIR_OLD = path.join(config.LOGDIR, "Messages")
     config.ADJACENCYDIR = path.join(config.DATAPASSDIR, "adj")
