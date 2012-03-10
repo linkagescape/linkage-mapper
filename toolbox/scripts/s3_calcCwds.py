@@ -25,11 +25,13 @@ try:
     arcpy.CheckOutExtension("spatial")
     gp = arcpy.gp
     arcgisscripting = arcpy
+    tif = ''
 except:
     arcpy = False
     import arcgisscripting
     gp = cfg.gp
-
+    tif = ''
+    
 gprint = lu.gprint
 
 
@@ -53,7 +55,7 @@ def write_cores_to_map(x, coresToMap):
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
-        gprint('****Failed in step 3. Details follow.****')
+        # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -93,9 +95,13 @@ def STEP3_calc_cwds():
                               'calculations.')
 
         # set the analysis extent and cell size
-        gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
         # So we don't extract rasters that go beyond extent of original raster
-        gp.Extent = "MINOF"
+        if arcpy:
+            arcpy.env.cellSize = cfg.RESRAST
+            arcpy.env.extent="MINOF"
+        else:
+            gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
+            gp.Extent = "MINOF"
         gp.mask = cfg.RESRAST
         if arcpy:
             arcpy.env.overwriteOutput = True
@@ -103,6 +109,7 @@ def STEP3_calc_cwds():
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         else:
             gp.OverwriteOutput = True
+            gp.workspace = cfg.SCRATCHDIR     
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
 
         # Load linkTable (created in previous script)
@@ -138,7 +145,7 @@ def STEP3_calc_cwds():
                     'abort.  It assumes you are using the same input\n'
                     'data used in the terminated run.****\n')
             lu.dashline(0)
-            time.sleep(20)
+            lu.snooze(10)
             savedLinkTableFile = path.join(cfg.DATAPASSDIR,
                                            "temp_linkTable_s3_partial.csv")
             coreListFile = path.join(cfg.DATAPASSDIR, "temp_cores_to_map.csv")
@@ -162,25 +169,19 @@ def STEP3_calc_cwds():
             # in any one directory, outputs are written to:
             # cwd\cw for cores 1-99, cwd\cw1 for cores 100-199, etc.
             gprint("\nCreating cost-weighted distance output folders:")
+            gprint('...' + cfg.CWDSUBDIR_NM)
 
             gp.CreateFolder_management(path.dirname(cfg.CWDBASEDIR),
                                            path.basename(cfg.CWDBASEDIR))
             gp.CreateFolder_management(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
 
-            if maxCoreNum > 99:
-                maxDirCount = int(maxCoreNum/100)
-                for dirCount in range(1, maxDirCount + 1):
-                    floor = dirCount * 100
-                    ceiling = 99 + dirCount * 100
-                    ind = npy.where(coresToProcess < ceiling)
-                    lowCores = coresToProcess[ind]
-                    if lowCores.shape[0] > 0:
-                        ind = npy.where(lowCores > floor)
-                        medCores = lowCores[ind]
-                        if medCores.shape[0] > 0:
-                            ccwdir = cfg.CWDSUBDIR_NM + str(dirCount)
-                            gprint('...' + ccwdir)
-                            gp.CreateFolder_management(cfg.CWDBASEDIR, ccwdir)
+            cp100 = (coresToProcess.astype('int32'))/100
+            ind = npy.where(cp100 > 0)
+            dirNums = npy.unique(cp100[ind])
+            for dirNum in dirNums:
+                ccwdir = cfg.CWDSUBDIR_NM + str(dirNum)
+                gprint('...' + ccwdir)
+                gp.CreateFolder_management(cfg.CWDBASEDIR, ccwdir)            
         del coresToProcess
         # make a feature layer for input cores to select from
         gp.MakeFeatureLayer(cfg.COREFC, cfg.FCORES)
@@ -289,6 +290,7 @@ def STEP3_calc_cwds():
             gp.buffer_analysis(cfg.BNDCIRCEN, cfg.BNDCIR, "radius")
 
             gprint('Extracting raster....')
+            cfg.BOUNDRESIS = cfg.BOUNDRESIS + tif
             lu.delete_data(cfg.BOUNDRESIS)
             count = 0
             statement = (
@@ -311,12 +313,16 @@ def STEP3_calc_cwds():
         # ---------------------------------------------------------------------
         # Rasterize core areas to speed cost distance calcs
         # lu.dashline(1)
-        gprint("Creating core area raster.")
-
+        gprint("Creating core area raster.")  
         gp.SelectLayerByAttribute(cfg.FCORES, "CLEAR_SELECTION")
-        gp.cellSize = gp.Describe(cfg.BOUNDRESIS).MeanCellHeight
-        gp.extent = gp.Describe(cfg.BOUNDRESIS).extent
 
+        if arcpy:
+            arcpy.env.cellSize = cfg.BOUNDRESIS
+            arcpy.env.extent = cfg.BOUNDRESIS
+        else:
+            gp.cellSize = gp.Describe(cfg.BOUNDRESIS).MeanCellHeight
+            gp.extent = gp.Describe(cfg.BOUNDRESIS).extent
+                
         if rerun:
             # saved linktable replaces the one now in memory
             linkTable = lu.load_link_table(savedLinkTableFile)
@@ -328,7 +334,10 @@ def STEP3_calc_cwds():
                     + str(int(coresToMap[startIndex]))+ ' ******\n')
             lu.dashline(0)
 
-        gp.extent = "MINOF"
+        if arcpy:
+            arcpy.env.extent = "MINOF"
+        else:
+            gp.extent = "MINOF"
 
         #----------------------------------------------------------------------
         # Loop through cores, do cwd calcs for each
@@ -437,12 +446,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             arcpy.env.workspace = coreDir
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
             arcpy.env.overwriteOutput = True            
+            arcpy.env.extent = "MINOF"
         else:
             gp = cfg.gp
             gp.workspace = coreDir
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
             gp.OverwriteOutput = True
-        gp.Extent = "MINOF"
+            gp.Extent = "MINOF"
 
         write_cores_to_map(x, coresToMap)
 
@@ -511,7 +521,8 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
             # Clip out bounded area of resistance raster for cwd
             # calculations from focal core
-            bResistance = path.join(coreDir,"bResistance")
+            bResistance = path.join(coreDir,"bResistance") # Can't be tif-
+                                                           # need STA for CWD             
             lu.delete_data(bResistance)
             statement = (
                 'gp.ExtractByMask_sa(cfg.BOUNDRESIS, cfg.BNDFC, bResistance)')
@@ -535,7 +546,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
         # Create raster that just has source core in it
         # Note: this seems faster than setnull with LI grid.
-        SRCRASTER = 'source'
+        SRCRASTER = 'source' + tif
         lu.delete_data(path.join(coreDir,SRCRASTER))
         if arcpy:
             statement = (
@@ -556,7 +567,10 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             else: exec statement
 
         # Cost distance raster creation
-        gp.Extent = "MINOF"
+        if arcpy:
+            arcpy.env.extent="MINOF"
+        else:
+            gp.Extent = "MINOF"
 
         lu.delete_data(path.join(coreDir,"BACK"))
 
@@ -642,7 +656,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
 
                 # Create raster that just has target core in it
-                TARGETRASTER = 'targ'
+                TARGETRASTER = 'targ' + tif
                 lu.delete_data(path.join(coreDir,TARGETRASTER))
                 try:
                     if arcpy:
@@ -665,7 +679,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
                 # Cost path maps the least cost path
                 # between source and target
-                lcpRas = path.join(coreDir,"lcp")
+                lcpRas = path.join(coreDir,"lcp" + tif)
                 lu.delete_data(lcpRas)
 
                 if arcpy:
@@ -715,8 +729,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                               ' <> ' +
                                               str(int(sourceCore)))
 
-                    gp.extent = gp.Describe(cfg.BOUNDRESIS).extent
-                    corePairRas = path.join(coreDir,"s3corepair")
+                    corePairRas = path.join(coreDir,"s3corepair"+ tif)                                              
+                    if arcpy:
+                        arcpy.env.extent = cfg.BOUNDRESIS
+                    else:
+                        gp.extent = gp.Describe(cfg.BOUNDRESIS).extent
+
+
                     statement = ('gp.FeatureToRaster_conversion(cfg.FCORES, '
                                 'cfg.COREFN, corePairRas, gp.cellSize)')
                     try:
@@ -771,13 +790,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
-        gprint('****Failed in step 3. Details follow.****')
+        # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
-        gprint('****Failed in step 3. Details follow.****')
+        # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -789,7 +808,7 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
     try:
         gp.workspace = workspace
         gp.OverwriteOutput = True
-        if gp.exists("addRas"):
+        if gp.exists("addRas"): #Can't use tif for getrasterproperties
             gp.delete_management("addRas")
         count = 0
         if arcpy:
@@ -826,13 +845,13 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
-        gprint('****Failed in step 3. Details follow.****')
+        # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
         lu.dashline(1)
-        gprint('****Failed in step 3. Details follow.****')
+        # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)    
 
 def delay_restart(failures):
