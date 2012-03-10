@@ -24,6 +24,7 @@ import lm_util as lu
 
 _SCRIPT_NAME = "s4_refineNetwork.py"
 
+gprint = lu.gprint
 
 def STEP4_refine_network():
     """Allows user to only connect each core area to its N
@@ -34,7 +35,7 @@ def STEP4_refine_network():
     try:
 
         lu.dashline(1)
-        cfg.gp.addmessage('Running script ' + _SCRIPT_NAME)
+        gprint('Running script ' + _SCRIPT_NAME)
         cfg.gp.Workspace = cfg.OUTPUTDIR
 
         linkTableFile = lu.get_prev_step_link_table(step=4)
@@ -46,7 +47,7 @@ def STEP4_refine_network():
         if not cfg.STEP3:
             # re-check for links that are too long in case script run out of
             # sequence with more stringent settings
-            cfg.gp.addmessage('Double-checking for corridors that are too long'
+            gprint('Double-checking for corridors that are too long'
                               ' or too short to map.')
             DISABLE_LEAST_COST_NO_VAL = True
             linkTable,numDroppedLinks = lu.drop_links(
@@ -70,7 +71,7 @@ def STEP4_refine_network():
         # Flag links that do not connect any core areas to their nearest
         # N neighbors. (N = cfg.S4MAXNN)
         lu.dashline(1)
-        cfg.gp.addmessage('Connecting each core area to its nearest ' +
+        gprint('Connecting each core area to its nearest ' +
                           str(cfg.S4MAXNN) + ' nearest neighbors.')
 
         # Code written assuming NO duplicate core pairs
@@ -94,7 +95,7 @@ def STEP4_refine_network():
         # Fixme: needs testing.  Move to function.
         if cfg.S4CONNECT:
             lu.dashline(1)
-            cfg.gp.addmessage('Connecting constellations')
+            gprint('Connecting constellations')
 
             # linkTableComp has 4 extra cols to track COMPONENTS
             numLinks = linkTable.shape[0]
@@ -196,7 +197,7 @@ def STEP4_refine_network():
         # Write linkTable to disk
         outlinkTableFile = lu.get_this_step_link_table(step=4)
         # lu.dashline(1)
-        cfg.gp.addmessage('\nWriting ' + outlinkTableFile)
+        gprint('\nWriting ' + outlinkTableFile)
         lu.write_link_table(linkTable, outlinkTableFile)
         linkTableLogFile = path.join(cfg.LOGDIR, "linkTable_s4.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
@@ -206,7 +207,7 @@ def STEP4_refine_network():
         start_time = lu.elapsed_time(start_time)
 
         # lu.dashline()
-        cfg.gp.addmessage('Creating shapefiles with linework for links.')
+        gprint('Creating shapefiles with linework for links.')
         try:
             lu.write_link_maps(outlinkTableFile, step=4)
         except:
@@ -214,12 +215,12 @@ def STEP4_refine_network():
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
-        cfg.gp.addmessage('****Failed in step 4. Details follow.****')
+        gprint('****Failed in step 4. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except:
-        cfg.gp.addmessage('****Failed in step 4. Details follow.****')
+        gprint('****Failed in step 4. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
     return
