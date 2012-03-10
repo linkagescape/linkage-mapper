@@ -3,8 +3,8 @@
 """Master script for barrier analysis in linkage mapper.
 
 Reguired Software:
-ArcGIS 9.3 with Spatial Analyst extension
-Python 2.5
+ArcGIS 10 with Spatial Analyst extension
+Python 2.6
 Numpy
 
 """
@@ -31,10 +31,11 @@ def bar_master():
     cfg.configure("barrier_mapper", sys.argv)
     gprint = lu.gprint
     try:
-        lu.createfolder(cfg.LOGDIR)
-        lu.createfolder(cfg.MESSAGEDIR)
+        lu.create_dir(cfg.LOGDIR)
+        lu.create_dir(cfg.MESSAGEDIR)
 
-        cfg.logFile = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, cfg.PARAMS)
+        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
+                                             cfg.PARAMS)
 
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
@@ -46,10 +47,10 @@ def bar_master():
             arcpy.CreateFileGDB_management(cfg.OUTPUTDIR,
                                            path.basename(cfg.BARRIERGDB))
 
-        lu.createfolder(cfg.OUTPUTDIR)
+        lu.create_dir(cfg.OUTPUTDIR)
         lu.delete_dir(cfg.SCRATCHDIR)
-        lu.createfolder(cfg.SCRATCHDIR)
-        lu.createfolder(cfg.ARCSCRATCHDIR)
+        lu.create_dir(cfg.SCRATCHDIR)
+        lu.create_dir(cfg.ARCSCRATCHDIR)
 
         arcpy.env.extent = cfg.RESRAST_IN
         arcpy.env.snapRaster = cfg.RESRAST_IN
@@ -77,12 +78,3 @@ def bar_master():
 if __name__ == "__main__":
     bar_master()
 
-
-
-        # desc = arcpy.Describe(cfg.RESRAST_IN)
-
-        # if hasattr(desc, "name"):
-            # gprint ("Name:        " + desc.name)
-
-        # if hasattr(desc, "catalogPath"):
-            # gprint ("CatalogPath: " + desc.catalogPath)
