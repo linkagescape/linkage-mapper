@@ -1191,10 +1191,7 @@ def load_link_table(linkTableFile):
 def gprint(string):
     gp.addmessage(string)
     if cfg.LOGMESSAGES:
-        try:
-            cfg.logFile.write(string + '\n')
-        except:
-            pass
+         write_log(string) 
 
 def create_log_file(messageDir, toolName, inParameters):
     ft = tuple(time.localtime())
@@ -1205,18 +1202,26 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile=open(filePath,'a')
     except:
         logFile=open(filePath,'w')
-    logFile.write('*'*70 + '\n')
-    logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
-    logFile.write('Start time:\t%s \n' % (timeNow))
-    logFile.write('Parameters:\t%s \n\n' % ', '.join(inParameters))
-#    logFile.close()
-    return logFile
+    if inParameters is not None:
+        logFile.write('*'*70 + '\n')
+        logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
+        logFile.write('Start time:\t%s \n' % (timeNow))
+        logFile.write('Parameters:\t%s \n\n' % (inParameters))
+    logFile.close()
+    return filePath
 
 def write_log(string):
     try:
-        cfg.logFile.write('\n' + string + '\n')
+        logFile=open(cfg.logFilePath,'a')
     except:
+        logFile=open(cfg.logFilePath,'w')
+    try:
+        #Sometimes int objects returned for arc failures so need str below
+        logFile.write(str(string) + '\n') 
+    except IOError:
         pass
+    finally:
+        logFile.close()
 
 def close_log_file():
     timeNow = time.ctime()
@@ -1716,6 +1721,13 @@ def check_project_dir():
                '" is too deep.  Please choose a shallow directory'
                '(something like "C:\ANBO").')
         raise_error(msg)
+
+    if "-" in cfg.PROJECTDIR or " " in cfg.PROJECTDIR:
+        msg = ('ERROR: Project directory cannot contain spaces, dashes, or '
+                'special characters.')
+        raise_error(msg)
+    
+        
     return
 
 
@@ -1981,6 +1993,7 @@ def print_arcgis_failures(statement, failures):
     return failures
 
 def print_drive_warning():
+    drive, depth = get_dir_depth(cfg.PROJECTDIR)
     if drive.lower() != 'c' or depth > 3:
         gp.AddWarning('(Note: ArcGIS errors are more likely when writing to remote '
             'drives or deep file structures. We recommend shallow '
@@ -2160,7 +2173,7 @@ def exit_with_geoproc_error(filename):
     for msg in range(0, gp.MessageCount):
         if gp.GetSeverity(msg) == 2:
             gp.AddReturnMessage(msg)
-        write_log(msg)
+            write_log(msg)
     close_log_file()
     exit(1)
 
