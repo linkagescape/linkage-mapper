@@ -1539,11 +1539,31 @@ def write_link_maps(linkTableFile, step):
     except:
         exit_with_python_error(_SCRIPT_NAME)
 
-
-############################################################################
-## File and Path Management Functions ######################################
-############################################################################
-
+        
+def set_dataframe_sr():
+    """Sets data frame spatial reference to input core area projection.
+       Differing spatial reference can cause problems in step 1.
+       Arcpy only.
+    
+    """
+    try:
+        import arcpy
+    except:
+        return
+    try:    
+        sr = arcpy.Describe(cfg.COREFC).spatialReference
+    except:
+        try:
+            sr = arcpy.Describe(cfg.RESRAST).spatialReference    
+        except:
+            return
+    try:        
+        mxd = arcpy.mapping.MapDocument("current")
+        df = arcpy.mapping.ListDataFrames(mxd)[0]
+        df.spatialReference = sr        
+    except:
+        pass
+        
 def create_dir(lmfolder):
     """Creates folder if it doesn't exist."""
     if not os.path.exists(lmfolder):
