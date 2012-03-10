@@ -40,6 +40,9 @@ def circuitscape_master():
         lu.check_cores(cfg.COREFC, cfg.COREFN)
 
         gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
+        # Set data frame spatial reference to coordinate system of input data 
+        lu.set_dataframe_sr()
+        
         gp.pyramid = "NONE"
         gp.rasterstatistics = "NONE"
 
