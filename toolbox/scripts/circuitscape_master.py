@@ -3,8 +3,8 @@
 """Master script for circuitscape analysis in linkage mapper.
 
 Reguired Software:
-ArcGIS 9.3 with Spatial Analyst extension
-Python 2.5
+ArcGIS 10 with Spatial Analyst extension
+Python 2.6
 Numpy
 
 """
@@ -32,9 +32,9 @@ def circuitscape_master():
     gp = cfg.gp
     gprint = lu.gprint
     try:
-        lu.createfolder(cfg.LOGDIR)
-        lu.createfolder(cfg.MESSAGEDIR)
-        cfg.logFile = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, cfg.PARAMS)
+        lu.create_dir(cfg.LOGDIR)
+        lu.create_dir(cfg.MESSAGEDIR)
+        cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, cfg.PARAMS) #xxx        
 
         # Check core ID field.
         lu.check_cores(cfg.COREFC, cfg.COREFN)
@@ -53,8 +53,8 @@ def circuitscape_master():
                     'network centrality analysis.')
             lu.raise_error(msg)
 
-        lu.createfolder(cfg.SCRATCHDIR)
-        lu.createfolder(cfg.ARCSCRATCHDIR)
+        lu.create_dir(cfg.SCRATCHDIR)
+        lu.create_dir(cfg.ARCSCRATCHDIR)
 
         if cfg.DO_ALLPAIRS:
             #  Fixme: move raster path to config
@@ -65,6 +65,11 @@ def circuitscape_master():
                         '\nfor all-pair analyses, but was not found.')
                 lu.raise_error(msg)
         if cfg.DOPINCH:
+            if cfg.CWDCUTOFF == '#' or cfg.CWDCUTOFF == 0:
+                msg = ('ERROR: CWD cutoff distance is required for pinch point'
+                        ' analyses.')
+                lu.raise_error(msg)
+            
             # Make a local grid copy of resistance raster-
             # will run faster than gdb.
             lu.delete_data(cfg.RESRAST)
@@ -102,10 +107,17 @@ def circuitscape_master():
             gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
                                         cfg.CIRCUITCONFIGDIR_NM)
 
-            lu.clean_out_workspace(cfg.PINCHGDB)
-            lu.delete_data(cfg.PINCHGDB)
-
-            s8.STEP8_calc_pinchpoints()
+#aaa            lu.clean_out_workspace(cfg.PINCHGDB)
+#aaa            lu.delete_data(cfg.PINCHGDB) 
+            for i in range (1,5):
+                try:
+                    s8.STEP8_calc_pinchpoints()            
+                    break
+                except:
+                    gprint('******************** Run failed ****************************')
+                    gprint('Trying again in 20 seconds.')
+                    lu.snooze(20)
+                    s8.STEP8_calc_pinchpoints()
 
             lu.delete_dir(cfg.SCRATCHDIR)
             if not cfg.SAVECIRCUITDIR:

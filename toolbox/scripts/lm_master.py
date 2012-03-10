@@ -22,6 +22,7 @@ import s3_calcCwds as s3
 import s4_refineNetwork as s4
 import s5_calcLccs as s5
 
+
 _SCRIPT_NAME = "lm_master.py"
 #__version__ = "$Revision$"
 
@@ -60,7 +61,7 @@ def lm_master():
         lu.delete_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
-        cfg.logFile = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, cfg.PARAMS)
+        cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, cfg.PARAMS)
 
         installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + cfg.releaseNum)
@@ -70,9 +71,10 @@ def lm_master():
         except:
             pass
 
-        # Check core ID field.
+        # Check core ID field and project directory name.
         lu.check_cores(cfg.COREFC, cfg.COREFN)
-
+        lu.check_project_dir()
+        
         # Identify first step cleanup link tables from that point
         lu.dashline(1)
         if cfg.STEP1:
@@ -102,6 +104,7 @@ def lm_master():
         gprint('\nMaking temporary copy of resistance raster for this run.')
         gp.Extent = gp.Describe(cfg.RESRAST_IN).Extent
         gp.SnapRaster = cfg.RESRAST_IN
+        gp.cellSize = gp.Describe(cfg.RESRAST_IN).MeanCellHeight
         gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
 
         if (cfg.STEP1) or (cfg.STEP3):
@@ -138,7 +141,12 @@ def lm_master():
         if cfg.STEP2:
             s2.STEP2_build_network()
         if cfg.STEP3:
-            s3.STEP3_calc_cwds()
+            try:
+                s3.STEP3_calc_cwds()
+            except:
+                cfg.S2EUCDISTFILE = "restart"
+                gprint('***** Restarting step 3 one time *****')
+                s3.STEP3_calc_cwds()
         if cfg.STEP4:
             s4.STEP4_refine_network()
         if cfg.STEP5:
