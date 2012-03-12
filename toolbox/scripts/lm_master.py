@@ -74,6 +74,8 @@ def lm_master():
             pass
             
         # Set data frame spatial reference to coordinate system of input data 
+        # Problems arise in this script (core raster creation) and in S2 
+        # (generate near table) if they differ.
         lu.set_dataframe_sr()
 
         # Check core ID field and project directory name.
@@ -107,6 +109,7 @@ def lm_master():
         # Don't know if raster is in a gdb if entered from TOC
         lu.delete_data(cfg.RESRAST)
         gprint('\nMaking temporary copy of resistance raster for this run.')
+        gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
         gp.Extent = gp.Describe(cfg.RESRAST_IN).Extent
         gp.SnapRaster = cfg.RESRAST_IN
         gp.cellSize = gp.Describe(cfg.RESRAST_IN).MeanCellHeight
@@ -116,11 +119,6 @@ def lm_master():
             # Make core raster file
             gprint('\nMaking temporary raster of core file for this run.')
             lu.delete_data(cfg.CORERAS)
-            
-            
-            
-            gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
-
            
             gp.FeatureToRaster_conversion(cfg.COREFC, cfg.COREFN,
                           cfg.CORERAS, gp.Describe(cfg.RESRAST).MeanCellHeight)
@@ -166,17 +164,15 @@ def lm_master():
         # Clean up
         lu.delete_dir(cfg.SCRATCHDIR)
         lu.close_log_file()
-
+        
         gp.addmessage('\nDONE!\n')
 
-        # severity = gp.MaxSeverity
-        # gprint(str(severity))
-        # test=gp.GetMessages(2)
-        # if severity > 1:
-            # gprint('Linkage Mapper SUCCEEDED. You can ignore any failure '
-                    # 'messages from ArcGIS below.')
-
-        return
+        if cfg.STEP5:
+            lu.dashline()
+            gprint('Results from this run can be found in your output '
+                    'directory:')
+            gprint(cfg.OUTPUTDIR)
+            
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
@@ -184,6 +180,12 @@ def lm_master():
     # Return any PYTHON or system specific errors
     except:
         lu.exit_with_python_error(_SCRIPT_NAME)
-
+    
+    finally:
+        lu.dashline()
+        gprint('A record of run settings and messages can be found in your '
+               'log directory:')
+        gprint(cfg.MESSAGEDIR)
+        lu.dashline(2)
 if __name__ == "__main__":
     lm_master()
