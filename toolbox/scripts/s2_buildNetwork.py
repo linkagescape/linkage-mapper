@@ -327,6 +327,7 @@ def generate_distance_file():
         # sourceCores = npy.unique(adjList[:, 0])
 
         gprint('\nFinding distances between cores using Generate Near Table.')
+#        gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
         near_tbl = path.join(cfg.SCRATCHDIR, "neartbl.dbf")
         # gprint('old method')
         # start_time = time.clock()

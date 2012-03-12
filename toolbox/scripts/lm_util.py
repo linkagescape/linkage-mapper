@@ -1552,6 +1552,8 @@ def set_dataframe_sr():
         return
     try:    
         sr = arcpy.Describe(cfg.COREFC).spatialReference
+        gprint('Setting data frame spatial reference to that of '
+                'core featureclass')
     except:
         try:
             sr = arcpy.Describe(cfg.RESRAST).spatialReference    
@@ -1998,6 +2000,12 @@ def get_cs_path():
 ############################################################################
 ##Error Checking and Handling Functions ####################################
 ############################################################################
+def copy_log_file():
+    try:
+        delete_file(cfg.errorFilePath)
+        shutil.copyfile(cfg.logFilePath,cfg.logFileCopyPath)  
+    except:
+        pass
 def print_arcgis_failures(statement, failures):
     """ Reports ArcGIS call that's failing and decides whether to restart
         iteration.
@@ -2233,10 +2241,10 @@ def dashline(lspace=0):
 
     """
     if lspace == 1:
-        gprint('\n')
+        gprint(' ')
     gprint('---------------------------------')
     if lspace == 2:
-        gprint('\n')
+        gprint(' ')
 
 
 ############################################################################

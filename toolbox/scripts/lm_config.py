@@ -74,6 +74,7 @@ def config_global(config, arg):
     config.LOGDIR_OLD = path.join(proj_dir, "logFiles")
     config.logFile = None
     config.logFilePath = None
+    config.logFileCopyPath = path.join(proj_dir,'last_run_log.txt')
     config.MESSAGEDIR = path.join(config.LOGDIR, "log")
     config.MESSAGEDIR_OLD = path.join(config.LOGDIR, "Messages")
     config.ADJACENCYDIR = path.join(config.DATAPASSDIR, "adj")
