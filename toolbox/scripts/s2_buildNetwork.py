@@ -112,7 +112,7 @@ def STEP2_build_network():
         cwdAdjTable = get_adj_list(cfg.CWDADJFILE)
         cwdAdjList = []
         for i in range(0, len(cwdAdjTable)):
-            listEntry
+            listEntry = (str(cwdAdjTable[i, 0]) + '_' + str(cwdAdjTable[i, 1]))
             cwdAdjList.append(listEntry)
         gprint('Cost-weighted adjacency file loaded.')
         maxCwdAdjCoreID = max(cwdAdjTable[:, 1])
@@ -168,7 +168,7 @@ def STEP2_build_network():
             delRowsVector[:] = delRows[0, :]
             linkTable = lu.delete_row(linkTable, delRowsVector)
 
-        else:
+        else:  # For Climate Corridor tool
             gprint("\nKeeping all links\n")
 
         # if dropFlag:

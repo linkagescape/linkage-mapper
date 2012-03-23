@@ -38,7 +38,7 @@ def setadjmeth(inparam):
         meth_eu = True
     else:
         meth_cw = False
-        meth_eu = Fal
+        meth_eu = False
     return meth_cw, meth_eu
 
 
@@ -60,11 +60,11 @@ def nullstring(arg_string):
 
 def config_global(config, arg):
     """Configure global variables for all tools"""
-    config.PARAMS = str(arg)
+    config.PARAMS = str(arg)  # Convert to string in case '\' exists in paths
     config.releaseNum = ver.releaseNum
     config.LOGMESSAGES = True
     # File names, directory paths & folder names
-    config.CALL_SRC = arg[0]
+    config.CALL_SRC = arg[0]  # Identify calling module (for Climate Corridors)
     proj_dir = arg[1]
     config.PROJECTDIR = proj_dir  # Project directory
     config.SCRATCHDIR = path.join(proj_dir, "scratch")
