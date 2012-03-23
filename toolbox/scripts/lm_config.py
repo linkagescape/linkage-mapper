@@ -12,7 +12,7 @@ import os.path as path
 import arcgisscripting
 
 import lm_version as ver
-import lm_settings 
+import lm_settings
 
 GP_NULL = '#'
 LINKAGE_MAPPER = 'linkage_mapper'
@@ -33,9 +33,12 @@ def setadjmeth(inparam):
     elif inparam == "Euclidean":
         meth_cw = False
         meth_eu = True
-    else:
+    elif inparam == "Cost-Weighted & Euclidean":
         meth_cw = True
         meth_eu = True
+    else:
+        meth_cw = False
+        meth_eu = Fal
     return meth_cw, meth_eu
 
 
@@ -55,12 +58,13 @@ def nullstring(arg_string):
     return arg_string
 
 
-def config_global(config, arg):    
-    """Configure global variables for all tools"""    
-    config.PARAMS = arg
+def config_global(config, arg):
+    """Configure global variables for all tools"""
+    config.PARAMS = str(arg)
     config.releaseNum = ver.releaseNum
     config.LOGMESSAGES = True
     # File names, directory paths & folder names
+    config.CALL_SRC = arg[0]
     proj_dir = arg[1]
     config.PROJECTDIR = proj_dir  # Project directory
     config.SCRATCHDIR = path.join(proj_dir, "scratch")
@@ -215,7 +219,7 @@ def config_lm(config, arg, scratch_dir):
     config.MAXEUCDIST = nullfloat(arg[18])
     if config.MAXEUCDIST == 0:
         config.MAXEUCDIST = None
-   
+
     for setting in dir(lm_settings):
         if setting == setting.upper():
             setting_value = getattr(lm_settings, setting)
@@ -270,7 +274,7 @@ def config_circuitscape(config, arg):
 class Configure(object):
     """Class container to hold global variables"""
     def __init__(self):
-        """Initialize class and create single geoprocessor object"""        
+        """Initialize class and create single geoprocessor object"""
         self.gp = arcgisscripting.create(9.3)
         self.gp.CheckOutExtension("Spatial")
         self.gp.OverwriteOutput = True

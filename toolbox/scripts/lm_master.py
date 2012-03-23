@@ -22,12 +22,11 @@ import s3_calcCwds as s3
 import s4_refineNetwork as s4
 import s5_calcLccs as s5
 
-
 _SCRIPT_NAME = "lm_master.py"
 #__version__ = "$Revision$"
 
 
-def lm_master():
+def lm_master(argv=None):
     """Main function for linkage mapper.
 
     Called by ArcMap with parameters or run from command line with parameters
@@ -35,14 +34,17 @@ def lm_master():
     5 processing steps.
 
     """
+    if argv is None:
+        argv = sys.argv
+
     # Setup global variables
-    cfg.configure("linkage_mapper", sys.argv)
+    cfg.configure("linkage_mapper", argv)
+
     gp = cfg.gp
+
     try:
         gprint = lu.gprint
 
-
-        
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
         gp.OverwriteOutput = True
@@ -63,7 +65,8 @@ def lm_master():
         lu.delete_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
-        cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, cfg.PARAMS)
+        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
+                                             cfg.PARAMS
 
         installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + cfg.releaseNum)
@@ -72,7 +75,7 @@ def lm_master():
                 installD['Version'] + ' Service Pack ' + installD['SPNumber'])
         except:
             pass
-            
+
         # Set data frame spatial reference to coordinate system of input data 
         # Problems arise in this script (core raster creation) and in S2 
         # (generate near table) if they differ.
@@ -81,7 +84,7 @@ def lm_master():
         # Check core ID field and project directory name.
         lu.check_cores(cfg.COREFC, cfg.COREFN)
         lu.check_project_dir()
-        
+
         # Identify first step cleanup link tables from that point
         lu.dashline(1)
         if cfg.STEP1:
@@ -119,7 +122,6 @@ def lm_master():
             # Make core raster file
             gprint('\nMaking temporary raster of core file for this run.')
             lu.delete_data(cfg.CORERAS)
-           
             gp.FeatureToRaster_conversion(cfg.COREFC, cfg.COREFN,
                           cfg.CORERAS, gp.Describe(cfg.RESRAST).MeanCellHeight)
          # #   gp.RasterToPolygon_conversion(cfg.CORERAS, cfg.COREFC,
@@ -164,7 +166,7 @@ def lm_master():
         # Clean up
         lu.delete_dir(cfg.SCRATCHDIR)
         lu.close_log_file()
-        
+
         gp.addmessage('\nDONE!\n')
 
         if cfg.STEP5:
@@ -172,7 +174,7 @@ def lm_master():
             gprint('Results from this run can be found in your output '
                     'directory:')
             gprint(cfg.OUTPUTDIR)
-            
+
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
@@ -180,7 +182,7 @@ def lm_master():
     # Return any PYTHON or system specific errors
     except:
         lu.exit_with_python_error(_SCRIPT_NAME)
-    
+
     finally:
         lu.dashline()
         gprint('A record of run settings and messages can be found in your '
@@ -188,4 +190,4 @@ def lm_master():
         gprint(cfg.MESSAGEDIR)
         lu.dashline(2)
 if __name__ == "__main__":
-    lm_master()
+    sys.exit(lm_master())
