@@ -9,7 +9,7 @@ import os
 import sys
 import shutil
 import subprocess
-import pdb
+#import pdb
 
 import arcpy
 import grass.script as grass
@@ -21,23 +21,23 @@ import cc_util
 def main(core_list):
     """ """
     try:
-        arcpy.AddMessage("Running Grass to create cost-weighted distance  rasters")    
-        gisbase = os.path.join(cc_env.proj_dir, "gwksp
+        arcpy.AddMessage("Running Grass to create cost-weighted distance  rasters")
+        gisbase = os.path.join(cc_env.proj_dir, "gwksp")
         climate_asc = os.path.join(cc_env.out_dir, "cc_climate.asc")
         resist_asc = os.path.join(cc_env.out_dir, "cc_resist.asc")
         location = "gcwd"
         climate_lyr = "climate"
         resist_lyr = "resist"
         core_lyr = "cores"
-        
+
         arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
-        arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)       
+        arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
 
         cur_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
                                     shell=True).stdout.read()
-        
+
         setup_wrkspace(gisbase, location, climate_asc)
-        
+
         grass.run_command("r.in.arc", input=climate_asc, output=climate_lyr)
         grass.run_command("r.in.arc", input=resist_asc, output=resist_lyr)
         grass.run_command("v.in.ogr", dsn=cc_env.out_dir, output=core_lyr)
@@ -54,14 +54,14 @@ def main(core_list):
         gcwd = "gcwd"
         gback = "gback"
         core_points = "corepoints"
-        
+
         ascii_fld = cc_util.mk_proj_dir("cwdascii")
-        
+
         for core_no in core_list:
             grass.run_command("v.extract", input=core_lyr,
-                output=core, where= cc_env.core_fld +  " = " + core_no, 
+                output=core, where= cc_env.core_fld +  " = " + core_no,
                 overwrite=True)
-            grass.run_command("v.to.rast", input=core, output=core_rast, 
+            grass.run_command("v.to.rast", input=core, output=core_rast,
                               use="val", overwrite=True)
             grass.run_command("r.to.vect", flags="z", input=core_rast,
                 output=core_points, feature="point", overwrite=True)
@@ -72,7 +72,7 @@ def main(core_list):
 
             cwd_ascii = os.path.join(ascii_fld, "cwd_" + core_no + ".asc")
             back_ascii = os.path.join(ascii_fld, "back_" + core_no + ".asc")
-            grass.run_command("r.out.arc", input=gcwd, output=cwd_ascii, 
+            grass.run_command("r.out.arc", input=gcwd, output=cwd_ascii,
                               overwrite=True)
             grass.run_command("r.out.arc", input=gback, output=back_ascii,
                               overwrite=True)
@@ -82,7 +82,7 @@ def main(core_list):
         os.environ['PATH'] = cur_path  # Revert to original windows path
         shutil.rmtree(gisbase, True)
 
-        
+
 def setup_wrkspace(gisdbase, location, geo_file):
     """Setup GRASS workspace and modify windows path fGRASS GDAL"""
     gisbase = os.environ['GISBASE']
@@ -92,11 +92,11 @@ def setup_wrkspace(gisdbase, location, geo_file):
     # Update PATH so that GRASS GDAL is called instead of ArcGIS version
     env_list = os.environ['PATH'].split(';')
     env_list.insert(0, gisbase_etc)
-    os.environ['PATH'] = ';'.join(env_list)        
-    
+    os.environ['PATH'] = ';'.join(env_list)
+
     grass.create_location(gisdbase, location, filename=geo_file)
-    gsetup.init(gisbase, gisdbase, location, mapset)    
-      
+    gsetup.init(gisbase, gisdbase, location, mapset)
+
 
 if __name__ == "__main__":
     # options, flags = grass.parser()
