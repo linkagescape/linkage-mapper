@@ -583,7 +583,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             cwd_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
                                   "cwd_" + str(int(sourceCore)) + ".asc")
             back_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
-                                  "back
+                                  "back")
             gp.ASCIIToRaster(cwd_ascii, outDistanceRaster, "FLOAT")            
             gp.ASCIIToRaster(back_ascii, "grBACK", "FLOAT")
                 
