@@ -65,8 +65,8 @@ def lm_master(argv=None):
         lu.delete_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
-        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
-                                             cfg.PARAMS
+        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
+                                             cfg.PARAMS)
 
         installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + cfg.releaseNum)
@@ -76,8 +76,8 @@ def lm_master(argv=None):
         except:
             pass
 
-        # Set data frame spatial reference to coordinate system of input data 
-        # Problems arise in this script (core raster creation) and in S2 
+        # Set data frame spatial reference to coordinate system of input data
+        # Problems arise in this script (core raster creation) and in S2
         # (generate near table) if they differ.
         lu.set_dataframe_sr()
 
@@ -145,7 +145,7 @@ def lm_master(argv=None):
         delete_final_gdb(cfg.EXTRAGDB)
         delete_final_gdb(cfg.LINKMAPGDB)
 
-        
+
         # Run linkage mapper processing steps
         if cfg.STEP1:
             s1.STEP1_get_adjacencies()

@@ -60,7 +60,7 @@ def nullstring(arg_string):
 
 def config_global(config, arg):
     """Configure global variables for all tools"""
-    config.PARAMS = str(arg)  # Convert to string in case '\' exists in paths
+    config.PARAMS = str(arg)  # Convert to string in case '\' exists
     config.releaseNum = ver.releaseNum
     config.LOGMESSAGES = True
     # File names, directory paths & folder names
