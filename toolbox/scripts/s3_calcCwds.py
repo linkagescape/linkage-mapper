@@ -31,7 +31,7 @@ except:
     import arcgisscripting
     gp = cfg.gp
     tif = ''
-    
+
 gprint = lu.gprint
 
 
@@ -296,7 +296,7 @@ def STEP3_calc_cwds():
             statement = (
                 'gp.ExtractByMask_sa(cfg.RESRAST, cfg.BNDCIR, cfg.BOUNDRESIS)')
             while True:
-                try: 
+                try:
                     exec statement
                     randomerror()
                 except:
@@ -313,7 +313,8 @@ def STEP3_calc_cwds():
         # ---------------------------------------------------------------------
         # Rasterize core areas to speed cost distance calcs
         # lu.dashline(1)
-        gprint("Creating core area raster.")  
+        gprint("Creating core area raster.")
+
         gp.SelectLayerByAttribute(cfg.FCORES, "CLEAR_SELECTION")
 
         if arcpy:
@@ -373,7 +374,7 @@ def STEP3_calc_cwds():
                 # If iteration failed, try again after a wait period
                 delay_restart(failures)
         #----------------------------------------------------------------------
-        
+
         linkTable = linkTableMod
 
         # reinstate temporarily disabled links
@@ -445,7 +446,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             gp = arcpy.gp
             arcpy.env.workspace = coreDir
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-            arcpy.env.overwriteOutput = True            
+            arcpy.env.overwriteOutput = True
             arcpy.env.extent = "MINOF"
         else:
             gp = cfg.gp
@@ -574,22 +575,39 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
         lu.delete_data(path.join(coreDir,"BACK"))
 
-        if arcpy:
-            statement = ('outCostDist = CostDistance(SRCRASTER, bResistance, '
-                        'cfg.TMAXCWDIST, "BACK");'
-                        'outCostDist.save(outDistanceRaster)')
+        # Climate Corridor code
+        # Do not calculate cost distance if tool is run for climate corridors
+        if cfg.CALL_SRC == "cc_main.py":
+            cwdfld = "cwdascii"
+            # Take grass cwd and back asciis and write them as ARCINFO grids
+            cwd_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
+                                  "cwd_" + str(int(sourceCore)) + ".asc")
+            back_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
+                                  "back")
+            gp.ASCIIToRaster(cwd_ascii, outDistanceRaster, "FLOAT")            
+            gp.ASCIIToRaster(back_ascii, "grBACK", "FLOAT")
+                
+            # Reclassify from the directional degree output from GRASS to
+            # Arc's 1 to 8 directions format
+            gp.Reclassify_sa("grBACK", "Value",
+                "0 5;45 4;90 3;135 2;180 1;225 8;270 7;315 6", "BACK", "DATA")
         else:
-            statement = ('gp.CostDistance_sa(SRCRASTER, bResistance, '
-                     'outDistanceRaster, cfg.TMAXCWDIST, "BACK")')
-        try:
-            exec statement
-            randomerror()
-
-        except:
-            failures = lu.print_arcgis_failures(statement, failures)
-            if failures < 20:
-                return None,failures,lcpLoop
-            else: exec statement
+            if arcpy:
+                statement = ('outCostDist = CostDistance(SRCRASTER, '
+                             'bResistance, cfg.TMAXCWDIST, "BACK");'
+                             'outCostDist.save(outDistanceRaster)')
+            else:
+                statement = ('gp.CostDistance_sa(SRCRASTER, bResistance, '
+                             'outDistanceRaster, cfg.TMAXCWDIST, "BACK")')
+            try:
+                exec statement
+                randomerror()
+            except:
+                failures = lu.print_arcgis_failures(statement, failures)
+                if failures < 20:
+                    return None, failures, lcpLoop
+                else:
+                    exec statement
 
         start_time = time.clock()
         # Extract cost distances from source core to target cores
@@ -818,7 +836,7 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
             expression = (lcpRas + " + " + corePairRas)
             statement = ('gp.SingleOutputMapAlgebra_sa(expression, "addRas")')
         while True:
-            try: 
+            try:
                 exec statement
                 randomerror()
             except:
@@ -852,7 +870,7 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
     except:
         lu.dashline(1)
         # gprint('****Failed in step 3. Details follow.****')
-        lu.exit_with_python_error(_SCRIPT_NAME)    
+        lu.exit_with_python_error(_SCRIPT_NAME)
 
 def delay_restart(failures):
     gprint('That was try #' + str(failures) + ' of 20 for this core area.')
@@ -893,8 +911,8 @@ def randomerror():
         if test == 2:
             gprint('Creating artificial ArcGIS error')
             gp.MosaicToNewRaster_management(
-                            "rasterString","mosaicDir","mosFN", "", 
-                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM", 
+                            "rasterString","mosaicDir","mosFN", "",
+                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM",
                             "MATCH")
         elif test == 3:
             gprint('Creating artificial python error')

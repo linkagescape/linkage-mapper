@@ -58,7 +58,7 @@ def STEP2_build_network():
             eucdist_file = cfg.S2EUCDISTFILE
 
         eucDists_in = npy.loadtxt(eucdist_file, dtype='Float64', comments='#')
-        
+
         if eucDists_in.size == 3:  # If just one line in file
             eucDists = npy.zeros((1, 3), dtype='Float64')
             eucDists[0, :] = eucDists_in
@@ -106,7 +106,7 @@ def STEP2_build_network():
         linkTable = npy.zeros((len(eucDists), 10), dtype='int32')
         linkTable[:, 1:3] = eucDists[:, 0:2]
         linkTable[:, cfg.LTB_EUCDIST] = eucDists[:, 2]
-        
+
         #----------------------------------------------------------------------
         # Get adjacencies using adj files from step 1.
         cwdAdjTable = get_adj_list(cfg.CWDADJFILE)
@@ -139,7 +139,7 @@ def STEP2_build_network():
             if listEntry in cwdAdjList:
                 linkTable[x, cfg.LTB_CWDADJ] = 1
             else:
-                linkTable[x, cfg.LTB_CWDADJ] = 0                
+                linkTable[x, cfg.LTB_CWDADJ] = 0
             if listEntry in eucAdjList:
                 linkTable[x, cfg.LTB_EUCADJ] = 1
             else:
@@ -161,12 +161,15 @@ def STEP2_build_network():
             delRowsVector[:] = delRows[0, :]
             linkTable = lu.delete_row(linkTable, delRowsVector)
 
-        else:
+        elif cfg.S2ADJMETH_EU:
             gprint("\nKeeping Euclidean adjacent links\n")
             delRows = npy.asarray(npy.where(linkTable[:, cfg.LTB_EUCADJ] == 0))
             delRowsVector = npy.zeros((delRows.shape[1]), dtype="int32")
             delRowsVector[:] = delRows[0, :]
             linkTable = lu.delete_row(linkTable, delRowsVector)
+
+        else:  # For Climate Corridor tool
+            gprint("\nKeeping all links\n")
 
         # if dropFlag:
             # lu.dashline(1)
