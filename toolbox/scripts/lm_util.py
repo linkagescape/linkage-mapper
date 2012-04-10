@@ -1553,7 +1553,7 @@ def set_dataframe_sr():
     try:    
         sr = arcpy.Describe(cfg.COREFC).spatialReference
         gprint('Setting data frame spatial reference to that of '
-                'core featureclass')
+                'core area featureclass')
     except:
         try:
             sr = arcpy.Describe(cfg.RESRAST).spatialReference    
@@ -1736,12 +1736,11 @@ def check_project_dir():
     """Checks to make sure path name is not too long.
 
     Long path names can cause problems with ESRI grids.
-    (DISABLED- this is now implemented in toolbox GUI).
     """
-    if len(cfg.PROJECTDIR) > 100:
+    if len(cfg.PROJECTDIR) > 140:
         msg = ('ERROR: Project directory "' + cfg.PROJECTDIR +
                '" is too deep.  Please choose a shallow directory'
-               '(something like "C:\ANBO").')
+               '(something like "C:\PUMA").')
         raise_error(msg)
 
     if "-" in cfg.PROJECTDIR or " " in cfg.PROJECTDIR:
@@ -2027,8 +2026,7 @@ def print_drive_warning():
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
             'Errors may also result from conflicts with anti-virus '
-            'software.)\n')
-
+            'software (known problems with AVG).)\n')
 
 def get_dir_depth(dir):
     import string
@@ -2202,6 +2200,13 @@ def exit_with_geoproc_error(filename):
         if gp.GetSeverity(msg) == 2:
             gp.AddReturnMessage(msg)
             write_log(msg)
+    dashline()
+    gprint('Note: ArcGIS errors are more likely when writing to remote '
+            '(network) drives or deep file structures. We recommend shallow '
+            'project directories on local drives, like C:\puma. '
+            'Errors may also result from conflicts with anti-virus '
+            'software (AVG is a known culprit).)\n')
+
     close_log_file()
     exit(1)
 
