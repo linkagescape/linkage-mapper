@@ -613,8 +613,12 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Extract cost distances from source core to target cores
         # Fixme: there will be redundant calls to b-a when already
         # done a-b
+    
         ZNSTATS = path.join(coreDir, "zonestats.dbf")
         lu.delete_data(ZNSTATS)
+
+        #Fixme: zonalstatistics is returning integer values for minimum. Why????
+        #Extra zonalstatistics code implemented later in script to correct values.
         statement = ('gp.zonalstatisticsastable_sa('
                       'cfg.CORERAS, "VALUE", outDistanceRaster, ZNSTATS)')
 
@@ -672,7 +676,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                                [rows,cfg.LTB_LINKTYPE]
                                                + 1000)
 
-
                 # Create raster that just has target core in it
                 TARGETRASTER = 'targ' + tif
                 lu.delete_data(path.join(coreDir,TARGETRASTER))
@@ -694,7 +697,21 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         return None,failures,lcpLoop
                     else: exec statement
 
-
+                # Execute ZonalStatistics to get more precise cw distance if 
+                # arc rounded it earlier (not critical, hence the try/pass)
+                if (linkTable[link,cfg.LTB_CWDIST] == 
+                                int(linkTable[link,cfg.LTB_CWDIST])):
+                    try:
+                        zonalRas = path.join(coreDir,'zonal')
+                        gp.ZonalStatistics_sa(TARGETRASTER, "VALUE", 
+                            outDistanceRaster, zonalRas, "MINIMUM", "DATA")
+                        minObject = gp.GetRasterProperties_management(zonalRas, 
+                                                                "MINIMUM") 
+                        rasterMin = float(str(minObject.getOutput(0)))
+                        linkTable[link,cfg.LTB_CWDIST] = rasterMin
+                        lu.delete_data(zonalRas)
+                    except:
+                        pass
                 # Cost path maps the least cost path
                 # between source and target
                 lcpRas = path.join(coreDir,"lcp" + tif)

@@ -106,15 +106,16 @@ def config_global(config, arg):
     # Save individual focal grids for barrier analysis
     config.SAVEFOCALRASTERS = False
 
-    config.SAVEBARRIERRASTERS = False  # Save individual barrier grids
+    config.SAVEBARRIERRASTERS = True # Save individual barrier grids
 
     # Save individual current maps from Circuitscape
     config.SAVECURRENTMAPS = False
-
+        
     config.SAVECIRCUITDIR = False
+    
     config.SAVEBARRIERDIR = False
     config.SAVECENTRALITYDIR = False
-    config.SAVECURRENTMAPS = False
+    
 
     config.FCORES = "fcores"
 
