@@ -1,11 +1,10 @@
 #add options to do trm, max, etc
-#remove datapass/barrier
 
 #!/usr/bin/env python2.5
 # Author: Brad McRae
 
 """Detects influential barriers given CWD calculations from
-    linkage mapper step 3.
+    Linkage Mapper step 3.
 Reguired Software:
 ArcGIS 10 with Spatial Analyst extension
 Python 2.6
@@ -104,34 +103,41 @@ def STEP6_calc_barriers():
             arcpy.CreateFolder_management(path.dirname(path1),
                                        path.basename(path1))
 
-            # if maxCoreNum > 100:
+
+            # if maxCoreNum > 99:
+                # gprint('Creating subdirectories:')
                 # maxDirCount = int(maxCoreNum/100)
                 # focalDirBaseName = dir2
-                # for dir in range(1, maxDirCount + 1):
-                    # focalDir = focalDirBaseName + str(dir)
-                    # arcpy.CreateFolder_management(path2, focalDir)
+                # for dirCount in range(1, maxDirCount + 1):
+                    # floor = dirCount * 100
+                    # ceiling = 99 + dirCount * 100
+                    # ind = npy.where(coresToProcess < ceiling)
+                    # lowCores = coresToProcess[ind]
+                    # if lowCores.shape[0] > 0:
+                        # ind = npy.where(lowCores > floor)
+                        # medCores = lowCores[ind]
+                        # if medCores.shape[0] > 0:
+                            # focalDir = focalDirBaseName + str(dirCount)
+                            # gprint('...' + focalDir)
+                            # arcpy.CreateFolder_management(path2, focalDir)
 
-            #FIXME: apply new code from s3 here.
             if maxCoreNum > 99:
-                gprint('Creating subdirectories')
+                gprint('Creating subdirectories:')
                 maxDirCount = int(maxCoreNum/100)
                 focalDirBaseName = dir2
-                for dirCount in range(1, maxDirCount + 1):
-                    floor = dirCount * 100
-                    ceiling = 99 + dirCount * 100
-                    ind = npy.where(coresToProcess < ceiling)
-                    lowCores = coresToProcess[ind]
-                    if lowCores.shape[0] > 0:
-                        ind = npy.where(lowCores > floor)
-                        medCores = lowCores[ind]
-                        if medCores.shape[0] > 0:
-                            focalDir = focalDirBaseName + str(dirCount)
-                            gprint('...' + focalDir)
-                            arcpy.CreateFolder_management(path2, focalDir)
 
+                cp100 = (coresToProcess.astype('int32'))/100
+                ind = npy.where(cp100 > 0)
+                dirNums = npy.unique(cp100[ind])
+                for dirNum in dirNums:
+                    focalDir = focalDirBaseName + str(dirNum)
+                    gprint('...' + focalDir)
+                    arcpy.CreateFolder_management(path2, focalDir)            
 
-
-        del coresToProcess
+                del coresToProcess
+              
+        
+        
         # Create resistance raster with filled-in Nodata values for later use
         arcpy.env.extent = cfg.RESRAST
         resistFillRaster = path.join(cfg.SCRATCHDIR, "resist_fill")
@@ -196,7 +202,7 @@ def STEP6_calc_barriers():
                         outFocalStats = arcpy.sa.FocalStatistics(cwdRaster2,
                                         InNeighborhood, "MINIMUM","DATA")
                         outFocalStats.save(focalRaster2)
-                    #Calculate potential benefit per pixel restored
+                    #Calculate potential benefit per map unit restored
                     statement = ('outras = ((lcDist - Raster(focalRaster1) - '
                                  'Raster(focalRaster2) - dia) / dia); '
                                  'outras.save(barrierRaster)')
@@ -212,13 +218,11 @@ def STEP6_calc_barriers():
                         else: break
 
 
-                    mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1)) #xxx move
-                    lu.create_dir(mosaicDir)#xxx move
-                    mosFN = 'mos_temp'#.tif'#xxx change and move
-                    tempMosaicRaster = path.join(mosaicDir,mosFN)#xxx move
+                    mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1)) 
+                    lu.create_dir(mosaicDir)
+                    mosFN = 'mos_temp'
+                    tempMosaicRaster = path.join(mosaicDir,mosFN)
                     arcpy.env.workspace = mosaicDir            
-
-
 
                     if linkLoop == 1:
                         #If this is the first grid then copy rather than mosaic
@@ -241,18 +245,15 @@ def STEP6_calc_barriers():
                                 lu.delete_data(tempMosaicRaster)
                                 lu.delete_dir(mosaicDir)
                                 # Try a new directory
-                                mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1) + '_' + str(count)) #xxx 
-                                lu.create_dir(mosaicDir)#xxx 
+                                mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1) + '_' + str(count)) 
+                                lu.create_dir(mosaicDir)
                                 arcpy.env.workspace = mosaicDir            
-                                tempMosaicRaster = path.join(mosaicDir,mosFN)#xxx                
+                                tempMosaicRaster = path.join(mosaicDir,mosFN)              
                                 if not tryAgain:    
                                     exec statement
                             else: break
                     lu.delete_data(lastMosaicRaster)
                     lastMosaicRaster = tempMosaicRaster
-
-
-
 
                     if not cfg.SAVEBARRIERRASTERS:
                         lu.delete_data(barrierRaster)
@@ -288,7 +289,6 @@ def STEP6_calc_barriers():
             # -----------------------------------------------------------------
 
             mosaicFN = "barriers" + str(radius)
-            #fixme- write final to geodatabase instead
             mosaicFN = PREFIX + "_barriers" + str(radius)
             arcpy.env.extent = cfg.RESRAST
             outSetNull = arcpy.sa.SetNull(tempMosaicRaster, tempMosaicRaster,
@@ -420,7 +420,6 @@ def STEP6_calc_barriers():
                 path1, dir1 = path.split(core1path)
                 path2, dir2 = path.split(path1)
                 lu.delete_dir(path2)
-
 
     # Return GEOPROCESSING specific errors
     except arcpy.ExecuteError:

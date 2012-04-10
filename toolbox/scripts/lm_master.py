@@ -39,7 +39,7 @@ def lm_master(argv=None):
 
     # Setup global variables
     cfg.configure("linkage_mapper", argv)
-
+    
     gp = cfg.gp
 
     try:
@@ -130,8 +130,10 @@ def lm_master(argv=None):
         def delete_final_gdb(finalgdb):
             """Deletes final geodatabase"""
             if gp.Exists(finalgdb) and cfg.STEP5:
-                lu.clean_out_workspace(finalgdb)
                 lu.delete_data(finalgdb)
+                if gp.Exists(finalgdb):
+                    lu.clean_out_workspace(finalgdb)
+                    lu.delete_dir(finalgdb)
                 if gp.Exists(finalgdb):
                     lu.dashline(1)
                     msg = ('ERROR: Could not remove contents of geodatabase ' +
@@ -174,6 +176,7 @@ def lm_master(argv=None):
             gprint('Results from this run can be found in your output '
                     'directory:')
             gprint(cfg.OUTPUTDIR)
+        
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
@@ -189,5 +192,7 @@ def lm_master(argv=None):
                'log directory:')
         gprint(cfg.MESSAGEDIR)
         lu.dashline(2)
+        
+        
 if __name__ == "__main__":
-    sys.exit(lm_master())
+    lm_master()
