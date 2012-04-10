@@ -208,6 +208,7 @@ def calc_lccs(normalize):
                 if normalize:
                     statement = ('outras = Raster(cwdRaster1) + Raster('
                         'cwdRaster2) - lcDist; outras.save(lccNormRaster)') 
+                                                
                 else:
                     statement = ('outras =Raster(cwdRaster1) + Raster('
                                 'cwdRaster2); outras.save(lccNormRaster)')
@@ -230,6 +231,7 @@ def calc_lccs(normalize):
                     if not tryAgain:    
                         exec statement
                 else: break
+
             if normalize and arcpy: 
                 try: 
                     minObject = gp.GetRasterProperties(lccNormRaster, "MINIMUM") 
@@ -454,7 +456,7 @@ def calc_lccs(normalize):
             gp.AddWarning(msg) 
                             
 
-        gprint('Writing final LCP maps...')
+        gprint('\nWriting final LCP maps...')
         if cfg.STEP4:
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=4,
                                                      thisStep=5)
