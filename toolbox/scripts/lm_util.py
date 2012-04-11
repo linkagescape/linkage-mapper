@@ -2026,7 +2026,8 @@ def print_drive_warning():
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
             'Errors may also result from conflicts with anti-virus '
-            'software (known problems with AVG).)\n')
+            'software (known problems with AVG). We have also seen '
+            'conflicts when writing to synced folders (e.g., Dropbox). \n')
 
 def get_dir_depth(dir):
     import string
