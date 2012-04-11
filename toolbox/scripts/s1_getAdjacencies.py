@@ -143,7 +143,8 @@ def cwadjacency():
 
         gp.workspace = cfg.ADJACENCYDIR
         gp.scratchworkspace = cfg.ARCSCRATCHDIR
-
+        
+        lu.delete_data(cfg.CWDGDB)
         if not gp.exists(cfg.CWDGDB):
             gp.createfilegdb(cfg.OUTPUTDIR, path.basename(cfg.CWDGDB))
         outDistanceRaster = path.join(cfg.CWDGDB, PREFIX + "_cwd")
@@ -164,9 +165,10 @@ def cwadjacency():
                     exec statement
             else:
                 break
-
+        gprint('\nBuilding output statistics and pyramids for cwd raster.')
+        lu.build_stats(outDistanceRaster)
         gp.scratchworkspace = cfg.ARCSCRATCHDIR
-        gprint('\nCost-weighted distance allocation done.')
+        gprint('Cost-weighted distance allocation done.')
         start_time = lu.elapsed_time(start_time)
         adjshiftwrite(alloc_ras, outcsvfile, outcsvLogfile)
 
