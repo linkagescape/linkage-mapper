@@ -1,2 +1,1 @@
-# Linkage Mapper Release Number
-releaseNum = "0.7.8"
+releaseNum = "0.7.9beta" 
