@@ -43,7 +43,7 @@ def main(core_list):
         arcpy.AddMessage("Importing raster files into GRASS")
         grass.run_command("r.in.arc", input=climate_asc, output=climate_lyr)
         grass.run_command("r.in.arc", input=resist_asc, output=resist_lyr)
-        arcpy.AddMessage("Importing cores feature class into GRASS")        
+        arcpy.AddMessage("Importing cores feature class into GRASS")
         grass.run_command("v.in.ogr", dsn=cc_env.out_dir, output=core_lyr)
 
         slope_factor = "1"
@@ -57,6 +57,7 @@ def main(core_list):
         core_rast = "core_rast"
         gcwd = "gcwd"
         gback = "gback"
+        gbackrc = "gbackrc"
         core_points = "corepoints"
 
         ascii_fld = cc_util.mk_proj_dir("cwdascii")
@@ -73,15 +74,26 @@ def main(core_list):
                               use="val")
             grass.run_command("r.to.vect", flags="z", input=core_rast,
                 output=core_points, feature="point")
+            arcpy.AddMessage("Running r.walk to create CWD raster")
             grass.run_command("r.walk", elevation=climate_lyr,
                 friction=resist_lyr, output=gcwd, outdir=gback,
                 start_points=core_points, walk_coeff=walk_coeff,
                 slope_factor=slope_factor)
-
+            
+            # Reclassify from the directional degree output from GRASS to
+            # Arc's 1 to 8 directions format            
+            path = os.path.abspath(__file__)
+            dir_path = os.path.dirname(path)
+            rc_rules = os.path.join(dir_path, "cc_bkrast.rcf")            
+            grass.run_command("r.reclass", input=gback, output=gbackrc,
+                               rules=rc_rules)
+            
+            arcpy.AddMessage("Exporting CWD and back rasters to ASCII grids")
             cwd_ascii = os.path.join(ascii_fld, "cwd_" + core_no + ".asc")
             back_ascii = os.path.join(ascii_fld, "back_" + core_no + ".asc")
-            grass.run_command("r.out.arc", input=gcwd, output=cwd_ascii)                              
-            grass.run_command("r.out.arc", input=gback, output=back_ascii)
+            grass.run_command("r.out.arc", input=gcwd, output=cwd_ascii)
+            grass.run_command("r.out.arc", input=gbackrc, output=back_ascii)
+
     except Exception:
         raise
     finally:
@@ -117,8 +129,8 @@ def setup_wrkspace(gisdbase, location, geo_file):
     grass.create_location(gisdbase, location, filename=geo_file)
     gsetup.init(gisbase, gisdbase, location, mapset)
     grass.run_command("g.gisenv", set="OVERWRITE=1")
-    os.environ['GRASS_VERBOSE'] = "0"    
-    
+    os.environ['GRASS_VERBOSE'] = "0"
+
 
 if __name__ == "__main__":
     # options, flags = grass.parser()
