@@ -16,6 +16,7 @@ import numpy as npy
 
 from lm_config import tool_env as cfg
 import lm_util as lu
+import cc_util
 
 _SCRIPT_NAME = "s3_calcCwds.py"
 
@@ -577,21 +578,18 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
         # Climate Corridor code
         # Do not calculate cost distance if tool is run for climate corridors
-        if cfg.CALL_SRC == "cc_main.py":
-            gprint("Importing GRASS CWD rasters")
+        if cfg.CALL_SRC == "cc_main.py":            
             cwdfld = "cwdascii"
             # Take grass cwd and back asciis and write them as ARCINFO grids
             cwd_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
                                   "cwd_" + str(int(sourceCore)) + ".asc")
             back_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
                                   "back_" + str(int(sourceCore)) + ".asc")
-            gp.ASCIIToRaster(cwd_ascii, outDistanceRaster, "FLOAT")            
-            gp.ASCIIToRaster(back_ascii, "grBACK", "FLOAT")
-                
-            # Reclassify from the directional degree output from GRASS to
-            # Arc's 1 to 8 directions format
-            gp.Reclassify_sa("grBACK", "Value",
-                "0 5;45 4;90 3;135 2;180 1;225 8;270 7;315 6", "BACK", "DATA")
+            gprint("Importing GRASS CWD raster")
+            gp.ASCIIToRaster(cwd_ascii, outDistanceRaster, "FLOAT")     
+            gprint("Importing GRASS back link raster")           
+            gp.ASCIIToRaster(back_ascii, "BACK", "INTEGER")
+
         else:
             if arcpy:
                 statement = ('outCostDist = CostDistance(SRCRASTER, '
