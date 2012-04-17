@@ -28,12 +28,11 @@ import cc_util
 import lm_master
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
-
 
 def main(argv=None):
     """Main function for Climate Corridor tool"""
@@ -49,6 +48,7 @@ def main(argv=None):
         argv = sys.argv
     try:
         cc_env.configure(argv)
+
         import cc_grass_cwd
 
         # Check out the ArcGIS Spatial Analyst extension license
@@ -60,6 +60,7 @@ def main(argv=None):
         arcpy.env.overwriteOutput = True
         cc_util.mk_proj_dir(cc_env.out_dir)
         arcpy.env.workspace = cc_env.out_dir
+        lm_outdir = cc_util.mk_proj_dir("lm_out")
 
         # Clip inputs and create project area raster
         cc_clip_inputs()
@@ -75,19 +76,18 @@ def main(argv=None):
         # Limit core pairs based upon cliamte threashold
         limit_cores(core_parings, climate_stats)
 
-        # Create distance file in conefor format
-        conefor_file, core_list = gen_core_dist(core_parings)
+        # Calculate distances and generate link table for Linkage Mapper
+        core_list = gen_link_table(core_parings, lm_outdir)
 
         # Create CWD using Grass
         cc_grass_cwd.main(core_list)
 
         # Run Linkage Mapper
         arcpy.AddMessage("\nRUNNING LINKAGE MAPPER TO CREATE CLIMATE CORRIDORS")
-        lm_outdir = cc_util.mk_proj_dir("lm_out")
         arg = (_SCRIPT_NAME, lm_outdir, cc_env.prj_core_fc, cc_env.core_fld,
-               cc_env.prj_resist_rast, "true", "true", "#", conefor_file,
-               "true", "false", "false", "4", "Cost-Weighted", "true", "true",
-               "#", "#", "#")
+               cc_env.prj_resist_rast, "false", "false", "#", "#", "true", 
+               "false", "false", "4", "Cost-Weighted", "true", "true", "#", 
+               "#", "#")
         lm_master.lm_master(arg)
 
     except arcpy.ExecuteError:
@@ -174,7 +174,7 @@ def create_pair_tbl():
 
         arcpy.AddMessage("There are " + str(len(core_list)) + " unique "
             "cores and " + str(len(cores_product)) + " pairings")
-        
+
         irows = arcpy.InsertCursor(cpair_tbl)
         for x in cores_product:
             outputrow = irows.newRow()
@@ -278,8 +278,8 @@ def limit_cores(pair_tbl, stats_tbl):
         rows_del = int(arcpy.GetCount_management(pair_vw).getOutput(0))
         if rows_del > 0:
             arcpy.DeleteRows_management(pair_vw)
-        arcpy.AddMessage(str(rows_del) + " rows deleted")   
-           
+        arcpy.AddMessage(str(rows_del) + " rows deleted")
+
     except:
         raise
     finally:
@@ -288,8 +288,8 @@ def limit_cores(pair_tbl, stats_tbl):
         if arcpy.Exists(pair_vw):
             arcpy.Delete_management(pair_vw)
 
-def gen_core_dist(parings):
-    """Use ArcGIS to create distance file
+def gen_link_table(parings, outdir):
+    """Calculate core to core distances and create linkage table
 
     Requires ArcInfo license.
 
@@ -303,12 +303,13 @@ def gen_core_dist(parings):
     ndist_fn = "NEAR_DIST"
     jtocore_fn = cc_env.core_fld[:8] + "_1"  # dbf field length
     near_tbl = os.path.join(cc_env.out_dir, "neartbl.dbf")
-    dist_fname = os.path.join(cc_env.out_dir, "cpairdist.txt")
+    link_fld = os.path.join(outdir, "datapass")
+    link_file = os.path.join(link_fld, "linkTable_s2.csv")
 
-    dist_file, srow, srows = None, None, None
+    link_tbl, srow, srows = None, None, None
 
     try:
-        arcpy.AddMessage("\nGENERATING DISTANCE FILE")
+        arcpy.AddMessage("\nGENERATING LINKAGE TABLE")
         if cc_env.simplyfy_cores:
             arcpy.AddMessage("Simplifying polygons to speed up core pair "
                              "distance calculations")
@@ -332,25 +333,33 @@ def gen_core_dist(parings):
         # del srows, srow
         frm_cores = map(str, sorted(frm_cores))
 
-        # Generate Conefor distance file for near table results
-        dist_file = open(dist_fname, 'wt')
-        writer = csv.writer(dist_file, delimiter='\t')
+        # Generate link table file from near table results
+        if not os.path.exists(link_fld):
+            os.mkdir(link_fld)
+
+        link_tbl = open(link_file, 'wb')
+        writer = csv.writer(link_tbl, delimiter=',')
+        headings = ["# link", "coreId1", "coreId2", "cluster1", "cluster2",
+                    "linkType", "eucDist", "lcDist", "eucAdj", "cwdAdj"]
+        writer.writerow(headings)        
+        
         core_list = set()
+        i = 1
 
         coreid_fld = arcpy.AddFieldDelimiters(corefc, cc_env.core_fld)
         for frm_core in frm_cores:
             # From cores
             expression = coreid_fld + " = " + frm_core
-            arcpy.MakeFeatureLayer_management(corefc, fcore_vw, expression)           
-            
+            arcpy.MakeFeatureLayer_management(corefc, fcore_vw, expression)
+
             # To cores
-            to_cores_lst = [x[1] for x in core_pairs if frm_core in x[0]]
+            to_cores_lst = [x[1] for x in core_pairs if frm_core == x[0]]
             to_cores = ', '.join(to_cores_lst)
             expression = coreid_fld + " in (" +  to_cores + ")"
             arcpy.MakeFeatureLayer_management(corefc, tcore_vw, expression)
-            
-            arcpy.AddMessage("Calculating Euclidean distance/s from core: "
-                             + frm_core + " to core/s: " + to_cores)
+            arcpy.AddMessage("Calculating Euclidean distance/s from core "
+                             + frm_core + " to " + str(len(to_cores_lst))
+                             + " other cores")
 
             # Generate near table for these core pairings
             arcpy.GenerateNearTable_analysis(fcore_vw, tcore_vw, near_tbl,
@@ -360,29 +369,32 @@ def gen_core_dist(parings):
             arcpy.JoinField_management(near_tbl, fmid_fn, corefc,
                                        ntblid_fn, cc_env.core_fld)
             arcpy.JoinField_management(near_tbl, toid_fn, corefc,
-                                       ntblid_fn, cc_env.core_fld)                 
-                 
+                                       ntblid_fn, cc_env.core_fld)
+
             # Limit pairings based on inputed Euclidean distances
             srow, srows = None, None
             euc_dist_fld = arcpy.AddFieldDelimiters(near_tbl, ndist_fn)
             expression = (euc_dist_fld + " > " + str(cc_env.min_euc_dist))
             srows = arcpy.SearchCursor(near_tbl, expression, "",
-                                       jtocore_fn + "; " + ndist_fn)
+                                       jtocore_fn + "; " + ndist_fn,
+                                       jtocore_fn + " A; " + ndist_fn + " A")
 
-            # Process near table and output in Conefor format     
-            #pdb.set_trace()
+            # Process near table and output into a link table
             srow = srows.next()
+            
             if srow:
-                core_list.add(frm_core)
+                core_list.add(int(frm_core))
                 while srow:
-                    to_core = srow.getValue(jtocore_fn)
+                    to_coreid = srow.getValue(jtocore_fn)
                     dist_value = srow.getValue(ndist_fn)
-                    writer.writerow([frm_core, to_core, dist_value])                    
-                    core_list.add(to_core)
-                    srow = srows.next()                    
-                # del srows, srow
-        print
-        return dist_fname, map(str, sorted(core_list))
+                    writer.writerow([i, frm_core, to_coreid, -1, -1, 1,
+                                     dist_value, -1, -1, -1])
+                    core_list.add(to_coreid)
+                    srow = srows.next()
+                    i += 1
+                # del srows, srow            
+                
+        return map(str, sorted(core_list))
 
     except:
         raise
@@ -391,8 +403,8 @@ def gen_core_dist(parings):
         if arcpy.Exists(simplify_points):
                 arcpy.Delete_management(simplify_points)
 
-        if dist_file:
-            dist_file.close()
+        if link_tbl:
+            link_tbl.close()
         if srow:
             del srow
         if srows:
