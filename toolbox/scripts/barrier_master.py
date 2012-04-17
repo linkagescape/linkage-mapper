@@ -12,7 +12,6 @@ Numpy
 import os.path as path
 import sys
 
-import arcgisscripting
 import arcpy
 
 from lm_config import tool_env as cfg
@@ -41,7 +40,7 @@ def bar_master():
         lu.move_old_results()
 
         # Delete final ouptut geodatabase
-        lu.delete_dir(cfg.BARRIERGDB)
+        lu.clean_out_workspace(cfg.BARRIERGDB)
         if not arcpy.Exists(cfg.BARRIERGDB):
             # Create output geodatabase
             arcpy.CreateFileGDB_management(cfg.OUTPUTDIR,
@@ -68,7 +67,7 @@ def bar_master():
         gprint('\nDONE!\n')
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors

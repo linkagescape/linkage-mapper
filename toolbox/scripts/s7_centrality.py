@@ -189,10 +189,10 @@ def STEP7_calc_centrality():
 
         finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=5,
                                                   thisStep=7)
-        linkTableFile = path.join(cfg.DATAPASSDIR, "linkTable_s7.csv")
+        linkTableFile = path.join(cfg.DATAPASSDIR, "linkTable_s5_plus.csv")
         lu.write_link_table(finalLinkTable, linkTableFile, inLinkTableFile)
         linkTableFinalFile = path.join(cfg.OUTPUTDIR,
-                                       cfg.PREFIX + "_linkTable_s7.csv")
+                                       cfg.PREFIX + "_linkTable_s5_plus.csv")
         lu.write_link_table(finalLinkTable,
                             linkTableFinalFile, inLinkTableFile)
         gprint('Copy of final linkTable written to '+

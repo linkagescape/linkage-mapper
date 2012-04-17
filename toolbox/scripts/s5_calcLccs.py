@@ -63,7 +63,7 @@ def STEP5_calc_lccs():
 def calc_lccs(normalize):
     try:  
         if normalize:
-            mosaicBaseName = "_lcc_mosaic"
+            mosaicBaseName = "_corridors"
             writeTruncRaster = cfg.WRITETRUNCRASTER
             outputGDB = cfg.OUTPUTGDB
             if cfg.CALCNONNORMLCCS:
@@ -71,7 +71,7 @@ def calc_lccs(normalize):
             else:
                 SAVENORMLCCS = cfg.SAVENORMLCCS
         else:
-            mosaicBaseName = "_NON_NORMALIZED_lcc_mosaic"
+            mosaicBaseName = "_NON_NORMALIZED_corridors"
             SAVENORMLCCS = False
             outputGDB = cfg.EXTRAGDB
             writeTruncRaster = False
@@ -351,8 +351,6 @@ def calc_lccs(normalize):
         # ---------------------------------------------------------------------
 
         # Create output geodatabase
-        lu.delete_data(outputGDB)
-        lu.snooze(10)
         if not gp.exists(outputGDB):
             gp.createfilegdb(cfg.OUTPUTDIR, path.basename(outputGDB))
 
@@ -365,19 +363,10 @@ def calc_lccs(normalize):
         gp.rasterstatistics = "NONE"
 
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
         # Copy mosaic raster to output geodatabase
         saveFloatRaster = False
         if saveFloatRaster == True:
-            floatRaster = outputGDB + '\\' + PREFIX + mosaicBaseName  # Full path 
+            floatRaster = outputGDB + '\\' + PREFIX + mosaicBaseName + '_flt' # Full path 
             statement = 'arcObj.CopyRaster_management(mosaicRaster, floatRaster)'
             try:
                 exec statement
@@ -387,7 +376,7 @@ def calc_lccs(normalize):
 
         # ---------------------------------------------------------------------
         # convert mosaic raster to integer
-        intRaster = outputGDB + '\\' + PREFIX + mosaicBaseName + "_int"
+        intRaster = outputGDB + '\\' + PREFIX + mosaicBaseName
         if arcpy:
             statement = ('outras = Int(Raster(mosaicRaster) - offset + 0.5); ' 
                         'outras.save(intRaster)')
