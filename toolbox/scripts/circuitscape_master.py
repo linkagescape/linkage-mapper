@@ -112,13 +112,13 @@ def circuitscape_master():
 
 #aaa            lu.clean_out_workspace(cfg.PINCHGDB)
 #aaa            lu.delete_data(cfg.PINCHGDB) 
-            for i in range (1,5):
+            for i in range (1,2):
                 try:
                     s8.STEP8_calc_pinchpoints()            
                     break
                 except:
                     gprint('******************** Run failed ****************************')
-                    gprint('Trying again in 20 seconds.')
+                    gprint('Trying one more time in 20 seconds.')
                     lu.snooze(20)
                     s8.STEP8_calc_pinchpoints()
 

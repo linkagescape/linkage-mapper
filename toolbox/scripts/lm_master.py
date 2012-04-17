@@ -130,11 +130,14 @@ def lm_master(argv=None):
         def delete_final_gdb(finalgdb):
             """Deletes final geodatabase"""
             if gp.Exists(finalgdb) and cfg.STEP5:
-                lu.delete_data(finalgdb)
-                if gp.Exists(finalgdb):
+                try:
                     lu.clean_out_workspace(finalgdb)
-                    lu.delete_dir(finalgdb)
-                if gp.Exists(finalgdb):
+                except:
+                # lu.delete_data(finalgdb)
+                # if gp.Exists(finalgdb):
+                    # lu.clean_out_workspace(finalgdb)
+                    # lu.delete_dir(finalgdb)
+                # if gp.Exists(finalgdb):
                     lu.dashline(1)
                     msg = ('ERROR: Could not remove contents of geodatabase ' +
                            finalgdb + '. \nIs it open in ArcMap? You may '

@@ -35,7 +35,6 @@ def STEP8_calc_pinchpoints():
 
     """
     try:
-        gc.collect()
         lu.dashline(0)
         gprint('Running script ' + _SCRIPT_NAME)
 
@@ -50,20 +49,17 @@ def STEP8_calc_pinchpoints():
         arcpy.OverWriteOutput = True
         arcpy.env.workspace = cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-        # For speed:
         arcpy.env.pyramid = "NONE"
         arcpy.env.rasterstatistics = "NONE"
 
         # set the analysis extent and cell size to that of the resistance
         # surface
-        gprint (cfg.RESRAST)
         arcpy.env.extent = cfg.RESRAST
         arcpy.env.cellSize = cfg.RESRAST
-
-        arcpy.env.extent = "MINOF"
-
         arcpy.snapraster = cfg.RESRAST
+
         resRaster = cfg.RESRAST
+        arcpy.env.extent = "MINOF"
 
         if cfg.DO_ADJACENTPAIRS:
             prevLcpShapefile = lu.get_lcp_shapefile(None, thisStep = 8)
@@ -166,10 +162,6 @@ def STEP8_calc_pinchpoints():
 
                 # Normalized lcc rasters are created by adding cwd rasters
                 # and subtracting the least cost distance between them.
-                # expression = (cwdRaster1 + " + " + cwdRaster2 + " - "
-                             # + lcDist)
-                # gp.singleOutputMapAlgebra_sa(expression, lccNormRaster)
-
                 outRas = Raster(cwdRaster1) + Raster(cwdRaster2) - lcDist
                 outRas.save(lccNormRaster)
 
@@ -177,11 +169,8 @@ def STEP8_calc_pinchpoints():
                 resMaskRaster = path.join(linkDir, 'res_mask')
 
                 #create raster mask
-                # expression = ("(con(" + lccNormRaster + " <= " +
-                              # str(cfg.CWDCUTOFF) + ", 1))")
                 outCon = arcpy.sa.Con(Raster(lccNormRaster) <= cfg.CWDCUTOFF, 1)
                 outCon.save(resMaskRaster)
-                # gp.singleOutputMapAlgebra_sa(expression, resMaskRaster)
 
                 # Convert to poly.  Use as mask to clip resistance raster.
                 resMaskPoly = path.join(linkDir,
@@ -202,9 +191,6 @@ def STEP8_calc_pinchpoints():
                 corePairRaster = path.join(linkDir, 'core_pairs')
 
                 arcpy.env.extent = resClipRasterMasked
-                # expression = ("con(" + cwdRaster1 + " == 0, " + str(corex)
-                    # + ", con(" + cwdRaster2 + " == 0, "
-                    # + str(corey) + " + 0.0))")
 
                 # Next result needs to be floating pt for numpy export
                 outCon = arcpy.sa.Con(Raster(cwdRaster1) == 0, corex,
@@ -310,7 +296,7 @@ def STEP8_calc_pinchpoints():
 
             outputGDB = path.join(cfg.OUTPUTDIR, path.basename(cfg.PINCHGDB))
             outputRaster = path.join(outputGDB,
-                                     PREFIX + "_current_adjacent_pairs")
+                                     PREFIX + "_current_adjacent_pairs_"+str(cfg.CWDCUTOFF))
             lu.delete_data(outputRaster)
             statement = 'arcpy.CopyRaster_management(mosaicRaster, outputRaster)'
             count = 0
@@ -329,10 +315,10 @@ def STEP8_calc_pinchpoints():
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=5,
                                                       thisStep=8)
 
-            linkTableFile = path.join(cfg.DATAPASSDIR, "linkTable_s8.csv")
+            linkTableFile = path.join(cfg.DATAPASSDIR, "linkTable_s5_plus.csv")
             lu.write_link_table(finalLinkTable, linkTableFile, inLinkTableFile)
             linkTableFinalFile = path.join(cfg.OUTPUTDIR,
-                                           PREFIX + "_linkTable_s8.csv")
+                                           PREFIX + "_linkTable_s5_plus.csv")
             lu.write_link_table(finalLinkTable,
                                 linkTableFinalFile, inLinkTableFile)
             gprint('Copy of linkTable written to '+
@@ -373,10 +359,12 @@ def STEP8_calc_pinchpoints():
         # instead.
         # outCon = arcpy.sa.Con(S8CORE_RAS, 1, "#", "VALUE > 0")
         # outCon.save(binaryCoreRaster)
-        #gp.Con_sa(s8CoreRasPath, 1, binaryCoreRaster, "#", "VALUE > 0")
+        # gp.Con_sa(s8CoreRasPath, 1, binaryCoreRaster, "#", "VALUE > 0")
         outCon = arcpy.sa.Con(Raster(s8CoreRasPath) > 0, 1)
         outCon.save(binaryCoreRaster)
-        s5corridorRas = path.join(cfg.OUTPUTGDB,PREFIX + "_lcc_mosaic_int")
+        s5corridorRas = path.join(cfg.OUTPUTGDB,PREFIX + "_corridors")
+        if not arcpy.Exists(s5corridorRas):
+            s5corridorRas = path.join(cfg.OUTPUTGDB,PREFIX + "_lcc_mosaic_int")
 
         outCon = arcpy.sa.Con(Raster(s5corridorRas) <= cfg.CWDCUTOFF, Raster(
                               resRaster), arcpy.sa.Con(Raster(
@@ -425,9 +413,9 @@ def STEP8_calc_pinchpoints():
         currentFNs = ['Circuitscape_cum_curmap.npy',
                       'Circuitscape_max_curmap.npy']
         if options['scenario']=='pairwise':
-            rasterSuffixes =  ["_cum_current_all_pairs","_max_current_all_pairs"]
+            rasterSuffixes =  ["_cum_current_all_pairs_"+str(cfg.CWDCUTOFF),"_max_current_all_pairs_"+str(cfg.CWDCUTOFF)]
         else:
-            rasterSuffixes =  ["_cum_current_all_to_one","_max_current_all_to_one"]
+            rasterSuffixes =  ["_cum_current_all_to_one_"+str(cfg.CWDCUTOFF),"_max_current_all_to_one_"+str(cfg.CWDCUTOFF)]
         for i in range(0,2):
             currentFN = currentFNs[i]
             currentMap = path.join(OUTCIRCUITDIR, currentFN)
