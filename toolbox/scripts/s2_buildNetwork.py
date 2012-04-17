@@ -168,7 +168,7 @@ def STEP2_build_network():
             delRowsVector[:] = delRows[0, :]
             linkTable = lu.delete_row(linkTable, delRowsVector)
 
-        else:  # For Climate Corridor tool
+        else:  
             gprint("\nKeeping all links\n")
 
         # if dropFlag:
