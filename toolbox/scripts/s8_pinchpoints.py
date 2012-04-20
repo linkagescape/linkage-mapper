@@ -95,8 +95,6 @@ def STEP8_calc_pinchpoints():
             del extraCols
 
         # set up directories for circuit and circuit mosaic grids
-        PREFIX = cfg.PREFIX
-
         # Create output geodatabase
         if not arcpy.Exists(cfg.PINCHGDB):
             arcpy.CreateFileGDB_management(cfg.OUTPUTDIR,
@@ -296,7 +294,7 @@ def STEP8_calc_pinchpoints():
 
             outputGDB = path.join(cfg.OUTPUTDIR, path.basename(cfg.PINCHGDB))
             outputRaster = path.join(outputGDB,
-                                     PREFIX + "_current_adjacent_pairs_"+str(cfg.CWDCUTOFF))
+                                     cfg.PREFIX + "_current_adjacent_pairs_"+str(cfg.CWDCUTOFF))
             lu.delete_data(outputRaster)
             statement = 'arcpy.CopyRaster_management(mosaicRaster, outputRaster)'
             count = 0
@@ -318,7 +316,7 @@ def STEP8_calc_pinchpoints():
             linkTableFile = path.join(cfg.DATAPASSDIR, "linkTable_s5_plus.csv")
             lu.write_link_table(finalLinkTable, linkTableFile, inLinkTableFile)
             linkTableFinalFile = path.join(cfg.OUTPUTDIR,
-                                           PREFIX + "_linkTable_s5_plus.csv")
+                                           cfg.PREFIX + "_linkTable_s5_plus.csv")
             lu.write_link_table(finalLinkTable,
                                 linkTableFinalFile, inLinkTableFile)
             gprint('Copy of linkTable written to '+
@@ -362,9 +360,10 @@ def STEP8_calc_pinchpoints():
         # gp.Con_sa(s8CoreRasPath, 1, binaryCoreRaster, "#", "VALUE > 0")
         outCon = arcpy.sa.Con(Raster(s8CoreRasPath) > 0, 1)
         outCon.save(binaryCoreRaster)
-        s5corridorRas = path.join(cfg.OUTPUTGDB,PREFIX + "_corridors")
+        s5corridorRas = path.join(cfg.OUTPUTGDB,cfg.PREFIX + "_corridors")
+        
         if not arcpy.Exists(s5corridorRas):
-            s5corridorRas = path.join(cfg.OUTPUTGDB,PREFIX + "_lcc_mosaic_int")
+            s5corridorRas = path.join(cfg.OUTPUTGDB,cfg.PREFIX + "_lcc_mosaic_int")
 
         outCon = arcpy.sa.Con(Raster(s5corridorRas) <= cfg.CWDCUTOFF, Raster(
                               resRaster), arcpy.sa.Con(Raster(
@@ -394,8 +393,7 @@ def STEP8_calc_pinchpoints():
         arcpy.env.extent = "MINOF"
 
         options = lu.setCircuitscapeOptions()
-        options['scenario']='all-to-one'
-        options['scenario']='pairwise'
+        options['scenario']=cfg.ALL_PAIR_SCENARIO
         options['habitat_file'] = resNpyFile
         options['point_file'] = coreNpyFile
         options['set_focal_node_currents_to_zero']=True
@@ -420,7 +418,7 @@ def STEP8_calc_pinchpoints():
             currentFN = currentFNs[i]
             currentMap = path.join(OUTCIRCUITDIR, currentFN)
             outputGDB = path.join(cfg.OUTPUTDIR, path.basename(cfg.PINCHGDB))
-            outputRaster = path.join(outputGDB, PREFIX + rasterSuffixes[i])
+            outputRaster = path.join(outputGDB, cfg.PREFIX + rasterSuffixes[i])
             currentRaster = path.join(cfg.SCRATCHDIR, "current")
 
             try:

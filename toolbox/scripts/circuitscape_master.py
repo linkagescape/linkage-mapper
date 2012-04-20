@@ -61,7 +61,9 @@ def circuitscape_master():
 
         if cfg.DO_ALLPAIRS:
             #  Fixme: move raster path to config
-            S5CORRIDORRAS = path.join(cfg.OUTPUTGDB, cfg.PREFIX +
+            S5CORRIDORRAS = path.join(cfg.OUTPUTGDB,cfg.PREFIX + "_corridors")
+            if not gp.Exists(S5CORRIDORRAS):
+                S5CORRIDORRAS = path.join(cfg.OUTPUTGDB, cfg.PREFIX +
                                          "_lcc_mosaic_int")
             if not gp.Exists(S5CORRIDORRAS):
                 msg = ('ERROR: Corridor raster created in step 5 is required'

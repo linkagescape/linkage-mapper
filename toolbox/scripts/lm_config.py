@@ -48,6 +48,8 @@ def nullfloat(innum):
         nfloat = None
     else:
         nfloat = float(innum)
+        if nfloat == 0:
+            nfloat = None
     return nfloat
 
 
@@ -215,11 +217,11 @@ def config_lm(config, arg, scratch_dir):
     # Optional input parameters
     config.BUFFERDIST = nullfloat(arg[16])
     config.MAXCOSTDIST = nullfloat(arg[17])
-    if config.MAXCOSTDIST == 0:
-        config.MAXCOSTDIST = None
+    # if config.MAXCOSTDIST == 0: Now done in nullfloat
+        # config.MAXCOSTDIST = None
     config.MAXEUCDIST = nullfloat(arg[18])
-    if config.MAXEUCDIST == 0:
-        config.MAXEUCDIST = None
+    # if config.MAXEUCDIST == 0: Now done in nullfloat
+        # config.MAXEUCDIST = None
 
     for setting in dir(lm_settings):
         if setting == setting.upper():
@@ -261,13 +263,21 @@ def config_circuitscape(config, arg):
     config.DOCENTRALITY = str2bool(arg[4])
     config.DOPINCH = str2bool(arg[5])
     config.RESRAST_IN = arg[6]
-    config.CWDCUTOFF = nullfloat(arg[7])  # CDW cutoff distance
+    config.CWDCUTOFF = int(nullfloat(arg[7]))  # CDW cutoff distance
     config.SQUARERESISTANCES = str2bool(arg[8])  # Square resistance values
 
     # Do adjacent pair corridor pinchpoint calculations using raster CWD maps
     config.DO_ADJACENTPAIRS = str2bool(arg[9])
     # Do all-pair current calculations using raster corridor map
-    config.DO_ALLPAIRS = str2bool(arg[10])
+    config.ALL_PAIR_CHOICE = arg[10]
+    if config.ALL_PAIR_CHOICE == 'No':
+        config.DO_ALLPAIRS = False
+    else:
+        config.DO_ALLPAIRS = True
+        if "pairwise" in config.ALL_PAIR_CHOICE:
+            config.ALL_PAIR_SCENARIO = 'pairwise'
+        else:
+            config.ALL_PAIR_SCENARIO = 'all-to-one'
 
     config.STEP1 = False
 
