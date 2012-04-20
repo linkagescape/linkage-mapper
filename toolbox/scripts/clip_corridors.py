@@ -31,11 +31,10 @@ def clip_corridor():
 
     """
     try:
-                
         inRaster = sys.argv[1]
         cutoffVal = sys.argv[2]
         outputGDB = sys.argv[3]
-        
+                                    
         cutoffText = str(cutoffVal)
         if cutoffText[-6:] == '000000':
             cutoffText = cutoffText[0:-6]+'m' 
@@ -88,18 +87,14 @@ def exit_with_geoproc_error(filename):
     tbinfo = traceback.format_tb(tb)[0]
     line = tbinfo.split(", ")[1]
 
-    arcpy.AddError("Geoprocessing error on **" + line + "** of " + filename + " :")
-    for msg in range(0, gp.MessageCount):
-        if gp.GetSeverity(msg) == 2:
-            gp.AddReturnMessage(msg)
-    exit(0)
     gp.AddError("Geoprocessing error on **" + line + "** of " + filename +
                 " :")
     for msg in range(0, gp.MessageCount):
         if gp.GetSeverity(msg) == 2:
             gp.AddReturnMessage(msg)
         print gp.AddReturnMessage(msg)
-
+    exit(0)
+    
 def exit_with_python_error(filename): 
     """Handle python errors and provide details to user"""
     tb = sys.exc_info()[2]  # get the traceback object
