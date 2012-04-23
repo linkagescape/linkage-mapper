@@ -18,6 +18,7 @@ GP_NULL = '#'
 LINKAGE_MAPPER = 'linkage_mapper'
 BARRIER_TOOL = 'barrier_mapper'
 CIRCUITSCAPE = 'circuitscape'
+CLIMATE_TOOL = 'climate_tool'
 
 
 def str2bool(pstr):
@@ -64,7 +65,6 @@ def config_global(config, arg):
     config.releaseNum = ver.releaseNum
     config.LOGMESSAGES = True
     # File names, directory paths & folder names
-    config.CALL_SRC = arg[0]  # Identify calling module (for Climate Corridors)
     proj_dir = arg[1]
     config.PROJECTDIR = proj_dir  # Project directory
     config.SCRATCHDIR = path.join(proj_dir, "scratch")
@@ -110,12 +110,12 @@ def config_global(config, arg):
 
     # Save individual current maps from Circuitscape
     config.SAVECURRENTMAPS = False
-        
+
     config.SAVECIRCUITDIR = False
-    
+
     config.SAVEBARRIERDIR = False
     config.SAVECENTRALITYDIR = False
-    
+
 
     config.FCORES = "fcores"
 
@@ -185,7 +185,6 @@ def config_global(config, arg):
 
 def config_lm(config, arg, scratch_dir):
     """ Configure global variables for Linkage Mapper"""
-    config.TOOL = LINKAGE_MAPPER
     config.COREFC = arg[2]  # Core area feature class
     config.COREFN = arg[3]  # Core area field name
     config.RESRAST_IN = arg[4]  # Resistance raster
@@ -239,11 +238,11 @@ def config_lm(config, arg, scratch_dir):
     # config.COREFC = path.join(config.COREDIR, "core_copy.shp")
     # config.COREFN = "GRIDCODE"
     config.CORERAS = path.join(config.SCRATCHDIR, "core_ras")
+    return True
 
 
 def config_barrier(config, arg):
     """Configure global variables for Barrier tool"""
-    config.TOOL = BARRIER_TOOL
     config.RESRAST_IN = arg[2]
     config.STARTRADIUS = arg[3]
     config.ENDRADIUS = arg[4]
@@ -255,7 +254,6 @@ def config_barrier(config, arg):
 
 def config_circuitscape(config, arg):
     """Configure global variables for Circuitscape"""
-    config.TOOL = CIRCUITSCAPE
     config.COREFC = arg[2]
     config.COREFN = arg[3]
     config.DOCENTRALITY = str2bool(arg[4])
@@ -283,14 +281,15 @@ class Configure(object):
     def configure(self, tool, arg):
         """Setup variables for Configure class"""
         config_global(self, arg)
-        if tool == LINKAGE_MAPPER:
-            config_lm(self, arg, self.SCRATCHDIR)
+        if tool == LINKAGE_MAPPER or tool == CLIMATE_TOOL:
+            self.lm_configured = config_lm(self, arg, self.SCRATCHDIR)
         elif tool == BARRIER_TOOL:
             config_barrier(self, arg)
         elif tool == CIRCUITSCAPE:
             config_circuitscape(self, arg)
         else:
             raise RuntimeError('Undefined tool to configure')
+        self.TOOL = tool
 
 
 tool_env = Configure()  # Class instance that is use by tool modules
