@@ -26,13 +26,15 @@ import arcpy.sa as sa
 from cc_config import cc_env
 import cc_util
 import lm_master
+from lm_config import tool_env as lm_env
+import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.0.3"
-
+__version__ = "0.0.4"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
+
 
 def main(argv=None):
     """Main function for Climate Corridor tool"""
@@ -54,13 +56,21 @@ def main(argv=None):
         # Check out the ArcGIS Spatial Analyst extension license
         #arcpy.AddMessage(arcpy.ProductInfo())
         arcpy.CheckOutExtension("Spatial")
-
+        
         # Setup workspace
         arcpy.AddMessage("Creating output folder - " + cc_env.out_dir)
         arcpy.env.overwriteOutput = True
         cc_util.mk_proj_dir(cc_env.out_dir)
         arcpy.env.workspace = cc_env.out_dir
         lm_outdir = cc_util.mk_proj_dir("lm_out")
+        
+        # Configure Linkage Mapper
+        lm_arg = (_SCRIPT_NAME, lm_outdir, cc_env.prj_core_fc, cc_env.core_fld,
+                  cc_env.prj_resist_rast, "false", "false", "#", "#", "true", 
+                  "false", "false", "4", "Cost-Weighted", "true", "true", "#", 
+                  "#", "#")
+        lm_env.configure("climate_tool", lm_arg)
+        lm_util.create_dir(lm_env.DATAPASSDIR)
 
         # Clip inputs and create project area raster
         cc_clip_inputs()
@@ -77,18 +87,15 @@ def main(argv=None):
         limit_cores(core_parings, climate_stats)
 
         # Calculate distances and generate link table for Linkage Mapper
-        core_list = gen_link_table(core_parings, lm_outdir)
+        core_list = gen_link_table(core_parings)
 
         # Create CWD using Grass
         cc_grass_cwd.main(core_list)
 
         # Run Linkage Mapper
         arcpy.AddMessage("\nRUNNING LINKAGE MAPPER TO CREATE CLIMATE CORRIDORS")
-        arg = (_SCRIPT_NAME, lm_outdir, cc_env.prj_core_fc, cc_env.core_fld,
-               cc_env.prj_resist_rast, "false", "false", "#", "#", "true", 
-               "false", "false", "4", "Cost-Weighted", "true", "true", "#", 
-               "#", "#")
-        lm_master.lm_master(arg)
+
+        lm_master.lm_master(lm_arg)
 
     except arcpy.ExecuteError:
         msgs = "ArcPy ERRORS\n" + arcpy.GetMessages(2) + "\n"
@@ -254,7 +261,7 @@ def limit_cores(pair_tbl, stats_tbl):
             arcpy.RemoveJoin_management(table_vw, stats_tbl_nm)
 
         # Add basic stats to distance table
-        arcpy.AddMessage("Joining to zonal statistics to parings table")
+        arcpy.AddMessage("Joining zonal statistics to parings table")
         add_stats("fr", pair_vw, TO_COL)
         add_stats("to", pair_vw, FR_COL)
 
@@ -288,7 +295,7 @@ def limit_cores(pair_tbl, stats_tbl):
         if arcpy.Exists(pair_vw):
             arcpy.Delete_management(pair_vw)
 
-def gen_link_table(parings, outdir):
+def gen_link_table(parings):
     """Calculate core to core distances and create linkage table
 
     Requires ArcInfo license.
@@ -303,7 +310,7 @@ def gen_link_table(parings, outdir):
     ndist_fn = "NEAR_DIST"
     jtocore_fn = cc_env.core_fld[:8] + "_1"  # dbf field length
     near_tbl = os.path.join(cc_env.out_dir, "neartbl.dbf")
-    link_fld = os.path.join(outdir, "datapass")
+    link_fld = lm_env.DATAPASSDIR
     link_file = os.path.join(link_fld, "linkTable_s2.csv")
 
     link_tbl, srow, srows = None, None, None
@@ -334,9 +341,6 @@ def gen_link_table(parings, outdir):
         frm_cores = map(str, sorted(frm_cores))
 
         # Generate link table file from near table results
-        if not os.path.exists(link_fld):
-            os.mkdir(link_fld)
-
         link_tbl = open(link_file, 'wb')
         writer = csv.writer(link_tbl, delimiter=',')
         headings = ["# link", "coreId1", "coreId2", "cluster1", "cluster2",

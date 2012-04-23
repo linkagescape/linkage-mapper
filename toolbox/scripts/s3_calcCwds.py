@@ -578,7 +578,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
         # Climate Corridor code
         # Do not calculate cost distance if tool is run for climate corridors
-        if cfg.CALL_SRC == "cc_main.py":            
+        if cfg.TOOL == "climate_tool":            
             cwdfld = "cwdascii"
             # Take grass cwd and back asciis and write them as ARCINFO grids
             cwd_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
