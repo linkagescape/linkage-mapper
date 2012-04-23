@@ -16,7 +16,7 @@ import numpy as npy
 
 from lm_config import tool_env as cfg
 import lm_util as lu
-import cc_util
+
 
 _SCRIPT_NAME = "s3_calcCwds.py"
 
@@ -580,11 +580,11 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Do not calculate cost distance if tool is run for climate corridors
         if cfg.TOOL == "climate_tool":            
             cwdfld = "cwdascii"
-            # Take grass cwd and back asciis and write them as ARCINFO grids
+            # Take grass cwd and back asciis and write them as ARCINFO grids            
             cwd_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
-                                  "cwd_" + str(int(sourceCore)) + ".asc")
+                                  "cwd_" + str(sourceCore) + ".asc")
             back_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
-                                  "back_" + str(int(sourceCore)) + ".asc")
+                                  "back_" + str(sourceCore) + ".asc")
             gprint("Importing GRASS CWD raster")
             gp.ASCIIToRaster(cwd_ascii, outDistanceRaster, "FLOAT")     
             gprint("Importing GRASS back link raster")           
