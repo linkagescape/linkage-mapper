@@ -1651,7 +1651,6 @@ def clean_out_workspace(ws):
                 rasterPath = os.path.join(ws,raster)
                 gp.delete_management(rasterPath)
         gc.collect()
-        gp.refreshcatalog(os.path.dirname(ws))
         return
 
     except arcgisscripting.ExecuteError:
