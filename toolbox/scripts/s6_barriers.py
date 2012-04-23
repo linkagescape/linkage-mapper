@@ -182,7 +182,7 @@ def STEP6_calc_barriers():
                     link = lu.get_links_from_core_pairs(linkTable,
                                                         corex, corey)
                     lcDist = float(linkTable[link,cfg.LTB_CWDIST])
-
+                    
                     # Detect barriers at radius using neighborhood stats
                     # Create the Neighborhood Object
                     innerRadius = radius - 1
@@ -217,7 +217,7 @@ def STEP6_calc_barriers():
                                 exec statement
                         else: break
 
-
+                        
                     mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1)) 
                     lu.create_dir(mosaicDir)
                     mosFN = 'mos_temp'

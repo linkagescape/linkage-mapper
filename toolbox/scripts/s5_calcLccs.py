@@ -63,7 +63,7 @@ def STEP5_calc_lccs():
 def calc_lccs(normalize):
     try:  
         if normalize:
-            mosaicBaseName = "_lcc_mosaic"
+            mosaicBaseName = "_corridors"
             writeTruncRaster = cfg.WRITETRUNCRASTER
             outputGDB = cfg.OUTPUTGDB
             if cfg.CALCNONNORMLCCS:
@@ -71,7 +71,7 @@ def calc_lccs(normalize):
             else:
                 SAVENORMLCCS = cfg.SAVENORMLCCS
         else:
-            mosaicBaseName = "_NON_NORMALIZED_lcc_mosaic"
+            mosaicBaseName = "_NON_NORMALIZED_corridors"
             SAVENORMLCCS = False
             outputGDB = cfg.EXTRAGDB
             writeTruncRaster = False
@@ -208,6 +208,7 @@ def calc_lccs(normalize):
                 if normalize:
                     statement = ('outras = Raster(cwdRaster1) + Raster('
                         'cwdRaster2) - lcDist; outras.save(lccNormRaster)') 
+                                                
                 else:
                     statement = ('outras =Raster(cwdRaster1) + Raster('
                                 'cwdRaster2); outras.save(lccNormRaster)')
@@ -230,6 +231,7 @@ def calc_lccs(normalize):
                     if not tryAgain:    
                         exec statement
                 else: break
+
             if normalize and arcpy: 
                 try: 
                     minObject = gp.GetRasterProperties(lccNormRaster, "MINIMUM") 
@@ -349,8 +351,6 @@ def calc_lccs(normalize):
         # ---------------------------------------------------------------------
 
         # Create output geodatabase
-        lu.delete_data(outputGDB)
-        lu.snooze(10)
         if not gp.exists(outputGDB):
             gp.createfilegdb(cfg.OUTPUTDIR, path.basename(outputGDB))
 
@@ -363,19 +363,10 @@ def calc_lccs(normalize):
         gp.rasterstatistics = "NONE"
 
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
         # Copy mosaic raster to output geodatabase
         saveFloatRaster = False
         if saveFloatRaster == True:
-            floatRaster = outputGDB + '\\' + PREFIX + mosaicBaseName  # Full path 
+            floatRaster = outputGDB + '\\' + PREFIX + mosaicBaseName + '_flt' # Full path 
             statement = 'arcObj.CopyRaster_management(mosaicRaster, floatRaster)'
             try:
                 exec statement
@@ -385,7 +376,7 @@ def calc_lccs(normalize):
 
         # ---------------------------------------------------------------------
         # convert mosaic raster to integer
-        intRaster = outputGDB + '\\' + PREFIX + mosaicBaseName + "_int"
+        intRaster = outputGDB + '\\' + PREFIX + mosaicBaseName
         if arcpy:
             statement = ('outras = Int(Raster(mosaicRaster) - offset + 0.5); ' 
                         'outras.save(intRaster)')
@@ -454,7 +445,7 @@ def calc_lccs(normalize):
             gp.AddWarning(msg) 
                             
 
-        gprint('Writing final LCP maps...')
+        gprint('\nWriting final LCP maps...')
         if cfg.STEP4:
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=4,
                                                      thisStep=5)

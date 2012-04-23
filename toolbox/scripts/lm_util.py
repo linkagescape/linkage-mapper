@@ -1190,8 +1190,11 @@ def load_link_table(linkTableFile):
 ############################################################################
 def gprint(string):
     gp.addmessage(string)
-    if cfg.LOGMESSAGES:
-         write_log(string) 
+    try:
+        if cfg.LOGMESSAGES:
+            write_log(string) 
+    except:
+        pass
 
 def create_log_file(messageDir, toolName, inParameters):
     ft = tuple(time.localtime())
@@ -1237,9 +1240,6 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
 
         numLinks = linktable.shape[0]
         outFile = open(outlinkTableFile, "w")
-        # gprint('linktable')
-        # gprint(str(linktable.shape[1]))
-        # gprint(str(linktable.astype('int32')))
 
         if linktable.shape[1] == 10:
             outFile.write("# link,coreId1,coreId2,cluster1,cluster2,linkType,"
@@ -1612,8 +1612,9 @@ def move_results_folder(oldFolder, newFolder):
 
 def delete_file(file):
     try:
-        os.remove(file)
-        gc.collect()
+        if os.path.isfile(file):
+            os.remove(file)
+            gc.collect()
     except:
         pass
     return
@@ -1625,55 +1626,74 @@ def delete_dir(dir):
         shutil.rmtree(dir)
         gc.collect()
     except:
-        # In case rmtree was unsuccessful due to lock on data
-        try:
-            clean_out_workspace(dir)
+        snooze(5)
+        try: #Try again following cleanup attempt
+            gp.RefreshCatalog(dir)
             gc.collect()
+            shutil.rmtree(dir)
         except:
             pass
-    try: #Try again following cleanup attempt
-        gp.RefreshCatalog(dir)
-        shutil.rmtree(dir)
-    except:
-        pass
-    return
+        return
+
 
 def clean_out_workspace(ws):
     try:
         if gp.exists(ws):
             gp.workspace = ws
             gp.OverwriteOutput = True
-            # gprint('\nDeleting contents of '+str(ws))
             fcs = gp.ListFeatureClasses()
             for fc in fcs:
                 fcPath = os.path.join(ws,fc)
-                try:
-                    gp.delete_management(fcPath)
-                except:
-                    pass
+                gp.delete_management(fcPath)
 
             rasters = gp.ListRasters()
             for raster in rasters:
                 rasterPath = os.path.join(ws,raster)
-                try:
-                    gp.delete_management(rasterPath)
-                except: pass
-
-            fileList = os.listdir(ws)
-            for item in fileList:
-                try:
-                    os.remove(os.path.join(ws,item))
-                except: # if directory
-                    try:
-                        shutil.rmtree(os.path.join(ws,item))
-                    except: pass
+                gp.delete_management(rasterPath)
         gc.collect()
-        gp.refreshcatalog(os.path.dirname(ws))
         return
+
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except:
         exit_with_python_error(_SCRIPT_NAME)
+    
+# def clean_out_workspace(ws):
+    # try:
+        # if gp.exists(ws):
+            # gp.workspace = ws
+            # gp.OverwriteOutput = True
+            # # gprint('\nDeleting contents of '+str(ws))
+            # fcs = gp.ListFeatureClasses()
+            # for fc in fcs:
+                # fcPath = os.path.join(ws,fc)
+                # try:
+                    # gp.delete_management(fcPath)
+                # except:
+                    # pass
+
+            # rasters = gp.ListRasters()
+            # for raster in rasters:
+                # rasterPath = os.path.join(ws,raster)
+                # try:
+                    # gp.delete_management(rasterPath)
+                # except: pass
+
+            # fileList = os.listdir(ws)
+            # for item in fileList:
+                # try:
+                    # os.remove(os.path.join(ws,item))
+                # except: # if directory
+                    # try:
+                        # shutil.rmtree(os.path.join(ws,item))
+                    # except: pass
+        # gc.collect()
+        # gp.refreshcatalog(os.path.dirname(ws))
+        # return
+    # except arcgisscripting.ExecuteError:
+        # exit_with_geoproc_error(_SCRIPT_NAME)
+    # except:
+        # exit_with_python_error(_SCRIPT_NAME)
 
 def delete_data(dataset):
     try:
@@ -1697,16 +1717,6 @@ def delete_data(dataset):
     except:
         pass
 
-
-# def delete_readonly(path):
-    # gp.refreshcatalog(path)
-    # import stat
-    # fileList = os.listdir(path)
-    # for item in fileList:
-        # os.chmod(os.path.join(path,item), stat.S_IWRITE)
-        # os.remove(os.path.join(path,item))
-    # os.chmod(path, stat.S_IWRITE)
-    # os.rmdir(path)
 
 def get_cwd_path(core):
     """Returns the path for the cwd raster corresponding to a core area """
@@ -1746,9 +1756,7 @@ def check_project_dir():
     if "-" in cfg.PROJECTDIR or " " in cfg.PROJECTDIR:
         msg = ('ERROR: Project directory cannot contain spaces, dashes, or '
                 'special characters.')
-        raise_error(msg)
-    
-        
+        raise_error(msg) 
     return
 
 
@@ -1756,24 +1764,13 @@ def get_prev_step_link_table(step):
     """Returns the name of the link table created by the previous step"""
     try:
         prevStep = step - 1
+        if step > 5:
+            prevStepLinkTable = os.path.join(cfg.DATAPASSDIR,
+                                         'linkTable_s5_plus.csv')
+            gprint('\nLooking for ' + prevStepLinkTable)
 
-
-        if (step == 7) or (step == 8):
-            if step == 7:
-                prevStepLinkTable = os.path.join(cfg.DATAPASSDIR,
-                                             'linkTable_s8.csv')
-                gprint('\nLooking for ' + prevStepLinkTable)
-
-                if os.path.exists(prevStepLinkTable):
-                    return prevStepLinkTable
-            else:
-                prevStepLinkTable = os.path.join(cfg.DATAPASSDIR,
-                                             'linkTable_s7.csv')
-                gprint('\nLooking for ' + prevStepLinkTable)
-
-                if os.path.exists(prevStepLinkTable):
-                    return prevStepLinkTable
-
+            if os.path.exists(prevStepLinkTable):
+                return prevStepLinkTable
             prevStepLinkTable = os.path.join(cfg.DATAPASSDIR,
                                              'linkTable_s5.csv')
             gprint('\nLooking for ' + prevStepLinkTable)
@@ -1781,34 +1778,7 @@ def get_prev_step_link_table(step):
             if os.path.exists(prevStepLinkTable):
                 return prevStepLinkTable
 
-            prevStepLinkTable = os.path.join(cfg.DATAPASSDIR,
-                                             'linkTable_s4.csv')
-            gprint('\nLooking for ' + prevStepLinkTable)
-
-            if os.path.exists(prevStepLinkTable):
-                return prevStepLinkTable
-            else:
-                prevStep = 3  # Can skip steps 4 & 5
-
-
-        if step == 6:
-            prevStepLinkTable = os.path.join(cfg.DATAPASSDIR,
-                                             'linkTable_s5.csv')
-            gprint('\nLooking for ' + prevStepLinkTable)
-
-            if os.path.exists(prevStepLinkTable):
-                return prevStepLinkTable
-
-            prevStepLinkTable = os.path.join(cfg.DATAPASSDIR,
-                                             'linkTable_s4.csv')
-            gprint('\nLooking for ' + prevStepLinkTable)
-
-            if os.path.exists(prevStepLinkTable):
-                return prevStepLinkTable
-            else:
-                prevStep = 3  # Can skip steps 4 & 5
-
-        if step == 5:
+        if step > 4:
             prevStepLinkTable = os.path.join(cfg.DATAPASSDIR,
                                              'linkTable_s4.csv')
             gprint('\nLooking for ' + prevStepLinkTable)
@@ -1839,7 +1809,11 @@ def get_prev_step_link_table(step):
 def get_this_step_link_table(step):
     """Returns name of link table to write for current step"""
     try:
-        filename = os.path.join(cfg.DATAPASSDIR, 'linkTable_s' + str(step)
+        if step > 5:
+            filename = os.path.join(cfg.DATAPASSDIR, 'linkTable_s5_plus.csv')
+
+        else:
+            filename = os.path.join(cfg.DATAPASSDIR, 'linkTable_s' + str(step)
                              + '.csv')
         return filename
 
@@ -1853,30 +1827,24 @@ def clean_up_link_tables(step):
     """Remove link tables from previous runs."""
     try:
         filename = os.path.join(cfg.DATAPASSDIR, 'linkTable_s7_s8.csv')
-        if os.path.isfile(filename):
-            os.remove(filename)
+        delete_file(filename)
+        filename = os.path.join(cfg.DATAPASSDIR, 'linkTable_s5_plus.csv')
+        delete_file(filename)
         for stepNum in range(step, 9):
             filename = os.path.join(cfg.DATAPASSDIR, 'linkTable_s' +
                                     str(stepNum) + '.csv')
-            if os.path.isfile(filename):
-                os.remove(filename)
+            delete_file(filename)
             lcpFC = os.path.join(cfg.DATAPASSDIR,'lcpLines_s' +
                                     str(stepNum) + '.shp')
             delete_data(lcpFC)
         filename = os.path.join(cfg.OUTPUTDIR, 'linkTable_final.csv')
-        if os.path.isfile(filename):
-            os.remove(filename)
+        delete_file(filename)
         filename = os.path.join(cfg.OUTPUTDIR, cfg.PREFIX + '_linkTable_final.csv')
-        if os.path.isfile(filename):
-            os.remove(filename)
-
+        delete_file(filename)
         filename = os.path.join(cfg.OUTPUTDIR, 'linkTable_s5.csv')
-        if os.path.isfile(filename):
-            os.remove(filename)
+        delete_file(filename)
         filename = os.path.join(cfg.OUTPUTDIR, cfg.PREFIX + 'linkTable_s5.csv')
-        if os.path.isfile(filename):
-            os.remove(filename)
-
+        delete_file(filename)
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except:
@@ -2026,7 +1994,8 @@ def print_drive_warning():
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
             'Errors may also result from conflicts with anti-virus '
-            'software (known problems with AVG).)\n')
+            'software (known problems with AVG). We have also seen '
+            'conflicts when writing to synced folders (e.g., Dropbox). \n')
 
 def get_dir_depth(dir):
     import string

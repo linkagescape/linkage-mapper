@@ -61,7 +61,9 @@ def circuitscape_master():
 
         if cfg.DO_ALLPAIRS:
             #  Fixme: move raster path to config
-            S5CORRIDORRAS = path.join(cfg.OUTPUTGDB, cfg.PREFIX +
+            S5CORRIDORRAS = path.join(cfg.OUTPUTGDB,cfg.PREFIX + "_corridors")
+            if not gp.Exists(S5CORRIDORRAS):
+                S5CORRIDORRAS = path.join(cfg.OUTPUTGDB, cfg.PREFIX +
                                          "_lcc_mosaic_int")
             if not gp.Exists(S5CORRIDORRAS):
                 msg = ('ERROR: Corridor raster created in step 5 is required'
@@ -112,13 +114,13 @@ def circuitscape_master():
 
 #aaa            lu.clean_out_workspace(cfg.PINCHGDB)
 #aaa            lu.delete_data(cfg.PINCHGDB) 
-            for i in range (1,5):
+            for i in range (1,2):
                 try:
                     s8.STEP8_calc_pinchpoints()            
                     break
                 except:
                     gprint('******************** Run failed ****************************')
-                    gprint('Trying again in 20 seconds.')
+                    gprint('Trying one more time in 20 seconds.')
                     lu.snooze(20)
                     s8.STEP8_calc_pinchpoints()
 
