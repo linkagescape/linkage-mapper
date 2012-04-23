@@ -41,6 +41,8 @@ class ClimateConfig():
         self.climate_cost = arg[10]  # Cost incurred by climate variable
 
         # Setup model global variables
+        path = os.path.abspath(__file__)
+        self.code_dir = os.path.dirname(os.path.abspath(__file__))
         self.out_dir = os.path.join(self.proj_dir, "cc")  # Output directory
         self.prj_area_rast = os.path.join(self.out_dir, "projarea")
         self.prj_core_fc = (os.path.join(

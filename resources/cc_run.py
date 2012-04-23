@@ -11,14 +11,14 @@ _SCRIPT_NAME = path.basename(__file__)
 
 def main():
     """Runs Climate Corridor tool"""
-    proj_dir = "W:\\PROJECT2"
-    core_fc = "W:\\PROJECT\\in_data\\cores.shp"
+    proj_dir = "W:\\PROJECT"
+    core_fc = "W:\\Base Test\\PROJECT\\in_data\\cores.shp"
     core_fl = "Core_id"
-    climate_rast = "W:\\PROJECT\\in_data\\climate.img"
-    resis_rast = "W:\\PROJECT\\in_data\\resist.img"
+    climate_rast = "W:\\Base Test\\PROJECT\\in_data\\climate.img"
+    resis_rast = "W:\\Base Test\\PROJECT\\in_data\\resist.img"
     # gisbase = "C:\Program Files (x86)\GRASS 6.4.2"
-    gisbase = "C:\\Program Files (x86)\\GRASS GIS 6.5.svn"    
-    # gisbase = "C:\Program Files (x86)\GRASS GIS 7.0.svn"
+    # gisbase = "C:\\Program Files (x86)\\GRASS GIS 6.5.svn"    
+    gisbase = "C:\Program Files (x86)\GRASS GIS 7.0.svn"
     # resis_rast = "#"
     min_euc_dist = 2000
     max_euc_dist = 50000
