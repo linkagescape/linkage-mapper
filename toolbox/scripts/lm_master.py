@@ -134,16 +134,12 @@ def lm_master(argv=None):
                 try:
                     lu.clean_out_workspace(finalgdb)
                 except:
-                # lu.delete_data(finalgdb)
-                # if gp.Exists(finalgdb):
-                    # lu.clean_out_workspace(finalgdb)
-                    # lu.delete_dir(finalgdb)
-                # if gp.Exists(finalgdb):
                     lu.dashline(1)
                     msg = ('ERROR: Could not remove contents of geodatabase ' +
                            finalgdb + '. \nIs it open in ArcMap? You may '
                            'need to re-start ArcMap to release the file lock.')
                     lu.raise_error(msg)
+                lu.delete_dir(finalgdb)
 
         # Delete final output geodatabase
         delete_final_gdb(cfg.OUTPUTGDB_OLD)
