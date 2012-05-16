@@ -45,7 +45,9 @@ def STEP8_calc_pinchpoints():
             arcpy.AddError(msg)
             lu.write_log(msg)
             exit(1)
-
+        
+        outputGDB = path.join(cfg.OUTPUTDIR, path.basename(cfg.PINCHGDB))
+        
         arcpy.OverWriteOutput = True
         arcpy.env.workspace = cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
@@ -179,8 +181,9 @@ def STEP8_calc_pinchpoints():
 
                 resClipRasterMasked = path.join(linkDir,
                                                 'res_clip_m')
-                outRas = arcpy.sa.ExtractByMask(resRaster, resMaskPoly)
-
+                # Extract masked resistance raster.  
+                # Needs to be float to get export to npy to work.
+                outRas = arcpy.sa.ExtractByMask(resRaster, resMaskPoly) + 0.0 
                 outRas.save(resClipRasterMasked)
 
                 resNpyFN = 'resistances_link_' + linkId + '.npy'
@@ -203,6 +206,8 @@ def STEP8_calc_pinchpoints():
 
                 # Set circuitscape options and call
                 options = lu.setCircuitscapeOptions()
+                if cfg.WRITE_VOLT_MAPS == True:
+                    options['write_volt_maps']=True
                 options['habitat_file'] = resNpyFile
                 options['point_file'] = coreNpyFile
                 options['set_focal_node_currents_to_zero']=True
@@ -252,7 +257,25 @@ def STEP8_calc_pinchpoints():
                 # divide each by its radius
                 currentRaster = path.join(linkDir, "current")
                 import_npy_to_ras(currentMap,corePairRaster,currentRaster)
+                # #xxx
+                # inras='C:\DATADRIVE\WHCWG\CP_ANALYSIS\LI\LI_FINAL_FOR_REPORT\LI_LIN_StateProj3cores\pinchpt_tmp\output\Circuitscape_link1_voltmap_141_146.npy'
+                # outras = 'C:\\temp\\volt2_3'
+                # import_npy_to_ras(inras,corePairRaster,outras)
+                # blarg
+                # #xxx
 
+                
+                if cfg.WRITE_VOLT_MAPS == True:
+                    voltFN = ('Circuitscape_link' + linkId + '_voltmap_'
+                           + str(corex) + '_'+str(corey) + '.npy')
+                    voltMap = path.join(OUTCIRCUITDIR, voltFN)
+                    voltRaster = path.join(outputGDB,
+                             cfg.PREFIX + "_voltMap_"+ str(corex) + '_'+str(corey))                
+                    import_npy_to_ras(voltMap,corePairRaster,voltRaster)
+                    gprint('Building output statistics and pyramids '
+                                   'for voltage raster\n')
+                    lu.build_stats(voltRaster) 
+                    
                 arcpy.env.extent = currentRaster
 
                 if SETCORESTONULL:
@@ -285,14 +308,15 @@ def STEP8_calc_pinchpoints():
                     linkTable[link,cfg.LTB_CWDTORR] = (linkTable[link,
                            cfg.LTB_CWDIST] / linkTable[link,cfg.LTB_EFFRESIST])
                 # Clean up
-                lu.delete_file(coreNpyFile)
-                lu.delete_file(resNpyFile)
-                lu.delete_data(currentRaster) 
-                lu.delete_dir(linkDir) 
+                if cfg.SAVE_TEMP_FILES == False:
+                    lu.delete_file(coreNpyFile)
+                    lu.delete_file(resNpyFile)
+                    lu.delete_data(currentRaster) 
+                    lu.delete_dir(linkDir) 
                 gprint('Finished with link #' + str(linkId))
                 start_time1 = lu.elapsed_time(start_time1)
 
-            outputGDB = path.join(cfg.OUTPUTDIR, path.basename(cfg.PINCHGDB))
+            
             outputRaster = path.join(outputGDB,
                                      cfg.PREFIX + "_current_adjacent_pairs_"+str(cfg.CWDCUTOFF))
             lu.delete_data(outputRaster)
@@ -309,7 +333,8 @@ def STEP8_calc_pinchpoints():
             gprint('Building output statistics and pyramids '
                                   'for corridor pinch point raster\n')
             lu.build_stats(outputRaster)
-
+            
+            blarg #xxx
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=5,
                                                       thisStep=8)
 
@@ -414,10 +439,10 @@ def STEP8_calc_pinchpoints():
             rasterSuffixes =  ["_cum_current_all_pairs_"+str(cfg.CWDCUTOFF),"_max_current_all_pairs_"+str(cfg.CWDCUTOFF)]
         else:
             rasterSuffixes =  ["_cum_current_all_to_one_"+str(cfg.CWDCUTOFF),"_max_current_all_to_one_"+str(cfg.CWDCUTOFF)]
+        
         for i in range(0,2):
             currentFN = currentFNs[i]
             currentMap = path.join(OUTCIRCUITDIR, currentFN)
-            outputGDB = path.join(cfg.OUTPUTDIR, path.basename(cfg.PINCHGDB))
             outputRaster = path.join(outputGDB, cfg.PREFIX + rasterSuffixes[i])
             currentRaster = path.join(cfg.SCRATCHDIR, "current")
 
@@ -448,7 +473,6 @@ def STEP8_calc_pinchpoints():
         if not cfg.SAVECURRENTMAPS:
             lu.delete_dir(OUTCIRCUITDIR)
 
-
     # Return GEOPROCESSING specific errors
     except arcpy.ExecuteError:
         lu.dashline(1)
@@ -466,16 +490,19 @@ def STEP8_calc_pinchpoints():
 def export_ras_to_npy(raster,npyFile):
     try:
         descData=arcpy.Describe(raster)
+        #noDataVal = arcpy.Raster(raster).noDataValue
+        
         cellSize=descData.meanCellHeight
         extent=descData.Extent
         spatialReference=descData.spatialReference
         pnt=arcpy.Point(extent.XMin,extent.YMin)
         outData = arcpy.RasterToNumPyArray(raster,"#","#","#",-9999)
-
+        #outData = npy.where(outData==noDataVal,-9999,outData)
         if npy.array_equiv(outData, outData.astype('int32')):
             outData = outData.astype('int32')
         npy.save(npyFile, outData)
         write_header(raster,outData,npyFile)
+                
         numElements = (outData.shape[0] * outData.shape[1])
         del outData
         return numElements
