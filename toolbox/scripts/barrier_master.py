@@ -51,13 +51,17 @@ def bar_master():
         lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
 
-        arcpy.env.extent = cfg.RESRAST_IN
-        arcpy.env.snapRaster = cfg.RESRAST_IN
-
         gprint('\nMaking local copy of resistance raster.')
         lu.delete_data(cfg.RESRAST)
-        arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
 
+        desc = arcpy.Describe(cfg.RESRAST_IN)
+        if hasattr(desc, "catalogPath"):
+            cfg.RESRAST_IN = arcpy.Describe(cfg.RESRAST_IN).catalogPath
+            
+        arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
+        arcpy.env.extent = cfg.RESRAST
+        arcpy.env.snapRaster = cfg.RESRAST
+        
         s6.STEP6_calc_barriers()
 
         #clean up
