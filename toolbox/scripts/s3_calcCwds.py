@@ -17,7 +17,6 @@ import numpy as npy
 from lm_config import tool_env as cfg
 import lm_util as lu
 
-
 _SCRIPT_NAME = "s3_calcCwds.py"
 
 try:
@@ -274,7 +273,7 @@ def STEP3_calc_cwds():
             gprint('Reducing global processing area using bounding '
                               'circle plus buffer of ' +
                               str(float(cfg.BUFFERDIST)) + ' map units.\n')
-            start_time = time.clock()
+            
 
             extentBoxList = npy.zeros((0,5),dtype='float32')
             boxCoords = lu.get_extent_box_coords()
@@ -306,7 +305,6 @@ def STEP3_calc_cwds():
                 else: break
             gprint('\nReduced resistance raster extracted using '
                               'bounding circle.')
-            start_time = lu.elapsed_time(start_time)
 
         else: #if not using bounding circles, just go with resistance raster.
             cfg.BOUNDRESIS = cfg.RESRAST
@@ -362,8 +360,9 @@ def STEP3_calc_cwds():
                 # If iteration was successful, continue with next core
                 linkTableMod = linkTableReturned
                 sourceCore = int(coresToMap[x])
-                gprint('Done with all calculations for core #' +
-                        str(sourceCore) + '.')
+                gprint('Done with all calculations for core ID #' +
+                        str(sourceCore) + '. ' + str(x + 1) + ' of ' + 
+                        str(endIndex) + ' cores have been processed.')
                 start_time = lu.elapsed_time(startTime1)
 
                 outlinkTableFile = path.join(cfg.DATAPASSDIR,
@@ -578,9 +577,9 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
         # Climate Corridor code
         # Do not calculate cost distance if tool is run for climate corridors
-        if cfg.TOOL == "climate_tool":            
+        if cfg.TOOL == "climate_tool":
             cwdfld = "cwdascii"
-            # Take grass cwd and back asciis and write them as ARCINFO grids            
+            # Take grass cwd and back asciis and write them as ARCINFO grids
             cwd_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
                                   "cwd_" + str(sourceCore) + ".asc")
             back_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
@@ -589,7 +588,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             gp.ASCIIToRaster(cwd_ascii, outDistanceRaster, "FLOAT")     
             gprint("Importing GRASS back link raster")           
             gp.ASCIIToRaster(back_ascii, "BACK", "INTEGER")
-
+                
         else:
             if arcpy:
                 statement = ('outCostDist = CostDistance(SRCRASTER, '
