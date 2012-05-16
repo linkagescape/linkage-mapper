@@ -18,6 +18,18 @@ import arcgisscripting
 from lm_config import tool_env as cfg
 import lm_util as lu
 
+try:
+    import arcpy
+    from arcpy.sa import *
+    arcpy.CheckOutExtension("spatial")
+    gp = arcpy.gp
+    arcgisscripting = arcpy
+except:
+    arcpy = False
+    import arcgisscripting
+    gp = cfg.gp
+
+
 _SCRIPT_NAME = "s1_getAdjacencies.py"
 
 gp = cfg.gp
@@ -153,7 +165,15 @@ def cwadjacency():
         lu.delete_data(outDistanceRaster)
 
         count = 0
-        statement = ('gp.Costallocation_sa(cfg.CORERAS, bResistance, '
+
+
+        if arcpy:
+            statement = ('costAllocOut = CostAllocation(cfg.CORERAS, '
+                        'bResistance, cfg.TMAXCWDIST, cfg.CORERAS,"VALUE", '
+                        'outDistanceRaster);'
+                        'costAllocOut.save(alloc_ras)')
+        else:
+            statement = ('gp.Costallocation_sa(cfg.CORERAS, bResistance, '
                      'alloc_ras, cfg.TMAXCWDIST, cfg.CORERAS, "VALUE", '
                      'outDistanceRaster, "")')
         while True:
@@ -165,7 +185,7 @@ def cwadjacency():
                     exec statement
             else:
                 break
-        gprint('\nBuilding output statistics and pyramids for cwd raster.')
+        gprint('\nBuilding output statistics and pyramids for CWD raster.')
         lu.build_stats(outDistanceRaster)
         gp.scratchworkspace = cfg.ARCSCRATCHDIR
         gprint('Cost-weighted distance allocation done.')
