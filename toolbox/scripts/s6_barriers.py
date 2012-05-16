@@ -59,6 +59,9 @@ def STEP6_calc_barriers():
         arcpy.env.extent = cfg.RESRAST
         arcpy.env.cellSize = cfg.RESRAST
         arcpy.env.snapRaster = cfg.RESRAST
+        spatialref = arcpy.Describe(cfg.RESRAST).spatialReference                
+        mapUnits = spatialref.linearUnitName
+        
         if float(arcpy.env.cellSize) > startRadius or startRadius > endRadius:
             msg = ('Error: minimum detection radius must be greater than '
                     'cell size (' + str(arcpy.env.cellSize) +
@@ -85,7 +88,6 @@ def STEP6_calc_barriers():
         coresToProcess = npy.unique(linkTable[:, cfg.LTB_CORE1:cfg.LTB_CORE2 + 1])
         maxCoreNum = max(coresToProcess)
 
-
         # Set up focal directories.
         # To keep there from being > 100 grids in any one directory,
         # outputs are written to:
@@ -103,26 +105,8 @@ def STEP6_calc_barriers():
             arcpy.CreateFolder_management(path.dirname(path1),
                                        path.basename(path1))
 
-
-            # if maxCoreNum > 99:
-                # gprint('Creating subdirectories:')
-                # maxDirCount = int(maxCoreNum/100)
-                # focalDirBaseName = dir2
-                # for dirCount in range(1, maxDirCount + 1):
-                    # floor = dirCount * 100
-                    # ceiling = 99 + dirCount * 100
-                    # ind = npy.where(coresToProcess < ceiling)
-                    # lowCores = coresToProcess[ind]
-                    # if lowCores.shape[0] > 0:
-                        # ind = npy.where(lowCores > floor)
-                        # medCores = lowCores[ind]
-                        # if medCores.shape[0] > 0:
-                            # focalDir = focalDirBaseName + str(dirCount)
-                            # gprint('...' + focalDir)
-                            # arcpy.CreateFolder_management(path2, focalDir)
-
             if maxCoreNum > 99:
-                gprint('Creating subdirectories:')
+                gprint('Creating subdirectories for ' + str(radius) + ' ' + str(mapUnits) + ' scale.')
                 maxDirCount = int(maxCoreNum/100)
                 focalDirBaseName = dir2
 
@@ -132,11 +116,7 @@ def STEP6_calc_barriers():
                 for dirNum in dirNums:
                     focalDir = focalDirBaseName + str(dirNum)
                     gprint('...' + focalDir)
-                    arcpy.CreateFolder_management(path2, focalDir)            
-
-                del coresToProcess
-              
-        
+                    arcpy.CreateFolder_management(path2, focalDir)                        
         
         # Create resistance raster with filled-in Nodata values for later use
         arcpy.env.extent = cfg.RESRAST
@@ -152,8 +132,9 @@ def STEP6_calc_barriers():
         for radius in range (startRadius, endRadius + 1, radiusStep):
             linkLoop = 0
             pctDone = 0
+
             gprint('\nMapping barriers at a radius of ' + str(radius) +
-                   ' map units...')
+                   ' ' + str(mapUnits) + '...')
             if numCorridorLinks > 1:
                 gprint('0 percent done')
             lastMosaicRaster = None
