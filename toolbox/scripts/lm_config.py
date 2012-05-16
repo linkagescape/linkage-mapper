@@ -111,13 +111,16 @@ def config_global(config, arg):
     config.SAVEBARRIERRASTERS = True # Save individual barrier grids
 
     # Save individual current maps from Circuitscape
-    config.SAVECURRENTMAPS = False
-
-    config.SAVECIRCUITDIR = False
-
+    config.SAVECURRENTMAPS = True
+        
+    config.SAVECIRCUITDIR = True
+    config.SAVE_TEMP_FILES = True
+    
     config.SAVEBARRIERDIR = False
     config.SAVECENTRALITYDIR = False
-
+    
+    # Write focal maps for barrier analysis
+    config.WRITE_VOLT_MAPS = True
 
     config.FCORES = "fcores"
 
@@ -242,7 +245,6 @@ def config_lm(config, arg, scratch_dir):
     config.CORERAS = path.join(config.SCRATCHDIR, "core_ras")
     return True
 
-
 def config_barrier(config, arg):
     """Configure global variables for Barrier tool"""
     config.RESRAST_IN = arg[2]
@@ -267,11 +269,9 @@ def config_circuitscape(config, arg):
     # Do adjacent pair corridor pinchpoint calculations using raster CWD maps
     config.DO_ADJACENTPAIRS = str2bool(arg[9])
     # Do all-pair current calculations using raster corridor map
-    config.ALL_PAIR_CHOICE = arg[10]
-    if config.ALL_PAIR_CHOICE == 'No':
-        config.DO_ALLPAIRS = False
-    else:
-        config.DO_ALLPAIRS = True
+    config.DO_ALLPAIRS = str2bool(arg[10])
+    config.ALL_PAIR_CHOICE = arg[11]
+    if config.DO_ALLPAIRS == True:
         if "pairwise" in config.ALL_PAIR_CHOICE:
             config.ALL_PAIR_SCENARIO = 'pairwise'
         else:
@@ -300,6 +300,5 @@ class Configure(object):
         else:
             raise RuntimeError('Undefined tool to configure')
         self.TOOL = tool
-
 
 tool_env = Configure()  # Class instance that is use by tool modules
