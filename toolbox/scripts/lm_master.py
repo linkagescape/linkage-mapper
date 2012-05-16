@@ -154,12 +154,7 @@ def lm_master(argv=None):
         if cfg.STEP2:
             s2.STEP2_build_network()
         if cfg.STEP3:
-            try:
-                s3.STEP3_calc_cwds()
-            except:
-                cfg.S2EUCDISTFILE = "restart"
-                gprint('***** Restarting step 3 one time *****')
-                s3.STEP3_calc_cwds()
+            s3.STEP3_calc_cwds()
         if cfg.STEP4:
             s4.STEP4_refine_network()
         if cfg.STEP5:
