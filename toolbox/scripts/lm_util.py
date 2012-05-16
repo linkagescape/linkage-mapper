@@ -792,7 +792,7 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
         lcplineDslv = os.path.join(ws, "lcplineDslv.shp")
         gp.Dissolve_management(lcpline, lcplineDslv)
 
-        gp.AddField_management(lcplineDslv, "Link_ID", "SHORT", "5")
+        gp.AddField_management(lcplineDslv, "Link_ID", "LONG", "5")
         gp.CalculateField_management(lcplineDslv, "Link_ID",
                                          int(linktable[link, cfg.LTB_LINKID]))
 
@@ -1452,7 +1452,7 @@ def write_link_maps(linkTableFile, step):
                                   "POLYLINE")
 
         # ADD ATTRIBUTES
-        gp.AddField_management(coreLinksShapefile, "Link_ID", "SHORT")
+        gp.AddField_management(coreLinksShapefile, "Link_ID", "LONG")
         gp.AddField_management(coreLinksShapefile, "Active", "SHORT")
         gp.AddField_management(coreLinksShapefile, "Link_Info", "TEXT")
         gp.AddField_management(coreLinksShapefile, "From_Core", "SHORT")

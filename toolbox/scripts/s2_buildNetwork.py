@@ -168,7 +168,7 @@ def STEP2_build_network():
             delRowsVector[:] = delRows[0, :]
             linkTable = lu.delete_row(linkTable, delRowsVector)
 
-        else:  
+        else:  # For Climate Corridor tool
             gprint("\nKeeping all links\n")
 
         # if dropFlag:
@@ -369,11 +369,11 @@ def generate_distance_file():
                 del row
             del rows
         start_time = lu.elapsed_time(start_time)
-
+        
         # In case coreFC is grouped in TOC, get coreFN for non-Arc statement
         group,coreFN = path.split(cfg.COREFC)
         
-        dist_fname = path.join(cfg.PROJECTDIR, (coreFN + "_dists.txt"))        
+        dist_fname = path.join(cfg.PROJECTDIR, (coreFN + "_dists.txt"))
         dist_file = open(dist_fname, 'w')
         dist_file.write('\n'.join(output))
         dist_file.close()

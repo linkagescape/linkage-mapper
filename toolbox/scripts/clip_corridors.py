@@ -19,7 +19,6 @@ except:
     import arcgisscripting
     gp = arcgisscripting.create()
     gp.CheckOutExtension("Spatial")
-    
 
 gprint = gp.addmessage
 
@@ -34,16 +33,21 @@ def clip_corridor():
         inRaster = sys.argv[1]
         cutoffVal = sys.argv[2]
         outputGDB = sys.argv[3]
-                                    
+        
         cutoffText = str(cutoffVal)
         if cutoffText[-6:] == '000000':
             cutoffText = cutoffText[0:-6]+'m' 
         elif cutoffText[-3:] == '000':
             cutoffText = cutoffText[0:-3]+'k' 
         
-        outRasterFN = inRaster + '_truncated_' + cutoffText        
+        inPath,FN = path.split(inRaster) # In case raster is in a group layer
+        outRasterFN = FN + '_truncated_' + cutoffText         
         outRaster = path.join(outputGDB,outRasterFN)
         lu.delete_data(outRaster)
+        
+        desc = gp.Describe(inRaster)
+        if hasattr(desc, "catalogPath"):
+            inRaster = arcpy.Describe(inRaster).catalogPath
         if arc10:
             arcpy.env.overwriteOutput = True  
             arcpy.env.workspace = outputGDB
