@@ -4,7 +4,6 @@
 import os.path as path
 import sys
 
-import lm_util as lu
 import traceback
 
 try:
@@ -43,11 +42,11 @@ def clip_corridor():
         inPath,FN = path.split(inRaster) # In case raster is in a group layer
         outRasterFN = FN + '_truncated_' + cutoffText         
         outRaster = path.join(outputGDB,outRasterFN)
-        lu.delete_data(outRaster)
+        delete_data(outRaster)
         
         desc = gp.Describe(inRaster)
         if hasattr(desc, "catalogPath"):
-            inRaster = arcpy.Describe(inRaster).catalogPath
+            inRaster = gp.Describe(inRaster).catalogPath
         if arc10:
             arcpy.env.overwriteOutput = True  
             arcpy.env.workspace = outputGDB
@@ -68,7 +67,7 @@ def clip_corridor():
             gp.SingleOutputMapAlgebra_sa(expression, outRaster)
         
         gprint('Building output statistics for truncated raster')
-        lu.build_stats(outRaster)
+        build_stats(outRaster)
 
         gprint('\nThe new truncated corridor raster "'+ outRasterFN + '" can '
                 'be found in the corridor geodatabase:')
@@ -110,5 +109,29 @@ def exit_with_python_error(filename):
     arcpy.AddError(err)
     exit(0)
 
+def delete_data(dataset):
+    try:
+        if gp.Exists(dataset):
+            gp.delete_management(dataset)
+    except:
+        pass
+
+        
+def build_stats(raster):
+    """Builds statistics and pyramids for output rasters"""
+    try:
+        gp.CalculateStatistics_management(raster, "1", "1", "#")
+    except:
+        gprint('Statistics failed. They can still be calculated manually.')
+    try:
+        gp.BuildPyramids_management(raster)
+    except:
+        gprint('Pyramids failed. They can still be built manually.')
+    return
+        
+        
 if __name__ == "__main__":
     clip_corridor()
+    
+    
+    

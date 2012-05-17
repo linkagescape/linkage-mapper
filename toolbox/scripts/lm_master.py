@@ -38,8 +38,8 @@ def lm_master(argv=None):
         argv = sys.argv
 
     # Setup global variables
-    if not cfg.lm_configured:
-        cfg.configure("linkage_mapper", argv)
+    # if not cfg.lm_configured:
+    cfg.configure("linkage_mapper", argv)
     
     gp = cfg.gp
 

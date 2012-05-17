@@ -1,5 +1,3 @@
-#add options to do trm, max, etc
-
 #!/usr/bin/env python2.5
 # Author: Brad McRae
 
@@ -20,6 +18,10 @@ import numpy as npy
 from lm_config import tool_env as cfg
 import lm_util as lu
 
+# Writing to tifs allows long filenames, needed for large radius values.
+# Virtually no speed penalty in this case based on tests with large dataset.
+tif = '.tif'
+#tif = ''
 
 _SCRIPT_NAME = "s6_barriers.py"
 
@@ -61,6 +63,7 @@ def STEP6_calc_barriers():
         arcpy.env.snapRaster = cfg.RESRAST
         spatialref = arcpy.Describe(cfg.RESRAST).spatialReference                
         mapUnits = spatialref.linearUnitName
+        
         
         if float(arcpy.env.cellSize) > startRadius or startRadius > endRadius:
             msg = ('Error: minimum detection radius must be greater than '
@@ -106,7 +109,8 @@ def STEP6_calc_barriers():
                                        path.basename(path1))
 
             if maxCoreNum > 99:
-                gprint('Creating subdirectories for ' + str(radius) + ' ' + str(mapUnits) + ' scale.')
+                gprint('Creating subdirectories for ' + str(radius) + ' ' + 
+                       str(mapUnits) + ' radius analysis scale.')
                 maxDirCount = int(maxCoreNum/100)
                 focalDirBaseName = dir2
 
@@ -129,12 +133,14 @@ def STEP6_calc_barriers():
         coreList = npy.sort(coreList)
 
         # Loop through each search radius to calculate barriers in each link
+        import time
+        startTime = time.clock()
         for radius in range (startRadius, endRadius + 1, radiusStep):
             linkLoop = 0
             pctDone = 0
 
-            gprint('\nMapping barriers at a radius of ' + str(radius) +
-                   ' ' + str(mapUnits) + '...')
+            gprint('\nMapping barriers at ' + str(radius) +
+                   ' ' + str(mapUnits) + ' radius...')
             if numCorridorLinks > 1:
                 gprint('0 percent done')
             lastMosaicRaster = None
@@ -156,7 +162,7 @@ def STEP6_calc_barriers():
                     focalRaster2 = lu.get_focal_path(corey,radius)
                     barrierRaster = path.join(cbarrierdir, "b" + str(radius)
                                               + "_" + str(corex) + "_" +
-                                              str(corey)+'.tif') #bbb
+                                              str(corey)+'.tif') 
                     arcpy.env.extent = cfg.RESRAST
                     arcpy.env.extent = "MINOF"
 
@@ -269,7 +275,6 @@ def STEP6_calc_barriers():
 
             # -----------------------------------------------------------------
 
-            mosaicFN = "barriers" + str(radius)
             mosaicFN = PREFIX + "_barriers" + str(radius)
             arcpy.env.extent = cfg.RESRAST
             outSetNull = arcpy.sa.SetNull(tempMosaicRaster, tempMosaicRaster,
@@ -283,38 +288,39 @@ def STEP6_calc_barriers():
             # neighborhood size for display
             InNeighborhood = "CIRCLE " + str(outerRadius) + " MAP"
             # Execute FocalStatistics
-            maxRasterFN = "bar_max" + str(outerRadius)
-            maxRaster = path.join(cfg.BARRIERBASEDIR, maxRasterFN)
+            fillRasterFN = "bar_fill" + str(outerRadius) + tif
+            fillRaster = path.join(cfg.BARRIERBASEDIR, fillRasterFN)
             outFocalStats = arcpy.sa.FocalStatistics(mosaicRaster,
                                             InNeighborhood, "MAXIMUM","DATA")
-            outFocalStats.save(maxRaster)
+            outFocalStats.save(fillRaster)
 
 
             #Place a copy in output geodatabase
             arcpy.env.workspace = cfg.BARRIERGDB
-            maxRasterFN = PREFIX + "_bar_max" + str(outerRadius)
-            arcpy.CopyRaster_management(maxRaster, maxRasterFN)
+            fillRasterFN = PREFIX + "_bar_fill" + str(outerRadius) 
+            arcpy.CopyRaster_management(fillRaster, fillRasterFN)
 
             # Create pared-down version of maximum- remove pixels that
             # don't need restoring by allowing a pixel to only contribute its
             # resistance value to restoration gain
             outRasterFN = "bar_trm" + str(outerRadius)
             outRaster = path.join(cfg.BARRIERBASEDIR,outRasterFN)
-            rasterList = [maxRaster, resistFillRaster]
+            rasterList = [fillRaster, resistFillRaster]
             outCellStatistics = arcpy.sa.CellStatistics(rasterList, "MINIMUM")
             outCellStatistics.save(outRaster)
 
             #SECOND ROUND TO CLIP BY DATA VALUES IN BARRIER RASTER
             outRaster2 = outRaster + "2"
 
-            output = arcpy.sa.Con(IsNull(maxRaster),maxRaster,outRaster)
+            output = arcpy.sa.Con(IsNull(fillRaster),fillRaster,outRaster)
             output.save(outRaster2)
 
             outRasterFN = PREFIX + "_bar_trm" + str(outerRadius)
             outRasterPath= path.join(cfg.BARRIERGDB, outRasterFN)
             arcpy.CopyRaster_management(outRaster2, outRasterFN)
-
-
+        
+            startTime=lu.elapsed_time(startTime)
+        
         # Combine rasters across radii
         gprint('\nCreating summary rasters...')
         if startRadius != endRadius:
@@ -341,30 +347,30 @@ def STEP6_calc_barriers():
             arcpy.CopyRaster_management(mosaicRaster, mosaicFN)
 
             #GROWN OUT rasters
-            maxMosaicFN = "bar_radii_max"
-            maxMosaicRaster = path.join(cfg.BARRIERBASEDIR,maxMosaicFN)
+            fillMosaicFN = "bar_radii_fil" + tif
+            fillMosaicRaster = path.join(cfg.BARRIERBASEDIR,fillMosaicFN)
             arcpy.env.workspace = cfg.BARRIERBASEDIR
             for radius in range (startRadius, endRadius + 1, radiusStep):
-                radiusFN = "bar_max" + str(radius)
+                radiusFN = "bar_fill" + str(radius) + tif
                 #fixme- do this when only a single radius too
                 radiusRaster = path.join(cfg.BARRIERBASEDIR, radiusFN)
                 if radius == startRadius:
                 #If this is the first grid then copy rather than mosaic
-                    arcpy.CopyRaster_management(radiusRaster, maxMosaicFN)
+                    arcpy.CopyRaster_management(radiusRaster, fillMosaicFN)
                 else:
-                    arcpy.Mosaic_management(radiusRaster, maxMosaicRaster,
+                    arcpy.Mosaic_management(radiusRaster, fillMosaicRaster,
                                          "MAXIMUM", "MATCH")
             # Copy result to output geodatabase
             arcpy.env.workspace = cfg.BARRIERGDB
-            maxMosaicFN = PREFIX + "_bar_radii_max"
-            arcpy.CopyRaster_management(maxMosaicRaster, maxMosaicFN)
+            fillMosaicFN = PREFIX + "_bar_radii_fill"
+            arcpy.CopyRaster_management(fillMosaicRaster, fillMosaicFN)
 
             #GROWN OUT AND TRIMMED rasters
             trimMosaicFN = "bar_radii_trm"
             arcpy.env.workspace = cfg.BARRIERBASEDIR
             trimMosaicRaster = path.join(cfg.BARRIERBASEDIR,trimMosaicFN)
             for radius in range (startRadius, endRadius + 1, radiusStep):
-                radiusFN = PREFIX + "_bar_trm" + str(radius)
+                radiusFN = PREFIX + "_bar_trm" + str(radius) 
                 #fixme- do this when only a single radius too
                 radiusRaster = path.join(cfg.BARRIERGDB, radiusFN)
 
