@@ -127,12 +127,12 @@ def cwadjacency():
         # ----------------------------------------------
         # Cost-weighted allocation code
         gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
-        gp.extent = gp.Describe(cfg.RESRAST).extent            
+        gp.extent = gp.Describe(cfg.RESRAST).extent
         if cfg.BUFFERDIST is not None:
             # Clip resistance raster using bounding circle
             start_time = time.clock()
             gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight#xxx
-            gp.extent = gp.Describe(cfg.RESRAST).Extent#xxx            
+            gp.extent = gp.Describe(cfg.RESRAST).Extent#xxx
             bResistance = path.join(cfg.SCRATCHDIR, "bResistance")
             gp.ExtractByMask_sa(cfg.RESRAST, cfg.BNDCIR,
                                     bResistance)
@@ -155,7 +155,7 @@ def cwadjacency():
 
         gp.workspace = cfg.ADJACENCYDIR
         gp.scratchworkspace = cfg.ARCSCRATCHDIR
-        
+
         lu.delete_data(cfg.CWDGDB)
         if not gp.exists(cfg.CWDGDB):
             gp.createfilegdb(cfg.OUTPUTDIR, path.basename(cfg.CWDGDB))

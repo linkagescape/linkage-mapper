@@ -369,10 +369,10 @@ def generate_distance_file():
                 del row
             del rows
         start_time = lu.elapsed_time(start_time)
-        
+
         # In case coreFC is grouped in TOC, get coreFN for non-Arc statement
         group,coreFN = path.split(cfg.COREFC)
-        
+
         dist_fname = path.join(cfg.PROJECTDIR, (coreFN + "_dists.txt"))
         dist_file = open(dist_fname, 'w')
         dist_file.write('\n'.join(output))

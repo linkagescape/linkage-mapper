@@ -109,7 +109,7 @@ def STEP3_calc_cwds():
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         else:
             gp.OverwriteOutput = True
-            gp.workspace = cfg.SCRATCHDIR     
+            gp.workspace = cfg.SCRATCHDIR
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
 
         # Load linkTable (created in previous script)
@@ -117,17 +117,10 @@ def STEP3_calc_cwds():
         linkTable = lu.load_link_table(linkTableFile)
         lu.report_links(linkTable)
 
-        coresToProcess = npy.unique(
-                                linkTable[:, cfg.LTB_CORE1:cfg.LTB_CORE2 + 1])
-        maxCoreNum = max(coresToProcess)
-
-
         # Identify cores to map from LinkTable
-        rows,cols = npy.where(linkTable[:,cfg.LTB_LINKTYPE:cfg.LTB_LINKTYPE+1]
-                              > 0)
-        coresToMap = npy.unique(linkTable[:,cfg.LTB_CORE1:cfg.LTB_CORE2+1])
+        coresToMap = npy.unique(linkTable[:, cfg.LTB_CORE1:cfg.LTB_CORE2 + 1])
         numCoresToMap = len(coresToMap)
-        del rows,cols
+
         if numCoresToMap < 3:
             # No need to check for intermediate cores, because there aren't any
             cfg.S3DROPLCCSic = False
@@ -158,31 +151,12 @@ def STEP3_calc_cwds():
                 lu.dashline(0)
                 rerun = False
 
-
-        if not rerun: # If picking up a failed run, use old folders
+        # If picking up a failed run, use old folders
+        if not rerun:
             startIndex = 0
+            if cfg.TOOL <> cfg.TOOL_CC:
+                lu.make_cwd_paths(max(coresToMap)) # Set up cwd directories
 
-            #remove cwd directory
-            lu.delete_dir(cfg.CWDBASEDIR)
-
-            # Set up cwd directories. To keep there from being > 100 grids
-            # in any one directory, outputs are written to:
-            # cwd\cw for cores 1-99, cwd\cw1 for cores 100-199, etc.
-            gprint("\nCreating cost-weighted distance output folders:")
-            gprint('...' + cfg.CWDSUBDIR_NM)
-
-            gp.CreateFolder_management(path.dirname(cfg.CWDBASEDIR),
-                                           path.basename(cfg.CWDBASEDIR))
-            gp.CreateFolder_management(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
-
-            cp100 = (coresToProcess.astype('int32'))/100
-            ind = npy.where(cp100 > 0)
-            dirNums = npy.unique(cp100[ind])
-            for dirNum in dirNums:
-                ccwdir = cfg.CWDSUBDIR_NM + str(dirNum)
-                gprint('...' + ccwdir)
-                gp.CreateFolder_management(cfg.CWDBASEDIR, ccwdir)            
-        del coresToProcess
         # make a feature layer for input cores to select from
         gp.MakeFeatureLayer(cfg.COREFC, cfg.FCORES)
 
@@ -273,7 +247,7 @@ def STEP3_calc_cwds():
             gprint('Reducing global processing area using bounding '
                               'circle plus buffer of ' +
                               str(float(cfg.BUFFERDIST)) + ' map units.\n')
-            
+
 
             extentBoxList = npy.zeros((0,5),dtype='float32')
             boxCoords = lu.get_extent_box_coords()
@@ -322,7 +296,7 @@ def STEP3_calc_cwds():
         else:
             gp.cellSize = gp.Describe(cfg.BOUNDRESIS).MeanCellHeight
             gp.extent = gp.Describe(cfg.BOUNDRESIS).extent
-                
+
         if rerun:
             # saved linktable replaces the one now in memory
             linkTable = lu.load_link_table(savedLinkTableFile)
@@ -361,7 +335,7 @@ def STEP3_calc_cwds():
                 linkTableMod = linkTableReturned
                 sourceCore = int(coresToMap[x])
                 gprint('Done with all calculations for core ID #' +
-                        str(sourceCore) + '. ' + str(x + 1) + ' of ' + 
+                        str(sourceCore) + '. ' + str(x + 1) + ' of ' +
                         str(endIndex) + ' cores have been processed.')
                 start_time = lu.elapsed_time(startTime1)
 
@@ -523,7 +497,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             # Clip out bounded area of resistance raster for cwd
             # calculations from focal core
             bResistance = path.join(coreDir,"bResistance") # Can't be tif-
-                                                           # need STA for CWD             
+                                                           # need STA for CWD
             lu.delete_data(bResistance)
             statement = (
                 'gp.ExtractByMask_sa(cfg.BOUNDRESIS, cfg.BNDFC, bResistance)')
@@ -542,61 +516,54 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # ---------------------------------------------------------
         # CWD Calculations
         outDistanceRaster = lu.get_cwd_path(sourceCore)
-        lu.delete_data(outDistanceRaster)
-        start_time = time.clock()
 
-        # Create raster that just has source core in it
-        # Note: this seems faster than setnull with LI grid.
-        SRCRASTER = 'source' + tif
-        lu.delete_data(path.join(coreDir,SRCRASTER))
-        if arcpy:
-            statement = (
-                  'conRaster = Con(Raster(cfg.CORERAS) == int(sourceCore), 1);'
-                  'conRaster.save(SRCRASTER)')
+        # Check if climate tool is calling linkage mapper
+        if cfg.TOOL == cfg.TOOL_CC:
+            back_rast = outDistanceRaster.replace("cwd_", "back_")
         else:
-            expression = ("con(" + cfg.CORERAS + " == " +
-                           str(int(sourceCore)) + ",1)")
-            statement = ('gp.SingleOutputMapAlgebra_sa(expression, SRCRASTER)')
+            back_rast = "BACK"
+            lu.delete_data(path.join(coreDir, back_rast))
+            lu.delete_data(outDistanceRaster)
+            start_time = time.clock()
 
-        try:
-            exec statement
-            randomerror()
-        except:
-            failures = lu.print_arcgis_failures(statement, failures)
-            if failures < 20:
-                return None,failures,lcpLoop
-            else: exec statement
+            # Create raster that just has source core in it
+            # Note: this seems faster than setnull with LI grid.
+            SRCRASTER = 'source' + tif
+            lu.delete_data(path.join(coreDir,SRCRASTER))
+            if arcpy:
+                statement = ('conRaster = '
+                             'Con(Raster(cfg.CORERAS) == int(sourceCore), 1);'
+                             'conRaster.save(SRCRASTER)')
+            else:
+                expression = ("con(" + cfg.CORERAS + " == " +
+                               str(int(sourceCore)) + ", 1)")
+                statement = ('gp.SingleOutputMapAlgebra_sa'
+                            '(expression, SRCRASTER)')
 
-        # Cost distance raster creation
-        if arcpy:
-            arcpy.env.extent="MINOF"
-        else:
-            gp.Extent = "MINOF"
+            try:
+                exec statement
+                randomerror()
+            except:
+                failures = lu.print_arcgis_failures(statement, failures)
+                if failures < 20:
+                    return None, failures, lcpLoop
+                else: exec statement
 
-        lu.delete_data(path.join(coreDir,"BACK"))
+            # Cost distance raster creation
+            if arcpy:
+                arcpy.env.extent = "MINOF"
+            else:
+                gp.Extent = "MINOF"
 
-        # Climate Corridor code
-        # Do not calculate cost distance if tool is run for climate corridors
-        if cfg.TOOL == "climate_tool":
-            cwdfld = "cwdascii"
-            # Take grass cwd and back asciis and write them as ARCINFO grids
-            cwd_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
-                                  "cwd_" + str(sourceCore) + ".asc")
-            back_ascii = path.join(cfg.PROJECTDIR, "..", cwdfld, 
-                                  "back_" + str(sourceCore) + ".asc")
-            gprint("Importing GRASS CWD raster")
-            gp.ASCIIToRaster(cwd_ascii, outDistanceRaster, "FLOAT")     
-            gprint("Importing GRASS back link raster")           
-            gp.ASCIIToRaster(back_ascii, "BACK", "INTEGER")
-                
-        else:
+            lu.delete_data(path.join(coreDir,"BACK"))
+
             if arcpy:
                 statement = ('outCostDist = CostDistance(SRCRASTER, '
-                             'bResistance, cfg.TMAXCWDIST, "BACK");'
+                             'bResistance, cfg.TMAXCWDIST, back_rast);'
                              'outCostDist.save(outDistanceRaster)')
             else:
                 statement = ('gp.CostDistance_sa(SRCRASTER, bResistance, '
-                             'outDistanceRaster, cfg.TMAXCWDIST, "BACK")')
+                             'outDistanceRaster, cfg.TMAXCWDIST, back_rast)')
             try:
                 exec statement
                 randomerror()
@@ -611,12 +578,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Extract cost distances from source core to target cores
         # Fixme: there will be redundant calls to b-a when already
         # done a-b
-    
+
         ZNSTATS = path.join(coreDir, "zonestats.dbf")
         lu.delete_data(ZNSTATS)
 
-        #Fixme: zonalstatistics is returning integer values for minimum. Why????
-        #Extra zonalstatistics code implemented later in script to correct values.
+        #Fixme: zonalstatistics is returning integer values for minimum. Why???
+        #Extra zonalstatistics code implemented later in script to correct
+        #values.
         statement = ('gp.zonalstatisticsastable_sa('
                       'cfg.CORERAS, "VALUE", outDistanceRaster, ZNSTATS)')
 
@@ -695,16 +663,16 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         return None,failures,lcpLoop
                     else: exec statement
 
-                # Execute ZonalStatistics to get more precise cw distance if 
+                # Execute ZonalStatistics to get more precise cw distance if
                 # arc rounded it earlier (not critical, hence the try/pass)
-                if (linkTable[link,cfg.LTB_CWDIST] == 
+                if (linkTable[link,cfg.LTB_CWDIST] ==
                                 int(linkTable[link,cfg.LTB_CWDIST])):
                     try:
                         zonalRas = path.join(coreDir,'zonal')
-                        gp.ZonalStatistics_sa(TARGETRASTER, "VALUE", 
+                        gp.ZonalStatistics_sa(TARGETRASTER, "VALUE",
                             outDistanceRaster, zonalRas, "MINIMUM", "DATA")
-                        minObject = gp.GetRasterProperties_management(zonalRas, 
-                                                                "MINIMUM") 
+                        minObject = gp.GetRasterProperties_management(zonalRas,
+                                                                "MINIMUM")
                         rasterMin = float(str(minObject.getOutput(0)))
                         linkTable[link,cfg.LTB_CWDIST] = rasterMin
                         lu.delete_data(zonalRas)
@@ -717,11 +685,12 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
                 if arcpy:
                     statement = ('outCostPath = CostPath(TARGETRASTER,'
-                          'outDistanceRaster, "BACK", "BEST_SINGLE", ""); '
+                          'outDistanceRaster, back_rast, "BEST_SINGLE", ""); '
                           'outCostPath.save(lcpRas)')
                 else:
-                    statement = ('gp.CostPath_sa(TARGETRASTER, outDistanceRaster,'
-                                   ' "BACK",  lcpRas, "BEST_SINGLE", "")')
+                    statement = ('gp.CostPath_sa(TARGETRASTER, '
+                                 'outDistanceRaster, back_rast, '
+                                 'lcpRas, "BEST_SINGLE", "")')
                 try:
                     exec statement
                     randomerror()
@@ -762,7 +731,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                               ' <> ' +
                                               str(int(sourceCore)))
 
-                    corePairRas = path.join(coreDir,"s3corepair"+ tif)                                              
+                    corePairRas = path.join(coreDir,"s3corepair"+ tif)
                     if arcpy:
                         arcpy.env.extent = cfg.BOUNDRESIS
                     else:
@@ -775,7 +744,8 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         exec statement
                         randomerror()
                     except:
-                        failures = lu.print_arcgis_failures(statement, failures)
+                        failures = lu.print_arcgis_failures(statement,
+                                                            failures)
                         if failures < 20:
                             return None,failures,lcpLoop
                         else: exec statement
@@ -788,7 +758,8 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         randomerror()
                     except:
                         statement = 'test_for_intermediate_core'
-                        failures = lu.print_arcgis_failures(statement, failures)
+                        failures = lu.print_arcgis_failures(statement,
+                                                            failures)
                         if failures < 20:
                             return None,failures,lcpLoop
                         else:
@@ -818,6 +789,8 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Made it through, so reset failure count and return.
         failures = 0
         lu.delete_dir(coreDir)
+        if cfg.TOOL == cfg.TOOL_CC:
+                    lu.delete_data(back_rast)
         return linkTable, failures, lcpLoop
 
     # Return GEOPROCESSING specific errors

@@ -1192,7 +1192,7 @@ def gprint(string):
     gp.addmessage(string)
     try:
         if cfg.LOGMESSAGES:
-            write_log(string) 
+            write_log(string)
     except:
         pass
 
@@ -1220,7 +1220,7 @@ def write_log(string):
         logFile=open(cfg.logFilePath,'w')
     try:
         #Sometimes int objects returned for arc failures so need str below
-        logFile.write(str(string) + '\n') 
+        logFile.write(str(string) + '\n')
     except IOError:
         pass
     finally:
@@ -1539,33 +1539,33 @@ def write_link_maps(linkTableFile, step):
     except:
         exit_with_python_error(_SCRIPT_NAME)
 
-        
+
 def set_dataframe_sr():
     """Sets data frame spatial reference to input core area projection.
        Differing spatial reference can cause problems in step 1.
        Arcpy only.
-    
+
     """
     try:
         import arcpy
     except:
         return
-    try:    
+    try:
         sr = arcpy.Describe(cfg.COREFC).spatialReference
         gprint('Setting data frame spatial reference to that of '
                 'core area featureclass')
     except:
         try:
-            sr = arcpy.Describe(cfg.RESRAST).spatialReference    
+            sr = arcpy.Describe(cfg.RESRAST).spatialReference
         except:
             return
-    try:        
+    try:
         mxd = arcpy.mapping.MapDocument("current")
         df = arcpy.mapping.ListDataFrames(mxd)[0]
-        df.spatialReference = sr        
+        df.spatialReference = sr
     except:
         pass
-        
+
 def create_dir(lmfolder):
     """Creates folder if it doesn't exist."""
     if not os.path.exists(lmfolder):
@@ -1657,7 +1657,7 @@ def clean_out_workspace(ws):
         exit_with_geoproc_error(_SCRIPT_NAME)
     except:
         exit_with_python_error(_SCRIPT_NAME)
-    
+
 # def clean_out_workspace(ws):
     # try:
         # if gp.exists(ws):
@@ -1718,6 +1718,34 @@ def delete_data(dataset):
         pass
 
 
+def make_cwd_paths(max_core_no):
+    """Set up cwd directories to insure < 100 grids in any one directory.
+
+    Outputs are written to: cwd\cw for cores 1-99, cwd\cw1 for cores 100-199,
+    etc.
+    """
+    try:
+        delete_dir(cfg.CWDBASEDIR)
+
+        gprint("\nCreating cost-weighted distance output folders:")
+        gprint('...' + cfg.CWDSUBDIR_NM)
+
+        gp.CreateFolder_management(os.path.dirname(cfg.CWDBASEDIR),
+                                       os.path.basename(cfg.CWDBASEDIR))
+        gp.CreateFolder_management(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
+
+        no_dirs = max_core_no / 100
+        for dir_no in range(1, no_dirs + 1):
+            ccwdir = cfg.CWDSUBDIR_NM + str(dir_no)
+            gprint('...' + ccwdir)
+            gp.CreateFolder_management(cfg.CWDBASEDIR, ccwdir)
+
+    except arcgisscripting.ExecuteError:
+        exit_with_geoproc_error(_SCRIPT_NAME)
+    except:
+        exit_with_python_error(_SCRIPT_NAME)
+
+
 def get_cwd_path(core):
     """Returns the path for the cwd raster corresponding to a core area """
     dirCount = int(core / 100)
@@ -1756,7 +1784,7 @@ def check_project_dir():
     if "-" in cfg.PROJECTDIR or " " in cfg.PROJECTDIR:
         msg = ('ERROR: Project directory cannot contain spaces, dashes, or '
                 'special characters.')
-        raise_error(msg) 
+        raise_error(msg)
     return
 
 
@@ -1970,7 +1998,7 @@ def get_cs_path():
 def copy_log_file():
     try:
         delete_file(cfg.errorFilePath)
-        shutil.copyfile(cfg.logFilePath,cfg.logFileCopyPath)  
+        shutil.copyfile(cfg.logFilePath,cfg.logFileCopyPath)
     except:
         pass
 def print_arcgis_failures(statement, failures):
@@ -1981,9 +2009,9 @@ def print_arcgis_failures(statement, failures):
     dashline(1)
     gprint('***Problem encountered executing statement:')
     gprint('"' + statement + '"')
-    
+
     print_warnings()
-            
+
     failures = failures + 1
     return failures
 
@@ -2006,8 +2034,8 @@ def get_dir_depth(dir):
         if realpath[i] == os.path.sep:
             depth = depth + 1
     return drive, depth
-    
-    
+
+
 def check_steps():
     """Check to make sure there are no skipped steps in a sequence of chosen
     steps (except step 4 which is optional)
@@ -2090,9 +2118,9 @@ def retry_arc_error(count, statement):
             gp.AddWarning('-------------------------------------------------')
             gp.AddWarning('Failed to execute ' + statement + ' on try '
                               '#' + str(count) + '.\n')
-            
+
             print_warnings()
-            
+
             gp.AddWarning("Will try again. ")
             gp.AddWarning('---------TRYING AGAIN IN ' +
                                    str(int(sleepTime)) + ' SECONDS---------\n')
@@ -2111,8 +2139,8 @@ def retry_arc_error(count, statement):
 
     except:
         exit_with_python_error(_SCRIPT_NAME)
-                
-                
+
+
 def print_warnings():
     tb = sys.exc_info()[2]  # get the traceback object
     # tbinfo contains the error's line number and the code
@@ -2124,34 +2152,34 @@ def print_warnings():
     if gp.MaxSeverity > 1:
         msg = ("The following ArcGIS error is being reported "
                     "on line " + line + " of " + filename + ":")
-        gp.AddWarning(msg) 
-        write_log(msg) 
+        gp.AddWarning(msg)
+        write_log(msg)
         gp.AddWarning(gp.GetMessages(2))
         # for msg in range(0, gp.MessageCount):
             # if gp.GetSeverity(msg) == 2:
                 # gp.AddReturnMessage(msg)
-                # write_log(msg)     
+                # write_log(msg)
         write_log(gp.GetMessages(2))
         print_drive_warning()
-        
+
     else:
         msg = ("The following error is being reported at "
                         + line + " of " + filename + ":")
         err = traceback.format_exc().splitlines()[-1]
         gp.AddWarning(msg)
         gp.AddWarning(err + '\n')
-        write_log(msg)     
-        write_log(err) 
-            
-            
+        write_log(msg)
+        write_log(err)
+
+
 def snooze(sleepTime):
     for i in range(1,int(sleepTime)+1):
         time.sleep(1)
         # Dummy operations to give user ability to cancel:
-        installD = gp.GetInstallInfo("desktop")  
-            
-   
-    
+        installD = gp.GetInstallInfo("desktop")
+
+
+
 def exit_with_geoproc_error(filename):
     """Handle geoprocessor errors and provide details to user"""
     dashline()
@@ -2233,7 +2261,7 @@ def set_lm_options():
     options['lcc_cutoff'] = None
     return options
 
-    
+
 ############################################################################
 ## Circuitscape Functions ##################################################
 ############################################################################

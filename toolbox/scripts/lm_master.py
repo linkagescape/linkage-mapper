@@ -38,9 +38,9 @@ def lm_master(argv=None):
         argv = sys.argv
 
     # Setup global variables
-    # if not cfg.lm_configured:
-    cfg.configure("linkage_mapper", argv)
-    
+    if not cfg.lm_configured:
+        cfg.configure(cfg.TOOL_LM, argv)
+
     gp = cfg.gp
 
     try:
@@ -171,7 +171,7 @@ def lm_master(argv=None):
             gprint('Results from this run can be found in your output '
                     'directory:')
             gprint(cfg.OUTPUTDIR)
-        
+
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
@@ -187,7 +187,7 @@ def lm_master(argv=None):
                'log directory:')
         gprint(cfg.MESSAGEDIR)
         lu.dashline(2)
-        
-        
+
+
 if __name__ == "__main__":
     lm_master()

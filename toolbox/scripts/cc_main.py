@@ -30,7 +30,7 @@ from lm_config import tool_env as lm_env
 import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
@@ -56,20 +56,20 @@ def main(argv=None):
         # Check out the ArcGIS Spatial Analyst extension license
         #arcpy.AddMessage(arcpy.ProductInfo())
         arcpy.CheckOutExtension("Spatial")
-        
+
         # Setup workspace
         arcpy.AddMessage("Creating output folder - " + cc_env.out_dir)
         arcpy.env.overwriteOutput = True
         cc_util.mk_proj_dir(cc_env.out_dir)
         arcpy.env.workspace = cc_env.out_dir
         lm_outdir = cc_util.mk_proj_dir("lm_out")
-        
+
         # Configure Linkage Mapper
         lm_arg = (_SCRIPT_NAME, lm_outdir, cc_env.prj_core_fc, cc_env.core_fld,
-                  cc_env.prj_resist_rast, "false", "false", "#", "#", "true", 
-                  "false", "false", "4", "Cost-Weighted", "true", "true", "#", 
+                  cc_env.prj_resist_rast, "false", "false", "#", "#", "true",
+                  "false", "false", "4", "Cost-Weighted", "true", "true", "#",
                   "#", "#")
-        lm_env.configure("climate_tool", lm_arg)
+        lm_env.configure(lm_env.TOOL_CC, lm_arg)
         lm_util.create_dir(lm_env.DATAPASSDIR)
 
         # Clip inputs and create project area raster
@@ -87,25 +87,25 @@ def main(argv=None):
         limit_cores(core_parings, climate_stats)
 
         # Calculate distances and generate link table for Linkage Mapper
-        core_list = gen_link_table(core_parings)
+        grass_cores = gen_link_table(core_parings)
 
         # Create CWD using Grass
-        cc_grass_cwd.main(core_list)
+        cc_grass_cwd.main(grass_cores)
 
         # Run Linkage Mapper
-        arcpy.AddMessage("\nRUNNING LINKAGE MAPPER TO CREATE CLIMATE CORRIDORS")
+        arcpy.AddMessage("\nRUNNING LINKAGE MAPPER "
+                         "TO CREATE CLIMATE CORRIDORS")
 
         lm_master.lm_master(lm_arg)
 
     except arcpy.ExecuteError:
-        msgs = "ArcPy ERRORS\n" + arcpy.GetMessages(2) + "\n"
+        msgs = "\nArcPy ERRORS\n" + arcpy.GetMessages(2)
         arcpy.AddError(msgs)
-        pymsg = ("PYTHON ERRORS\n" + traceback.format_exc())
+        tb = sys.exc_info()[2]
+        pymsg = ("Traceback\n" + str(traceback.format_tb(tb)[0]))
         arcpy.AddError(pymsg)
     except Exception:
-        # tb = sys.exc_info()[2]
-        # tbinfo = traceback.format_tb(tb)[0]
-        pymsg = ("PYTHON ERRORS\n" + traceback.format_exc())
+        pymsg = ("\nPYTHON ERRORS\n" + traceback.format_exc())
         arcpy.AddError(pymsg)
     finally:
         arcpy.CheckInExtension("Spatial")
@@ -133,10 +133,8 @@ def cc_clip_inputs():
         else:
             rast_list = (arcpy.Describe(cc_env.climate_rast).catalogPath + ";"
                         + arcpy.Describe(cc_env.resist_rast).catalogPath)
-            if arcpy.Exists(cc_env.prj_resist_rast):
-                arcpy.Delete_management(cc_env.prj_resist_rast)
-        if arcpy.Exists(cc_env.prj_climate_rast):
-            arcpy.Delete_management(cc_env.prj_climate_rast)
+            cc_util.delete_feature(cc_env.prj_resist_rast)
+        cc_util.delete_feature(cc_env.prj_climate_rast)
 
         arcpy.RasterToOtherFormat_conversion(rast_list, cc_env.out_dir, "GRID")
         arcpy.env.extent = None
@@ -154,8 +152,7 @@ def cc_clip_inputs():
     except Exception:
         raise
     finally:
-        if arcpy.Exists(ext_poly):
-            arcpy.Delete_management(ext_poly)
+        cc_util.delete_feature(ext_poly)
 
 
 def create_pair_tbl():
@@ -176,10 +173,10 @@ def create_pair_tbl():
         srows = arcpy.SearchCursor(cc_env.prj_core_fc, "", "",
                                    cc_env.core_fld, cc_env.core_fld + " A")
 
-        core_list = [srow.getValue(cc_env.core_fld) for srow in srows]
-        cores_product = list(itertools.combinations(core_list, 2))
+        cores_list = [srow.getValue(cc_env.core_fld) for srow in srows]
+        cores_product = list(itertools.combinations(cores_list, 2))
 
-        arcpy.AddMessage("There are " + str(len(core_list)) + " unique "
+        arcpy.AddMessage("There are " + str(len(cores_list)) + " unique "
             "cores and " + str(len(cores_product)) + " pairings")
 
         irows = arcpy.InsertCursor(cpair_tbl)
@@ -290,10 +287,9 @@ def limit_cores(pair_tbl, stats_tbl):
     except:
         raise
     finally:
-        if arcpy.Exists(stats_vw):
-            arcpy.Delete_management(stats_vw)
-        if arcpy.Exists(pair_vw):
-            arcpy.Delete_management(pair_vw)
+        cc_util.delete_feature(stats_vw)
+        cc_util.delete_feature(pair_vw)
+
 
 def gen_link_table(parings):
     """Calculate core to core distances and create linkage table
@@ -345,13 +341,14 @@ def gen_link_table(parings):
         writer = csv.writer(link_tbl, delimiter=',')
         headings = ["# link", "coreId1", "coreId2", "cluster1", "cluster2",
                     "linkType", "eucDist", "lcDist", "eucAdj", "cwdAdj"]
-        writer.writerow(headings)        
-        
+        writer.writerow(headings)
+
         core_list = set()
+        no_cores = str(len(frm_cores))
         i = 1
 
         coreid_fld = arcpy.AddFieldDelimiters(corefc, cc_env.core_fld)
-        for frm_core in frm_cores:
+        for core_no, frm_core in enumerate(frm_cores):
             # From cores
             expression = coreid_fld + " = " + frm_core
             arcpy.MakeFeatureLayer_management(corefc, fcore_vw, expression)
@@ -363,7 +360,8 @@ def gen_link_table(parings):
             arcpy.MakeFeatureLayer_management(corefc, tcore_vw, expression)
             arcpy.AddMessage("Calculating Euclidean distance/s from core "
                              + frm_core + " to " + str(len(to_cores_lst))
-                             + " other cores")
+                             + " other cores" + " (" + str(core_no + 1) + "/"
+                             + no_cores + ")")
 
             # Generate near table for these core pairings
             arcpy.GenerateNearTable_analysis(fcore_vw, tcore_vw, near_tbl,
@@ -385,7 +383,7 @@ def gen_link_table(parings):
 
             # Process near table and output into a link table
             srow = srows.next()
-            
+
             if srow:
                 core_list.add(int(frm_core))
                 while srow:
@@ -396,16 +394,15 @@ def gen_link_table(parings):
                     core_list.add(to_coreid)
                     srow = srows.next()
                     i += 1
-                # del srows, srow            
-                
-        return map(str, sorted(core_list))
+                # del srows, srow
+
+        return sorted(core_list)
 
     except:
         raise
     finally:
         simplify_points = coresim + "_Pnt.shp"
-        if arcpy.Exists(simplify_points):
-                arcpy.Delete_management(simplify_points)
+        cc_util.delete_feature(simplify_points)
 
         if link_tbl:
             link_tbl.close()
