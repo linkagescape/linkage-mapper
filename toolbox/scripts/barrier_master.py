@@ -27,13 +27,13 @@ def bar_master():
     outputs from Linkage Mapper tool.
 
     """
-    cfg.configure("barrier_mapper", sys.argv)
+    cfg.configure(cfg.TOOL_BM, sys.argv)
     gprint = lu.gprint
     try:
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
 
-        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
+        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
                                              cfg.PARAMS)
 
         # Move adj and cwd results from earlier versions to datapass directory
@@ -57,11 +57,11 @@ def bar_master():
         desc = arcpy.Describe(cfg.RESRAST_IN)
         if hasattr(desc, "catalogPath"):
             cfg.RESRAST_IN = arcpy.Describe(cfg.RESRAST_IN).catalogPath
-            
+
         arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
         arcpy.env.extent = cfg.RESRAST
         arcpy.env.snapRaster = cfg.RESRAST
-        
+
         s6.STEP6_calc_barriers()
 
         #clean up

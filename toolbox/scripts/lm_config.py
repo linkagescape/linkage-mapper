@@ -15,10 +15,6 @@ import lm_version as ver
 import lm_settings
 
 GP_NULL = '#'
-LINKAGE_MAPPER = 'linkage_mapper'
-BARRIER_TOOL = 'barrier_mapper'
-CIRCUITSCAPE = 'circuitscape'
-CLIMATE_TOOL = 'climate_tool'
 
 
 def str2bool(pstr):
@@ -66,6 +62,7 @@ def config_global(config, arg):
     config.PARAMS = str(arg)  # Convert to string in case '\' exists
     config.releaseNum = ver.releaseNum
     config.LOGMESSAGES = True
+
     # File names, directory paths & folder names
     proj_dir = arg[1]
     config.PROJECTDIR = proj_dir  # Project directory
@@ -112,13 +109,13 @@ def config_global(config, arg):
 
     # Save individual current maps from Circuitscape
     config.SAVECURRENTMAPS = True
-        
+
     config.SAVECIRCUITDIR = True
     config.SAVE_TEMP_FILES = True
-    
+
     config.SAVEBARRIERDIR = False
     config.SAVECENTRALITYDIR = False
-    
+
     # Write focal maps for barrier analysis
     config.WRITE_VOLT_MAPS = True
 
@@ -255,6 +252,9 @@ def config_barrier(config, arg):
         config.RADIUSSTEP = 0
     config.STEP1 = False
 
+def config_climate(config, arg):
+    """Configure global variables for Climate Corridor tool"""
+    config.lm_configured = config_lm(config, arg, config.SCRATCHDIR)
 
 def config_circuitscape(config, arg):
     """Configure global variables for Circuitscape"""
@@ -282,20 +282,30 @@ def config_circuitscape(config, arg):
 
 class Configure(object):
     """Class container to hold global variables"""
+    TOOL_LM = 'Linkage Mapper'
+    TOOL_CC = 'Climate Corridor'
+    TOOL_BM = 'Barrier mapper'
+    TOOL_CS = 'Circuitscape'
+
+
     def __init__(self):
         """Initialize class and create single geoprocessor object"""
         self.gp = arcgisscripting.create(9.3)
         self.gp.CheckOutExtension("Spatial")
         self.gp.OverwriteOutput = True
+        self.lm_configured = False
+
 
     def configure(self, tool, arg):
         """Setup variables for Configure class"""
         config_global(self, arg)
-        if tool == LINKAGE_MAPPER or tool == CLIMATE_TOOL:
+        if tool == Configure.TOOL_LM:
             self.lm_configured = config_lm(self, arg, self.SCRATCHDIR)
-        elif tool == BARRIER_TOOL:
+        elif tool == Configure.TOOL_CC:
+             config_climate(self, arg)
+        elif tool == Configure.TOOL_BM:
             config_barrier(self, arg)
-        elif tool == CIRCUITSCAPE:
+        elif tool == Configure.TOOL_CS:
             config_circuitscape(self, arg)
         else:
             raise RuntimeError('Undefined tool to configure')
