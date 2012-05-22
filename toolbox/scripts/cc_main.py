@@ -83,7 +83,7 @@ def main(argv=None):
         # Create core parings table
         core_parings = create_pair_tbl()
 
-        # Limit core pairs based upon cliamte threashold
+        # Limit core pairs based upon climate threashold        
         limit_cores(core_parings, climate_stats)
 
         # Calculate distances and generate link table for Linkage Mapper
@@ -274,6 +274,7 @@ def limit_cores(pair_tbl, stats_tbl):
                                         "PYTHON")
 
         # Filter distance table based on inputed threashold and delete rows
+        # Fix - keeep core parings
         arcpy.AddMessage("Filtering table based on threashold")
         diffu2std_fld = arcpy.AddFieldDelimiters(pair_vw, diffu_2std)
         expression = diffu2std_fld + " <= " + str(cc_env.climate_threashold)
@@ -363,7 +364,7 @@ def gen_link_table(parings):
                              + " other cores" + " (" + str(core_no + 1) + "/"
                              + no_cores + ")")
 
-            # Generate near table for these core pairings
+            # Generate near table for these core pairings               
             arcpy.GenerateNearTable_analysis(fcore_vw, tcore_vw, near_tbl,
                  cc_env.max_euc_dist, "NO_LOCATION", "NO_ANGLE", "ALL")
 
@@ -403,7 +404,7 @@ def gen_link_table(parings):
     finally:
         simplify_points = coresim + "_Pnt.shp"
         cc_util.delete_feature(simplify_points)
-
+        cc_util.delete_feature(near_tbl)
         if link_tbl:
             link_tbl.close()
         if srow:
