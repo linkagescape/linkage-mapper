@@ -38,14 +38,14 @@ def STEP2_build_network():
 
         # ------------------------------------------------------------------
         # adjacency file created from s1_getAdjacencies.py
-        if not path.exists(cfg.EUCADJFILE):
+        if cfg.S2ADJMETH_EU and not path.exists(cfg.EUCADJFILE):
             msg = ('\nERROR: Euclidean adjacency file required from '
                   'Step 1: ' + cfg.EUCADJFILE)
             lu.raise_error(msg)
 
         # ------------------------------------------------------------------
         # adjacency file created from s1_getAdjacencies.py
-        if not path.exists(cfg.CWDADJFILE):
+        if cfg.S2ADJMETH_CW and not path.exists(cfg.CWDADJFILE):
             msg = ('\nERROR: Cost-weighted adjacency file required from'
                               'Step 1: ' + cfg.CWDADJFILE)
             lu.raise_error(msg)
@@ -109,22 +109,23 @@ def STEP2_build_network():
 
         #----------------------------------------------------------------------
         # Get adjacencies using adj files from step 1.
-        cwdAdjTable = get_adj_list(cfg.CWDADJFILE)
-        cwdAdjList = []
-        for i in range(0, len(cwdAdjTable)):
-            listEntry = (str(cwdAdjTable[i, 0]) + '_' + str(cwdAdjTable[i, 1]))
-            cwdAdjList.append(listEntry)
-        gprint('Cost-weighted adjacency file loaded.')
-        maxCwdAdjCoreID = max(cwdAdjTable[:, 1])
-        del cwdAdjTable
+        if cfg.S2ADJMETH_CW or cfg.S2ADJMETH_EU:  # Keep ALL links
+            cwdAdjTable = get_adj_list(cfg.CWDADJFILE)
+            cwdAdjList = []
+            for i in range(0, len(cwdAdjTable)):
+                listEntry = (str(cwdAdjTable[i, 0]) + '_' + str(cwdAdjTable[i, 1]))
+                cwdAdjList.append(listEntry)
+            gprint('Cost-weighted adjacency file loaded.')
+            maxCwdAdjCoreID = max(cwdAdjTable[:, 1])
+            del cwdAdjTable
 
-        eucAdjTable = get_adj_list(cfg.EUCADJFILE)
-        eucAdjList = []
-        for i in range(0, len(eucAdjTable)):
-            listEntry = (str(eucAdjTable[i, 0]) + '_' + str(eucAdjTable[i, 1]))
-            eucAdjList.append(listEntry)
-        maxEucAdjCoreID = max(eucAdjTable[:, 1])
-        del eucAdjTable
+            eucAdjTable = get_adj_list(cfg.EUCADJFILE)
+            eucAdjList = []
+            for i in range(0, len(eucAdjTable)):
+                listEntry = (str(eucAdjTable[i, 0]) + '_' + str(eucAdjTable[i, 1]))
+                eucAdjList.append(listEntry)
+            maxEucAdjCoreID = max(eucAdjTable[:, 1])
+            del eucAdjTable
 
         # maxCoreId = max(maxEucAdjCoreID, maxCwdAdjCoreID, maxEucDistID)
 
@@ -133,17 +134,18 @@ def STEP2_build_network():
         gprint('Creating link table')
         linkTable[:, cfg.LTB_CWDADJ] = -1  # Euc adjacency not evaluated
         linkTable[:, cfg.LTB_EUCADJ] = -1
-        for x in range(0, linkTable.shape[0]):
-            listEntry = (str(linkTable[x, cfg.LTB_CORE1]) + '_' +
-                         str(linkTable[x, cfg.LTB_CORE2]))
-            if listEntry in cwdAdjList:
-                linkTable[x, cfg.LTB_CWDADJ] = 1
-            else:
-                linkTable[x, cfg.LTB_CWDADJ] = 0
-            if listEntry in eucAdjList:
-                linkTable[x, cfg.LTB_EUCADJ] = 1
-            else:
-                linkTable[x, cfg.LTB_EUCADJ] = 0
+        if cfg.S2ADJMETH_CW or cfg.S2ADJMETH_EU:  
+            for x in range(0, linkTable.shape[0]):
+                listEntry = (str(linkTable[x, cfg.LTB_CORE1]) + '_' +
+                             str(linkTable[x, cfg.LTB_CORE2]))
+                if listEntry in cwdAdjList:
+                    linkTable[x, cfg.LTB_CWDADJ] = 1
+                else:
+                    linkTable[x, cfg.LTB_CWDADJ] = 0
+                if listEntry in eucAdjList:
+                    linkTable[x, cfg.LTB_EUCADJ] = 1
+                else:
+                    linkTable[x, cfg.LTB_EUCADJ] = 0
 
         if cfg.S2ADJMETH_CW and cfg.S2ADJMETH_EU:  # "Keep all adjacent links"
             gprint("\nKeeping all adjacent links\n")
@@ -169,7 +171,7 @@ def STEP2_build_network():
             linkTable = lu.delete_row(linkTable, delRowsVector)
 
         else:  # For Climate Corridor tool
-            gprint("\nKeeping all links\n")
+            gprint("\nIgnoring adjacency and keeping all links\n")
 
         # if dropFlag:
             # lu.dashline(1)
@@ -325,6 +327,7 @@ def generate_distance_file():
 
         output = []
         csvseparator = "\t"
+        
 
         adjList = get_full_adj_list()
         # sourceCores = npy.unique(adjList[:, 0])
@@ -407,6 +410,21 @@ def print_conefor_warning():
 
 def get_full_adj_list():
     try:
+        if not cfg.S2ADJMETH_CW and not cfg.S2ADJMETH_EU:  # Keep ALL links
+            coreList = lu.get_core_list(cfg.COREFC, cfg.COREFN)
+            coreList = coreList[:,0]
+            gprint(str(coreList))
+            numCores = len(coreList)
+            adjList = npy.zeros((numCores*(numCores-1)/2,2), dtype="int32")
+            pairIndex = 0
+            for sourceIndex in range(0,numCores-1):
+                for targetIndex in range(sourceIndex + 1, numCores):
+                    adjList[pairIndex,0]=coreList[sourceIndex]
+                    adjList[pairIndex,1]=coreList[targetIndex]
+                    pairIndex = pairIndex + 1
+            gprint(str(adjList))
+            return adjList
+        
         cwdAdjList = get_adj_list(cfg.CWDADJFILE)
         eucAdjList = get_adj_list(cfg.EUCADJFILE)
         adjList = npy.append(eucAdjList, cwdAdjList, axis=0)
