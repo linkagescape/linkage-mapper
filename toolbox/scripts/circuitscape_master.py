@@ -34,15 +34,15 @@ def circuitscape_master():
     try:
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
-        cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, cfg.PARAMS) #xxx
+        cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, cfg.PARAMS) #xxx        
 
         # Check core ID field.
         lu.check_cores(cfg.COREFC, cfg.COREFN)
 
         gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
-        # Set data frame spatial reference to coordinate system of input data
+        # Set data frame spatial reference to coordinate system of input data 
         lu.set_dataframe_sr()
-
+        
         gp.pyramid = "NONE"
         gp.rasterstatistics = "NONE"
 
@@ -74,7 +74,7 @@ def circuitscape_master():
                 msg = ('ERROR: CWD cutoff distance is required for pinch point'
                         ' analyses.')
                 lu.raise_error(msg)
-
+            
             # Make a local grid copy of resistance raster-
             # will run faster than gdb.
             lu.delete_data(cfg.RESRAST)
@@ -82,11 +82,11 @@ def circuitscape_master():
                 msg = ('ERROR: Resistance raster is required for pinch point'
                         ' analyses, but was not found.')
                 lu.raise_error(msg)
-
+            
             desc = arcpy.Describe(cfg.RESRAST_IN)
             if hasattr(desc, "catalogPath"):
                 cfg.RESRAST_IN = arcpy.Describe(cfg.RESRAST_IN).catalogPath
-
+            
             arcpy.env.extent = cfg.RESRAST_IN
             arcpy.env.snapRaster = cfg.RESRAST_IN
             gprint('\nMaking local copy of resistance raster.')
@@ -117,18 +117,18 @@ def circuitscape_master():
                                         cfg.CIRCUITCONFIGDIR_NM)
 
 #aaa            lu.clean_out_workspace(cfg.PINCHGDB)
-#aaa            lu.delete_data(cfg.PINCHGDB)
+#aaa            lu.delete_data(cfg.PINCHGDB) 
             # for i in range (1,2):
                 # try:
-                    # s8.STEP8_calc_pinchpoints()
+                    # s8.STEP8_calc_pinchpoints()            
                     # break
                 # except:
                     # gprint('******************** Run failed ****************************')
                     # gprint('Trying one more time in 20 seconds.')
                     # lu.snooze(20)
                     # s8.STEP8_calc_pinchpoints()
-            s8.STEP8_calc_pinchpoints()
-
+            s8.STEP8_calc_pinchpoints()            
+            
             if not cfg.SAVE_TEMP_FILES:
                 lu.delete_dir(cfg.SCRATCHDIR)
             if not cfg.SAVECIRCUITDIR:

@@ -50,15 +50,20 @@ def STEP1_get_adjacencies():
         gp.scratchWorkspace = cfg.ARCSCRATCHDIR
         gp.workspace = cfg.PROJECTDIR
 
-        gprint('Adjacency files will be written to ' +
-                          cfg.ADJACENCYDIR)
-
-        #remove adj directory
+        #remove adj directory and files from previous runs
         lu.delete_dir(cfg.ADJACENCYDIR)
+        lu.delete_data(cfg.CWDADJFILE)
+        lu.delete_data(cfg.EUCADJFILE)
+        
+        if not cfg.S2ADJMETH_CW and not cfg.S2ADJMETH_EU:  
+            # Adjacency not needed      
+            return                                            
 
-        gp.CreateFolder_management(path.dirname(cfg.ADJACENCYDIR),
-                                       path.basename(cfg.ADJACENCYDIR))
-
+        lu.create_dir(cfg.ADJACENCYDIR)
+        
+        gprint('Adjacency files will be written to ' +
+                          cfg.ADJACENCYDIR)          
+                          
         # ------------------------------------------------------------------
         # Create bounding circles to limit cwd and allocation calculations
         if cfg.BUFFERDIST is not None:
@@ -118,6 +123,7 @@ def cwadjacency():
     try:
         ALLOC_RASFN = "CWD_alloc_ras"
 
+        
         gprint('\nCalculating cost-weighted distance adjacency')
         outcsvfile = cfg.CWDADJFILE
         outcsvLogfile = path.join(cfg.LOGDIR, "cwdAdj_STEP1.csv")

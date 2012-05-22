@@ -62,7 +62,6 @@ def config_global(config, arg):
     config.PARAMS = str(arg)  # Convert to string in case '\' exists
     config.releaseNum = ver.releaseNum
     config.LOGMESSAGES = True
-
     # File names, directory paths & folder names
     proj_dir = arg[1]
     config.PROJECTDIR = proj_dir  # Project directory
@@ -105,15 +104,16 @@ def config_global(config, arg):
     # Save individual focal grids for barrier analysis
     config.SAVEFOCALRASTERS = False
 
-    config.SAVEBARRIERRASTERS = True # Save individual barrier grids
-
     # Save individual current maps from Circuitscape
     config.SAVECURRENTMAPS = True
-
+        
     config.SAVECIRCUITDIR = True
     config.SAVE_TEMP_FILES = True
 
-    config.SAVEBARRIERDIR = False
+    # Save individual barrier grids    
+    config.SAVEBARRIERRASTERS = True 
+    config.SAVEBARRIERDIR = True
+    
     config.SAVECENTRALITYDIR = False
 
     # Write focal maps for barrier analysis

@@ -33,18 +33,11 @@ def bar_master():
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
 
-        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
+        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
                                              cfg.PARAMS)
 
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
-
-        # Delete final ouptut geodatabase
-        lu.clean_out_workspace(cfg.BARRIERGDB)
-        if not arcpy.Exists(cfg.BARRIERGDB):
-            # Create output geodatabase
-            arcpy.CreateFileGDB_management(cfg.OUTPUTDIR,
-                                           path.basename(cfg.BARRIERGDB))
 
         lu.create_dir(cfg.OUTPUTDIR)
         lu.delete_dir(cfg.SCRATCHDIR)
@@ -57,13 +50,22 @@ def bar_master():
         desc = arcpy.Describe(cfg.RESRAST_IN)
         if hasattr(desc, "catalogPath"):
             cfg.RESRAST_IN = arcpy.Describe(cfg.RESRAST_IN).catalogPath
-
+            
         arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
         arcpy.env.extent = cfg.RESRAST
         arcpy.env.snapRaster = cfg.RESRAST
-
+        
+        cfg.SUM_BARRIERS = False
+        lu.dashline(1)
+        gprint('Calculating maximum barrier effects across core area pairs')
         s6.STEP6_calc_barriers()
 
+        cfg.SUM_BARRIERS = True
+        gprint('')
+        lu.dashline()
+        gprint('Calculating SUM of barrier effects across core area pairs')
+        s6.STEP6_calc_barriers()
+        
         #clean up
         lu.delete_dir(cfg.SCRATCHDIR)
         if not cfg.SAVEBARRIERDIR:
