@@ -364,8 +364,7 @@ def gen_link_table(parings):
                              + " other cores" + " (" + str(core_no + 1) + "/"
                              + no_cores + ")")
 
-            # Generate near table for these core pairings   
-            pdb.set_trace()
+            # Generate near table for these core pairings               
             arcpy.GenerateNearTable_analysis(fcore_vw, tcore_vw, near_tbl,
                  cc_env.max_euc_dist, "NO_LOCATION", "NO_ANGLE", "ALL")
 
