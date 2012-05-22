@@ -127,6 +127,8 @@ def main(core_list):
     finally:
         os.environ['PATH'] = cur_path  # Revert to original windows path
         shutil.rmtree(gisdbase, True)
+        cc_util.delete_feature(climate_asc)
+        cc_util.delete_feature(resist_asc)
 
 
 def setup_wrkspace(gisdbase, location, geo_file):
