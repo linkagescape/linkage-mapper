@@ -55,16 +55,18 @@ def bar_master():
         arcpy.env.extent = cfg.RESRAST
         arcpy.env.snapRaster = cfg.RESRAST
         
-        cfg.SUM_BARRIERS = False
-        lu.dashline(1)
-        gprint('Calculating maximum barrier effects across core area pairs')
-        s6.STEP6_calc_barriers()
+        if cfg.BARRIER_METH_MAX:
+            cfg.SUM_BARRIERS = False
+            lu.dashline(1)
+            gprint('Calculating MAXIMUM barrier effects across core area pairs')
+            s6.STEP6_calc_barriers()
 
-        cfg.SUM_BARRIERS = True
-        gprint('')
-        lu.dashline()
-        gprint('Calculating SUM of barrier effects across core area pairs')
-        s6.STEP6_calc_barriers()
+        if cfg.BARRIER_METH_SUM:
+            cfg.SUM_BARRIERS = True
+            gprint('')
+            lu.dashline()
+            gprint('Calculating SUM of barrier effects across core area pairs')
+            s6.STEP6_calc_barriers()
         
         #clean up
         lu.delete_dir(cfg.SCRATCHDIR)

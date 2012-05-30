@@ -117,7 +117,7 @@ def config_global(config, arg):
     config.SAVECENTRALITYDIR = False
 
     # Write focal maps for barrier analysis
-    config.WRITE_VOLT_MAPS = True
+    config.WRITE_VOLT_MAPS = False
 
     config.FCORES = "fcores"
 
@@ -248,6 +248,16 @@ def config_barrier(config, arg):
     config.STARTRADIUS = arg[3]
     config.ENDRADIUS = arg[4]
     config.RADIUSSTEP = arg[5]
+    config.BARRIER_METH = arg[6]
+    if 'max' in config.BARRIER_METH.lower():
+        config.BARRIER_METH_MAX = True
+    else:
+        config.BARRIER_METH_MAX = False
+    if 'sum' in config.BARRIER_METH.lower():
+        config.BARRIER_METH_SUM = True
+    else:
+        config.BARRIER_METH_SUM = False           
+    
     if config.RADIUSSTEP == GP_NULL:
         config.RADIUSSTEP = 0
     config.STEP1 = False
@@ -260,22 +270,27 @@ def config_circuitscape(config, arg):
     """Configure global variables for Circuitscape"""
     config.COREFC = arg[2]
     config.COREFN = arg[3]
-    config.DOCENTRALITY = str2bool(arg[4])
-    config.DOPINCH = str2bool(arg[5])
-    config.RESRAST_IN = arg[6]
-    config.CWDCUTOFF = int(nullfloat(arg[7]))  # CDW cutoff distance
-    config.SQUARERESISTANCES = str2bool(arg[8])  # Square resistance values
+    
+    if len(arg) == 4:
+        config.DOCENTRALITY = True
+        config.DOPINCH = False
+    else:
+        config.DOPINCH = True
+        config.DOCENTRALITY = False
+        config.RESRAST_IN = arg[4]        
+        config.CWDCUTOFF = int(nullfloat(arg[5]))  # CDW cutoff distance
+        config.SQUARERESISTANCES = str2bool(arg[6])  # Square resistance values
 
-    # Do adjacent pair corridor pinchpoint calculations using raster CWD maps
-    config.DO_ADJACENTPAIRS = str2bool(arg[9])
-    # Do all-pair current calculations using raster corridor map
-    config.DO_ALLPAIRS = str2bool(arg[10])
-    config.ALL_PAIR_CHOICE = arg[11]
-    if config.DO_ALLPAIRS == True:
-        if "pairwise" in config.ALL_PAIR_CHOICE:
-            config.ALL_PAIR_SCENARIO = 'pairwise'
-        else:
-            config.ALL_PAIR_SCENARIO = 'all-to-one'
+        # Do adjacent pair corridor pinchpoint calculations using raster CWD maps
+        config.DO_ADJACENTPAIRS = str2bool(arg[7])
+        # Do all-pair current calculations using raster corridor map
+        config.DO_ALLPAIRS = str2bool(arg[8])
+        config.ALL_PAIR_CHOICE = arg[9]
+        if config.DO_ALLPAIRS == True:
+            if "pairwise" in config.ALL_PAIR_CHOICE.lower():
+                config.ALL_PAIR_SCENARIO = 'pairwise'
+            else:
+                config.ALL_PAIR_SCENARIO = 'all-to-one'
 
     config.STEP1 = False
 
@@ -299,10 +314,11 @@ class Configure(object):
     def configure(self, tool, arg):
         """Setup variables for Configure class"""
         config_global(self, arg)
+
         if tool == Configure.TOOL_LM:
             self.lm_configured = config_lm(self, arg, self.SCRATCHDIR)
         elif tool == Configure.TOOL_CC:
-             config_climate(self, arg)
+            config_climate(self, arg)
         elif tool == Configure.TOOL_BM:
             config_barrier(self, arg)
         elif tool == Configure.TOOL_CS:

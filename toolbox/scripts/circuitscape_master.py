@@ -20,7 +20,6 @@ import lm_util as lu
 import s7_centrality as s7
 import s8_pinchpoints as s8
 
-
 _SCRIPT_NAME = "circuitscape_master.py"
 
 
@@ -28,9 +27,9 @@ def circuitscape_master():
     """
 
     """
-    cfg.configure(cfg.TOOL_CC, sys.argv)
-    gp = cfg.gp
     gprint = lu.gprint
+    cfg.configure(cfg.TOOL_CS, sys.argv)
+    gp = cfg.gp
     try:
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
@@ -116,17 +115,6 @@ def circuitscape_master():
             gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
                                         cfg.CIRCUITCONFIGDIR_NM)
 
-#aaa            lu.clean_out_workspace(cfg.PINCHGDB)
-#aaa            lu.delete_data(cfg.PINCHGDB) 
-            # for i in range (1,2):
-                # try:
-                    # s8.STEP8_calc_pinchpoints()            
-                    # break
-                # except:
-                    # gprint('******************** Run failed ****************************')
-                    # gprint('Trying one more time in 20 seconds.')
-                    # lu.snooze(20)
-                    # s8.STEP8_calc_pinchpoints()
             s8.STEP8_calc_pinchpoints()            
             
             if not cfg.SAVE_TEMP_FILES:
