@@ -7,8 +7,6 @@ Assigns input parameters from ToolBox to variables, and sets constants
 
 """
 
-# $Revision$
-
 import os
 import sys
 
