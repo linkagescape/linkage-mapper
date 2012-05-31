@@ -42,7 +42,7 @@ def main(argv=None):
     stime = datetime.now()
 
     arcpy.AddMessage("CLIMATE CORRIDOR " + __version__)
-    arcpy.AddMessage("Start time: " + stime.strftime(tformat))
+    arcpy.AddMessage("Start time: " + stime.strftime(tformat) + "\n")
 
     zonal_tbl = "zstats.dbf"
 
@@ -83,36 +83,42 @@ def main(argv=None):
         # Create core parings table
         core_parings = create_pair_tbl()
 
-        # Limit core pairs based upon cliamte threashold
+        # Limit core pairs based upon climate threashold
         limit_cores(core_parings, climate_stats)
 
         # Calculate distances and generate link table for Linkage Mapper
         grass_cores = gen_link_table(core_parings)
 
         # Create CWD using Grass
-        cc_grass_cwd.main(grass_cores)
+        cc_grass_cwd.grass_cwd(grass_cores)
 
         # Run Linkage Mapper
         arcpy.AddMessage("\nRUNNING LINKAGE MAPPER "
                          "TO CREATE CLIMATE CORRIDORS")
 
         lm_master.lm_master(lm_arg)
+        return 0
 
     except arcpy.ExecuteError:
-        msgs = "\nArcPy ERRORS\n" + arcpy.GetMessages(2)
-        arcpy.AddError(msgs)
-        tb = sys.exc_info()[2]
-        pymsg = ("Traceback\n" + str(traceback.format_tb(tb)[0]))
-        arcpy.AddError(pymsg)
+        arcpy.AddMessage("")
+        arcpy.AddError(arcpy.GetMessages(2))
+        exc_traceback = sys.exc_info()[2]
+        arcpy.AddMessage("Traceback (most recent call last):\n" +
+                         "".join(traceback.format_tb(exc_traceback)[:-1]))
+        return 1
     except Exception:
-        pymsg = ("\nPYTHON ERRORS\n" + traceback.format_exc())
-        arcpy.AddError(pymsg)
+        arcpy.AddMessage("")
+        exc_value, exc_traceback  = sys.exc_info()[1:]
+        arcpy.AddError(exc_value)
+        arcpy.AddMessage("Traceback (most recent call last):\n" +
+                         "".join(traceback.format_tb(exc_traceback)))
+        return 1
     finally:
         arcpy.CheckInExtension("Spatial")
         etime = datetime.now()
         rtime = etime - stime
-        hours, minutes = ((rtime.days * 24 + rtime.seconds//3600),
-                       (rtime.seconds//60)%60)
+        hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
+                       (rtime.seconds // 60) % 60)
         arcpy.AddMessage("End time: " + etime.strftime(tformat))
         arcpy.AddMessage('Elapsed time: %s hrs %s mins' % (hours, minutes))
 
@@ -122,7 +128,6 @@ def cc_clip_inputs():
     ext_poly = "ext_poly.shp"  # Extent polygon
     try:
         arcpy.AddMessage("\nCLIPPING TO SMALLEST EXTENT")
-
         # Set environment so that smallest extent is used
         arcpy.env.extent = "MINOF"
 
@@ -188,8 +193,8 @@ def create_pair_tbl():
 
         return cpair_tbl
 
-    except:
-            raise
+    except Exception:
+        raise
     finally:
         if srow:
             del srow
@@ -274,6 +279,7 @@ def limit_cores(pair_tbl, stats_tbl):
                                         "PYTHON")
 
         # Filter distance table based on inputed threashold and delete rows
+        # Fix - keeep core parings
         arcpy.AddMessage("Filtering table based on threashold")
         diffu2std_fld = arcpy.AddFieldDelimiters(pair_vw, diffu_2std)
         expression = diffu2std_fld + " <= " + str(cc_env.climate_threashold)
@@ -284,7 +290,7 @@ def limit_cores(pair_tbl, stats_tbl):
             arcpy.DeleteRows_management(pair_vw)
         arcpy.AddMessage(str(rows_del) + " rows deleted")
 
-    except:
+    except Exception:
         raise
     finally:
         cc_util.delete_feature(stats_vw)
@@ -329,10 +335,10 @@ def gen_link_table(parings):
         core_pairs = []
         srows = arcpy.SearchCursor(parings, "", "", FR_COL + "; " + TO_COL)
         for srow in srows:
-           from_core = srow.getValue(FR_COL)
-           to_core = str(srow.getValue(TO_COL))
-           frm_cores.add(from_core)
-           core_pairs.append([str(from_core), to_core])
+            from_core = srow.getValue(FR_COL)
+            to_core = str(srow.getValue(TO_COL))
+            frm_cores.add(from_core)
+            core_pairs.append([str(from_core), to_core])
         # del srows, srow
         frm_cores = map(str, sorted(frm_cores))
 
@@ -356,7 +362,7 @@ def gen_link_table(parings):
             # To cores
             to_cores_lst = [x[1] for x in core_pairs if frm_core == x[0]]
             to_cores = ', '.join(to_cores_lst)
-            expression = coreid_fld + " in (" +  to_cores + ")"
+            expression = coreid_fld + " in (" + to_cores + ")"
             arcpy.MakeFeatureLayer_management(corefc, tcore_vw, expression)
             arcpy.AddMessage("Calculating Euclidean distance/s from core "
                              + frm_core + " to " + str(len(to_cores_lst))
@@ -398,12 +404,12 @@ def gen_link_table(parings):
 
         return sorted(core_list)
 
-    except:
+    except Exception:
         raise
     finally:
         simplify_points = coresim + "_Pnt.shp"
         cc_util.delete_feature(simplify_points)
-
+        cc_util.delete_feature(near_tbl)
         if link_tbl:
             link_tbl.close()
         if srow:
