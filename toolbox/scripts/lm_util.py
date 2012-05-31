@@ -500,6 +500,8 @@ def combine_adjacency_tables(adjTable_r, adjTable_u, adjTable_ur, adjTable_ul):
 def get_allocs_from_shift(workspace, alloc, alloc_sh):
     """Returns a table of adjacent allocation zones using grid shift method"""
     try:
+        gp.scratchWorkspace = cfg.ARCSCRATCHDIR
+        gp.workspace = workspace
         combine_ras = os.path.join(gp.workspace, "combine")
         count = 0
         statement = ('gp.SingleOutputMapAlgebra_sa("combine(" + alloc + '
@@ -1553,7 +1555,7 @@ def set_dataframe_sr():
     try:
         sr = arcpy.Describe(cfg.COREFC).spatialReference
         gprint('Setting data frame spatial reference to that of '
-                'core area featureclass')
+                'core area feature class.')
     except:
         try:
             sr = arcpy.Describe(cfg.RESRAST).spatialReference

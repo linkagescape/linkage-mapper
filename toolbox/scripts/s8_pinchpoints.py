@@ -117,6 +117,13 @@ def STEP8_calc_pinchpoints():
                                   cfg.CIRCUITOUTPUTDIR_NM)
         CONFIGDIR = path.join(INCIRCUITDIR, cfg.CIRCUITCONFIGDIR_NM)
 
+        # Cutoff value text to append to filenames
+        cutoffText = str(cfg.CWDCUTOFF)
+        if cutoffText[-6:] == '000000':
+            cutoffText = cutoffText[0:-6]+'m' 
+        elif cutoffText[-3:] == '000':
+            cutoffText = cutoffText[0:-3]+'k' 
+
         if cfg.SQUARERESISTANCES:
             # Square resistance values
             squaredRaster = path.join(cfg.SCRATCHDIR,'res_sqr')
@@ -313,12 +320,13 @@ def STEP8_calc_pinchpoints():
                     lu.delete_file(resNpyFile)
                     lu.delete_data(currentRaster) 
                     lu.delete_dir(linkDir) 
-                gprint('Finished with link #' + str(linkId))
+                gprint('Finished with link ID #' + str(linkId) + '. ' + 
+                        str(linkLoop) + ' out of ' + str(numCorridorLinks) + 
+                        ' links have been processed.')
                 start_time1 = lu.elapsed_time(start_time1)
-
-            
+                
             outputRaster = path.join(outputGDB,
-                                     cfg.PREFIX + "_current_adjacent_pairs_"+str(cfg.CWDCUTOFF))
+                                     cfg.PREFIX + "_current_adjacent_pairs_"+cutoffText)
             lu.delete_data(outputRaster)
             statement = 'arcpy.CopyRaster_management(mosaicRaster, outputRaster)'
             count = 0
@@ -334,7 +342,6 @@ def STEP8_calc_pinchpoints():
                                   'for corridor pinch point raster\n')
             lu.build_stats(outputRaster)
             
-            blarg #xxx
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=5,
                                                       thisStep=8)
 
@@ -436,9 +443,9 @@ def STEP8_calc_pinchpoints():
         currentFNs = ['Circuitscape_cum_curmap.npy',
                       'Circuitscape_max_curmap.npy']
         if options['scenario']=='pairwise':
-            rasterSuffixes =  ["_cum_current_all_pairs_"+str(cfg.CWDCUTOFF),"_max_current_all_pairs_"+str(cfg.CWDCUTOFF)]
+            rasterSuffixes =  ["_cum_current_all_pairs_"+cutoffText,"_max_current_all_pairs_"+cutoffText]
         else:
-            rasterSuffixes =  ["_cum_current_all_to_one_"+str(cfg.CWDCUTOFF),"_max_current_all_to_one_"+str(cfg.CWDCUTOFF)]
+            rasterSuffixes =  ["_cum_current_all_to_one_"+cutoffText,"_max_current_all_to_one_"+cutoffText]
         
         for i in range(0,2):
             currentFN = currentFNs[i]

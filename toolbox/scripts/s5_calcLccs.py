@@ -376,7 +376,7 @@ def calc_lccs(normalize):
 
         # ---------------------------------------------------------------------
         # convert mosaic raster to integer
-        intRaster = outputGDB + '\\' + PREFIX + mosaicBaseName
+        intRaster = path.join(outputGDB,PREFIX + mosaicBaseName)
         if arcpy:
             statement = ('outras = Int(Raster(mosaicRaster) - offset + 0.5); ' 
                         'outras.save(intRaster)')
@@ -398,8 +398,15 @@ def calc_lccs(normalize):
         if writeTruncRaster:
             # -----------------------------------------------------------------
             # Set anything beyond cfg.CWDTHRESH to NODATA.
+            cutoffText = str(cfg.CWDTHRESH)
+            if cutoffText[-6:] == '000000':
+                cutoffText = cutoffText[0:-6]+'m' 
+            elif cutoffText[-3:] == '000':
+                cutoffText = cutoffText[0:-3]+'k' 
+            
             truncRaster = (outputGDB + '\\' + PREFIX + mosaicBaseName + 
-                          "_truncated_values")
+                           '_truncated_at_' + cutoffText)
+
             count = 0
             if arcpy:
                 statement = ('outRas = Raster(intRaster) * '
