@@ -9,7 +9,6 @@ import os
 import sys
 import shutil
 import subprocess
-import pdb
 
 import arcpy
 import grass.script as grass
@@ -75,8 +74,7 @@ def setup_wrkspace(gisdbase, geo_file):
 
     os.environ['GISRC'] = os.path.join(cc_env.code_dir, "ccr_grassrc")
     os.environ['LD_LIBRARY_PATH'] = os.path.join(gisbase, "lib")
-    os.environ['GRASS_SH'] = os.path.join(gisbase, "msys", "bin", "sh.exe")
-    # os.environ['PYTHONLIB']
+    os.environ['GRASS_SH'] = os.path.join(gisbase, "msys", "bin", "sh.exe")    
 
     env_list = os.environ['PATH'].split(';')
     env_list.insert(0, os.path.join(gisbase, "msys", "bin"))
@@ -90,9 +88,13 @@ def setup_wrkspace(gisdbase, geo_file):
     mapset = "PERMANENT"
 
     gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
-                                shell=True).stdout.read()
+                            shell=True).stdout.read()
     arcpy.AddMessage("GDAL DLL/s: " + gdal)
 
+    os_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
+                            shell=True).stdout.read()
+    arcpy.AddMessage("Path: " + os_path)
+    
     grass.create_location(gisdbase, location, filename=geo_file)
     gsetup.init(gisbase, gisdbase, location, mapset)
     grass.run_command("g.gisenv", set="OVERWRITE=1")

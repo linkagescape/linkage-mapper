@@ -16,9 +16,7 @@ import os
 import sys
 import csv
 import itertools
-from datetime import datetime, timedelta
 import traceback
-import pdb
 
 import arcpy
 import arcpy.sa as sa
@@ -30,7 +28,7 @@ from lm_config import tool_env as lm_env
 import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.0.5"
+__version__ = "0.1.0"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
@@ -38,11 +36,7 @@ TO_COL = "To_Core"
 
 def main(argv=None):
     """Main function for Climate Corridor tool"""
-    tformat = "%m/%d/%y %H:%M:%S"
-    stime = datetime.now()
-
-    arcpy.AddMessage("CLIMATE CORRIDOR " + __version__)
-    arcpy.AddMessage("Start time: " + stime.strftime(tformat) + "\n")
+    arcpy.AddMessage("\nCLIMATE CORRIDOR " + __version__)
 
     zonal_tbl = "zstats.dbf"
 
@@ -54,11 +48,12 @@ def main(argv=None):
         import cc_grass_cwd
 
         # Check out the ArcGIS Spatial Analyst extension license
-        #arcpy.AddMessage(arcpy.ProductInfo())
-        arcpy.CheckOutExtension("Spatial")
+        if arcpy.CheckExtension("Spatial") == "Available":
+           arcpy.CheckOutExtension("Spatial")
+        else:
+            raise
 
         # Setup workspace
-        arcpy.AddMessage("Creating output folder - " + cc_env.out_dir)
         arcpy.env.overwriteOutput = True
         cc_util.mk_proj_dir(cc_env.out_dir)
         arcpy.env.workspace = cc_env.out_dir
@@ -67,8 +62,8 @@ def main(argv=None):
         # Configure Linkage Mapper
         lm_arg = (_SCRIPT_NAME, lm_outdir, cc_env.prj_core_fc, cc_env.core_fld,
                   cc_env.prj_resist_rast, "false", "false", "#", "#", "true",
-                  "false", "false", "4", "Cost-Weighted", "true", "true", "#",
-                  "#", "#")
+                  "false", cc_env.prune_network, cc_env.max_nn, cc_env.nn_unit,
+                  cc_env.keep_constelations, "true", "#", "#", "#")
         lm_env.configure(lm_env.TOOL_CC, lm_arg)
         lm_util.create_dir(lm_env.DATAPASSDIR)
 
@@ -96,7 +91,7 @@ def main(argv=None):
         arcpy.AddMessage("\nRUNNING LINKAGE MAPPER "
                          "TO CREATE CLIMATE CORRIDORS")
 
-        lm_master.lm_master(lm_arg)
+        lm_master.lm_master()
         return 0
 
     except arcpy.ExecuteError:
@@ -115,12 +110,6 @@ def main(argv=None):
         return 1
     finally:
         arcpy.CheckInExtension("Spatial")
-        etime = datetime.now()
-        rtime = etime - stime
-        hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
-                       (rtime.seconds // 60) % 60)
-        arcpy.AddMessage("End time: " + etime.strftime(tformat))
-        arcpy.AddMessage('Elapsed time: %s hrs %s mins' % (hours, minutes))
 
 
 def cc_clip_inputs():
@@ -129,24 +118,27 @@ def cc_clip_inputs():
     try:
         arcpy.AddMessage("\nCLIPPING TO SMALLEST EXTENT")
         # Set environment so that smallest extent is used
-        arcpy.env.extent = "MINOF"
 
-        # Check if resistance raster is an input and get full path of input
-        # raster/s in case they are raster layers (required for conversion)
-        if cc_env.resist_rast is None:
-            rast_list = arcpy.Describe(cc_env.climate_rast).catalogPath
-        else:
-            rast_list = (arcpy.Describe(cc_env.climate_rast).catalogPath + ";"
-                        + arcpy.Describe(cc_env.resist_rast).catalogPath)
-            cc_util.delete_feature(cc_env.prj_resist_rast)
-        cc_util.delete_feature(cc_env.prj_climate_rast)
+        # Set to minimum extent if resistance raster exists
+        if cc_env.resist_rast is not None:
+            climate_extent = arcpy.Raster(cc_env.climate_rast).extent
+            resist_extent = arcpy.Raster(cc_env.resist_rast).extent
+            xmin = max(climate_extent.XMin, resist_extent.XMin)
+            ymin = max(climate_extent.YMin, resist_extent.YMin)
+            xmax = min(climate_extent.XMax, resist_extent.XMax)
+            ymax = min(climate_extent.YMax, resist_extent.YMax)
+            arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
 
-        arcpy.RasterToOtherFormat_conversion(rast_list, cc_env.out_dir, "GRID")
+        arcpy.CopyRaster_management(cc_env.climate_rast,
+                                    cc_env.prj_climate_rast)
+        arcpy.CopyRaster_management(cc_env.resist_rast,
+                                    cc_env.prj_resist_rast)
+
         arcpy.env.extent = None
 
-        # Create project area raster
+        # Create project area raster        
         proj_area_rast = sa.Con(sa.IsNull(cc_env.prj_climate_rast),
-                                sa.Int(cc_env.prj_climate_rast), 1)
+                               sa.Int(cc_env.prj_climate_rast), 1)
         proj_area_rast.save(cc_env.prj_area_rast)
 
         # Clip core feature class
