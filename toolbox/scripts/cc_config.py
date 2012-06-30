@@ -10,12 +10,14 @@ Assigns input parameters from ToolBox to variables, and sets constants
 import os
 import sys
 
+
 def nullstring(arg_string):
     """Convert ESRI nullstring to Python null"""
     if arg_string == "#":
         arg_string = None
     return arg_string
 
+        
 class ClimateConfig():
     """Class container to holdreu Climate Tool global variables"""
 
@@ -27,6 +29,12 @@ class ClimateConfig():
         self.core_fld = arg[3]  # Core area field name
         self.climate_rast = arg[4]  # Climate raster (+ path)
         self.resist_rast = nullstring(arg[5])  # Resistance raster (+ path)
+
+        # Prune network settings
+        self.prune_network = arg[11]
+        self.max_nn = arg[12]  # No of connected nearest neighbors        
+        self.nn_unit = arg[13] # NN Unit
+        self.keep_constelations = arg[14]
 
         # Setup GRASS base folder environmental setting
         self.gisbase = os.environ['GISBASE'] = arg[6]  # GRASS path
