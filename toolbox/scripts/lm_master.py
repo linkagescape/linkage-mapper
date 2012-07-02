@@ -34,11 +34,10 @@ def lm_master(argv=None):
     5 processing steps.
 
     """
-    if argv is None:
-        argv = sys.argv
-
     # Setup global variables
     if not cfg.lm_configured:
+        if argv is None:
+            argv = sys.argv        
         cfg.configure(cfg.TOOL_LM, argv)
 
     gp = cfg.gp
