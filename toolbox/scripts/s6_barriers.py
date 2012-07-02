@@ -35,7 +35,6 @@ def STEP6_calc_barriers():
 # Fixme: add option to save individual barrier files?
     gprint = lu.gprint
     try:
-        #cfg.SUM_BARRIERS = True
         arcpy.CheckOutExtension("spatial")
 
         lu.dashline(0)
@@ -81,9 +80,10 @@ def STEP6_calc_barriers():
         arcpy.env.cellSize = cfg.RESRAST
         arcpy.env.snapRaster = cfg.RESRAST
         spatialref = arcpy.Describe(cfg.RESRAST).spatialReference                
-        mapUnits = spatialref.linearUnitName
-        
-        
+        mapUnits = (str(spatialref.linearUnitName)).lower()
+        if len(mapUnits) > 1 and mapUnits[-1] != 's':
+            mapUnits = mapUnits + 's'
+
         if float(arcpy.env.cellSize) > startRadius or startRadius > endRadius:
             msg = ('Error: minimum detection radius must be greater than '
                     'cell size (' + str(arcpy.env.cellSize) +
@@ -214,42 +214,67 @@ def STEP6_calc_barriers():
                     barrierRaster = path.join(cbarrierdir, "b" + str(radius)
                           + "_" + str(corex) + "_" +
                           str(corey)+'.tif') 
-                    #Calculate potential benefit per map unit restored
-                    statement = ('outRas = ((lcDist - Raster(focalRaster1) - '
+                         
+                    if cfg.SUM_BARRIERS: # Need to set nulls to 0, also 
+                                         # create trim rasters as we go
+
+                        outRas = ((lcDist - Raster(focalRaster1) - 
+                        Raster(focalRaster2) - dia) / dia)
+                        outCon = arcpy.sa.Con(IsNull(outRas),0,outRas)
+                        outCon2 = arcpy.sa.Con(outCon<0,0,outCon)
+                        outCon2.save(barrierRaster)
+                        
+                        # Execute FocalStatistics to fill out search radii                            
+                        InNeighborhood = "CIRCLE " + str(outerRadius) + " MAP"
+                        fillRaster = path.join(cbarrierdir, "b" + str(radius)
+                        + "_" + str(corex) + "_" + str(corey) +"_fill.tif")
+                        outFocalStats = arcpy.sa.FocalStatistics(barrierRaster,
+                                              InNeighborhood, "MAXIMUM","DATA")
+                        outFocalStats.save(fillRaster)                            
+
+                        if cfg.WRITE_TRIM_RASTERS:                            
+                            trmRaster = path.join(cbarrierdir, "b" + str(radius)
+                            + "_" + str(corex) + "_" + str(corey) +"_trim.tif")
+                            rasterList = [fillRaster, resistFillRaster]
+                            outCellStatistics = arcpy.sa.CellStatistics(rasterList, "MINIMUM")
+                            outCellStatistics.save(trmRaster)
+                        
+                        
+                    else:
+                        #Calculate potential benefit per map unit restored
+                        statement = ('outRas = ((lcDist - Raster(focalRaster1) - '
                                  'Raster(focalRaster2) - dia) / dia); '
                                  'outRas.save(barrierRaster)')
-                         
-                    if cfg.SUM_BARRIERS: # Need to set nulls to 0
-                        statement = ('outRas = ((lcDist - Raster(focalRaster1) - '
-                                 'Raster(focalRaster2) - dia) / dia);'
-                                 'outCon = arcpy.sa.Con(IsNull(outRas),0,outRas); '
-                                 'outCon.save(barrierRaster)')
 
-                    count = 0
-                    while True:
-                        try:
-                            exec statement
-                        except:
-                            count,tryAgain = lu.retry_arc_error(count,statement)
-                            if not tryAgain:
+                        # statement = ('outRas = ((lcDist - Raster(focalRaster1) - '
+                                 # 'Raster(focalRaster2) - dia)); '
+                                 # 'outRas.save(barrierRaster)')                                 
+                        count = 0
+                        while True:
+                            try:
                                 exec statement
-                        else: break
+                            except:
+                                count,tryAgain = lu.retry_arc_error(count,statement)
+                                if not tryAgain:
+                                    exec statement
+                            else: break
                 
-                    #Calculate PERCENT potential benefit per map unit restored                        
-                    barrierRasterPct = path.join(cbarrierdir, "b" + str(radius)
-                          + "_" + str(corex) + "_" +
-                          str(corey)+'_pct.tif') 
-                    statement = ('outras = (100 * (Raster(barrierRaster) / lcDist)); '
-                                 'outras.save(barrierRasterPct)')
-                    count = 0
-                    while True:
-                        try:
-                            exec statement
-                        except:
-                            count,tryAgain = lu.retry_arc_error(count,statement)
-                            if not tryAgain:
+                    if cfg.WRITE_PCT_RASTERS:
+                        #Calculate PERCENT potential benefit per map unit restored                        
+                        barrierRasterPct = path.join(cbarrierdir, "b" + str(radius)
+                              + "_" + str(corex) + "_" +
+                              str(corey)+'_pct.tif') 
+                        statement = ('outras = (100 * (Raster(barrierRaster) / lcDist)); '
+                                     'outras.save(barrierRasterPct)')
+                        count = 0
+                        while True:
+                            try:
                                 exec statement
-                        else: break
+                            except:
+                                count,tryAgain = lu.retry_arc_error(count,statement)
+                                if not tryAgain:
+                                    exec statement
+                            else: break
                     
                     # Mosaic barrier results across core area pairs                    
                     mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1)) 
@@ -257,19 +282,30 @@ def STEP6_calc_barriers():
                     
                     mosFN = 'mos_temp'
                     tempMosaicRaster = path.join(mosaicDir,mosFN)
+                    tempMosaicRasterTrim = path.join(mosaicDir,'mos_temp_trm')
                     arcpy.env.workspace = mosaicDir            
                     if linkLoop == 1:
                         #If this is the first grid then copy rather than mosaic
-                        if cfg.SUM_BARRIERS:
-                            outCon = arcpy.sa.Con(Raster(barrierRaster) < 0, 0,
-                            arcpy.sa.Con(IsNull(barrierRaster),0,barrierRaster)) 
-                            outCon.save(tempMosaicRaster)
-                        else:
-                            arcpy.CopyRaster_management(barrierRaster, 
+                        arcpy.CopyRaster_management(barrierRaster, 
                                                         tempMosaicRaster)
+                        if cfg.SUM_BARRIERS and cfg.WRITE_TRIM_RASTERS:
+                            arcpy.CopyRaster_management(trmRaster, 
+                                                        tempMosaicRasterTrim)                       
+                        
+
                     else:                
                         if cfg.SUM_BARRIERS:
-                            statement = ('outCon = arcpy.sa.Con(Raster(barrierRaster) < 0, lastMosaicRaster, Raster(barrierRaster) + Raster(lastMosaicRaster));outCon.save(tempMosaicRaster)')                            #fixme: temp may be nodata                        
+                            outCon = arcpy.sa.Con(Raster
+                            (barrierRaster) < 0, lastMosaicRaster, 
+                            Raster(barrierRaster) + Raster
+                            (lastMosaicRaster))
+                            outCon.save(tempMosaicRaster)#) #fixme: temp may be nodata                        
+                            if cfg.WRITE_TRIM_RASTERS:
+                                outCon = arcpy.sa.Con(Raster
+                                (trmRaster) < 0, lastMosaicRasterTrim, 
+                                Raster(lastMosaicRasterTrim) + Raster(trmRaster))                            
+                                outCon.save(tempMosaicRasterTrim)   
+                                
                         else:
                             rasterString = '"'+barrierRaster+";"+lastMosaicRaster+'"'
                             statement = ('arcpy.MosaicToNewRaster_management('
@@ -277,65 +313,69 @@ def STEP6_calc_barriers():
                                     '"32_BIT_FLOAT", arcpy.env.cellSize, "1", "MAXIMUM", '
                                     '"MATCH")') 
 
-                        count = 0
-                        while True:
-                            try:
-                                exec statement
-                            except:
-                                count,tryAgain = lu.retry_arc_error(count,statement)
-                                lu.delete_data(tempMosaicRaster)
-                                lu.delete_dir(mosaicDir)
-                                # Try a new directory
-                                mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1) + '_' + str(count)) 
-                                lu.create_dir(mosaicDir)
-                                arcpy.env.workspace = mosaicDir            
-                                tempMosaicRaster = path.join(mosaicDir,mosFN)              
-                                if not tryAgain:    
+                            count = 0
+                            while True:
+                                try:
                                     exec statement
-                            else: break
+                                except:
+                                    count,tryAgain = lu.retry_arc_error(count,statement)
+                                    lu.delete_data(tempMosaicRaster)
+                                    lu.delete_dir(mosaicDir)
+                                    # Try a new directory
+                                    mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1) + '_' + str(count)) 
+                                    lu.create_dir(mosaicDir)
+                                    arcpy.env.workspace = mosaicDir            
+                                    tempMosaicRaster = path.join(mosaicDir,mosFN)              
+                                    if not tryAgain:    
+                                        exec statement
+                                else: break
 
                     lastMosaicRaster = tempMosaicRaster
-                                 
-                    mosPctFN = 'mos_temp_pct'
-                    tempMosaicRasterPct = path.join(mosaicDir,mosPctFN)
-
-                    if linkLoop == 1:
-                        #If this is the first grid then copy rather than mosaic
-                        if cfg.SUM_BARRIERS:
-                            outCon = arcpy.sa.Con(Raster(barrierRasterPct) < 0, 0,
-                                arcpy.sa.Con(IsNull(barrierRasterPct),0,barrierRasterPct)) 
-                            outCon.save(tempMosaicRasterPct)
-                        else:
-                            arcpy.CopyRaster_management(barrierRasterPct, 
-                                                     tempMosaicRasterPct)
-                                        
-                    else:                
-                        if cfg.SUM_BARRIERS:
-                            statement = ('outCon = arcpy.sa.Con(Raster(barrierRasterPct) < 0, lastMosaicRasterPct, Raster(barrierRasterPct) + Raster(lastMosaicRasterPct));'
-                                         'outCon.save(tempMosaicRasterPct)')
-                        else:
-                            rasterString = '"'+barrierRasterPct+";"+lastMosaicRasterPct+'"'
-                            statement = ('arcpy.MosaicToNewRaster_management('
-                                    'rasterString,mosaicDir,mosPctFN, "", '
-                                    '"32_BIT_FLOAT", arcpy.env.cellSize, "1", "MAXIMUM", '
-                                    '"MATCH")') 
-                        
-                        count = 0
-                        while True:
-                            try:
-                                exec statement
-                            except:
-                                count,tryAgain = lu.retry_arc_error(count,statement)
-                                if not tryAgain:    
+                    if cfg.WRITE_TRIM_RASTERS:
+                        lastMosaicRasterTrim = tempMosaicRasterTrim             
+                    if cfg.WRITE_PCT_RASTERS:
+                        mosPctFN = 'mos_temp_pct'
+                        tempMosaicRasterPct = path.join(mosaicDir,mosPctFN)
+                        if linkLoop == 1:
+                            #If this is the first grid then copy rather than mosaic
+                            if cfg.SUM_BARRIERS:
+                                outCon = arcpy.sa.Con(Raster(barrierRasterPct) < 0, 0,
+                                    arcpy.sa.Con(IsNull(barrierRasterPct),0,barrierRasterPct)) 
+                                outCon.save(tempMosaicRasterPct)
+                            else:
+                                arcpy.CopyRaster_management(barrierRasterPct, 
+                                                         tempMosaicRasterPct)
+                                            
+                        else:                
+                            if cfg.SUM_BARRIERS:
+                                statement = ('outCon = arcpy.sa.Con('
+                                    'Raster(barrierRasterPct) < 0, lastMosaicRasterPct, '
+                                    'Raster(barrierRasterPct) + Raster(lastMosaicRasterPct));'
+                                     'outCon.save(tempMosaicRasterPct)')
+                            else:
+                                rasterString = '"'+barrierRasterPct+";"+lastMosaicRasterPct+'"'
+                                statement = ('arcpy.MosaicToNewRaster_management('
+                                        'rasterString,mosaicDir,mosPctFN, "", '
+                                        '"32_BIT_FLOAT", arcpy.env.cellSize, "1", "MAXIMUM", '
+                                        '"MATCH")') 
+                            
+                            count = 0
+                            while True:
+                                try:
                                     exec statement
-                            else: break
+                                except:
+                                    count,tryAgain = lu.retry_arc_error(count,statement)
+                                    if not tryAgain:    
+                                        exec statement
+                                else: break
 
-                    lu.delete_data(lastMosaicRasterPct)
-                    lastMosaicRasterPct = tempMosaicRasterPct                    
+                        lu.delete_data(lastMosaicRasterPct)
+                        lastMosaicRasterPct = tempMosaicRasterPct                    
                     
                     if not cfg.SAVEBARRIERRASTERS:
                         lu.delete_data(barrierRaster)
-                        lu.delete_data(barrierRasterPct)
+                        if cfg.WRITE_PCT_RASTERS:
+                            lu.delete_data(barrierRasterPct)
                         
                         
                     # Temporarily disable links in linktable -
@@ -361,7 +401,11 @@ def STEP6_calc_barriers():
                                       cfg.BARRIERDIR_NM) + str(dirCount))
                         arcpy.CreateFolder_management(cfg.BARRIERBASEDIR,
                                                    path.basename(cbarrierdir))
-            gprint('100 percent done')
+            
+
+            if numCorridorLinks > 1 and pctDone < 100:
+                gprint('100 percent done')
+            gprint('Summarizing barrier data for search radius.')
             #rows that were temporarily disabled
             rows = npy.where(linkTable[:,cfg.LTB_LINKTYPE]>1000)
             linkTable[rows,cfg.LTB_LINKTYPE] = (
@@ -377,15 +421,24 @@ def STEP6_calc_barriers():
             mosaicRaster = path.join(cfg.BARRIERGDB, mosaicFN)
             outSetNull.save(mosaicRaster)
             lu.delete_data(tempMosaicRaster)
-                           
-            # Do same for percent raster
-            mosaicPctFN = PREFIX + "_barriers_pct" + sumSuffix + str(radius)
-            arcpy.env.extent = cfg.RESRAST
-            outSetNull = arcpy.sa.SetNull(tempMosaicRasterPct, tempMosaicRasterPct,
-                                          "VALUE < 0")
-            mosaicRasterPct = path.join(cfg.BARRIERGDB, mosaicPctFN)
-            outSetNull.save(mosaicRasterPct)
-            lu.delete_data(tempMosaicRasterPct)
+            
+            if cfg.SUM_BARRIERS and cfg.WRITE_TRIM_RASTERS:
+                mosaicFN = PREFIX + "_barriers_trim" + sumSuffix + str(radius)
+                mosaicRasterTrim = path.join(cfg.BARRIERGDB, mosaicFN)
+                arcpy.CopyRaster_management(tempMosaicRasterTrim, 
+                                                        mosaicRasterTrim)
+                lu.delete_data(tempMosaicRaster)
+                        
+            if cfg.WRITE_PCT_RASTERS:                        
+                # Do same for percent raster
+                mosaicPctFN = PREFIX + "_barriers_pct" + sumSuffix + str(radius)
+                arcpy.env.extent = cfg.RESRAST
+                outSetNull = arcpy.sa.SetNull(tempMosaicRasterPct, tempMosaicRasterPct,
+                                              "VALUE < 0")
+                mosaicRasterPct = path.join(cfg.BARRIERGDB, mosaicPctFN)
+                outSetNull.save(mosaicRasterPct)
+                gprint(mosaicRasterPct)
+                lu.delete_data(tempMosaicRasterPct)
                        
             
             # 'Grow out' maximum restoration gain to
@@ -398,22 +451,24 @@ def STEP6_calc_barriers():
                                             InNeighborhood, "MAXIMUM","DATA")
             outFocalStats.save(fillRaster)
 
-            # Do same for percent raster
-            fillRasterPctFN = "barriers_fill_pct" + str(outerRadius) + tif
-            fillRasterPct = path.join(cfg.BARRIERBASEDIR, fillRasterPctFN)
-            outFocalStats = arcpy.sa.FocalStatistics(mosaicRasterPct,
-                                            InNeighborhood, "MAXIMUM","DATA")
-            outFocalStats.save(fillRasterPct)
+            if cfg.WRITE_PCT_RASTERS:
+                # Do same for percent raster
+                fillRasterPctFN = "barriers_fill_pct" + str(outerRadius) + tif
+                fillRasterPct = path.join(cfg.BARRIERBASEDIR, fillRasterPctFN)
+                outFocalStats = arcpy.sa.FocalStatistics(mosaicRasterPct,
+                                                InNeighborhood, "MAXIMUM","DATA")
+                outFocalStats.save(fillRasterPct)
             
 
             #Place copies of filled rasters in output geodatabase
             arcpy.env.workspace = cfg.BARRIERGDB
             fillRasterFN = PREFIX + "_barrriers_fill" + sumSuffix + str(outerRadius) 
             arcpy.CopyRaster_management(fillRaster, fillRasterFN)
-            fillRasterPctFN = PREFIX + "_barrriers_fill_pct" + sumSuffix + str(outerRadius) 
-            arcpy.CopyRaster_management(fillRasterPct, fillRasterPctFN)
+            if cfg.WRITE_PCT_RASTERS:
+                fillRasterPctFN = PREFIX + "_barrriers_fill_pct" + sumSuffix + str(outerRadius) 
+                arcpy.CopyRaster_management(fillRasterPct, fillRasterPctFN)
 
-            if not cfg.SUM_BARRIERS:
+            if not cfg.SUM_BARRIERS and cfg.WRITE_TRIM_RASTERS:
                 # Create pared-down version of filled raster- remove pixels that
                 # don't need restoring by allowing a pixel to only contribute its
                 # resistance value to restoration gain
@@ -422,13 +477,13 @@ def STEP6_calc_barriers():
                 rasterList = [fillRaster, resistFillRaster]
                 outCellStatistics = arcpy.sa.CellStatistics(rasterList, "MINIMUM")
                 outCellStatistics.save(outRaster)
-        
+    
                 #SECOND ROUND TO CLIP BY DATA VALUES IN BARRIER RASTER
                 outRaster2FN = "barriers_trm"  + sumSuffix + str(outerRadius) + "_2" + tif
                 outRaster2 = path.join(cfg.BARRIERBASEDIR,outRaster2FN)
                 output = arcpy.sa.Con(IsNull(fillRaster),fillRaster,outRaster)
                 output.save(outRaster2)
-                outRasterFN = PREFIX + "_barriers_trm"  + sumSuffix + str(outerRadius)
+                outRasterFN = PREFIX + "_barriers_trim"  + sumSuffix + str(outerRadius)
                 outRasterPath= path.join(cfg.BARRIERGDB, outRasterFN)
                 arcpy.CopyRaster_management(outRaster2, outRasterFN)
         
@@ -453,26 +508,28 @@ def STEP6_calc_barriers():
 
                     arcpy.Mosaic_management(radiusRaster, mosaicRaster,
                                          "MAXIMUM", "MATCH")
+            
+                if cfg.WRITE_PCT_RASTERS:                         
+                    radiusPctFN = PREFIX + "_barriers_pct" + sumSuffix + str(radius)
+                    radiusRasterPct = path.join(cfg.BARRIERGDB, radiusPctFN)
+
+                    if radius == startRadius:
+                    #If this is the first grid then copy rather than mosaic
+                        arcpy.CopyRaster_management(radiusRasterPct, mosaicPctFN)
+                    else:
+                        mosaicRasterPct = path.join(cfg.BARRIERBASEDIR,mosaicPctFN)
+                        gprint(mosaicRasterPct+' 2')
+                        arcpy.Mosaic_management(radiusRasterPct, mosaicRasterPct,
+                                             "MAXIMUM", "MATCH")
                                          
-                radiusPctFN = PREFIX + "_barriers_pct" + sumSuffix + str(radius)
-                radiusRasterPct = path.join(cfg.BARRIERGDB, radiusPctFN)
-
-                if radius == startRadius:
-                #If this is the first grid then copy rather than mosaic
-                    arcpy.CopyRaster_management(radiusRasterPct, mosaicPctFN)
-                else:
-                    mosaicRasterPct = path.join(cfg.BARRIERBASEDIR,mosaicPctFN)
-
-                    arcpy.Mosaic_management(radiusRasterPct, mosaicRasterPct,
-                                         "MAXIMUM", "MATCH")
-                                        
             # Copy results to output geodatabase
             arcpy.env.workspace = cfg.BARRIERGDB
             mosaicFN = PREFIX + "_barriers_radii" + sumSuffix 
             arcpy.CopyRaster_management(mosaicRaster, mosaicFN)
-            
-            mosaicPctFN = PREFIX + "_barriers_radii_pct" + sumSuffix 
-            arcpy.CopyRaster_management(mosaicRasterPct, mosaicPctFN)
+
+            if cfg.WRITE_PCT_RASTERS:            
+                mosaicPctFN = PREFIX + "_barriers_radii_pct" + sumSuffix 
+                arcpy.CopyRaster_management(mosaicRasterPct, mosaicPctFN)
                       
             
             #GROWN OUT rasters
@@ -493,30 +550,33 @@ def STEP6_calc_barriers():
                     arcpy.Mosaic_management(radiusRaster, fillMosaicRaster,
                                          "MAXIMUM", "MATCH")
                                          
-                radiusPctFN = "barriers_fill_pct" + str(radius) + tif
-                #fixme- do this when only a single radius too
-                radiusRasterPct = path.join(cfg.BARRIERBASEDIR, radiusPctFN)
-                if radius == startRadius:
-                #If this is the first grid then copy rather than mosaic
-                    arcpy.CopyRaster_management(radiusRasterPct, fillMosaicPctFN)
-                else:
-                    arcpy.Mosaic_management(radiusRasterPct, fillMosaicRasterPct,
-                                         "MAXIMUM", "MATCH")
+                if cfg.WRITE_PCT_RASTERS:
+                    radiusPctFN = "barriers_fill_pct" + str(radius) + tif
+                    #fixme- do this when only a single radius too
+                    radiusRasterPct = path.join(cfg.BARRIERBASEDIR, radiusPctFN)
+                    if radius == startRadius:
+                    #If this is the first grid then copy rather than mosaic
+                        arcpy.CopyRaster_management(radiusRasterPct, fillMosaicPctFN)
+                    else:
+                        arcpy.Mosaic_management(radiusRasterPct, fillMosaicRasterPct,
+                                             "MAXIMUM", "MATCH")
                                          
             # Copy result to output geodatabase
             arcpy.env.workspace = cfg.BARRIERGDB
             fillMosaicFN = PREFIX + "_barriers_radii_fill" + sumSuffix 
             arcpy.CopyRaster_management(fillMosaicRaster, fillMosaicFN)
-            fillMosaicPctFN = PREFIX + "_barriers_radii_fill_pct" + sumSuffix 
-            arcpy.CopyRaster_management(fillMosaicRasterPct, fillMosaicPctFN)
+            if cfg.WRITE_PCT_RASTERS:
+                fillMosaicPctFN = PREFIX + "_barriers_radii_fill_pct" + sumSuffix 
+                arcpy.CopyRaster_management(fillMosaicRasterPct, fillMosaicPctFN)
             
-            if not cfg.SUM_BARRIERS:
-                #GROWN OUT AND TRIMMED rasters (Can't do percent or sum)
+#            if not cfg.SUM_BARRIERS:
+                #GROWN OUT AND TRIMMED rasters (Can't do percent)
+            if cfg.WRITE_TRIM_RASTERS:
                 trimMosaicFN = "bar_radii_trm"
                 arcpy.env.workspace = cfg.BARRIERBASEDIR
                 trimMosaicRaster = path.join(cfg.BARRIERBASEDIR,trimMosaicFN)
                 for radius in range (startRadius, endRadius + 1, radiusStep):
-                    radiusFN = PREFIX + "_barriers_trm"  + str(radius) 
+                    radiusFN = PREFIX + "_barriers_trim" + sumSuffix  + str(radius) 
                     #fixme- do this when only a single radius too
                     radiusRaster = path.join(cfg.BARRIERGDB, radiusFN)
 
@@ -524,11 +584,12 @@ def STEP6_calc_barriers():
                     #If this is the first grid then copy rather than mosaic
                         arcpy.CopyRaster_management(radiusRaster, trimMosaicFN)
                     else:
+#xxx next statement crashes when doing sum                    
                         arcpy.Mosaic_management(radiusRaster, trimMosaicRaster,
                                              "MAXIMUM", "MATCH")
                 # Copy result to output geodatabase
                 arcpy.env.workspace = cfg.BARRIERGDB
-                trimMosaicFN = PREFIX + "_barriers_radii_trm"
+                trimMosaicFN = PREFIX + "_barriers_radii_trim" + sumSuffix 
                 arcpy.CopyRaster_management(trimMosaicRaster, trimMosaicFN)
 
         arcpy.env.workspace = cfg.BARRIERGDB
