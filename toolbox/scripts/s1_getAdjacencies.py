@@ -149,7 +149,7 @@ def cwadjacency():
             bResistance = cfg.RESRAST
 
         start_time = time.clock()
-        gprint('Starting cost weighted distance allocation...')
+        gprint('Starting cost-weighted distance allocation...')
 
         # core_rastmp = 'core_rastmp'
         if cfg.TMAXCWDIST is not None:

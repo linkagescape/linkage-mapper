@@ -174,10 +174,8 @@ def STEP3_calc_cwds():
             # lu.dashline(1)
             gprint('Calculating bounding boxes for core areas.')
             extentBoxList = npy.zeros((0,5), dtype='float32')
-            pctDone = 0
             for x in range(len(coresToMap)):
                 core = coresToMap[x]
-                pctDone = lu.report_pct_done(x, len(coresToMap), pctDone)
                 boxCoords = lu.get_extent_box_coords(core)
                 extentBoxList = npy.append(extentBoxList, boxCoords, axis=0)
             gprint('\nDone calculating bounding boxes.')
@@ -197,9 +195,7 @@ def STEP3_calc_cwds():
             circleList = npy.zeros((0,3), dtype='int32')
 
             numLinks = linkTable.shape[0]
-            pctDone = 0
             for x in range(0, numLinks):
-                pctDone = lu.report_pct_done(x, numLinks, pctDone)
                 if ((linkTable[x,cfg.LTB_LINKTYPE] == cfg.LT_CORR) or
                     (linkTable[x,cfg.LTB_LINKTYPE] == cfg.LT_KEEP)):
                     # if it's a valid corridor link
@@ -335,7 +331,7 @@ def STEP3_calc_cwds():
                 linkTableMod = linkTableReturned
                 sourceCore = int(coresToMap[x])
                 gprint('Done with all calculations for core ID #' +
-                        str(sourceCore) + '. ' + str(x + 1) + ' of ' +
+                        str(sourceCore) + '. ' + str(int(x + 1)) + ' of ' +
                         str(endIndex) + ' cores have been processed.')
                 start_time = lu.elapsed_time(startTime1)
 
