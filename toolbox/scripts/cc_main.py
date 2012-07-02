@@ -16,9 +16,7 @@ import os
 import sys
 import csv
 import itertools
-from datetime import datetime, timedelta
 import traceback
-import pdb
 
 import arcpy
 import arcpy.sa as sa
@@ -30,7 +28,7 @@ from lm_config import tool_env as lm_env
 import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.0.5"
+__version__ = "0.1.0"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
@@ -38,11 +36,7 @@ TO_COL = "To_Core"
 
 def main(argv=None):
     """Main function for Climate Corridor tool"""
-    tformat = "%m/%d/%y %H:%M:%S"
-    stime = datetime.now()
-
-    arcpy.AddMessage("CLIMATE CORRIDOR " + __version__)
-    arcpy.AddMessage("Start time: " + stime.strftime(tformat))
+    arcpy.AddMessage("\nCLIMATE CORRIDOR " + __version__)
 
     zonal_tbl = "zstats.dbf"
 
@@ -54,11 +48,12 @@ def main(argv=None):
         import cc_grass_cwd
 
         # Check out the ArcGIS Spatial Analyst extension license
-        #arcpy.AddMessage(arcpy.ProductInfo())
-        arcpy.CheckOutExtension("Spatial")
+        if arcpy.CheckExtension("Spatial") == "Available":
+           arcpy.CheckOutExtension("Spatial")
+        else:
+            raise
 
         # Setup workspace
-        arcpy.AddMessage("Creating output folder - " + cc_env.out_dir)
         arcpy.env.overwriteOutput = True
         cc_util.mk_proj_dir(cc_env.out_dir)
         arcpy.env.workspace = cc_env.out_dir
@@ -67,8 +62,8 @@ def main(argv=None):
         # Configure Linkage Mapper
         lm_arg = (_SCRIPT_NAME, lm_outdir, cc_env.prj_core_fc, cc_env.core_fld,
                   cc_env.prj_resist_rast, "false", "false", "#", "#", "true",
-                  "false", "false", "4", "Cost-Weighted", "true", "true", "#",
-                  "#", "#")
+                  "false", cc_env.prune_network, cc_env.max_nn, cc_env.nn_unit,
+                  cc_env.keep_constelations, "true", "#", "#", "#")
         lm_env.configure(lm_env.TOOL_CC, lm_arg)
         lm_util.create_dir(lm_env.DATAPASSDIR)
 
@@ -83,38 +78,38 @@ def main(argv=None):
         # Create core parings table
         core_parings = create_pair_tbl()
 
-        # Limit core pairs based upon cliamte threashold
+        # Limit core pairs based upon climate threashold
         limit_cores(core_parings, climate_stats)
 
         # Calculate distances and generate link table for Linkage Mapper
         grass_cores = gen_link_table(core_parings)
 
         # Create CWD using Grass
-        cc_grass_cwd.main(grass_cores)
+        cc_grass_cwd.grass_cwd(grass_cores)
 
         # Run Linkage Mapper
         arcpy.AddMessage("\nRUNNING LINKAGE MAPPER "
                          "TO CREATE CLIMATE CORRIDORS")
 
-        lm_master.lm_master(lm_arg)
+        lm_master.lm_master()
+        return 0
 
     except arcpy.ExecuteError:
-        msgs = "\nArcPy ERRORS\n" + arcpy.GetMessages(2)
-        arcpy.AddError(msgs)
-        tb = sys.exc_info()[2]
-        pymsg = ("Traceback\n" + str(traceback.format_tb(tb)[0]))
-        arcpy.AddError(pymsg)
+        arcpy.AddMessage("")
+        arcpy.AddError(arcpy.GetMessages(2))
+        exc_traceback = sys.exc_info()[2]
+        arcpy.AddMessage("Traceback (most recent call last):\n" +
+                         "".join(traceback.format_tb(exc_traceback)[:-1]))
+        return 1
     except Exception:
-        pymsg = ("\nPYTHON ERRORS\n" + traceback.format_exc())
-        arcpy.AddError(pymsg)
+        arcpy.AddMessage("")
+        exc_value, exc_traceback  = sys.exc_info()[1:]
+        arcpy.AddError(exc_value)
+        arcpy.AddMessage("Traceback (most recent call last):\n" +
+                         "".join(traceback.format_tb(exc_traceback)))
+        return 1
     finally:
         arcpy.CheckInExtension("Spatial")
-        etime = datetime.now()
-        rtime = etime - stime
-        hours, minutes = ((rtime.days * 24 + rtime.seconds//3600),
-                       (rtime.seconds//60)%60)
-        arcpy.AddMessage("End time: " + etime.strftime(tformat))
-        arcpy.AddMessage('Elapsed time: %s hrs %s mins' % (hours, minutes))
 
 
 def cc_clip_inputs():
@@ -122,26 +117,28 @@ def cc_clip_inputs():
     ext_poly = "ext_poly.shp"  # Extent polygon
     try:
         arcpy.AddMessage("\nCLIPPING TO SMALLEST EXTENT")
-
         # Set environment so that smallest extent is used
-        arcpy.env.extent = "MINOF"
 
-        # Check if resistance raster is an input and get full path of input
-        # raster/s in case they are raster layers (required for conversion)
-        if cc_env.resist_rast is None:
-            rast_list = arcpy.Describe(cc_env.climate_rast).catalogPath
-        else:
-            rast_list = (arcpy.Describe(cc_env.climate_rast).catalogPath + ";"
-                        + arcpy.Describe(cc_env.resist_rast).catalogPath)
-            cc_util.delete_feature(cc_env.prj_resist_rast)
-        cc_util.delete_feature(cc_env.prj_climate_rast)
+        # Set to minimum extent if resistance raster exists
+        if cc_env.resist_rast is not None:
+            climate_extent = arcpy.Raster(cc_env.climate_rast).extent
+            resist_extent = arcpy.Raster(cc_env.resist_rast).extent
+            xmin = max(climate_extent.XMin, resist_extent.XMin)
+            ymin = max(climate_extent.YMin, resist_extent.YMin)
+            xmax = min(climate_extent.XMax, resist_extent.XMax)
+            ymax = min(climate_extent.YMax, resist_extent.YMax)
+            arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
 
-        arcpy.RasterToOtherFormat_conversion(rast_list, cc_env.out_dir, "GRID")
+        arcpy.CopyRaster_management(cc_env.climate_rast,
+                                    cc_env.prj_climate_rast)
+        arcpy.CopyRaster_management(cc_env.resist_rast,
+                                    cc_env.prj_resist_rast)
+
         arcpy.env.extent = None
 
-        # Create project area raster
+        # Create project area raster        
         proj_area_rast = sa.Con(sa.IsNull(cc_env.prj_climate_rast),
-                                sa.Int(cc_env.prj_climate_rast), 1)
+                               sa.Int(cc_env.prj_climate_rast), 1)
         proj_area_rast.save(cc_env.prj_area_rast)
 
         # Clip core feature class
@@ -188,8 +185,8 @@ def create_pair_tbl():
 
         return cpair_tbl
 
-    except:
-            raise
+    except Exception:
+        raise
     finally:
         if srow:
             del srow
@@ -274,6 +271,7 @@ def limit_cores(pair_tbl, stats_tbl):
                                         "PYTHON")
 
         # Filter distance table based on inputed threashold and delete rows
+        # Fix - keeep core parings
         arcpy.AddMessage("Filtering table based on threashold")
         diffu2std_fld = arcpy.AddFieldDelimiters(pair_vw, diffu_2std)
         expression = diffu2std_fld + " <= " + str(cc_env.climate_threashold)
@@ -284,7 +282,7 @@ def limit_cores(pair_tbl, stats_tbl):
             arcpy.DeleteRows_management(pair_vw)
         arcpy.AddMessage(str(rows_del) + " rows deleted")
 
-    except:
+    except Exception:
         raise
     finally:
         cc_util.delete_feature(stats_vw)
@@ -329,10 +327,10 @@ def gen_link_table(parings):
         core_pairs = []
         srows = arcpy.SearchCursor(parings, "", "", FR_COL + "; " + TO_COL)
         for srow in srows:
-           from_core = srow.getValue(FR_COL)
-           to_core = str(srow.getValue(TO_COL))
-           frm_cores.add(from_core)
-           core_pairs.append([str(from_core), to_core])
+            from_core = srow.getValue(FR_COL)
+            to_core = str(srow.getValue(TO_COL))
+            frm_cores.add(from_core)
+            core_pairs.append([str(from_core), to_core])
         # del srows, srow
         frm_cores = map(str, sorted(frm_cores))
 
@@ -356,7 +354,7 @@ def gen_link_table(parings):
             # To cores
             to_cores_lst = [x[1] for x in core_pairs if frm_core == x[0]]
             to_cores = ', '.join(to_cores_lst)
-            expression = coreid_fld + " in (" +  to_cores + ")"
+            expression = coreid_fld + " in (" + to_cores + ")"
             arcpy.MakeFeatureLayer_management(corefc, tcore_vw, expression)
             arcpy.AddMessage("Calculating Euclidean distance/s from core "
                              + frm_core + " to " + str(len(to_cores_lst))
@@ -398,12 +396,12 @@ def gen_link_table(parings):
 
         return sorted(core_list)
 
-    except:
+    except Exception:
         raise
     finally:
         simplify_points = coresim + "_Pnt.shp"
         cc_util.delete_feature(simplify_points)
-
+        cc_util.delete_feature(near_tbl)
         if link_tbl:
             link_tbl.close()
         if srow:
