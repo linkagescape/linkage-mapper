@@ -158,12 +158,14 @@ def calc_lccs(normalize):
         coreList = npy.sort(coreList)
 
         x = 0
+        linkCount = 0
         endIndex = numLinks
         while x < endIndex:
             if (linkTable[x, cfg.LTB_LINKTYPE] < 1): # If not a valid link
                 x = x + 1
                 continue
-            
+                
+            linkCount = linkCount + 1
             start_time = time.clock() 
             
             linkId = str(int(linkTable[x, cfg.LTB_LINKID]))
@@ -301,11 +303,12 @@ def calc_lccs(normalize):
                 printText = "Normalized and mosaicked "
             else:
                 printText = "Mosaicked NON-normalized "
-            gprint(printText + "corridor for link "
-                              "#" + str(linkId)
-                              + " connecting core areas " + str(corex) +
-                              " and " + str(corey)+ " in " +
-                              str(processTime) + " seconds.")
+            gprint(printText + "corridor for link ID #" + str(linkId) +
+                    " connecting core areas " + str(corex) +
+                    " and " + str(corey)+ " in " +
+                    str(processTime) + " seconds. " + str(int(linkCount)) +
+                    " out of " + str(int(numCorridorLinks)) + " links have been "
+                    "processed.")
 
             # temporarily disable links in linktable - don't want to mosaic
             # them twice
@@ -318,7 +321,6 @@ def calc_lccs(normalize):
                 elif corex1==corey and corey1==corex:
                     linkTable[y,cfg.LTB_LINKTYPE] = (
                             linkTable[y,cfg.LTB_LINKTYPE] + 1000)
-
 
             numGridsWritten = numGridsWritten + 1
             if not SAVENORMLCCS:

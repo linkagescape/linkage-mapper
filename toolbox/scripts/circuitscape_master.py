@@ -33,7 +33,8 @@ def circuitscape_master():
     try:
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
-        cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, cfg.PARAMS) #xxx        
+        cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
+                                           cfg.PARAMS) 
 
         # Check core ID field.
         lu.check_cores(cfg.COREFC, cfg.COREFN)
@@ -117,7 +118,7 @@ def circuitscape_master():
 
             s8.STEP8_calc_pinchpoints()            
             
-            if not cfg.SAVE_TEMP_FILES:
+            if not cfg.SAVE_TEMP_CIRCUIT_FILES:
                 lu.delete_dir(cfg.SCRATCHDIR)
             if not cfg.SAVECIRCUITDIR:
                 lu.delete_dir(cfg.CIRCUITBASEDIR)

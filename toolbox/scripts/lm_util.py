@@ -1900,6 +1900,8 @@ def copy_final_link_maps(step):
 
         if gp.exists(coreLinksShapefile):
             gp.MakeFeatureLayer(coreLinksShapefile, "flinks")
+                        
+            
             field = "Active"
             expression = field + " = " + str(1)
             gp.selectlayerbyattribute("flinks", "NEW_SELECTION",
@@ -1909,6 +1911,8 @@ def copy_final_link_maps(step):
                                                PREFIX + '_Sticks')
             gp.CopyFeatures_management("flinks", activeLinksShapefile)
 
+            rename_fields(activeLinksShapefile)
+            
             expression = field + " = " + str(0)
             gp.selectlayerbyattribute("flinks", "NEW_SELECTION",
                                           expression)
@@ -1925,8 +1929,10 @@ def copy_final_link_maps(step):
 
             activeLcpShapefile = os.path.join(cfg.LINKMAPGDB,
                                               PREFIX + '_LCPs')
+            
             gp.CopyFeatures_management("flcp", activeLcpShapefile)
-
+            rename_fields(activeLcpShapefile)                                              
+            
             expression = field + " = " + str(0)
             gp.selectlayerbyattribute("flcp", "NEW_SELECTION", expression)
             inActiveLcpShapefile = os.path.join(cfg.LINKMAPGDB,
@@ -1993,6 +1999,37 @@ def get_cs_path():
             if os.path.exists(csPath): return csPath
         except: pass
     return None
+    
+
+def rename_fields(FC):    
+    try:
+        gp.addfield(FC, "cw_to_Euc_Dist_Ratio", "FLOAT")
+        gp.CalculateField_management(FC, "cw_to_Euc_Dist_Ratio","!cwd2Euc_R!", "PYTHON") 
+        gp.deletefield(FC, "cwd2Euc_R")
+
+        fieldList = gp.ListFields(FC)
+        for field in fieldList:
+            if str(field.Name) == "cwd2Path_R":
+                gp.addfield(FC, "cwd_to_Path_Length_Ratio", "FLOAT")
+                gp.CalculateField_management(FC, "cwd_to_Path_Length_Ratio","!cwd2Path_R!", "PYTHON") 
+                gp.deletefield(FC, "cwd2Path_R")
+            
+        gp.addfield(FC, "Current_Flow_Centrality", "FLOAT")
+        gp.CalculateField_management(FC, "Current_Flow_Centrality","!CF_Central!", "PYTHON") 
+        gp.deletefield(FC, "CF_Central")
+        
+        gp.addfield(FC, "Effective_Resistance", "FLOAT")
+        gp.CalculateField_management(FC, "Effective_Resistance","!Eff_Resist!", "PYTHON") 
+        gp.deletefield(FC, "Eff_Resist")
+        
+        gp.addfield(FC, "cwd_to_Eff_Resist_Ratio", "FLOAT")
+        gp.CalculateField_management(FC, "cwd_to_Eff_Resist_Ratio","!cwd2EffR_r!", "PYTHON") 
+        gp.deletefield(FC, "cwd2EffR_r")
+        
+    except arcgisscripting.ExecuteError:
+        exit_with_geoproc_error(_SCRIPT_NAME)
+    except:
+        exit_with_python_error(_SCRIPT_NAME)    
 
 ############################################################################
 ##Error Checking and Handling Functions ####################################
@@ -2019,13 +2056,14 @@ def print_arcgis_failures(statement, failures):
 
 def print_drive_warning():
     drive, depth = get_dir_depth(cfg.PROJECTDIR)
-    if drive.lower() != 'c' or depth > 3:
+    if drive.lower() != 'c' or depth > 3 or 'dropbox' in drive.lower():
         gp.AddWarning('(Note: ArcGIS errors are more likely when writing to remote '
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
             'Errors may also result from conflicts with anti-virus '
             'software (known problems with AVG). We have also seen '
-            'conflicts when writing to synced folders (e.g., Dropbox). \n')
+            'conflicts when writing to synced folders (e.g., Dropbox). '
+            '\nThen again, maybe this is a bug.)\n')
 
 def get_dir_depth(dir):
     import string
@@ -2110,12 +2148,9 @@ def check_cores(FC,FN):
 def retry_arc_error(count, statement):
     """Re-tries ArcGIS calls in case of server problems or other 'hiccups'."""
     try:
-        if count < 20:
+        if count < 5:
             count = count + 1
-            if count < 7:
-                sleepTime = 10*count
-            else:
-                sleepTime = 60
+            sleepTime = 20*count
 
             gp.AddWarning('-------------------------------------------------')
             gp.AddWarning('Failed to execute ' + statement + ' on try '
@@ -2200,11 +2235,14 @@ def exit_with_geoproc_error(filename):
             gp.AddReturnMessage(msg)
             write_log(msg)
     dashline()
-    gprint('Note: ArcGIS errors are more likely when writing to remote '
-            '(network) drives or deep file structures. We recommend shallow '
-            'project directories on local drives, like C:\puma. '
-            'Errors may also result from conflicts with anti-virus '
-            'software (AVG is a known culprit).)\n')
+    print_drive_warning()
+    # gprint('(Note: ArcGIS errors are more likely when writing to remote '
+            # 'drives or deep file structures. We recommend shallow '
+            # 'project directories on local drives, like C:\puma. '
+            # 'Errors may also result from conflicts with anti-virus '
+            # 'software (known problems with AVG). We have also seen '
+            # 'conflicts when writing to synced folders (e.g., using Dropbox). '
+            # '\nThen again, maybe this is a bug.)\n')
 
     close_log_file()
     exit(1)
@@ -2305,7 +2343,7 @@ def setCircuitscapeOptions():
     options['included_pairs_file']='None'
     options['use_variable_source_strengths']=False
     options['variable_source_file']='None'
-    options['write_max_cur_maps']=True
+    options['write_max_cur_maps']=False
     options['set_focal_node_currents_to_zero']=True
 
     return options

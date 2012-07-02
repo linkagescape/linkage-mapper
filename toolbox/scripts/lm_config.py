@@ -108,14 +108,18 @@ def config_global(config, arg):
     config.SAVECURRENTMAPS = True
         
     config.SAVECIRCUITDIR = True
-    config.SAVE_TEMP_FILES = True
+    config.SAVE_TEMP_CIRCUIT_FILES = True
 
     # Save individual barrier grids    
-    config.SAVEBARRIERRASTERS = True 
-    config.SAVEBARRIERDIR = True
+    config.SAVEBARRIERRASTERS = False 
     
+    config.SAVEBARRIERDIR = False
     config.SAVECENTRALITYDIR = False
 
+    # Write trimmed and percent barrier rasters
+    config.WRITE_TRIM_RASTERS = True
+    config.WRITE_PCT_RASTERS = True
+    
     # Write focal maps for barrier analysis
     config.WRITE_VOLT_MAPS = False
 
@@ -274,6 +278,7 @@ def config_circuitscape(config, arg):
     if len(arg) == 4:
         config.DOCENTRALITY = True
         config.DOPINCH = False
+        config.DO_ALLPAIRS = False
     else:
         config.DOPINCH = True
         config.DOCENTRALITY = False

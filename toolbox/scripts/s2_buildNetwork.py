@@ -413,7 +413,6 @@ def get_full_adj_list():
         if not cfg.S2ADJMETH_CW and not cfg.S2ADJMETH_EU:  # Keep ALL links
             coreList = lu.get_core_list(cfg.COREFC, cfg.COREFN)
             coreList = coreList[:,0]
-            gprint(str(coreList))
             numCores = len(coreList)
             adjList = npy.zeros((numCores*(numCores-1)/2,2), dtype="int32")
             pairIndex = 0
@@ -422,7 +421,6 @@ def get_full_adj_list():
                     adjList[pairIndex,0]=coreList[sourceIndex]
                     adjList[pairIndex,1]=coreList[targetIndex]
                     pairIndex = pairIndex + 1
-            gprint(str(adjList))
             return adjList
         
         cwdAdjList = get_adj_list(cfg.CWDADJFILE)
