@@ -953,10 +953,10 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
             oldLcpShapefile = get_lcp_shapefile(lastStep, thisStep)
             delete_data(lcpShapefile)
             gp.copy_management(oldLcpShapefile, lcpShapefile)
-            if thisStep > 5:
-                gp.AddField_management(lcpShapefile, "Eff_Resist", "FLOAT") ###
-                gp.AddField_management(lcpShapefile, "cwd2EffR_r", "FLOAT")
-                gp.AddField_management(lcpShapefile, "CF_Central", "FLOAT") ###
+            #if thisStep > 5:
+            gp.AddField_management(lcpShapefile, "Eff_Resist", "FLOAT") ###
+            gp.AddField_management(lcpShapefile, "cwd2EffR_r", "FLOAT")
+            gp.AddField_management(lcpShapefile, "CF_Central", "FLOAT") ###
         rows = gp.UpdateCursor(lcpShapefile)
         row = rows.Next()
         line = 0
@@ -974,6 +974,10 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
                 row.SetValue("Eff_Resist", effResist)
                 row.SetValue("cwd2EffR_r",CWDTORRatio)
                 row.SetValue("CF_Central", current)
+            else:
+                row.SetValue("Eff_Resist", -1)
+                row.SetValue("cwd2EffR_r",-1)
+                row.SetValue("CF_Central", -1)
             rows.UpdateRow(row)
 
             linktablerow = get_linktable_row(linkid, linkTableTemp)

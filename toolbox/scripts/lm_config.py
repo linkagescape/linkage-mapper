@@ -105,10 +105,10 @@ def config_global(config, arg):
     config.SAVEFOCALRASTERS = False
 
     # Save individual current maps from Circuitscape
-    config.SAVECURRENTMAPS = True
+    config.SAVECURRENTMAPS = False
         
-    config.SAVECIRCUITDIR = True
-    config.SAVE_TEMP_CIRCUIT_FILES = True
+    config.SAVECIRCUITDIR = False
+    config.SAVE_TEMP_CIRCUIT_FILES = False
 
     # Save individual barrier grids    
     config.SAVEBARRIERRASTERS = False 
