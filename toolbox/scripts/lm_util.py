@@ -2143,6 +2143,19 @@ def check_cores(FC,FN):
             msg = ('ERROR: Core area field must contain only positive integers. ')
             raise_error(msg)
 
+        rows = gp.SearchCursor(FC)
+        row = rows.Next()
+        feat = row.shape
+        center = str(feat.Centroid)
+        xy = center.split(" ")
+        if "," in xy[0]:
+            msg = ('ERROR: It appears that your region settings are not in '
+                    'USA format (decimal commas are used instead of decimal '
+                    'points). '
+                    'Please change your region settings in Windows to a '
+                    'region that uses decimal points.')
+            raise_error(msg)
+            
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except:
