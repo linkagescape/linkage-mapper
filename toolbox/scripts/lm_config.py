@@ -253,6 +253,9 @@ def config_barrier(config, arg):
     config.ENDRADIUS = arg[4]
     config.RADIUSSTEP = arg[5]
     config.BARRIER_METH = arg[6]
+    config.WRITE_PCT_RASTERS = str2bool(arg[7])
+    config.WRITE_TRIM_RASTERS = str2bool(arg[8])    
+    
     if 'max' in config.BARRIER_METH.lower():
         config.BARRIER_METH_MAX = True
     else:
