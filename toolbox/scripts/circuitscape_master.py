@@ -18,7 +18,10 @@ import arcgisscripting
 
 from lm_config import tool_env as cfg
 import lm_util as lu
-import s7_centrality as s7
+try:
+    import s7_centrality as s7
+except:
+    pass
 import s8_pinchpoints as s8
 
 _SCRIPT_NAME = "circuitscape_master.py"
