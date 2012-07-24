@@ -57,6 +57,7 @@ GOTO Finish
 xcopy /Y ..\toolbox\scripts\bar*.* ..\build\toolbox\scripts\bar*.*
 xcopy /Y ..\toolbox\scripts\s6_b*.* ..\build\toolbox\scripts\s6_b*.*
 xcopy /Y ..\toolbox\*Extras.tbx ..\build\toolbox\*Extras.tbx
+xcopy /Y ..\toolbox\doc\barr*.docx ..\build\barr*.docx
 
 :Finish
 @ECHO OFF
@@ -69,6 +70,7 @@ GOTO END
 
 :Stop
 @ECHO OFF
+echo.
 echo Error: must supply a version string
 echo syntax: lm_build (version) cm bm cc
 echo example: lm_build 0.8.4 cm cc
