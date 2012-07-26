@@ -196,9 +196,22 @@ def STEP8_calc_pinchpoints():
 
                 resNpyFN = 'resistances_link_' + linkId + '.npy'
                 resNpyFile = path.join(INCIRCUITDIR, resNpyFN)
-                numElements = export_ras_to_npy(resClipRasterMasked,resNpyFile)
+                numElements, numResistanceNodes = export_ras_to_npy(resClipRasterMasked,
+                                                          resNpyFile)
+                
+                totMem, availMem = lu.get_mem()
+                # gprint('Total memory: str(totMem))
+                if availMem / numResistanceNodes < 500:
+                    lu.dashline(1)
+                    gprint('WARNING:')
+                    gprint('Circuitscape can only solve 2-3 million nodes')
+                    gprint('per gigabyte of available RAM. \nTotal physical RAM '
+                            'on your machine is ~' + str(int(totMem/1000000000)) 
+                            + ' GB. \nAvailable memory is ~'+ str(int(availMem/1000000000)) 
+                            + ' GB. \nYour resistance raster has '
+                            + str(numResistanceNodes) + ' nodes.')                                                          
+                    lu.dashline(0)
                 corePairRaster = path.join(linkDir, 'core_pairs')
-
                 arcpy.env.extent = resClipRasterMasked
 
                 # Next result needs to be floating pt for numpy export
@@ -208,7 +221,8 @@ def STEP8_calc_pinchpoints():
 
                 coreNpyFN = 'cores_link_' + linkId + '.npy'
                 coreNpyFile = path.join(INCIRCUITDIR, coreNpyFN)
-                numElements = export_ras_to_npy(corePairRaster,coreNpyFile)
+                numElements, numNodes = export_ras_to_npy(corePairRaster,
+                                                          coreNpyFile)
 
                 arcpy.env.extent = "MINOF"
 
@@ -227,7 +241,8 @@ def STEP8_calc_pinchpoints():
 
                 outConfigFile = path.join(CONFIGDIR, configFN)
                 lu.writeCircuitscapeConfigFile(outConfigFile, options)
-
+                    
+                gprint('Resistance map has ' + str(int(numResistanceNodes)) + ' nodes.') 
                 gprint('Calling Circuitscape...')
                 if numElements > 250000:
                     test = subprocess.call([CSPATH, outConfigFile],
@@ -240,8 +255,16 @@ def STEP8_calc_pinchpoints():
                 currentMap = path.join(OUTCIRCUITDIR, currentFN)
                 
                 if not arcpy.Exists(currentMap):
-                    gprint('Circuitscape failed.  Trying again in 10 seconds.')
-                    lu.snooze(10)
+                    lu.dashline(1)
+                    gprint('Circuitscape failed. ')
+                    if numResistanceNodes > 1000000:
+                        gprint('Note: Circuitscape can only solve 2-3 million nodes')
+                        gprint('per gigabyte of available RAM. Your resistance raster had ')
+                        gprint(str(int(numResistanceNodes)) + ' nodes.\n')  
+                        gprint('\nTrying again in 10 seconds.')
+                    lu.snooze(10)                    
+                    numElements, numNodes = export_ras_to_npy(
+                                                resClipRasterMasked,resNpyFile)
                     test = subprocess.call([CSPATH, outConfigFile], 
                                 creationflags = subprocess.CREATE_NEW_CONSOLE)                
 
@@ -251,11 +274,21 @@ def STEP8_calc_pinchpoints():
                 
                 if not arcpy.Exists(currentMap):
                     lu.dashline(1)
-                    msg = ('ERROR: It looks like Circuitscape failed.  '
-                         '\nResistance raster values that vary by > 6 orders of'
+                    if numResistanceNodes > 1000000:
+                        msg = ('ERROR: Circuitscape failed. \n'
+                          'Note: Circuitscape can only solve 2-3 million nodes'
+                          '\nper gigabyte of available RAM. Your resistance raster had\n'
+                          + str(numResistanceNodes) + ' nodes.\n\nResistance '
+                          'raster values that vary by >6 orders of \nmagnitude'
+                          ' can also cause failures, as can a mismatch in '
+                          '\ncore area and resistance raster extents.')
+
+                    else:
+                        msg = ('ERROR: Circuitscape failed.  '
+                        '\nResistance raster values that vary by > 6 orders of'
                          '\nmagnitude  can cause this, as can a mismatch in '
                          '\ncore area and resistance raster extents.')
-
+                    
                     arcpy.AddError(msg)
                     lu.write_log(msg)
                     exit(1)
@@ -365,7 +398,12 @@ def STEP8_calc_pinchpoints():
 
         lu.dashline(1)
         gprint('Mapping global pinch points among all\n'
-                'core area pairs using Circuitscape')
+                'core area pairs using Circuitscape.')
+        if cfg.ALL_PAIR_SCENARIO=='pairwise':
+            gprint('Circuitscape will be run in PAIRWISE mode.')
+                        
+        else:
+            gprint('Circuitscape will be run in ALL-TO-ONE mode.')             
         lu.dashline(0)
         arcpy.env.workspace = cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
@@ -412,11 +450,24 @@ def STEP8_calc_pinchpoints():
 
         resNpyFN = 'resistances.npy'
         resNpyFile = path.join(INCIRCUITDIR, resNpyFN)
-        numElements = export_ras_to_npy(resRasClipPath,resNpyFile)
+        numElements, numResistanceNodes = export_ras_to_npy(resRasClipPath,resNpyFile)
+
+        totMem, availMem = lu.get_mem()
+        # gprint('Total memory: str(totMem))
+        if availMem / numResistanceNodes < 500:
+            lu.dashline(1)
+            gprint('WARNING:')
+            gprint('Circuitscape can only solve 2-3 million nodes')
+            gprint('per gigabyte of available RAM. \nTotal physical RAM '
+                    'on your machine is ~' + str(int(totMem/1000000000)) 
+                    + ' GB. \nAvailable memory is ~'+ str(int(availMem/1000000000)) 
+                    + ' GB. \nYour resistance raster has '
+                    + str(numResistanceNodes) + ' nodes.')   
+            lu.dashline(0)
 
         coreNpyFN = 'cores.npy'
         coreNpyFile = path.join(INCIRCUITDIR, coreNpyFN)
-        numElements = export_ras_to_npy(s8CoreRasClipped,coreNpyFile)
+        numElements, numNodes = export_ras_to_npy(s8CoreRasClipped,coreNpyFile)
 
         arcpy.env.extent = "MINOF"
 
@@ -431,7 +482,7 @@ def STEP8_calc_pinchpoints():
         configFN = 'pinchpoint_allpair_config.ini'
         outConfigFile = path.join(CONFIGDIR, configFN)
         lu.writeCircuitscapeConfigFile(outConfigFile, options)
-
+        gprint('Resistance map has ' + str(int(numResistanceNodes)) + ' nodes.') 
         gprint('Calling Circuitscape...')
         test = subprocess.call([CSPATH, outConfigFile],
                                creationflags = subprocess.CREATE_NEW_CONSOLE)
@@ -467,9 +518,18 @@ def STEP8_calc_pinchpoints():
             import_npy_to_ras(currentMap,resRasClipPath,outputRaster)
         except:
             lu.dashline(1)
-            msg = ('ERROR: Could not open Circuitscape output.  If '
-                 '\nresistance raster values vary by > 6 orders of'
-                 '\nmagnitude, that may have caused Circuitscape to fail.')
+            if numResistanceNodes > 1000000:
+                msg = ('ERROR: Circuitscape failed. \n'
+                  'Note: Circuitscape can only solve 2-3 million nodes'
+                  '\nper gigabyte of available RAM. Your resistance raster has\n'
+                  + str(numResistanceNodes) + ' nodes.\n\nResistance '
+                  'raster values that vary by >6 orders of \nmagnitude'
+                  ' can also cause failures, as can a mismatch in '
+                  '\ncore area and resistance raster extents.')
+            else:
+                msg = ('ERROR: Could not open Circuitscape output.  If '
+                     '\nresistance raster values vary by > 6 orders of'
+                     '\nmagnitude, that may have caused Circuitscape to fail.')
             arcpy.AddError(msg)
             lu.write_log(msg)
             exit(1)
@@ -521,8 +581,13 @@ def export_ras_to_npy(raster,npyFile):
         write_header(raster,outData,npyFile)
                 
         numElements = (outData.shape[0] * outData.shape[1])
+        #rows,cols = npy.where(outData != -9999)
+        numNodes = (npy.where(outData != -9999, 1, 0)).sum() 
+        
+        #del rows
+        
         del outData
-        return numElements
+        return numElements, numNodes
     # Return GEOPROCESSING specific errors
     except arcpy.ExecuteError:
         lu.dashline(1)
