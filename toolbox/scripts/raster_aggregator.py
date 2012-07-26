@@ -67,8 +67,10 @@ def raster_aggregator():
             numRasters = 4
         if RESRAS[5] != '#':
             numRasters = 5
-            
-        gprint('\nThere are ' + str(numRasters) + ' rasters to aggregate.')
+        if numRasters > 1:
+            gprint('\nThere are ' + str(numRasters) + ' rasters to aggregate.')
+        else:
+            gprint('\nThere is ' + str(numRasters) + ' raster to aggregate.')
         gprint('\nCell factor is ' + str(AG_FACTOR))
         gprint('\nCell sizes will be multiplied by this amount')
         for rasterNum in range(1,numRasters+1):
