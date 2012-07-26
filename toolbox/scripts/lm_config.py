@@ -23,7 +23,7 @@ def str2bool(pstr):
 
 
 def setadjmeth(inparam):
-    """Return boolean variables for distance methods"""
+    """Return boolean variables for adjacency methods"""
     if inparam == "Cost-Weighted":
         meth_cw = True
         meth_eu = False
@@ -101,26 +101,13 @@ def config_global(config, arg):
     config.CIRCUITCONFIGDIR_NM = "config"
     config.CIRCUITOUTPUTDIR_NM = "output"
 
-    # Save individual focal grids for barrier analysis
-    config.SAVEFOCALRASTERS = False
-
     # Save individual current maps from Circuitscape
     config.SAVECURRENTMAPS = False
         
     config.SAVECIRCUITDIR = False
     config.SAVE_TEMP_CIRCUIT_FILES = False
-
-    # Save individual barrier grids    
-    config.SAVEBARRIERRASTERS = False 
     
-    config.SAVEBARRIERDIR = False
-    config.SAVECENTRALITYDIR = False
-
-    # Write trimmed and percent barrier rasters
-    config.WRITE_TRIM_RASTERS = True
-    config.WRITE_PCT_RASTERS = True
-    
-    # Write focal maps for barrier analysis
+    # Write voltage maps from pinchpoint analysis
     config.WRITE_VOLT_MAPS = False
 
     config.FCORES = "fcores"
@@ -253,9 +240,9 @@ def config_barrier(config, arg):
     config.ENDRADIUS = arg[4]
     config.RADIUSSTEP = arg[5]
     config.BARRIER_METH = arg[6]
-    config.WRITE_PCT_RASTERS = str2bool(arg[7])
-    config.WRITE_TRIM_RASTERS = str2bool(arg[8])    
-    
+    config.SAVE_RADIUS_RASTERS = str2bool(arg[7])    
+    config.WRITE_PCT_RASTERS = str2bool(arg[8])
+            
     if 'max' in config.BARRIER_METH.lower():
         config.BARRIER_METH_MAX = True
     else:
@@ -265,9 +252,27 @@ def config_barrier(config, arg):
     else:
         config.BARRIER_METH_SUM = False           
     
-    if config.RADIUSSTEP == GP_NULL:
+    if config.RADIUSSTEP == GP_NULL or config.ENDRADIUS == config.STARTRADIUS:
         config.RADIUSSTEP = 0
-    config.STEP1 = False
+    if float(config.STARTRADIUS) + float(config.RADIUSSTEP) > float(config.ENDRADIUS):
+        config.RADIUSSTEP = 0
+    if config.RADIUSSTEP == 0:
+        config.SAVE_RADIUS_RASTERS = True
+        
+    # Save individual focal grids for barrier analysis
+    config.SAVEFOCALRASTERS = False
+
+    # Save temporary directories
+    config.SAVEBARRIERDIR = False
+    config.SAVECENTRALITYDIR = False
+
+    # Calculate minimum of resistance and improvement score
+    config.WRITE_TRIM_RASTERS = False
+
+    # Save individual barrier grids for each core area pair   
+    config.SAVEBARRIERRASTERS = False 
+
+    config.STEP1 = False    
 
 def config_climate(config, arg):
     """Configure global variables for Climate Corridor tool"""

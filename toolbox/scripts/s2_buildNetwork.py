@@ -398,7 +398,8 @@ def generate_distance_file():
 
 def print_conefor_warning():
     """Warns that some links have no euclidean distances in conefor file."""
-    gprint('\nWARNING: At least one potential link was dropped because\n'
+    gprint('\nWARNING:')
+    gprint('At least one potential link was dropped because\n'
         'there was no Euclidean distance value in the input Euclidean\n'
         'distance file from Conefor extension.\n'
         '   This may just mean that there were core areas that were adjacent\n'
