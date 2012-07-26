@@ -11,6 +11,7 @@ import ConfigParser
 import shutil
 import gc
 import glob
+import ctypes
 
 import numpy as npy
 
@@ -2067,7 +2068,7 @@ def print_drive_warning():
             'Errors may also result from conflicts with anti-virus '
             'software (known problems with AVG). We have also seen '
             'conflicts when writing to synced folders (e.g., Dropbox). '
-            '\nThen again, maybe this is a bug.)\n')
+            '\nThen again, if this looks like a bug please report it.)\n')
 
 def get_dir_depth(dir):
     import string
@@ -2152,8 +2153,8 @@ def check_cores(FC,FN):
             msg = ('ERROR: It appears that your region settings are not in '
                     'USA format (decimal commas are used instead of decimal '
                     'points). '
-                    'Please change your region settings in Windows to a '
-                    'region that uses decimal points.')
+                    'Please change your region settings in Windows to USA or '
+                    'another region that uses decimal points.')
             raise_error(msg)
             
     except arcgisscripting.ExecuteError:
@@ -2445,3 +2446,26 @@ def writeCircuitscapeConfigFile(configFile, options):
     config.write(f)
     f.close()
 
+
+
+class MEMORYSTATUSEX(ctypes.Structure):
+    _fields_ = [("dwLength", ctypes.c_uint),
+                ("dwMemoryLoad", ctypes.c_uint),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("sullAvailExtendedVirtual", ctypes.c_ulonglong),]
+
+    def __init__(self):
+        # have to initialize this to the size of MEMORYSTATUSEX
+        self.dwLength = 2*4 + 7*8     # size = 2 ints, 7 longs
+        return super(MEMORYSTATUSEX, self).__init__()
+
+def get_mem():    
+    stat = MEMORYSTATUSEX()
+    ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
+    
+    return stat.ullTotalPhys, stat.ullAvailPhys

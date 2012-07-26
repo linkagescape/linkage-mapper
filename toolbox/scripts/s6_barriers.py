@@ -97,7 +97,7 @@ def STEP6_calc_barriers():
             lu.dashline(1)
             msg =('\nThere are no linkages. Bailing.')
             lu.raise_error(msg)
-
+        
         # set up directories for barrier and barrier mosaic grids
         dirCount = 0
         gprint("Creating intermediate output folder: " + cfg.BARRIERBASEDIR)
@@ -297,21 +297,28 @@ def STEP6_calc_barriers():
                             arcpy.CopyRaster_management(trmRaster, 
                                                         tempMosaicRasterTrim)                       
                         
-
-                    else:                
+                    else:      
+#xxxx                    
                         if cfg.SUM_BARRIERS:
                             outCon = arcpy.sa.Con(Raster
                             (barrierRaster) < 0, lastMosaicRaster, 
-                            Raster(barrierRaster) + Raster
-                            (lastMosaicRaster))
+                            Raster(barrierRaster) + Raster(
+                            lastMosaicRaster))
                             outCon.save(tempMosaicRaster)                      
                             if cfg.WRITE_TRIM_RASTERS:
                                 outCon = arcpy.sa.Con(Raster
                                 (trmRaster) < 0, lastMosaicRasterTrim, 
-                                Raster(lastMosaicRasterTrim) + Raster(
-                                                                    trmRaster))                            
-                                outCon.save(tempMosaicRasterTrim)   
-                                
+                                Raster(trmRaster) + Raster(
+                                lastMosaicRasterTrim))
+                                outCon.save(tempMosaicRasterTrim) 
+                            # gprint(barrierRaster)
+                            # gprint(trmRaster)
+                            # gprint(lastMosaicRaster)
+                            # gprint(lastMosaicRasterTrim)
+                            # gprint(tempMosaicRaster)
+                            # gprint(tempMosaicRasterTrim)
+                            # blarg
+                            
                         else:
                             rasterString = ('"'+barrierRaster+";" + 
                                             lastMosaicRaster+'"')
@@ -392,6 +399,8 @@ def STEP6_calc_barriers():
                         lu.delete_data(barrierRaster)
                         if cfg.WRITE_PCT_RASTERS:
                             lu.delete_data(barrierRasterPct)
+                        if cfg.WRITE_TRIM_RASTERS:                                                    
+                            lu.delete_data(trmRaster)                            
                         
                         
                     # Temporarily disable links in linktable -
@@ -440,7 +449,7 @@ def STEP6_calc_barriers():
             lu.delete_data(tempMosaicRaster)
             
             if cfg.SUM_BARRIERS and cfg.WRITE_TRIM_RASTERS:
-                mosaicFN = (PREFIX + "_BarrierCenters_RBMin" + sumSuffix + 
+                mosaicFN = (PREFIX + "_BarrierCircles_RBMin" + sumSuffix + 
                             "_Rad" + str(radius))
                 mosaicRasterTrim = path.join(cfg.BARRIERGDB, mosaicFN)
                 arcpy.CopyRaster_management(tempMosaicRasterTrim, 
@@ -482,11 +491,11 @@ def STEP6_calc_barriers():
             arcpy.env.workspace = cfg.BARRIERGDB
             fillRasterFN = (PREFIX + "_BarrrierCircles" + sumSuffix + "_Rad" + 
                             str(outerRadius))
-            arcpy.CopyRaster_management(fillRaster, fillRasterFN)
+            arcpy.CopyRaster_management(fillRaster, fillRasterFN) #xxx
             if cfg.WRITE_PCT_RASTERS:
-                fillRasterPctFN = PREFIX + "_BarrrierCircles_Pct" + sumSuffix + 
+                fillRasterPctFN = (PREFIX + "_BarrrierCircles_Pct" + sumSuffix + 
                                   "_Rad" + str(outerRadius))
-                arcpy.CopyRaster_management(fillRasterPct, fillRasterPctFN)
+                arcpy.CopyRaster_management(fillRasterPct, fillRasterPctFN) 
 
             if not cfg.SUM_BARRIERS and cfg.WRITE_TRIM_RASTERS:
                 # Create pared-down version of filled raster- remove pixels 
@@ -505,7 +514,7 @@ def STEP6_calc_barriers():
                 outRaster2 = path.join(cfg.BARRIERBASEDIR,outRaster2FN)
                 output = arcpy.sa.Con(IsNull(fillRaster),fillRaster,outRaster)
                 output.save(outRaster2)
-                outRasterFN = (PREFIX + "_BarrierCenters_RBMin"  + sumSuffix + 
+                outRasterFN = (PREFIX + "_BarrierCircles_RBMin"  + sumSuffix + 
                               "_Rad" + str(outerRadius))
 
                 outRasterPath= path.join(cfg.BARRIERGDB, outRasterFN)
@@ -611,7 +620,7 @@ def STEP6_calc_barriers():
                 arcpy.env.workspace = cfg.BARRIERBASEDIR
                 trimMosaicRaster = path.join(cfg.BARRIERBASEDIR,trimMosaicFN)
                 for radius in range (startRadius, endRadius + 1, radiusStep):
-                    radiusFN = (PREFIX + "_BarrierCenters_RBMin" + sumSuffix  
+                    radiusFN = (PREFIX + "_BarrierCircles_RBMin" + sumSuffix  
                             + "_Rad" + str(radius))
                     #fixme- do this when only a single radius too
                     radiusRaster = path.join(cfg.BARRIERGDB, radiusFN)
@@ -627,7 +636,16 @@ def STEP6_calc_barriers():
                 trimMosaicFN = (PREFIX + "_BarrierCircles_RBMin" + sumSuffix 
                                 + radiiSuffix)
                 arcpy.CopyRaster_management(trimMosaicRaster, trimMosaicFN)
-
+        
+        if not cfg.SAVE_RADIUS_RASTERS:
+            arcpy.env.workspace = cfg.BARRIERGDB
+            rasters = arcpy.ListRasters()
+            for raster in rasters:
+                if 'rad' in raster.lower() and not 'step' in raster.lower():
+                    lu.delete_data(raster)
+                
+                
+                
         arcpy.env.workspace = cfg.BARRIERGDB
         rasters = arcpy.ListRasters()
         for raster in rasters:

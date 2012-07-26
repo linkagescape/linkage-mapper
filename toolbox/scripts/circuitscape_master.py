@@ -18,6 +18,7 @@ import arcgisscripting
 
 from lm_config import tool_env as cfg
 import lm_util as lu
+        
 try:
     import s7_centrality as s7
 except:
@@ -34,6 +35,8 @@ def circuitscape_master():
     gprint = lu.gprint
     cfg.configure(cfg.TOOL_CS, sys.argv)
     gp = cfg.gp
+
+    
     try:
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
