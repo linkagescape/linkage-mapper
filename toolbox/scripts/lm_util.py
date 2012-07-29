@@ -2467,5 +2467,6 @@ class MEMORYSTATUSEX(ctypes.Structure):
 def get_mem():    
     stat = MEMORYSTATUSEX()
     ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
-    
-    return stat.ullTotalPhys, stat.ullAvailPhys
+    totMem = float(int(10 * float(stat.ullTotalPhys)/1073741824))/10
+    availMem = float(int(10 * float(stat.ullAvailPhys)/1073741824))/10
+    return totMem, availMem
