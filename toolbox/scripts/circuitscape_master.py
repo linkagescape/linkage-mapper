@@ -33,11 +33,35 @@ def circuitscape_master():
 
     """
     gprint = lu.gprint
+    gwarn = arcpy.AddWarning
     cfg.configure(cfg.TOOL_CS, sys.argv)
     gp = cfg.gp
 
     
     try:
+        # restart code- in progress
+        if cfg.CWDCUTOFF < 0:
+            cfg.CWDCUTOFF = cfg.CWDCUTOFF * -1
+            
+        CSPATH = lu.get_cs_path()
+        if CSPATH == None:
+            msg = ('Cannot find an installation of Circuitscape 3.5.5'
+                    '\nor greater in your Program Files directory.')
+            arcpy.AddError(msg)
+            lu.write_log(msg)
+            exit(1)
+            
+        try:
+            csDir, fn = path.split(CSPATH)
+            if 'flush' not in open(path.join(csDir,'cs_compute.py')).read():
+                gwarn('\n---------------------------------------------')
+                gwarn('Your version of Circuitscape is out of date. ')
+                gwarn('---------------------------------------------\n')
+                gwarn('Please get the latest from www.circuitscape.org.')
+                gwarn('The new version interacts more smoothly with ArcMap.')
+                gprint('Proceeding...\n')
+        except: pass
+    
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
         cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
@@ -55,8 +79,9 @@ def circuitscape_master():
 
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
-
-        lu.delete_dir(cfg.SCRATCHDIR)
+    
+        if cfg.CWDCUTOFF > 0:
+            lu.delete_dir(cfg.SCRATCHDIR)
 
         if not cfg.DOPINCH and not cfg.DOCENTRALITY:
             msg = ('ERROR: Please choose at least one option: pinch point or\n'
@@ -115,12 +140,13 @@ def circuitscape_master():
                 lu.delete_dir(cfg.CENTRALITYBASEDIR)
 
         if cfg.DOPINCH:
-            gprint("Creating output folder: " + cfg.CIRCUITBASEDIR)
-            lu.delete_dir(cfg.CIRCUITBASEDIR)
-            lu.create_dir(cfg.CIRCUITBASEDIR)
-            gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
+            if cfg.CWDCUTOFF > 0: # Negative values mean we're restarting
+                gprint("Creating output folder: " + cfg.CIRCUITBASEDIR)
+                lu.delete_dir(cfg.CIRCUITBASEDIR)
+                lu.create_dir(cfg.CIRCUITBASEDIR)
+                gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
                                         cfg.CIRCUITOUTPUTDIR_NM)
-            gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
+                gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
                                         cfg.CIRCUITCONFIGDIR_NM)
 
             s8.STEP8_calc_pinchpoints()            
