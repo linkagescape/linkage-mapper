@@ -13,6 +13,7 @@ import os.path as path
 import time
 import subprocess
 import gc
+import sys
 
 import numpy as npy
 import arcpy
@@ -27,6 +28,7 @@ arcpy.CheckOutExtension("spatial")
 
 SETCORESTONULL = True
 gprint = lu.gprint
+gwarn = arcpy.AddWarning
 tif = ".tif"
 #tif = ""
 
@@ -39,15 +41,13 @@ def STEP8_calc_pinchpoints():
     try:
         lu.dashline(0)
         gprint('Running script ' + _SCRIPT_NAME)
-
-        CSPATH = lu.get_cs_path()
-        if CSPATH == None:
-            msg = ('Cannot find an installation of Circuitscape 3.5.5'
-                    '\nor greater in your Program Files directory.')
-            arcpy.AddError(msg)
-            lu.write_log(msg)
-            exit(1)
         
+        restartFlag = False
+        if cfg.CWDCUTOFF < 0:
+            cfg.CWDCUTOFF = cfg.CWDCUTOFF * -1
+            restartFlag = True # Restart code in progress
+        
+        CSPATH = lu.get_cs_path()                
         outputGDB = path.join(cfg.OUTPUTDIR, path.basename(cfg.PINCHGDB))
         
         arcpy.OverWriteOutput = True
@@ -147,17 +147,25 @@ def STEP8_calc_pinchpoints():
             linkLoop = 0
             lu.dashline(1)
             gprint('Mapping pinch points in individual corridors \n'
-                    'using Circuitscape')
+                    'using Circuitscape.')
+            lu.dashline(1)
+            gprint('If you try to cancel your run and the Arc dialog hangs, ')
+            gprint('you can kill Circuitscape by opening Windows Task Manager')
+            gprint('and ending the cs_run.exe process.')                    
             lu.dashline(2)
 
             for x in range(0,numLinks):            
                 linkId = str(int(linkTable[x,cfg.LTB_LINKID]))
                 if not (linkTable[x,cfg.LTB_LINKTYPE] > 0):
                     continue
+                linkLoop = linkLoop + 1
                 linkDir = path.join(cfg.SCRATCHDIR, 'link' + linkId)
+                if restartFlag == True and path.exists(linkDir):
+                    gprint('continuing')
+                    continue
+                restartFlag = False
                 lu.create_dir(linkDir)
                 start_time1 = time.clock()
-                linkLoop = linkLoop + 1
 
                 # source and target cores
                 corex=int(coreList[x,0])
@@ -211,10 +219,10 @@ def STEP8_calc_pinchpoints():
                 # gprint('Total memory: str(totMem))
                 if numResistanceNodes / availMem > 2000000:
                     lu.dashline(1)
-                    gprint('WARNING:')
-                    gprint('Circuitscape can only solve 2-3 million nodes')
-                    gprint('per gigabyte of available RAM. \nTotal physical RAM '
-                            'on your machine is ~' + str(totMem) 
+                    gwarn('Warning:')
+                    gwarn('Circuitscape can only solve 2-3 million nodes')
+                    gwarn('per gigabyte of available RAM. \nTotal physical RAM'
+                            ' on your machine is ~' + str(totMem) 
                             + ' GB. \nAvailable memory is ~'+ str(availMem) 
                             + ' GB. \nYour resistance raster has '
                             + str(numResistanceNodes) + ' nodes.')                                                          
@@ -242,8 +250,7 @@ def STEP8_calc_pinchpoints():
                 
                 # if int(linkId) > 2:
                     # options['habitat_file'] = 'c:\\test.dummy'
-                
-                
+                                
                 options['point_file'] = coreNpyFile
                 options['set_focal_node_currents_to_zero']=True
                 outputFN = 'Circuitscape_link' + linkId + '.out'
@@ -392,13 +399,13 @@ def STEP8_calc_pinchpoints():
 
         lu.dashline(1)
         gprint('Mapping global pinch points among all\n'
-                'core area pairs using Circuitscape.')
+                'core area pairs using Circuitscape.')                   
+                
         if cfg.ALL_PAIR_SCENARIO=='pairwise':
             gprint('Circuitscape will be run in PAIRWISE mode.')
                         
         else:
-            gprint('Circuitscape will be run in ALL-TO-ONE mode.')             
-        lu.dashline(0)
+            gprint('Circuitscape will be run in ALL-TO-ONE mode.')     
         arcpy.env.workspace = cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         arcpy.env.extent = cfg.RESRAST
@@ -450,9 +457,9 @@ def STEP8_calc_pinchpoints():
         # gprint('Total memory: str(totMem))
         if numResistanceNodes / availMem > 2000000:
             lu.dashline(1)
-            gprint('WARNING:')
-            gprint('Circuitscape can only solve 2-3 million nodes')
-            gprint('per gigabyte of available RAM. \nTotal physical RAM '
+            gwarn('Warning:')
+            gwarn('Circuitscape can only solve 2-3 million nodes')
+            gwarn('per gigabyte of available RAM. \nTotal physical RAM '
                     'on your machine is ~' + str(totMem)
                     + ' GB. \nAvailable memory is ~'+ str(availMem)
                     + ' GB. \nYour resistance raster has '
@@ -476,7 +483,12 @@ def STEP8_calc_pinchpoints():
         configFN = 'pinchpoint_allpair_config.ini'
         outConfigFile = path.join(CONFIGDIR, configFN)
         lu.writeCircuitscapeConfigFile(outConfigFile, options)
-        gprint('Resistance map has ' + str(int(numResistanceNodes)) + ' nodes.') 
+        gprint('\nResistance map has ' + str(int(numResistanceNodes)) + ' nodes.') 
+        lu.dashline(1)
+        gprint('If you try to cancel your run and the Arc dialog hangs, ')
+        gprint('you can kill Circuitscape by opening Windows Task Manager')
+        gprint('and ending the cs_run.exe process.')             
+        lu.dashline(0)
         
         call_circuitscape(CSPATH, outConfigFile)
         # test = subprocess.call([CSPATH, outConfigFile],
@@ -638,20 +650,23 @@ def print_failure(numResistanceNodes, memFlag, sleepTime):
     lu.snooze(sleepTime)                    
 
 def call_circuitscape(CSPATH, outConfigFile):
-    gprint('     Calling Circuitscape...')
+    memFlag = False
+    failFlag = False
+    gprint('     Calling Circuitscape:')
     proc = subprocess.Popen([CSPATH, outConfigFile],
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-                           shell=True)#, creationflags=subprocess.SW_HIDE)
-    memFlag = False
+                           shell=True)
     while proc.poll() is None:
         output = proc.stdout.readline()
+
         if 'Traceback' in output:
             gprint("\nCircuitscape failed.")
+            failFlag = True
             if 'memory' in output:
                 memFlag = True
         if ('Processing' not in output and 'laplacian' not in output and 
-                'node_map' not in output and 
-                (('--' in output) or ('sec' in output))):
+                'node_map' not in output and (('--' in output) or 
+                ('sec' in output) or (failFlag == True))):
             gprint("      " + output.replace("\r\n",""))                
     
     # Catch any output lost if process closes too quickly
@@ -661,6 +676,8 @@ def call_circuitscape(CSPATH, outConfigFile):
             gprint("\nCircuitscape failed.")
             if 'memory' in line:
                 memFlag = True
-        if ('Processing' not in line and ('--' in line) or ('sec' in line)):
-           gprint("      " + str(line))              
+        if ('Processing' not in line and 'laplacian' not in line and 
+                'node_map' not in line and (('--' in line) or 
+                ('sec' in line) or (failFlag == True))):
+           gprint("      " + str(line))#.replace("\r\n","")))              
     return memFlag

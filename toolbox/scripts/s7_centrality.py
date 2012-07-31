@@ -49,10 +49,6 @@ def STEP7_calc_centrality():
         lu.delete_data(lcpShapefile)
 
         csPath = lu.get_cs_path()
-        if csPath == None:
-            msg = ('Cannot find an installation of Circuitscape 3.5.5'
-                    '\nor greater in your Program Files directory.')
-            lu.raise_error(msg)
 
         invalidFNs = ['fid','id','oid','shape']
         if cfg.COREFN.lower() in invalidFNs:
