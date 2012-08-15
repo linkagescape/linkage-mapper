@@ -110,22 +110,26 @@ def STEP2_build_network():
         #----------------------------------------------------------------------
         # Get adjacencies using adj files from step 1.
         if cfg.S2ADJMETH_CW or cfg.S2ADJMETH_EU:  # Keep ALL links
-            cwdAdjTable = get_adj_list(cfg.CWDADJFILE)
             cwdAdjList = []
-            for i in range(0, len(cwdAdjTable)):
-                listEntry = (str(cwdAdjTable[i, 0]) + '_' + str(cwdAdjTable[i, 1]))
-                cwdAdjList.append(listEntry)
-            gprint('Cost-weighted adjacency file loaded.')
-            maxCwdAdjCoreID = max(cwdAdjTable[:, 1])
-            del cwdAdjTable
-
-            eucAdjTable = get_adj_list(cfg.EUCADJFILE)
             eucAdjList = []
-            for i in range(0, len(eucAdjTable)):
-                listEntry = (str(eucAdjTable[i, 0]) + '_' + str(eucAdjTable[i, 1]))
-                eucAdjList.append(listEntry)
-            maxEucAdjCoreID = max(eucAdjTable[:, 1])
-            del eucAdjTable
+            if cfg.S2ADJMETH_CW:
+                cwdAdjTable = get_adj_list(cfg.CWDADJFILE)
+                cwdAdjList = []
+                for i in range(0, len(cwdAdjTable)):
+                    listEntry = (str(cwdAdjTable[i, 0]) + '_' + str(cwdAdjTable[i, 1]))
+                    cwdAdjList.append(listEntry)
+                gprint('Cost-weighted adjacency file loaded.')
+                maxCwdAdjCoreID = max(cwdAdjTable[:, 1])
+                del cwdAdjTable
+
+            if cfg.S2ADJMETH_EU:
+                eucAdjTable = get_adj_list(cfg.EUCADJFILE)
+                eucAdjList = []
+                for i in range(0, len(eucAdjTable)):
+                    listEntry = (str(eucAdjTable[i, 0]) + '_' + str(eucAdjTable[i, 1]))
+                    eucAdjList.append(listEntry)
+                maxEucAdjCoreID = max(eucAdjTable[:, 1])
+                del eucAdjTable
 
         # maxCoreId = max(maxEucAdjCoreID, maxCwdAdjCoreID, maxEucDistID)
 
@@ -230,23 +234,26 @@ def STEP2_build_network():
                               'distance.')
             # lu.dashline(2)
 
-        # Write linkTable to disk
-        gprint('Writing ' + outlinkTableFile)
-        lu.write_link_table(linkTable, outlinkTableFile)
-        linkTableLogFile = path.join(cfg.LOGDIR, "linkTable_s2.csv")
-        lu.write_link_table(linkTable, linkTableLogFile)
-        lu.report_links(linkTable)
+        if cfg.CONNECTFRAGS:               
+            connect_clusters(linkTable)            
+        else:
+            # Write linkTable to disk
+            gprint('Writing ' + outlinkTableFile)
+            lu.write_link_table(linkTable, outlinkTableFile)
+            linkTableLogFile = path.join(cfg.LOGDIR, "linkTable_s2.csv")
+            lu.write_link_table(linkTable, linkTableLogFile)
+            lu.report_links(linkTable)
 
-        gprint('Creating shapefiles with linework for links.\n')
-        try:
-            lu.write_link_maps(outlinkTableFile, step=2)
-        except:
-            lu.write_link_maps(outlinkTableFile, step=2)
-        gprint('Linework shapefiles written.')
+            gprint('Creating shapefiles with linework for links.\n')
+            try:
+                lu.write_link_maps(outlinkTableFile, step=2)
+            except:
+                lu.write_link_maps(outlinkTableFile, step=2)
+            gprint('Linework shapefiles written.')
 
-        # if dropFlag:
-            # print_conefor_warning()
-
+            # if dropFlag:
+                # print_conefor_warning()
+            
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
@@ -423,10 +430,12 @@ def get_full_adj_list():
                     adjList[pairIndex,1]=coreList[targetIndex]
                     pairIndex = pairIndex + 1
             return adjList
-        
-        cwdAdjList = get_adj_list(cfg.CWDADJFILE)
         eucAdjList = get_adj_list(cfg.EUCADJFILE)
-        adjList = npy.append(eucAdjList, cwdAdjList, axis=0)
+        if cfg.S2ADJMETH_CW:
+            cwdAdjList = get_adj_list(cfg.CWDADJFILE)
+            adjList = npy.append(eucAdjList, cwdAdjList, axis=0)
+        else:
+            adjList = eucAdjList
         adjList = npy.sort(adjList)
 
                 # sort by 1st core Id then by 2nd core Id
@@ -461,3 +470,138 @@ def get_full_adj_list():
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
+
+def connect_clusters(linkTable):
+        # CUSTOM Fragment connecting code
+    try:
+        clusterFC = path.join(cfg.SCRATCHDIR,"Cores_Grouped_dist"+str(int(cfg.MAXEUCDIST))+".shp")
+        gp.CopyFeatures_management(cfg.COREFC,clusterFC)
+#        coreFC_orig = cfg.COREFC 
+#        clusterFC = tempShapefile
+        
+        gprint('Running custom fragment connecting code.')
+        numLinks = linkTable.shape[0]
+
+        fieldList = gp.ListFields(clusterFC)
+        cluster_ID = 'clus' + str(int(cfg.MAXEUCDIST))
+        for field in fieldList:
+            if str(field.Name) == cluster_ID:
+                gp.DeleteField_management(clusterFC, cluster_ID)
+        gp.AddField_management(clusterFC, cluster_ID, "LONG")
+        
+        rows = gp.UpdateCursor(clusterFC)
+        row = rows.Next()
+        while row:
+            # linkCoords indices
+            fragID = row.GetValue(cfg.COREFN) 
+            row.SetValue(cluster_ID, fragID)
+            rows.UpdateRow(row)
+            row = rows.Next()
+        del row, rows
+
+
+        linkTable[:, cfg.LTB_CLUST1] = linkTable[:, cfg.LTB_CORE1]
+        linkTable[:, cfg.LTB_CLUST2] = linkTable[:, cfg.LTB_CORE2]
+        
+        #if frags less than cutoff set cluster_ID equal.        
+        for x in range(0,numLinks):
+            if linkTable[x, cfg.LTB_LINKTYPE] == cfg.LT_CORR:            
+                gprint("link #"+str(x+1))
+                # Set newfragmentID of 2nd fragment to that of frag 1
+                frag1ID = linkTable[x, cfg.LTB_CLUST1]
+                frag2ID = linkTable[x, cfg.LTB_CLUST2]
+                if frag1ID == frag2ID:
+                    continue
+                eucDist = linkTable[x, cfg.LTB_EUCDIST]
+                cur = gp.SearchCursor(clusterFC)
+                row = cur.Next()
+                i = 0
+                while row:
+                    if row.GetValue(cluster_ID) == frag1ID:
+                        frag1CoreID =  row.GetValue(cluster_ID)
+                    elif row.GetValue(cluster_ID) == frag2ID:
+                        frag2CoreID =  row.GetValue(cluster_ID)
+                    row = cur.Next()
+                    i = i + 1
+                del cur, row
+
+                if eucDist < cfg.MAXEUCDIST:
+                    gprint("Joining fragments "+str(frag1ID)+" and "+str(frag2ID)+" in Core #"+str(frag2CoreID)+" separated by distance "+str(eucDist))
+
+                    # update linktable to new fragment ID in cluster field
+                    rows = npy.where(linkTable[:,cfg.LTB_CLUST1] == frag2ID)
+                    linkTable[rows, cfg.LTB_CLUST1] = frag1ID
+                    rows = npy.where(linkTable[:,cfg.LTB_CLUST2] == frag2ID)
+                    linkTable[rows, cfg.LTB_CLUST2] = frag1ID
+                    del rows
+
+                    # update shapefile to new fragment ID in cluster_ID field
+                    rows = gp.UpdateCursor(clusterFC)
+                    row = rows.Next()
+                    while row:
+                        if row.GetValue(cluster_ID) == frag2ID:
+                            row.SetValue(cluster_ID, frag1ID)
+                        rows.UpdateRow(row)
+                        row = rows.Next()
+                    del row, rows
+                else:   
+                    gprint("Close fragments but different cores ("+str(frag1CoreID)+" and "+str(frag2CoreID)+")")
+        
+        coreBaseName = path.splitext(path.basename(cfg.COREFC))[0]
+
+        # outputFN = coreBaseName + "Cluster_Dist"+ str(int(cfg.MAXEUCDIST)) + ".shp"
+        # outputShapefile = path.join(cfg.PROJECTDIR, outputFN)
+        # gp.CopyFeatures_management(clusterFC,outputShapefile)
+        outputFN = coreBaseName + "_Cluster"+str(int(cfg.MAXEUCDIST))+"_dissolve.shp"
+        outputShapefile = path.join(cfg.SCRATCHDIR,outputFN)
+        gp.Dissolve_management(clusterFC, outputShapefile, cluster_ID)
+        outputFN = coreBaseName + "_Cluster"+str(int(cfg.MAXEUCDIST))+"_dissolve_area.shp"
+        coreFCWithArea = path.join(cfg.SCRATCHDIR,outputFN)
+        gp.CalculateAreas_stats(outputShapefile, coreFCWithArea)
+
+        outputFN = coreBaseName + "_Cluster"+str(int(cfg.MAXEUCDIST))+".shp"
+        clusterFCFinal = path.join(cfg.PROJECTDIR,outputFN)
+        gp.CopyFeatures_management(clusterFC,clusterFCFinal)
+        
+        # Update final core featureclass with cluster ID and area
+        gp.AddField_management(clusterFCFinal, cluster_ID, "LONG")
+        gp.AddField_management(clusterFCFinal, "clust_area", "DOUBLE")
+
+        #run through rows- get cluster id, then get area from coreFCwitharea using searchcursor
+
+        rows = gp.UpdateCursor(clusterFCFinal)
+        row = rows.Next()
+        while row:
+            # linkCoords indices
+            clustID = row.GetValue(cluster_ID)
+            rows2 = gp.searchcursor(coreFCWithArea)
+            row2 = rows2.Next()
+            while row2:
+                if row2.GetValue(cluster_ID) == clustID:
+                    fArea = "F_AREA"
+                    clustArea = row2.GetValue(fArea)
+                    break
+                row2 = rows2.Next()
+            row.SetValue("clust_area", clustArea)
+            rows.UpdateRow(row)
+            row = rows.Next()
+        del row, rows, row2, rows2
+        gprint('Cores with cluster ID and cluster area written to: ' 
+                + clusterFCFinal)
+        
+        
+        
+        
+        ##########################################################    
+
+    except arcgisscripting.ExecuteError:
+        lu.dashline(1)
+        gprint('****Failed in step 2. Details follow.****')
+        lu.exit_with_geoproc_error(_SCRIPT_NAME)
+
+    # Return any PYTHON or system specific errors
+    except:
+        lu.dashline(1)
+        gprint('****Failed in step 2. Details follow.****')
+        lu.exit_with_python_error(_SCRIPT_NAME)
+        
