@@ -178,6 +178,7 @@ def config_global(config, arg):
 
 def config_lm(config, arg, scratch_dir):
     """ Configure global variables for Linkage Mapper"""
+    config.CONNECTFRAGS = False
     config.COREFC = arg[2]  # Core area feature class
     config.COREFN = arg[3]  # Core area field name
     config.RESRAST_IN = arg[4]  # Resistance raster
@@ -194,6 +195,7 @@ def config_lm(config, arg, scratch_dir):
     config.STEP2 = str2bool(arg[6])
     config.S2ADJMETH_CW, config.S2ADJMETH_EU = setadjmeth(arg[7])
     config.S2EUCDISTFILE = nullstring(arg[8])
+
     config.STEP3 = str2bool(arg[9])
     # Drop LCC's passing through intermediate cores
     config.S3DROPLCCS = str2bool(arg[10])
@@ -207,8 +209,16 @@ def config_lm(config, arg, scratch_dir):
     # Optional input parameters
     config.BUFFERDIST = nullfloat(arg[16])
     config.MAXCOSTDIST = nullfloat(arg[17])
-    # if config.MAXCOSTDIST == 0: Now done in nullfloat
-        # config.MAXCOSTDIST = None
+
+    if config.S2EUCDISTFILE != None:
+        if config.S2EUCDISTFILE.lower() == 'cluster': 
+            # Custom code to consolidate nearby cores will be called
+            config.S2EUCDISTFILE = None
+            config.CONNECTFRAGS = True
+            config.MAXCOSTDIST = None
+            config.S1ADJMETH_CW = False
+            config.S2ADJMETH_CW = False
+        
     config.MAXEUCDIST = nullfloat(arg[18])
     # if config.MAXEUCDIST == 0: Now done in nullfloat
         # config.MAXEUCDIST = None
