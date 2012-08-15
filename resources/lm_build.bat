@@ -4,21 +4,21 @@ IF "%1"=="" GOTO Stop
 echo Building Linkage Mapper Release number %1
 
 @ECHO ON
-xcopy /E/I/Y ..\demo ..\build\LM_demo
-xcopy /Y ..\toolbox\doc\*.pdf ..\build\*.pdf
-xcopy /E/I/Y ..\toolbox\scripts ..\build\toolbox\scripts
-xcopy /E/I/Y ..\toolbox\styles ..\build\toolbox\styles
-xcopy /Y ..\toolbox\*.tbx ..\build\toolbox\*.tbx
+xcopy /E/I/Y ..\demo ..\LinkageMapper"%1"\LM_demo
+xcopy /Y ..\toolbox\doc\*.pdf ..\LinkageMapper"%1"\*.pdf
+xcopy /E/I/Y ..\toolbox\scripts ..\LinkageMapper"%1"\toolbox\scripts
+xcopy /E/I/Y ..\toolbox\styles ..\LinkageMapper"%1"\toolbox\styles
+xcopy /Y ..\toolbox\*.tbx ..\LinkageMapper"%1"\toolbox\*.tbx
 
-del ..\build\toolbox\scripts\cc*.*
-del ..\build\toolbox\scripts\s7*.*
-del ..\build\toolbox\scripts\s6*.*
-del ..\build\toolbox\scripts\bar*.*
-del ..\build\toolbox\climate*.*
-del ..\build\LM_demo\cc*.*
-del ..\build\LM_demo\demoData\cc*.*
-del ..\build\toolbox\*Plus.tbx
-del ..\build\toolbox\*Extras.tbx
+del ..\LinkageMapper"%1"\toolbox\scripts\cc*.*
+del ..\LinkageMapper"%1"\toolbox\scripts\s7*.*
+del ..\LinkageMapper"%1"\toolbox\scripts\s6*.*
+del ..\LinkageMapper"%1"\toolbox\scripts\bar*.*
+del ..\LinkageMapper"%1"\toolbox\climate*.*
+del ..\LinkageMapper"%1"\LM_demo\cc*.*
+del ..\LinkageMapper"%1"\LM_demo\demoData\cc*.*
+del ..\LinkageMapper"%1"\toolbox\*Plus.tbx
+del ..\LinkageMapper"%1"\toolbox\*Extras.tbx
 
 @ECHO OFF
 if "%2"=="cc" GOTO CCCopy
@@ -28,10 +28,10 @@ GOTO CMTest
 
 :CCCopy
 @ECHO ON
-xcopy /Y ..\toolbox\scripts\cc*.* ..\build\toolbox\scripts\cc*.*
-xcopy /Y ..\toolbox\climate*.tbx ..\build\toolbox\climate*.tbx
-xcopy /Y ..\demo\cc*.* ..\build\LM_demo\cc*.*
-xcopy /Y ..\demo\demoData\cc*.* ..\build\LM_demo\demoData\cc*.*
+xcopy /Y ..\toolbox\scripts\cc*.* ..\LinkageMapper"%1"\toolbox\scripts\cc*.*
+xcopy /Y ..\toolbox\climate*.tbx ..\LinkageMapper"%1"\toolbox\climate*.tbx
+xcopy /Y ..\demo\cc*.* ..\LinkageMapper"%1"\LM_demo\cc*.*
+xcopy /Y ..\demo\demoData\cc*.* ..\LinkageMapper"%1"\LM_demo\demoData\cc*.*
 
 :CMTest
 @ECHO OFF
@@ -42,8 +42,8 @@ GOTO BMTest
 
 :CMCopy
 @ECHO ON
-xcopy /Y ..\toolbox\scripts\s7_c*.* ..\build\toolbox\scripts\s7_c*.*
-xcopy /Y ..\toolbox\*Extras.tbx ..\build\toolbox\*Extras.tbx
+xcopy /Y ..\toolbox\scripts\s7_c*.* ..\LinkageMapper"%1"\toolbox\scripts\s7_c*.*
+xcopy /Y ..\toolbox\*Extras.tbx ..\LinkageMapper"%1"\toolbox\*Extras.tbx
 
 :BMTest
 @ECHO OFF
@@ -54,14 +54,14 @@ GOTO Finish
 
 :BMCopy
 @ECHO ON
-xcopy /Y ..\toolbox\scripts\bar*.* ..\build\toolbox\scripts\bar*.*
-xcopy /Y ..\toolbox\scripts\s6_b*.* ..\build\toolbox\scripts\s6_b*.*
-xcopy /Y ..\toolbox\*Extras.tbx ..\build\toolbox\*Extras.tbx
-xcopy /Y ..\toolbox\doc\barr*.docx ..\build\barr*.docx
+xcopy /Y ..\toolbox\scripts\bar*.* ..\LinkageMapper"%1"\toolbox\scripts\bar*.*
+xcopy /Y ..\toolbox\scripts\s6_b*.* ..\LinkageMapper"%1"\toolbox\scripts\s6_b*.*
+xcopy /Y ..\toolbox\*Extras.tbx ..\LinkageMapper"%1"\toolbox\*Extras.tbx
+xcopy /Y ..\toolbox\doc\barr*.docx ..\LinkageMapper"%1"\barr*.docx
 
 :Finish
 @ECHO OFF
-echo releaseNum = "%1" > ..\build\toolbox\scripts\lm_version.py
+echo releaseNum = "%1" > ..\LinkageMapper"%1"\toolbox\scripts\lm_version.py
 echo.
 echo Finished building Linkage Mapper release number %1
 if "%2"=="" GOTO END
