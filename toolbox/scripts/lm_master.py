@@ -76,6 +76,17 @@ def lm_master(argv=None):
         except:
             pass
 
+        if cfg.CONNECTFRAGS:               
+            gwarn = gp.AddWarning
+            lu.dashline(1)
+            gwarn('Custom mode: will run steps 1-2 ONLY to cluster core polygons within ')
+            gwarn('the maximum Euclidean corridor distance from one another ')
+            gwarn('into polygons with a single cluster_ID value.')
+            gwarn('Make sure you have set a Maximum Euclidean corridor distance.')
+            lu.dashline(2)
+            cfg.STEP3 = False
+            cfg.STEP4 = False
+            cfg.STEP5 = False
         # Set data frame spatial reference to coordinate system of input data
         # Problems arise in this script (core raster creation) and in S2
         # (generate near table) if they differ.
