@@ -39,9 +39,6 @@ def circuitscape_master():
 
     
     try:
-        # restart code- in progress
-        if cfg.CWDCUTOFF < 0:
-            cfg.CWDCUTOFF = cfg.CWDCUTOFF * -1
             
         CSPATH = lu.get_cs_path()
         if CSPATH == None:
@@ -83,6 +80,10 @@ def circuitscape_master():
         if cfg.CWDCUTOFF > 0:
             lu.delete_dir(cfg.SCRATCHDIR)
 
+        # restart code- in progress
+        if cfg.CWDCUTOFF < 0:
+            cfg.CWDCUTOFF = cfg.CWDCUTOFF * -1
+            
         if not cfg.DOPINCH and not cfg.DOCENTRALITY:
             msg = ('ERROR: Please choose at least one option: pinch point or\n'
                     'network centrality analysis.')
