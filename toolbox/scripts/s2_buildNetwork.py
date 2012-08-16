@@ -304,27 +304,30 @@ def generate_distance_file():
     try:
         #gp.Extent = gp.Describe(cfg.COREFC).Extent
         gp.CellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
-
+        
+        S2COREFC = cfg.COREFC
         if cfg.SIMPLIFY_CORES:
-            gprint('Simplifying polygons for core pair distance calculations')
-            COREFC_SIMP = path.join(cfg.SCRATCHDIR, "CoreFC_Simp.shp")
-            tolerance = float(gp.CellSize) / 3
-
             try:
-                import arcpy
-                import arcpy.cartography as CA
-            except:
-                arcpy = False
-            if arcpy:
-                CA.SimplifyPolygon(cfg.COREFC, COREFC_SIMP, "POINT_REMOVE",
-                                    tolerance, "#", "NO_CHECK")
-            else:
-                gp.SimplifyPolygon(cfg.COREFC, COREFC_SIMP, "POINT_REMOVE",
-                                    tolerance, "#", "NO_CHECK")
+                gprint('Simplifying polygons for core pair distance calculations')
+                COREFC_SIMP = path.join(cfg.SCRATCHDIR, "CoreFC_Simp.shp")
+                tolerance = float(gp.CellSize) / 3
 
-            S2COREFC = COREFC_SIMP
-        else:
-            S2COREFC = cfg.COREFC
+                try:
+                    import arcpy
+                    import arcpy.cartography as CA
+                except:
+                    arcpy = False
+                if arcpy:
+                    CA.SimplifyPolygon(cfg.COREFC, COREFC_SIMP, "POINT_REMOVE",
+                                        tolerance, "#", "NO_CHECK")
+                else:
+                    gp.SimplifyPolygon(cfg.COREFC, COREFC_SIMP, "POINT_REMOVE",
+                                        tolerance, "#", "NO_CHECK")
+
+                S2COREFC = COREFC_SIMP
+            except:
+                pass # In case point geometry is entered for core area FC
+
 
         gp.workspace = cfg.SCRATCHDIR
         FS2COREFC = "fcores"

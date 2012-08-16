@@ -24,18 +24,23 @@ def str2bool(pstr):
 
 def setadjmeth(inparam):
     """Return boolean variables for adjacency methods"""
-    if inparam == "Cost-Weighted":
+    if "cost" in inparam.lower():
         meth_cw = True
-        meth_eu = False
-    elif inparam == "Euclidean":
-        meth_cw = False
-        meth_eu = True
-    elif inparam == "Cost-Weighted & Euclidean":
-        meth_cw = True
-        meth_eu = True
+        #meth_eu = False
     else:
         meth_cw = False
+        
+    if "euclid" in inparam.lower():
+        #meth_cw = False
+        meth_eu = True
+    else:
         meth_eu = False
+    # elif inparam == "Cost-Weighted & Euclidean":
+        # meth_cw = True
+        # meth_eu = True
+    # else:
+        # meth_cw = False
+        # meth_eu = False
     return meth_cw, meth_eu
 
 
@@ -274,7 +279,6 @@ def config_barrier(config, arg):
 
     # Save temporary directories
     config.SAVEBARRIERDIR = False
-    config.SAVECENTRALITYDIR = False
 
     # Calculate minimum of resistance and improvement score
     config.WRITE_TRIM_RASTERS = False
@@ -296,6 +300,7 @@ def config_circuitscape(config, arg):
     if len(arg) == 4:
         config.DOCENTRALITY = True
         config.DOPINCH = False
+        config.CWDCUTOFF = 0
         config.DO_ALLPAIRS = False
     else:
         config.DOPINCH = True
@@ -316,7 +321,8 @@ def config_circuitscape(config, arg):
                 config.ALL_PAIR_SCENARIO = 'all-to-one'
 
     config.STEP1 = False
-
+    
+    config.SAVECENTRALITYDIR = False
 
 class Configure(object):
     """Class container to hold global variables"""
