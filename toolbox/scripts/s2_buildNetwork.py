@@ -373,7 +373,7 @@ def generate_distance_file():
             if row:  # May be running on selected core areas in step 2
                 while row:
                     dist = row.getvalue("NEAR_DIST")
-                     if dist <= 0:  # In case simplified polygons abut one another
+                    if dist <= 0:  # In case simplified polygons abut one another
                         dist = float(gp.CellSize)
                     if dist < minDist:
                         minDist = dist
