@@ -522,19 +522,19 @@ def connect_clusters(linkTable):
                 eucDist = linkTable[x, cfg.LTB_EUCDIST]
                 cur = gp.SearchCursor(clusterFC)
                 row = cur.Next()
-                i = 0
-                while row:
-                    if row.GetValue(cluster_ID) == frag1ID:
-                        frag1CoreID =  row.GetValue(cluster_ID)
-                    elif row.GetValue(cluster_ID) == frag2ID:
-                        frag2CoreID =  row.GetValue(cluster_ID)
-                    row = cur.Next()
-                    i = i + 1
-                del cur, row
+
+                # while row:
+                    # if row.GetValue(cluster_ID) == frag1ID:
+                        # frag1CoreID =  row.GetValue(cluster_ID)
+                    # elif row.GetValue(cluster_ID) == frag2ID:
+                        # frag2CoreID =  row.GetValue(cluster_ID)
+                    # row = cur.Next()
+                    # i = i + 1
+                # del cur, row
 
                 if eucDist < cfg.MAXEUCDIST:
-                    gprint("Joining fragments "+str(frag1ID)+" and "+str(frag2ID)+" in Core #"+str(frag2CoreID)+" separated by distance "+str(eucDist))
-
+#                    gprint("Joining fragments "+str(frag1ID)+" and "+str(frag2ID)+" in Core #"+str(frag2CoreID)+" separated by distance "+str(eucDist))
+                    gprint("Joining fragments "+str(frag1ID)+" and "+str(frag2ID)+" separated by distance "+str(eucDist))
                     # update linktable to new fragment ID in cluster field
                     rows = npy.where(linkTable[:,cfg.LTB_CLUST1] == frag2ID)
                     linkTable[rows, cfg.LTB_CLUST1] = frag1ID
