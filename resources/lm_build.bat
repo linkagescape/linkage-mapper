@@ -44,6 +44,7 @@ GOTO BMTest
 @ECHO ON
 xcopy /Y ..\toolbox\scripts\s7_c*.* ..\LinkageMapper"%1"\toolbox\scripts\s7_c*.*
 xcopy /Y ..\toolbox\*Extras.tbx ..\LinkageMapper"%1"\toolbox\*Extras.tbx
+xcopy /Y ..\toolbox\doc\cen*.doc ..\LinkageMapper"%1"\cen*.doc
 
 :BMTest
 @ECHO OFF
