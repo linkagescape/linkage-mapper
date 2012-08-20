@@ -221,22 +221,22 @@ def STEP2_build_network():
 
         #----------------------------------------------------------------------
 
-        # Drop links that are too long
-        gprint('\nChecking for corridors that are too long to map.')
-        DISABLE_LEAST_COST_NO_VAL = False
-        linkTable, numDroppedLinks = lu.drop_links(linkTable, cfg.MAXEUCDIST,
-                                                   0, cfg.MINEUCDIST, 0,
-                                                   DISABLE_LEAST_COST_NO_VAL)
-        if numDroppedLinks > 0:
-            lu.dashline(1)
-            gprint('Removed ' + str(numDroppedLinks) +
-                              ' links that were too long in Euclidean '
-                              'distance.')
-            # lu.dashline(2)
 
         if cfg.CONNECTFRAGS:               
-            connect_clusters(linkTable)            
+            connect_clusters(linkTable)     
         else:
+            # Drop links that are too long
+            gprint('\nChecking for corridors that are too long to map.')
+            DISABLE_LEAST_COST_NO_VAL = False
+            linkTable, numDroppedLinks = lu.drop_links(linkTable, cfg.MAXEUCDIST,
+                                                       0, cfg.MINEUCDIST, 0,
+                                                       DISABLE_LEAST_COST_NO_VAL)
+            if numDroppedLinks > 0:
+                lu.dashline(1)
+                gprint('Removed ' + str(numDroppedLinks) +
+                                  ' links that were too long in Euclidean '
+                                  'distance.')
+
             # Write linkTable to disk
             gprint('Writing ' + outlinkTableFile)
             lu.write_link_table(linkTable, outlinkTableFile)
@@ -304,7 +304,6 @@ def generate_distance_file():
     try:
         #gp.Extent = gp.Describe(cfg.COREFC).Extent
         gp.CellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
-        
         S2COREFC = cfg.COREFC
         if cfg.SIMPLIFY_CORES:
             try:
@@ -370,17 +369,22 @@ def generate_distance_file():
 
             rows = gp.searchcursor(near_tbl)
             row = rows.Next()
+            minDist = 1e20
             if row:  # May be running on selected core areas in step 2
-                dist = row.getvalue("NEAR_DIST")
-                if dist <= 0:  # In case simplified polygons abut one another
-                    dist = gp.CellSize
-                outputrow = []
-                outputrow.append(str(sourceCore))
-                outputrow.append(str(targetCore))
-                outputrow.append(str(dist))
-                output.append(csvseparator.join(outputrow))
-                del row
+                while row:
+                    dist = row.getvalue("NEAR_DIST")
+                     if dist <= 0:  # In case simplified polygons abut one another
+                        dist = float(gp.CellSize)
+                    if dist < minDist:
+                        minDist = dist
+                        outputrow = []
+                        outputrow.append(str(sourceCore))
+                        outputrow.append(str(targetCore))
+                        outputrow.append(str(dist))
+                    del row
+                    row = rows.Next()              
             del rows
+            output.append(csvseparator.join(outputrow))                    
         start_time = lu.elapsed_time(start_time)
 
         # In case coreFC is grouped in TOC, get coreFN for non-Arc statement
@@ -508,7 +512,7 @@ def connect_clusters(linkTable):
         
         #if frags less than cutoff set cluster_ID equal.        
         for x in range(0,numLinks):
-            if linkTable[x, cfg.LTB_LINKTYPE] == cfg.LT_CORR:            
+            # if linkTable[x, cfg.LTB_LINKTYPE] == cfg.LT_CORR:            
                 gprint("link #"+str(x+1))
                 # Set newfragmentID of 2nd fragment to that of frag 1
                 frag1ID = linkTable[x, cfg.LTB_CLUST1]
@@ -547,8 +551,10 @@ def connect_clusters(linkTable):
                         rows.UpdateRow(row)
                         row = rows.Next()
                     del row, rows
-                else:   
-                    gprint("Close fragments but different cores ("+str(frag1CoreID)+" and "+str(frag2CoreID)+")")
+                # else:   
+                    # gprint("Adjacent fragments not close enough ("+str(frag1CoreID)+" and "+str(frag2CoreID)+")")
+        
+        gprint('Done Joining.  Creating output shapefiles.')
         
         coreBaseName = path.splitext(path.basename(cfg.COREFC))[0]
 
@@ -591,7 +597,11 @@ def connect_clusters(linkTable):
         del row, rows, row2, rows2
         gprint('Cores with cluster ID and cluster area written to: ' 
                 + clusterFCFinal)
-        
+
+        outlinkTableFile = path.join(cfg.DATAPASSDIR,'linktable_clusters.csv')
+        gprint('Writing ' + outlinkTableFile)
+        lu.write_link_table(linkTable, outlinkTableFile)            
+                
         
         
         
