@@ -34,6 +34,7 @@ def STEP6_calc_barriers():
 
 # Fixme: add option to save individual barrier files?
     gprint = lu.gprint
+    
     try:
         arcpy.CheckOutExtension("spatial")
 
@@ -297,8 +298,7 @@ def STEP6_calc_barriers():
                             arcpy.CopyRaster_management(trmRaster, 
                                                         tempMosaicRasterTrim)                       
                         
-                    else:      
-#xxxx                    
+                    else:                    
                         if cfg.SUM_BARRIERS:
                             outCon = arcpy.sa.Con(Raster
                             (barrierRaster) < 0, lastMosaicRaster, 
@@ -311,13 +311,6 @@ def STEP6_calc_barriers():
                                 Raster(trmRaster) + Raster(
                                 lastMosaicRasterTrim))
                                 outCon.save(tempMosaicRasterTrim) 
-                            # gprint(barrierRaster)
-                            # gprint(trmRaster)
-                            # gprint(lastMosaicRaster)
-                            # gprint(lastMosaicRasterTrim)
-                            # gprint(tempMosaicRaster)
-                            # gprint(tempMosaicRasterTrim)
-                            # blarg
                             
                         else:
                             rasterString = ('"'+barrierRaster+";" + 
@@ -491,7 +484,7 @@ def STEP6_calc_barriers():
             arcpy.env.workspace = cfg.BARRIERGDB
             fillRasterFN = (PREFIX + "_BarrrierCircles" + sumSuffix + "_Rad" + 
                             str(outerRadius))
-            arcpy.CopyRaster_management(fillRaster, fillRasterFN) #xxx
+            arcpy.CopyRaster_management(fillRaster, fillRasterFN) 
             if cfg.WRITE_PCT_RASTERS:
                 fillRasterPctFN = (PREFIX + "_BarrrierCircles_Pct" + sumSuffix + 
                                   "_Rad" + str(outerRadius))
@@ -521,7 +514,7 @@ def STEP6_calc_barriers():
                 arcpy.CopyRaster_management(outRaster2, outRasterFN)
         
             startTime=lu.elapsed_time(startTime)
-        
+            
         # Combine rasters across radii
         gprint('\nCreating summary rasters...')
         if startRadius != endRadius:
