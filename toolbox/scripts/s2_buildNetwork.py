@@ -384,7 +384,8 @@ def generate_distance_file():
                     del row
                     row = rows.Next()              
             del rows
-            output.append(csvseparator.join(outputrow))                    
+            output.append(csvseparator.join(outputrow))  
+              
         start_time = lu.elapsed_time(start_time)
 
         # In case coreFC is grouped in TOC, get coreFN for non-Arc statement
@@ -520,9 +521,9 @@ def connect_clusters(linkTable):
                 if frag1ID == frag2ID:
                     continue
                 eucDist = linkTable[x, cfg.LTB_EUCDIST]
-                cur = gp.SearchCursor(clusterFC)
-                row = cur.Next()
 
+                # cur = gp.SearchCursor(clusterFC)
+                # row = cur.Next()
                 # while row:
                     # if row.GetValue(cluster_ID) == frag1ID:
                         # frag1CoreID =  row.GetValue(cluster_ID)

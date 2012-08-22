@@ -2182,6 +2182,16 @@ def retry_arc_error(count, statement):
             snooze(sleepTime)
             return count, True
 
+        elif count < 7:
+            sleepTime = 300
+            count = count + 1
+            gp.AddWarning('Failed to execute ' + statement + ' on try #' +
+                        str(count) + '.\n Could be an ArcGIS hiccup.  Trying'
+                        ' again in 5 minutes.\n')
+            snooze(sleepTime)
+
+            return count, True
+
         else:
             sleepTime = 300
             count = count + 1
@@ -2191,7 +2201,6 @@ def retry_arc_error(count, statement):
             snooze(sleepTime)
 
             return count, False
-
     except:
         exit_with_python_error(_SCRIPT_NAME)
 
