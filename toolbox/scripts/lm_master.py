@@ -44,7 +44,6 @@ def lm_master(argv=None):
 
     try:
         gprint = lu.gprint
-
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
         gp.OverwriteOutput = True
@@ -67,6 +66,7 @@ def lm_master(argv=None):
         lu.create_dir(cfg.ARCSCRATCHDIR)
         cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
                                              cfg.PARAMS)
+        lu.print_drive_warning()
 
         installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + cfg.releaseNum)

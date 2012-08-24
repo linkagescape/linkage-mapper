@@ -16,6 +16,7 @@ import time
 
 from lm_config import tool_env as cfg
 import lm_util as lu
+from lm_retry_decorator import retry
 
 _SCRIPT_NAME = "s2_buildNetwork.py"
 
@@ -319,6 +320,7 @@ def generate_distance_file():
                 if arcpy:
                     CA.SimplifyPolygon(cfg.COREFC, COREFC_SIMP, "POINT_REMOVE",
                                         tolerance, "#", "NO_CHECK")
+
                 else:
                     gp.SimplifyPolygon(cfg.COREFC, COREFC_SIMP, "POINT_REMOVE",
                                         tolerance, "#", "NO_CHECK")

@@ -16,6 +16,7 @@ import gc
 import sys
 
 import numpy as npy
+from lm_retry_decorator import retry
 import arcpy
 from arcpy.sa import *
 
@@ -33,6 +34,7 @@ tif = ".tif"
 #tif = ""
 
 
+@retry(2)
 def STEP8_calc_pinchpoints():
     """ Experimental code map pinch points using Circuitscape
         given CWD calculations from s3_calcCwds.py.
@@ -314,12 +316,18 @@ def STEP8_calc_pinchpoints():
                 arcpy.env.extent = "MAXOF"
                 if linkLoop == 1:
                     lu.delete_data(mosaicRaster)
-                    arcpy.CopyRaster_management(currentRaster,
-                                                 mosaicRaster)
+                    @retry(10)
+                    def copyRas2():
+                        arcpy.CopyRaster_management(currentRaster,
+                                                    mosaicRaster)
+                    copyRas2()
                 else:
-                    arcpy.Mosaic_management(currentRaster,
+                    @retry(10)
+                    def mosaicRas():                
+                        arcpy.Mosaic_management(currentRaster,
                                          mosaicRaster, "MAXIMUM", "MATCH")
-
+                    mosaicRas()
+                    
                 resistancesFN = ('Circuitscape_link' + linkId
                             + '_resistances_3columns.out')
 
@@ -356,15 +364,11 @@ def STEP8_calc_pinchpoints():
             outputRaster = path.join(outputGDB, cfg.PREFIX + 
                                      "_current_adjacentPairs_" + cutoffText)
             lu.delete_data(outputRaster)
-            statement = 'arcpy.CopyRaster_management(mosaicRaster, outputRaster)'
-            count = 0
-            while True:
-                try: exec statement
-                except:
-                    count,tryAgain = lu.retry_arc_error(count,statement)
-                    if not tryAgain: exec statement
-                else: break
-
+            
+            @retry(10)
+            def copyRas():
+                arcpy.CopyRaster_management(mosaicRaster, outputRaster)
+            copyRas()
 
             gprint('Building output statistics and pyramids '
                                   'for corridor pinch point raster\n')
@@ -551,89 +555,84 @@ def STEP8_calc_pinchpoints():
         lu.exit_with_python_error(_SCRIPT_NAME)
 
 
-
+@retry(10)
 def export_ras_to_npy(raster,npyFile):
-    try:
-        descData=arcpy.Describe(raster)
-        #noDataVal = arcpy.Raster(raster).noDataValue
-        cellSize=descData.meanCellHeight
-        extent=descData.Extent
-        spatialReference=descData.spatialReference
-        pnt=arcpy.Point(extent.XMin,extent.YMin)
-        outData = arcpy.RasterToNumPyArray(raster,"#","#","#",-9999)
-        #outData = npy.where(outData==noDataVal,-9999,outData)
-        if npy.array_equiv(outData, outData.astype('int32')):
-            outData = outData.astype('int32')
-        npy.save(npyFile, outData)
-        write_header(raster,outData,npyFile)
-                
-        numElements = (outData.shape[0] * outData.shape[1])
-        #rows,cols = npy.where(outData != -9999)
-        numNodes = (npy.where(outData != -9999, 1, 0)).sum() 
-        #numZeros = (npy.where(outData != -9999, 1, 0)).sum() 
-        #del rows
-        
-        del outData
-        return numElements, numNodes
-    # Return GEOPROCESSING specific errors
-    except arcpy.ExecuteError:
-        lu.dashline(1)
-        gprint('****Failed in step 8. Details follow.****')
-        lu.exit_with_geoproc_error(_SCRIPT_NAME)
+    randomerror()
+    descData=arcpy.Describe(raster)
+    cellSize=descData.meanCellHeight
+    extent=descData.Extent
+    spatialReference=descData.spatialReference
+    
+    pnt=arcpy.Point(extent.XMin,extent.YMin)
+    outData = arcpy.RasterToNumPyArray(raster,"#","#","#",-9999)
+    #outData = npy.where(outData==noDataVal,-9999,outData)
+    if npy.array_equiv(outData, outData.astype('int32')):
+        outData = outData.astype('int32')
+    npy.save(npyFile, outData)
+    write_header(raster,outData,npyFile)
+            
+    numElements = (outData.shape[0] * outData.shape[1])
+    #rows,cols = npy.where(outData != -9999)
+    numNodes = (npy.where(outData != -9999, 1, 0)).sum() 
+    #numZeros = (npy.where(outData != -9999, 1, 0)).sum() 
+    #del rows
+    
+    del outData
+    return numElements, numNodes
 
-    # Return any PYTHON or system specific errors
-    except:
-        lu.dashline(1)
-        gprint('****Failed in step 8. Details follow.****')
-        lu.exit_with_python_error(_SCRIPT_NAME)
-
+@retry(10)
 def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
-    try:
-        npyArray = npy.load(npyFile, mmap_mode=None)
-        npyArray=npyArray.astype('float32')
-        descData=arcpy.Describe(baseRaster)
-        cellSize=descData.meanCellHeight
-        extent=descData.Extent
-        spatialReference=descData.spatialReference
-        pnt=arcpy.Point(extent.XMin,extent.YMin)
-        newRaster = arcpy.NumPyArrayToRaster(npyArray,pnt,
-                                             cellSize,cellSize,-9999)
-        newRaster.save(outRasterPath)
-        return
-    # Return GEOPROCESSING specific errors
-    except arcpy.ExecuteError:
-        lu.dashline(1)
-        gprint('****Failed in step 8. Details follow.****')
-        lu.exit_with_geoproc_error(_SCRIPT_NAME)
+    # try:
+    randomerror()
+    npyArray = npy.load(npyFile, mmap_mode=None)
+    npyArray=npyArray.astype('float32')
+    descData=arcpy.Describe(baseRaster)
+    cellSize=descData.meanCellHeight
+    extent=descData.Extent
+    spatialReference=descData.spatialReference
+    
+    pnt=arcpy.Point(extent.XMin,extent.YMin)
+    newRaster = arcpy.NumPyArrayToRaster(npyArray,pnt,
+                                         cellSize,cellSize,-9999)
+    newRaster.save(outRasterPath)
+    return
+        
+    # # Return GEOPROCESSING specific errors
+    # except arcpy.ExecuteError:
+        # lu.dashline(1)
+        # gprint('****Failed in step 8. Details follow.****')
+        # lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
-    # Return any PYTHON or system specific errors
-    except:
-        lu.dashline(1)
-        gprint('****Failed in step 8. Details follow.****')
-        lu.exit_with_python_error(_SCRIPT_NAME)
+    # # Return any PYTHON or system specific errors
+    # except:
+        # lu.dashline(1)
+        # gprint('****Failed in step 8. Details follow.****')
+        # lu.exit_with_python_error(_SCRIPT_NAME)
 
+@retry(10)
 def write_header(raster,numpyArray,numpyFile):
-        ncols=numpyArray.shape[1]
-        nrows=numpyArray.shape[0]
-        descData=arcpy.Describe(raster)
-        cellSize=descData.meanCellHeight
-        extent=descData.Extent
-        xllcorner = extent.XMin
-        yllcorner = extent.YMin
-        nodata = -9999
-        fileBase, fileExtension = path.splitext(numpyFile)
-        headerFile = fileBase + '.hdr'
-        f = False
-        f = open(headerFile, 'w')
+    randomerror()
+    ncols=numpyArray.shape[1]
+    nrows=numpyArray.shape[0]
+    descData=arcpy.Describe(raster)
+    cellSize=descData.meanCellHeight
+    extent=descData.Extent
+    xllcorner = extent.XMin
+    yllcorner = extent.YMin
+    nodata = -9999
+    fileBase, fileExtension = path.splitext(numpyFile)
+    headerFile = fileBase + '.hdr'
+    f = False
+    f = open(headerFile, 'w')
 
-        f.write('ncols         ' + str(ncols) + '\n')
-        f.write('nrows         ' + str(nrows) + '\n')
-        f.write('xllcorner     ' + str(xllcorner) + '\n')
-        f.write('yllcorner     ' + str(yllcorner) + '\n')
-        f.write('cellsize      ' + str(cellSize) + '\n')
-        f.write('NODATA_value  ' + str(nodata) + '\n')
+    f.write('ncols         ' + str(ncols) + '\n')
+    f.write('nrows         ' + str(nrows) + '\n')
+    f.write('xllcorner     ' + str(xllcorner) + '\n')
+    f.write('yllcorner     ' + str(yllcorner) + '\n')
+    f.write('cellsize      ' + str(cellSize) + '\n')
+    f.write('NODATA_value  ' + str(nodata) + '\n')
 
-        f.close()
+    f.close()
 
 def print_failure(numResistanceNodes, memFlag, sleepTime):
     gprint('\nCircuitscape failed. See error information above.')
@@ -649,7 +648,9 @@ def print_failure(numResistanceNodes, memFlag, sleepTime):
     gprint('Trying again in ' + str(sleepTime) + ' seconds.')
     lu.snooze(sleepTime)                    
 
+@retry(10)
 def call_circuitscape(CSPATH, outConfigFile):
+    randomerror()
     memFlag = False
     failFlag = False
     gprint('     Calling Circuitscape:')
@@ -681,3 +682,24 @@ def call_circuitscape(CSPATH, outConfigFile):
                 ('sec' in line) or (failFlag == True))):
            gprint("      " + str(line))#.replace("\r\n","")))              
     return memFlag
+
+def randomerror():
+    """ Used to test error recovery.
+
+    """
+    generateError = False # Set to True to create random errors
+    gprint=lu.gprint
+    if generateError:
+        gprint('\n***Rolling dice for random error***')
+        import random
+        test = random.randrange(2, 12)
+        if test == 2:
+            gprint('Creating artificial ArcGIS error')
+            arcpy.MosaicToNewRaster_management(
+                            "rasterString","mosaicDir","mosFN", "", 
+                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM", 
+                            "MATCH")
+        elif test == 3:
+            gprint('Creating artificial python error')
+            artificialPythonError
+    return          

@@ -12,6 +12,8 @@ import shutil
 import gc
 import glob
 import ctypes
+from lm_retry_decorator import retry
+
 
 import numpy as npy
 
@@ -2067,8 +2069,8 @@ def print_drive_warning():
             'project directories on local drives, like C:\puma. '
             'Errors may also result from conflicts with anti-virus '
             'software (known problems with AVG). We have also seen '
-            'conflicts when writing to synced folders (e.g., Dropbox). '
-            '\nThen again, if this looks like a bug please report it.)\n')
+            'conflicts when writing to synced folders (e.g., Dropbox).\n ')
+
 
 def get_dir_depth(dir):
     import string
@@ -2254,23 +2256,14 @@ def exit_with_geoproc_error(filename):
     msg = ("Geoprocessing error on **" + line + "** of " + filename + " "
                 "in Linkage Mapper Version " + str(cfg.releaseNum) + ":")
     gp.AddError(msg)
-    write_log(msg)
-
+    write_log(msg) #xxx
     dashline(1)
     for msg in range(0, gp.MessageCount):
         if gp.GetSeverity(msg) == 2:
             gp.AddReturnMessage(msg)
-            write_log(msg)
+            #write_log(msg) #xxx
     dashline()
     print_drive_warning()
-    # gprint('(Note: ArcGIS errors are more likely when writing to remote '
-            # 'drives or deep file structures. We recommend shallow '
-            # 'project directories on local drives, like C:\puma. '
-            # 'Errors may also result from conflicts with anti-virus '
-            # 'software (known problems with AVG). We have also seen '
-            # 'conflicts when writing to synced folders (e.g., using Dropbox). '
-            # '\nThen again, maybe this is a bug.)\n')
-
     close_log_file()
     exit(1)
 
@@ -2332,6 +2325,7 @@ def set_lm_options():
 ############################################################################
 ## Circuitscape Functions ##################################################
 ############################################################################
+@retry(5)
 def setCircuitscapeOptions():
     """Sets default options for calling Circuitscape.
 
