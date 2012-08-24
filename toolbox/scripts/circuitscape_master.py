@@ -40,6 +40,11 @@ def circuitscape_master():
     
     try:
             
+        lu.create_dir(cfg.LOGDIR)
+        lu.create_dir(cfg.MESSAGEDIR)
+        cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
+                                           cfg.PARAMS) 
+
         CSPATH = lu.get_cs_path()
         if CSPATH == None:
             msg = ('Cannot find an installation of Circuitscape 3.5.5'
@@ -58,12 +63,8 @@ def circuitscape_master():
                 gwarn('The new version interacts more smoothly with ArcMap.')
                 gprint('Proceeding...\n')
         except: pass
-    
-        lu.create_dir(cfg.LOGDIR)
-        lu.create_dir(cfg.MESSAGEDIR)
-        cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
-                                           cfg.PARAMS) 
-
+        
+        lu.print_drive_warning()
         # Check core ID field.
         lu.check_cores(cfg.COREFC, cfg.COREFN)
 
