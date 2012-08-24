@@ -21,7 +21,6 @@ import s6_barriers as s6
 
 _SCRIPT_NAME = "barrier_master.py"
 
-
 def bar_master():
     """ Experimental code to detect barriers using cost-weighted distance
     outputs from Linkage Mapper tool.
@@ -30,11 +29,14 @@ def bar_master():
     cfg.configure(cfg.TOOL_BM, sys.argv)
     gprint = lu.gprint
     try:
+        
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
 
         cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
                                              cfg.PARAMS)
+
+        lu.print_drive_warning()
 
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
@@ -43,7 +45,7 @@ def bar_master():
         lu.delete_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
-
+        
         gprint('\nMaking local copy of resistance raster.')
         lu.delete_data(cfg.RESRAST)
 
