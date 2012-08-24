@@ -59,6 +59,7 @@ xcopy /Y ..\toolbox\scripts\bar*.* ..\LinkageMapper"%1"\toolbox\scripts\bar*.*
 xcopy /Y ..\toolbox\scripts\s6_b*.* ..\LinkageMapper"%1"\toolbox\scripts\s6_b*.*
 xcopy /Y ..\toolbox\*Extras.tbx ..\LinkageMapper"%1"\toolbox\*Extras.tbx
 xcopy /Y ..\toolbox\doc\barr*.docx ..\LinkageMapper"%1"\barr*.docx
+xcopy /Y ..\toolbox\doc\McRae*.docx ..\LinkageMapper"%1"\McRae*.docx
 
 :Finish
 @ECHO OFF
