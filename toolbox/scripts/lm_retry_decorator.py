@@ -39,7 +39,7 @@ class retry(object):
                     filename = filename.rsplit("File ")[1]
                     gwarn('--------------------------------------------------')
                     msg = ("The following error is being reported "
-                           "on line " + line + " of " + filename + ":")                        
+                           "on " + line + " of " + filename + ":")                        
                     gwarn(msg)
                     lu.write_log(msg)
                     gwarn(str(e))

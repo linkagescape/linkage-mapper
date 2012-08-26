@@ -137,20 +137,24 @@ def STEP7_calc_centrality():
 
         write_graph(options['habitat_file'] ,graphList)
         gprint('\nCalculating current flow centrality using Circuitscape...')
-
         subprocess.call([csPath, outConfigFile], shell=True)                     
-        #test = subprocess.call([csPath, outConfigFile],
-        #                        creationflags = subprocess.CREATE_NEW_CONSOLE) #bbb
-
         outputFN = 'Circuitscape_network_branch_currents_cum.txt'
         currentList = path.join(OUTCENTRALITYDIR, outputFN)
+
         if not arcpy.Exists(currentList):
-            lu.dashline(1)
-            msg = ('ERROR: No Circuitscape output found.\n'
-                   'It looks like Circuitscape failed.')
-            arcpy.AddError(msg)
-            lu.write_log(msg)
-            exit(1)
+            write_graph(options['habitat_file'] ,graphList)
+            gprint('\nCalculating current flow centrality using Circuitscape '
+                   '(2nd try)...')
+            subprocess.call([csPath, outConfigFile], shell=True)             
+            if not arcpy.Exists(currentList):
+                lu.dashline(1)
+                msg = ('ERROR: No Circuitscape output found.\n'
+                       'It looks like Circuitscape failed.')
+                arcpy.AddError(msg)
+                lu.write_log(msg)
+                exit(1)
+
+                
         currents = load_graph(currentList,graphType='graph/network',
                               datatype='float64')
 
