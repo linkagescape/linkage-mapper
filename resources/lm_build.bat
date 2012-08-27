@@ -43,7 +43,7 @@ GOTO BMTest
 :CMCopy
 @ECHO ON
 xcopy /Y ..\toolbox\scripts\s7_c*.* ..\LinkageMapper"%1"\toolbox\scripts\s7_c*.*
-xcopy /Y ..\toolbox\*Extras.tbx ..\LinkageMapper"%1"\toolbox\*Extras.tbx
+REM xcopy /Y ..\toolbox\*Extras.tbx ..\LinkageMapper"%1"\toolbox\*Extras.tbx
 REM xcopy /Y ..\toolbox\doc\cen*.doc ..\LinkageMapper"%1"\cen*.doc
 
 :BMTest
@@ -57,7 +57,7 @@ GOTO Finish
 @ECHO ON
 xcopy /Y ..\toolbox\scripts\bar*.* ..\LinkageMapper"%1"\toolbox\scripts\bar*.*
 xcopy /Y ..\toolbox\scripts\s6_b*.* ..\LinkageMapper"%1"\toolbox\scripts\s6_b*.*
-xcopy /Y ..\toolbox\*Extras.tbx ..\LinkageMapper"%1"\toolbox\*Extras.tbx
+REM xcopy /Y ..\toolbox\*Extras.tbx ..\LinkageMapper"%1"\toolbox\*Extras.tbx
 REM xcopy /Y ..\toolbox\doc\barr*.docx ..\LinkageMapper"%1"\barr*.docx
 REM xcopy /Y ..\toolbox\doc\McRae*.pdf ..\LinkageMapper"%1"\McRae*.pdf
 
