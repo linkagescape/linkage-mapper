@@ -14,6 +14,7 @@ import subprocess
 
 import arcpy
 import numpy as npy
+from lm_retry_decorator import retry
 
 from lm_config import tool_env as cfg
 import lm_util as lu
@@ -137,7 +138,10 @@ def STEP7_calc_centrality():
 
         write_graph(options['habitat_file'] ,graphList)
         gprint('\nCalculating current flow centrality using Circuitscape...')
-        subprocess.call([csPath, outConfigFile], shell=True)                     
+        #subprocess.call([csPath, outConfigFile], shell=True)   
+        
+        memFlag = call_circuitscape(csPath, outConfigFile)        
+        
         outputFN = 'Circuitscape_network_branch_currents_cum.txt'
         currentList = path.join(OUTCENTRALITYDIR, outputFN)
 
@@ -145,7 +149,8 @@ def STEP7_calc_centrality():
             write_graph(options['habitat_file'] ,graphList)
             gprint('\nCalculating current flow centrality using Circuitscape '
                    '(2nd try)...')
-            subprocess.call([csPath, outConfigFile], shell=True)             
+            # subprocess.call([csPath, outConfigFile], shell=True)  
+            memFlag = call_circuitscape(csPath, outConfigFile)                    
             if not arcpy.Exists(currentList):
                 lu.dashline(1)
                 msg = ('ERROR: No Circuitscape output found.\n'
@@ -270,8 +275,60 @@ def make_graph_from_list(graphList):
         gprint('****Failed in step 7. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
+        
+@retry(10)
+def call_circuitscape(CSPATH, outConfigFile):
+    randomerror()
+    memFlag = False
+    failFlag = False
+    gprint('     Calling Circuitscape:')
+    proc = subprocess.Popen([CSPATH, outConfigFile],
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
+                           shell=True)
+    while proc.poll() is None:
+        output = proc.stdout.readline()
+
+        if 'Traceback' in output:
+            gprint("\nCircuitscape failed.")
+            failFlag = True
+            if 'memory' in output:
+                memFlag = True
+        if ('Processing' not in output and 'laplacian' not in output and 
+                'node_map' not in output and (('--' in output) or 
+                ('sec' in output) or (failFlag == True))):
+            gprint("      " + output.replace("\r\n",""))                
+    
+    # Catch any output lost if process closes too quickly
+    output=proc.communicate()[0]
+    for line in output.split('\r\n'):
+        if 'Traceback' in line:
+            gprint("\nCircuitscape failed.")
+            if 'memory' in line:
+                memFlag = True
+        if ('Processing' not in line and 'laplacian' not in line and 
+                'node_map' not in line and (('--' in line) or 
+                ('sec' in line) or (failFlag == True))):
+           gprint("      " + str(line))#.replace("\r\n","")))              
+    return memFlag
 
 
+def randomerror():
+    """ Used to test error recovery.
 
-
-
+    """
+    generateError = False # Set to True to create random errors
+    gprint=lu.gprint
+    if generateError:
+        gprint('\n***Rolling dice for random error***')
+        import random
+        test = random.randrange(2, 5)
+        if test == 2:
+            gprint('Creating artificial ArcGIS error')
+            arcpy.MosaicToNewRaster_management(
+                            "rasterString","mosaicDir","mosFN", "", 
+                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM", 
+                            "MATCH")
+        elif test == 3:
+            gprint('Creating artificial python error')
+            artificialPythonError
+    return              
