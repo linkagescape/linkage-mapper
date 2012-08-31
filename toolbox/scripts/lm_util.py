@@ -729,14 +729,14 @@ def make_points(workspace, pointArray, outFC):
         gp.CreateFeatureclass_management(workspace, outFC, "POINT")
         #for field in fieldArray:
         if pointArray.shape[1] > 3:
-            gp.addfield(outFC, "corex", "SHORT")
-            gp.addfield(outFC, "corey", "SHORT")
+            gp.addfield(outFC, "corex", "LONG")
+            gp.addfield(outFC, "corey", "LONG")
             gp.addfield(outFC, "radius", "DOUBLE")
             gp.addfield(outFC, "cores_x_y", "TEXT")
         else:
             gp.addfield(outFC, "XCoord", "DOUBLE")
             gp.addfield(outFC, "YCoord", "DOUBLE")
-            gp.addfield(outFC, cfg.COREFN, "SHORT")
+            gp.addfield(outFC, cfg.COREFN, "LONG")
         rows = gp.InsertCursor(outFC)
 
         numPoints = pointArray.shape[0]
@@ -811,10 +811,10 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
         gp.CalculateField_management(lcplineDslv, "Link_Info",
                                          linktypedesc)
 
-        gp.AddField_management(lcplineDslv, "From_Core", "SHORT", "5")
+        gp.AddField_management(lcplineDslv, "From_Core", "LONG", "5")
         gp.CalculateField_management(lcplineDslv, "From_Core",
                                          int(sourceCore))
-        gp.AddField_management(lcplineDslv, "To_Core", "SHORT", "5")
+        gp.AddField_management(lcplineDslv, "To_Core", "LONG", "5")
         gp.CalculateField_management(lcplineDslv, "To_Core",
                                          int(targetCore))
 
@@ -1464,8 +1464,8 @@ def write_link_maps(linkTableFile, step):
         gp.AddField_management(coreLinksShapefile, "Link_ID", "LONG")
         gp.AddField_management(coreLinksShapefile, "Active", "SHORT")
         gp.AddField_management(coreLinksShapefile, "Link_Info", "TEXT")
-        gp.AddField_management(coreLinksShapefile, "From_Core", "SHORT")
-        gp.AddField_management(coreLinksShapefile, "To_Core", "SHORT")
+        gp.AddField_management(coreLinksShapefile, "From_Core", "LONG")
+        gp.AddField_management(coreLinksShapefile, "To_Core", "LONG")
         gp.AddField_management(coreLinksShapefile, "Euc_Dist", "FLOAT")
         gp.AddField_management(coreLinksShapefile, "CW_Dist", "FLOAT")
         gp.AddField_management(coreLinksShapefile, "cwd2Euc_R", "FLOAT")
@@ -1738,15 +1738,16 @@ def make_cwd_paths(max_core_no):
 
         gprint("\nCreating cost-weighted distance output folders:")
         gprint('...' + cfg.CWDSUBDIR_NM)
-
+        gprint('etc.')
         gp.CreateFolder_management(os.path.dirname(cfg.CWDBASEDIR),
                                        os.path.basename(cfg.CWDBASEDIR))
         gp.CreateFolder_management(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
 
         no_dirs = max_core_no / 100
+        
         for dir_no in range(1, no_dirs + 1):
             ccwdir = cfg.CWDSUBDIR_NM + str(dir_no)
-            gprint('...' + ccwdir)
+            # gprint('...' + ccwdir)
             gp.CreateFolder_management(cfg.CWDBASEDIR, ccwdir)
 
     except arcgisscripting.ExecuteError:
@@ -2136,7 +2137,7 @@ def check_cores(FC,FN):
                 if (FT != 'SmallInteger' and FT != 'SHORT' and FT != 'Integer'
                     and FT != 'LONG'):
                     dashline(1)
-                    msg = ('ERROR: Core area field must be in Short Integer '
+                    msg = ('ERROR: Core area field must be in Integer '
                             'format.')
                     raise_error(msg)
 
