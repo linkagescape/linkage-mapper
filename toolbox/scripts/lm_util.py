@@ -1736,15 +1736,17 @@ def make_cwd_paths(max_core_no):
     try:
         delete_dir(cfg.CWDBASEDIR)
 
-        gprint("\nCreating cost-weighted distance output folders:")
+        gprint("\nCreating cost-weighted distance output folders")
         gprint('...' + cfg.CWDSUBDIR_NM)
-        gprint('etc.')
+        
         gp.CreateFolder_management(os.path.dirname(cfg.CWDBASEDIR),
                                        os.path.basename(cfg.CWDBASEDIR))
         gp.CreateFolder_management(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
 
         no_dirs = max_core_no / 100
-        
+        if no_dirs > 1:
+            gprint('...' + cfg.CWDSUBDIR_NM + '1')
+            gprint('...etc.')
         for dir_no in range(1, no_dirs + 1):
             ccwdir = cfg.CWDSUBDIR_NM + str(dir_no)
             # gprint('...' + ccwdir)
@@ -2065,12 +2067,12 @@ def print_arcgis_failures(statement, failures):
 def print_drive_warning():
     drive, depth = get_dir_depth(cfg.PROJECTDIR)
     if drive.lower() != 'c' or depth > 3 or 'dropbox' in drive.lower():
-        gp.AddWarning('(Note: ArcGIS errors are more likely when writing to remote '
+        gp.AddWarning('Note: ArcGIS errors are more likely when writing to remote '
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
             'Errors may also result from conflicts with anti-virus '
             'software (known problems with AVG). We have also seen '
-            'conflicts when writing to synced folders (e.g., Dropbox).\n ')
+            'conflicts when writing to synchronized folders like Dropbox.\n ')
 
 
 def get_dir_depth(dir):
