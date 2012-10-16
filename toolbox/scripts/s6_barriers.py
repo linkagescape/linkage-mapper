@@ -317,17 +317,20 @@ def STEP6_calc_barriers():
                                         "32_BIT_FLOAT", arcpy.env.cellSize, "1", 
                                         "MAXIMUM", "MATCH")
                                 mosaicToNew()
-                        if linkLoop>1:
+                        if linkLoop>1: #Clean up from previous loop
                             lu.delete_data(lastMosaicRaster)
                             lastMosaicDir =path.dirname(lastMosaicRaster) 
                             lu.clean_out_workspace(lastMosaicDir)
                             lu.delete_dir(lastMosaicDir)
+                            
                         lastMosaicRaster = tempMosaicRaster
                         if cfg.WRITE_TRIM_RASTERS:
                             lastMosaicRasterTrim = tempMosaicRasterTrim             
                         if cfg.WRITE_PCT_RASTERS:
                             mosPctFN = 'mos_temp_pct'
-                            tempMosaicRasterPct = path.join(mosaicDir,mosPctFN)
+                            mosaicDirPct = path.join(cfg.SCRATCHDIR,'mosP'+str(radId)+'_'+str(x+1)) 
+                            lu.create_dir(mosaicDirPct)                            
+                            tempMosaicRasterPct = path.join(mosaicDirPct,mosPctFN)
                             if linkLoop == 1:
                                 # If this is the first grid then copy 
                                 # rather than mosaic
@@ -357,12 +360,18 @@ def STEP6_calc_barriers():
                                     def maxBarriers():
                                         randomerror()
                                         arcpy.MosaicToNewRaster_management(
-                                            rasterString,mosaicDir,mosPctFN, "", 
+                                            rasterString,mosaicDirPct,mosPctFN, "", 
                                             "32_BIT_FLOAT", arcpy.env.cellSize, "1", 
                                             "MAXIMUM", "MATCH")
                                     maxBarriers()
-
-                            lu.delete_data(lastMosaicRasterPct)
+                                    
+                            if linkLoop>1: #Clean up from previous loop
+                                lu.delete_data(lastMosaicRasterPct)
+                                lastMosaicDirPct =path.dirname(lastMosaicRasterPct) 
+                                lu.clean_out_workspace(lastMosaicDirPct)
+                                lu.delete_dir(lastMosaicDirPct)
+                            
+                            # lu.delete_data(lastMosaicRasterPct)
                             lastMosaicRasterPct = tempMosaicRasterPct                    
                         
                         if not cfg.SAVEBARRIERRASTERS:
