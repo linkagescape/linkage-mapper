@@ -34,27 +34,27 @@ xcopy /Y ..\demo\cc*.* ..\LinkageMapper"%1"\LM_demo\cc*.*
 xcopy /Y ..\demo\demoData\cc*.* ..\LinkageMapper"%1"\LM_demo\demoData\cc*.*
 
 :CMTest
-@ECHO OFF
-if "%2"=="cm" GOTO CMCopy
-if "%3"=="cm" GOTO CMCopy
-if "%4"=="cm" GOTO CMCopy
-GOTO BMTest
+REM @ECHO OFF
+REM if "%2"=="cm" GOTO CMCopy
+REM if "%3"=="cm" GOTO CMCopy
+REM if "%4"=="cm" GOTO CMCopy
+REM GOTO BMTest
 
-:CMCopy
+REM :CMCopy
 @ECHO ON
 xcopy /Y ..\toolbox\scripts\s7_c*.* ..\LinkageMapper"%1"\toolbox\scripts\s7_c*.*
 REM xcopy /Y ..\toolbox\*Extras.tbx ..\LinkageMapper"%1"\toolbox\*Extras.tbx
 REM xcopy /Y ..\toolbox\doc\cen*.doc ..\LinkageMapper"%1"\cen*.doc
 
-:BMTest
-@ECHO OFF
-if "%2"=="bm" GOTO BMCopy
-if "%3"=="bm" GOTO BMCopy
-if "%4"=="bm" GOTO BMCopy
-GOTO Finish
+REM :BMTest
+REM @ECHO OFF
+REM if "%2"=="bm" GOTO BMCopy
+REM if "%3"=="bm" GOTO BMCopy
+REM if "%4"=="bm" GOTO BMCopy
+REM GOTO Finish
 
-:BMCopy
-@ECHO ON
+REM :BMCopy
+REM @ECHO ON
 xcopy /Y ..\toolbox\scripts\bar*.* ..\LinkageMapper"%1"\toolbox\scripts\bar*.*
 xcopy /Y ..\toolbox\scripts\s6_b*.* ..\LinkageMapper"%1"\toolbox\scripts\s6_b*.*
 REM xcopy /Y ..\toolbox\*Extras.tbx ..\LinkageMapper"%1"\toolbox\*Extras.tbx
@@ -74,8 +74,8 @@ GOTO END
 @ECHO OFF
 echo.
 echo Error: must supply a version string
-echo syntax: lm_build (version) cm bm cc
-echo example: lm_build 0.8.4 cm cc
+echo syntax: lm_build (version) (option to include climate tool)
+echo example: lm_build 0.8.4 cc
 echo.
 
 :End
