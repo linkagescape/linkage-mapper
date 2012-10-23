@@ -150,8 +150,9 @@ def STEP6_calc_barriers():
 
         # Loop through each search radius to calculate barriers in each link
         import time
-        
+        radId = 0 #keep track of number of radii processed- used for temp dir naming
         for radius in range (startRadius, endRadius + 1, radiusStep):
+            radId = radId + 1
             linkTableTemp = linkTable.copy()
             @retry(10)
             #can't pass vars in and modify them. 
@@ -278,7 +279,7 @@ def STEP6_calc_barriers():
                             calcBenPct()
                             
                         # Mosaic barrier results across core area pairs                    
-                        mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(x+1)) 
+                        mosaicDir = path.join(cfg.SCRATCHDIR,'mos'+str(radId)+'_'+str(x+1)) 
                         lu.create_dir(mosaicDir)
                         
                         mosFN = 'mos_temp'
@@ -316,13 +317,20 @@ def STEP6_calc_barriers():
                                         "32_BIT_FLOAT", arcpy.env.cellSize, "1", 
                                         "MAXIMUM", "MATCH")
                                 mosaicToNew()
-                                
+                        if linkLoop>1: #Clean up from previous loop
+                            lu.delete_data(lastMosaicRaster)
+                            lastMosaicDir =path.dirname(lastMosaicRaster) 
+                            lu.clean_out_workspace(lastMosaicDir)
+                            lu.delete_dir(lastMosaicDir)
+                            
                         lastMosaicRaster = tempMosaicRaster
                         if cfg.WRITE_TRIM_RASTERS:
                             lastMosaicRasterTrim = tempMosaicRasterTrim             
                         if cfg.WRITE_PCT_RASTERS:
                             mosPctFN = 'mos_temp_pct'
-                            tempMosaicRasterPct = path.join(mosaicDir,mosPctFN)
+                            mosaicDirPct = path.join(cfg.SCRATCHDIR,'mosP'+str(radId)+'_'+str(x+1)) 
+                            lu.create_dir(mosaicDirPct)                            
+                            tempMosaicRasterPct = path.join(mosaicDirPct,mosPctFN)
                             if linkLoop == 1:
                                 # If this is the first grid then copy 
                                 # rather than mosaic
@@ -352,12 +360,18 @@ def STEP6_calc_barriers():
                                     def maxBarriers():
                                         randomerror()
                                         arcpy.MosaicToNewRaster_management(
-                                            rasterString,mosaicDir,mosPctFN, "", 
+                                            rasterString,mosaicDirPct,mosPctFN, "", 
                                             "32_BIT_FLOAT", arcpy.env.cellSize, "1", 
                                             "MAXIMUM", "MATCH")
                                     maxBarriers()
-
-                            lu.delete_data(lastMosaicRasterPct)
+                                    
+                            if linkLoop>1: #Clean up from previous loop
+                                lu.delete_data(lastMosaicRasterPct)
+                                lastMosaicDirPct =path.dirname(lastMosaicRasterPct) 
+                                lu.clean_out_workspace(lastMosaicDirPct)
+                                lu.delete_dir(lastMosaicDirPct)
+                            
+                            # lu.delete_data(lastMosaicRasterPct)
                             lastMosaicRasterPct = tempMosaicRasterPct                    
                         
                         if not cfg.SAVEBARRIERRASTERS:
