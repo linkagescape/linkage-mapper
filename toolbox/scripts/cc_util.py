@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.6
 # Author: Darren Kavanagh
 
-"""Climate Corridor utility modules"""
+"""Climate Corridor utility module"""
 
 import os
 
