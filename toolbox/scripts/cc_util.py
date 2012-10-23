@@ -1,12 +1,9 @@
 #!/usr/bin/env python2.6
 # Author: Darren Kavanagh
 
-"""Climate Corridor utility module.
-
-"""
+"""Climate Corridor utility modules"""
 
 import os
-import time
 
 import arcpy
 
@@ -22,12 +19,10 @@ def mk_proj_dir(in_dir):
 
 
 def delete_feature(in_feature):
-    """Delete feature if already exists"""
+    """Delete temporary feature if already exists"""
     if arcpy.Exists(in_feature):
-        arcpy.Delete_management(in_feature)
-
-class Ctimer():
-    def __enter__(self):
-        self.start = time.time()
-    def __exit__(self, *args):
-        print time.time() - self.start
+        try:
+            arcpy.Delete_management(in_feature)
+        except arcpy.ExecuteError:
+            arcpy.AddWarning("Error deleting temporary %s. Program will "
+                             "continue." % in_feature)

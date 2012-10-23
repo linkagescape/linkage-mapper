@@ -16,6 +16,8 @@ import os
 import sys
 import csv
 import itertools
+# import subprocess
+# import pickle
 import traceback
 
 import arcpy
@@ -28,7 +30,7 @@ from lm_config import tool_env as lm_env
 import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
@@ -45,11 +47,12 @@ def main(argv=None):
     try:
         cc_env.configure(argv)
 
-        import cc_grass_cwd
+        import cc_grass_cwd  # Cannot import until configured
 
         # Check out the ArcGIS Spatial Analyst extension license
+        os.environ['ESRI_SOFTWARE_CLASS'] = 'Professional'
         if arcpy.CheckExtension("Spatial") == "Available":
-           arcpy.CheckOutExtension("Spatial")
+            arcpy.CheckOutExtension("Spatial")
         else:
             raise
 
@@ -75,40 +78,62 @@ def main(argv=None):
         climate_stats = arcpy.sa.ZonalStatisticsAsTable(cc_env.prj_core_fc,
             cc_env.core_fld, cc_env.prj_climate_rast, zonal_tbl, "DATA", "ALL")
 
-        # Create core parings table
-        core_parings = create_pair_tbl()
+        # Create core pairings table and limit based upon climate threashold
+        core_pairings = create_pair_tbl(climate_stats)
 
-        # Limit core pairs based upon climate threashold
-        limit_cores(core_parings, climate_stats)
+        # Generate link table, calculate CWD and run Linkage Mapper
+        if int(arcpy.GetCount_management(core_pairings).getOutput(0)) == 0:
+            arcpy.AddWarning("\nNo core pairs within climate threashold. "
+                             "Program will end")
+        else:
+            # Process pairings and generate link table
+            grass_cores = process_pairings(core_pairings)
+            if not grass_cores:
+                arcpy.AddWarning("\nNo core pairs within Euclidean distances. "
+                                 "Progam program will end")
+            else:
+                # Create CWD using Grass
+                cc_grass_cwd.grass_cwd(grass_cores)
 
-        # Calculate distances and generate link table for Linkage Mapper
-        grass_cores = gen_link_table(core_parings)
+                # Alternative ways to call Grass module
+                # pfile_nm = os.path.join(cc_env.out_dir, "tmp.pck")
+                # with open(pfile_nm, "wb") as pfile:
+                    # pickle.dump((argv, lm_arg, grass_cores), pfile)
+                # mod_path = cc_env.code_dir
+                # cargs = ("import sys; sys.path.append('" + mod_path + "'); "
+                         # "import cc_grass_cwd; "
+                         # "cc_grass_cwd.grass_cwd('" + pfile_nm + "')")
+                # cargs = cargs.replace("\\", "\\\\")
+                # mybat = os.path.join(mod_path, "cc_rgrass")
+                # cmd = '""%s" "%s""' % (mybat, cargs)
+                # os.system(cmd)
+                # output = subprocess.Popen(['python', '-c', cargs],
+                                          # stdout=subprocess.PIPE,
+                                          # shell=True).stdout.read()
 
-        # Create CWD using Grass
-        cc_grass_cwd.grass_cwd(grass_cores)
-
-        # Run Linkage Mapper
-        arcpy.AddMessage("\nRUNNING LINKAGE MAPPER "
-                         "TO CREATE CLIMATE CORRIDORS")
-
-        lm_master.lm_master()
-        return 0
+                # Run Linkage Mapper
+                arcpy.AddMessage("\nRUNNING LINKAGE MAPPER "
+                                 "TO CREATE CLIMATE CORRIDORS")
+                lm_master.lm_master()
 
     except arcpy.ExecuteError:
-        arcpy.AddMessage("")
         arcpy.AddError(arcpy.GetMessages(2))
         exc_traceback = sys.exc_info()[2]
         arcpy.AddMessage("Traceback (most recent call last):\n" +
                          "".join(traceback.format_tb(exc_traceback)[:-1]))
-        return 1
+
     except Exception:
-        arcpy.AddMessage("")
-        exc_value, exc_traceback  = sys.exc_info()[1:]
+        exc_value, exc_traceback = sys.exc_info()[1:]
         arcpy.AddError(exc_value)
         arcpy.AddMessage("Traceback (most recent call last):\n" +
                          "".join(traceback.format_tb(exc_traceback)))
-        return 1
     finally:
+        cc_util.delete_feature(cc_env.prj_climate_rast)
+        cc_util.delete_feature(cc_env.prj_resist_rast)
+        cc_util.delete_feature(cc_env.prj_area_rast)
+        cc_util.delete_feature(cc_env.prj_core_fc)
+        if cc_env.simplify_cores:
+            cc_util.delete_feature(cc_env.core_simp)
         arcpy.CheckInExtension("Spatial")
 
 
@@ -136,9 +161,9 @@ def cc_clip_inputs():
 
         arcpy.env.extent = None
 
-        # Create project area raster        
+        # Create project area raster
         proj_area_rast = sa.Con(sa.IsNull(cc_env.prj_climate_rast),
-                               sa.Int(cc_env.prj_climate_rast), 1)
+                                sa.Int(cc_env.prj_climate_rast), 1)
         proj_area_rast.save(cc_env.prj_area_rast)
 
         # Clip core feature class
@@ -152,20 +177,26 @@ def cc_clip_inputs():
         cc_util.delete_feature(ext_poly)
 
 
-def create_pair_tbl():
+def create_pair_tbl(climate_stats):
+    """Create core pair table and limit to climate threashold """
+    cpair_tbl = pair_cores("corepairs.dbf")
+    if int(arcpy.GetCount_management(cpair_tbl).getOutput(0)) > 0:
+        limit_cores(cpair_tbl, climate_stats)
+    return cpair_tbl
+
+
+def pair_cores(cpair_tbl):
     """Create table with all possible core to core combinations"""
-    cpair_tbl = "corepairs.dbf"
+    srow, srows, outputrow, irows = None, None, None, None
 
     try:
         arcpy.AddMessage("\nCREATING CORE PAIRINGS TABLE")
         arcpy.CreateTable_management(cc_env.out_dir, cpair_tbl, "", "")
         arcpy.AddField_management(cpair_tbl, FR_COL, "Short", "", "",
-                                      "", "", "NON_NULLABLE")
+                                  "", "", "NON_NULLABLE")
         arcpy.AddField_management(cpair_tbl, TO_COL, "Short", "", "",
-                                      "", "", "NON_NULLABLE")
+                                  "", "", "NON_NULLABLE")
         arcpy.DeleteField_management(cpair_tbl, "Field1")
-
-        srow, srows, outputrow, irows = None, None, None, None
 
         srows = arcpy.SearchCursor(cc_env.prj_core_fc, "", "",
                                    cc_env.core_fld, cc_env.core_fld + " A")
@@ -174,13 +205,13 @@ def create_pair_tbl():
         cores_product = list(itertools.combinations(cores_list, 2))
 
         arcpy.AddMessage("There are " + str(len(cores_list)) + " unique "
-            "cores and " + str(len(cores_product)) + " pairings")
+                         "cores and " + str(len(cores_product)) + " pairings")
 
         irows = arcpy.InsertCursor(cpair_tbl)
-        for x in cores_product:
+        for nrow in cores_product:
             outputrow = irows.newRow()
-            outputrow.setValue(FR_COL, int(x[0]))
-            outputrow.setValue(TO_COL, int(x[1]))
+            outputrow.setValue(FR_COL, int(nrow[0]))
+            outputrow.setValue(TO_COL, int(nrow[1]))
             irows.insertRow(outputrow)
 
         return cpair_tbl
@@ -211,67 +242,21 @@ def limit_cores(pair_tbl, stats_tbl):
         arcpy.MakeTableView_management(pair_tbl, pair_vw)
         arcpy.MakeTableView_management(stats_tbl, stats_vw)
 
-        def add_stats(fld_pre, table_vw, join_col):
-            """Add zonal and calculated statistics to stick table"""
-            tmp_mea = fld_pre + "_tmp_mea"
-            tmp_std = fld_pre + "_tmp_std"
-            umin2std = fld_pre + "umin2std"
-
-            # Add fields to stick table - has to be done before join
-            arcpy.AddField_management(table_vw, tmp_mea, "Float", "", "",
-                                      "", "", "NULLABLE")
-            arcpy.AddField_management(table_vw, tmp_std, "Float", "", "",
-                                      "", "", "NULLABLE")
-            arcpy.AddField_management(table_vw, umin2std, "Float", "", "",
-                                      "", "", "NULLABLE")
-
-            # Join distance table to zonal stats table
-            arcpy.AddIndex_management(table_vw, FR_COL, "fridx", "NON_UNIQUE",
-                                      "ASCENDING")
-            arcpy.AddIndex_management(table_vw, TO_COL, "toidx", "NON_UNIQUE",
-                                      "ASCENDING")
-            arcpy.AddIndex_management(stats_vw, core_id, "coreidx", "UNIQUE",
-                                      "ASCENDING")
-            arcpy.AddJoin_management(table_vw, join_col, stats_vw, core_id)
-
-            tbl_name = arcpy.Describe(table_vw).baseName
-            stats_tbl_nm = arcpy.Describe(stats_vw).baseName
-
-            # Insert values into fields
-            mean_value = "!" + stats_tbl_nm + ".MEAN" + "!"
-            std_value = "!" + stats_tbl_nm + ".STD" + "!"
-            mea_fld = "!" + tbl_name + "." + tmp_mea + "!"
-            std_fld = "!" + tbl_name + "." + tmp_std + "!"
-
-            arcpy.CalculateField_management(table_vw, tmp_mea, mean_value,
-                                            "PYTHON")
-            arcpy.CalculateField_management(table_vw, tmp_std, std_value,
-                                            "PYTHON")
-            expression = mea_fld + " - " + std_fld + " - " + std_fld
-            arcpy.CalculateField_management(table_vw, umin2std, expression,
-                                            "PYTHON")
-
-            # Remove join
-            arcpy.RemoveJoin_management(table_vw, stats_tbl_nm)
-
         # Add basic stats to distance table
-        arcpy.AddMessage("Joining zonal statistics to parings table")
-        add_stats("fr", pair_vw, TO_COL)
-        add_stats("to", pair_vw, FR_COL)
+        arcpy.AddMessage("Joining zonal statistics to pairings table")
+        add_stats(stats_vw, core_id, "fr", pair_vw, TO_COL)
+        add_stats(stats_vw, core_id, "to", pair_vw, FR_COL)
 
         # Calculate difference of 2 std
         arcpy.AddMessage("Calculating difference of 2 std")
         diffu_2std = "diffu_2std"
-        frumin2std_fld = "!frumin2std!"
-        toumin2std_fld = "!toumin2std!"
         arcpy.AddField_management(pair_vw, diffu_2std, "Float", "", "",
-                                   "", "", "NULLABLE")
-        expression = "abs(" + frumin2std_fld + " - " + toumin2std_fld + ")"
-        arcpy.CalculateField_management(pair_vw, diffu_2std, expression,
+                                  "", "", "NULLABLE")
+        arcpy.CalculateField_management(pair_vw, diffu_2std,
+                                        "abs(!frumin2std! - !toumin2std!)",
                                         "PYTHON")
 
         # Filter distance table based on inputed threashold and delete rows
-        # Fix - keeep core parings
         arcpy.AddMessage("Filtering table based on threashold")
         diffu2std_fld = arcpy.AddFieldDelimiters(pair_vw, diffu_2std)
         expression = diffu2std_fld + " <= " + str(cc_env.climate_threashold)
@@ -289,13 +274,85 @@ def limit_cores(pair_tbl, stats_tbl):
         cc_util.delete_feature(pair_vw)
 
 
-def gen_link_table(parings):
-    """Calculate core to core distances and create linkage table
+def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
+    """Add zonal and calculated statistics to stick table"""
+    tmp_mea = fld_pre + "_tmp_mea"
+    tmp_std = fld_pre + "_tmp_std"
+    umin2std = fld_pre + "umin2std"
+
+    # Add fields to stick table - has to be done before join
+    arcpy.AddField_management(table_vw, tmp_mea, "Float", "", "",
+                              "", "", "NULLABLE")
+    arcpy.AddField_management(table_vw, tmp_std, "Float", "", "",
+                              "", "", "NULLABLE")
+    arcpy.AddField_management(table_vw, umin2std, "Float", "", "",
+                              "", "", "NULLABLE")
+
+    # Join distance table to zonal stats table
+    arcpy.AddIndex_management(table_vw, FR_COL, "fridx", "NON_UNIQUE",
+                              "ASCENDING")
+    arcpy.AddIndex_management(table_vw, TO_COL, "toidx", "NON_UNIQUE",
+                              "ASCENDING")
+    arcpy.AddIndex_management(stats_vw, core_id, "coreidx", "UNIQUE",
+                              "ASCENDING")
+    arcpy.AddJoin_management(table_vw, join_col, stats_vw, core_id)
+
+    tbl_name = arcpy.Describe(table_vw).baseName
+    stats_tbl_nm = arcpy.Describe(stats_vw).baseName
+
+    # Insert values into fields
+    mean_value = "!" + stats_tbl_nm + ".MEAN" + "!"
+    std_value = "!" + stats_tbl_nm + ".STD" + "!"
+    mea_fld = "!" + tbl_name + "." + tmp_mea + "!"
+    std_fld = "!" + tbl_name + "." + tmp_std + "!"
+
+    arcpy.CalculateField_management(table_vw, tmp_mea, mean_value,
+                                    "PYTHON")
+    arcpy.CalculateField_management(table_vw, tmp_std, std_value,
+                                    "PYTHON")
+    expression = mea_fld + " - " + std_fld + " - " + std_fld
+    arcpy.CalculateField_management(table_vw, umin2std, expression,
+                                    "PYTHON")
+
+    # Remove join
+    arcpy.RemoveJoin_management(table_vw, stats_tbl_nm)
+
+
+def process_pairings(pairings):
+    """Limit core pairings based on distance inputs and create linkage table
 
     Requires ArcInfo license.
 
     """
-    coresim = "coresim"
+    arcpy.AddMessage("\nLIMITING CORE PAIRS BASED ON INPUTED DISTANCES AND "
+                     "GENERATING LINK TABLE")
+    # Simplify cores based on booolean in config
+    if cc_env.simplify_cores:
+        corefc = simplify_corefc()
+    else:
+        corefc = cc_env.prj_core_fc
+    core_pairs, frm_cores = pairs_from_list(pairings)
+    # Create link table
+    core_list = create_lnk_tbl(corefc, core_pairs, frm_cores)
+    return sorted(core_list)
+
+
+def pairs_from_list(pairings):
+    """Get list of core pairings and 'from cores'"""
+    frm_cores = set()
+    core_pairs = []
+    srows = arcpy.SearchCursor(pairings, "", "", FR_COL + "; " + TO_COL)
+    for srow in srows:
+        from_core = srow.getValue(FR_COL)
+        to_core = str(srow.getValue(TO_COL))
+        frm_cores.add(from_core)
+        core_pairs.append([str(from_core), to_core])
+    frm_cores = map(str, sorted(frm_cores))
+    return core_pairs, frm_cores
+
+
+def create_lnk_tbl(corefc, core_pairs, frm_cores):
+    """Create link table file and limit based on near table results"""
     fcore_vw = "fcore_vw"
     tcore_vw = "tcore_vw"
     ntblid_fn = "FID"
@@ -304,37 +361,11 @@ def gen_link_table(parings):
     ndist_fn = "NEAR_DIST"
     jtocore_fn = cc_env.core_fld[:8] + "_1"  # dbf field length
     near_tbl = os.path.join(cc_env.out_dir, "neartbl.dbf")
-    link_fld = lm_env.DATAPASSDIR
-    link_file = os.path.join(link_fld, "linkTable_s2.csv")
+    link_file = os.path.join(lm_env.DATAPASSDIR, "linkTable_s2.csv")
 
     link_tbl, srow, srows = None, None, None
 
     try:
-        arcpy.AddMessage("\nGENERATING LINKAGE TABLE")
-        if cc_env.simplyfy_cores:
-            arcpy.AddMessage("Simplifying polygons to speed up core pair "
-                             "distance calculations")
-            corefc = os.path.join(cc_env.out_dir, coresim + ".shp")
-            climate_rast = arcpy.Raster(cc_env.prj_climate_rast)
-            tolerance = climate_rast.meanCellHeight / 3
-            arcpy.cartography.SimplifyPolygon(cc_env.prj_core_fc, corefc,
-                "POINT_REMOVE", tolerance, "#", "NO_CHECK")
-        else:
-            corefc = cc_env.prj_core_fc
-
-        # Get list of  core pairing and 'from cores'
-        frm_cores = set()
-        core_pairs = []
-        srows = arcpy.SearchCursor(parings, "", "", FR_COL + "; " + TO_COL)
-        for srow in srows:
-            from_core = srow.getValue(FR_COL)
-            to_core = str(srow.getValue(TO_COL))
-            frm_cores.add(from_core)
-            core_pairs.append([str(from_core), to_core])
-        # del srows, srow
-        frm_cores = map(str, sorted(frm_cores))
-
-        # Generate link table file from near table results
         link_tbl = open(link_file, 'wb')
         writer = csv.writer(link_tbl, delimiter=',')
         headings = ["# link", "coreId1", "coreId2", "cluster1", "cluster2",
@@ -346,6 +377,7 @@ def gen_link_table(parings):
         i = 1
 
         coreid_fld = arcpy.AddFieldDelimiters(corefc, cc_env.core_fld)
+
         for core_no, frm_core in enumerate(frm_cores):
             # From cores
             expression = coreid_fld + " = " + frm_core
@@ -356,7 +388,7 @@ def gen_link_table(parings):
             to_cores = ', '.join(to_cores_lst)
             expression = coreid_fld + " in (" + to_cores + ")"
             arcpy.MakeFeatureLayer_management(corefc, tcore_vw, expression)
-            arcpy.AddMessage("Calculating Euclidean distance/s from core "
+            arcpy.AddMessage("Calculating Euclidean distance/s from Core "
                              + frm_core + " to " + str(len(to_cores_lst))
                              + " other cores" + " (" + str(core_no + 1) + "/"
                              + no_cores + ")")
@@ -381,7 +413,6 @@ def gen_link_table(parings):
 
             # Process near table and output into a link table
             srow = srows.next()
-
             if srow:
                 core_list.add(int(frm_core))
                 while srow:
@@ -392,16 +423,12 @@ def gen_link_table(parings):
                     core_list.add(to_coreid)
                     srow = srows.next()
                     i += 1
-                # del srows, srow
-
-        return sorted(core_list)
 
     except Exception:
         raise
     finally:
-        simplify_points = coresim + "_Pnt.shp"
-        cc_util.delete_feature(simplify_points)
         cc_util.delete_feature(near_tbl)
+        cc_util.delete_feature(os.path.splitext(corefc)[0] + "_Pnt.shp")
         if link_tbl:
             link_tbl.close()
         if srow:
@@ -409,6 +436,19 @@ def gen_link_table(parings):
         if srows:
             del srows
 
+    return core_list
+
+
+def simplify_corefc():
+    """Simplify core feature class"""
+    arcpy.AddMessage("Simplifying polygons to speed up core pair "
+                     "distance calculations")
+    corefc = cc_env.core_simp
+    climate_rast = arcpy.Raster(cc_env.prj_climate_rast)
+    tolerance = climate_rast.meanCellHeight / 3
+    arcpy.cartography.SimplifyPolygon(cc_env.prj_core_fc, corefc,
+        "POINT_REMOVE", tolerance, "#", "NO_CHECK")
+    return corefc
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
