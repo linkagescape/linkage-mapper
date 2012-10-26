@@ -40,7 +40,7 @@ class ClimateConfig():
         # Tool settings
         self.min_euc_dist = float(arg[7])  # Min distance between core pairs
         self.max_euc_dist = float(arg[8])  # Max distance between core pairs
-        self.climate_threashold = float(arg[9])  # Temperature threashold
+        self.climate_threshold = float(arg[9])  # Climate threshold
         self.climate_cost = float(arg[10])  # Cost incurred by climate variable
 
         # Prune network settings
@@ -52,7 +52,7 @@ class ClimateConfig():
 
         # Setup model global variables
         self.code_dir = os.path.dirname(os.path.abspath(__file__))
-        self.out_dir = os.path.join(self.proj_dir, "clm_corr")  # CC directory
+        self.out_dir = os.path.join(self.proj_dir, "clm_cor")  # CC directory
         self.prj_area_rast = os.path.join(self.out_dir, "projarea")
         self.prj_core_fc = (os.path.join(
                             self.out_dir, "cores.shp"))  # Proj core area  name

@@ -78,12 +78,12 @@ def main(argv=None):
         climate_stats = arcpy.sa.ZonalStatisticsAsTable(cc_env.prj_core_fc,
             cc_env.core_fld, cc_env.prj_climate_rast, zonal_tbl, "DATA", "ALL")
 
-        # Create core pairings table and limit based upon climate threashold
+        # Create core pairings table and limit based upon climate threshold
         core_pairings = create_pair_tbl(climate_stats)
 
         # Generate link table, calculate CWD and run Linkage Mapper
         if int(arcpy.GetCount_management(core_pairings).getOutput(0)) == 0:
-            arcpy.AddWarning("\nNo core pairs within climate threashold. "
+            arcpy.AddWarning("\nNo core pairs within climate threshold. "
                              "Program will end")
         else:
             # Process pairings and generate link table
@@ -178,7 +178,7 @@ def cc_clip_inputs():
 
 
 def create_pair_tbl(climate_stats):
-    """Create core pair table and limit to climate threashold """
+    """Create core pair table and limit to climate threshold """
     cpair_tbl = pair_cores("corepairs.dbf")
     if int(arcpy.GetCount_management(cpair_tbl).getOutput(0)) > 0:
         limit_cores(cpair_tbl, climate_stats)
@@ -230,14 +230,14 @@ def pair_cores(cpair_tbl):
 
 
 def limit_cores(pair_tbl, stats_tbl):
-    """Limit core pairs based upon climate threashold"""
+    """Limit core pairs based upon climate threshold"""
     pair_vw = "dist_tbvw"
     stats_vw = "stats_tbvw"
     core_id = cc_env.core_fld.upper()
 
     try:
         arcpy.AddMessage("\nLIMITING CORE PAIRS BASED UPON CLIMATE "
-                         "THREASHOLD")
+                         "THRESHOLD")
 
         arcpy.MakeTableView_management(pair_tbl, pair_vw)
         arcpy.MakeTableView_management(stats_tbl, stats_vw)
@@ -256,10 +256,10 @@ def limit_cores(pair_tbl, stats_tbl):
                                         "abs(!frumin2std! - !toumin2std!)",
                                         "PYTHON")
 
-        # Filter distance table based on inputed threashold and delete rows
-        arcpy.AddMessage("Filtering table based on threashold")
+        # Filter distance table based on inputed threshold and delete rows
+        arcpy.AddMessage("Filtering table based on threshold")
         diffu2std_fld = arcpy.AddFieldDelimiters(pair_vw, diffu_2std)
-        expression = diffu2std_fld + " <= " + str(cc_env.climate_threashold)
+        expression = diffu2std_fld + " <= " + str(cc_env.climate_threshold)
         arcpy.SelectLayerByAttribute_management(pair_vw, "NEW_SELECTION",
                                                 expression)
         rows_del = int(arcpy.GetCount_management(pair_vw).getOutput(0))

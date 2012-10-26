@@ -11,6 +11,9 @@ _SCRIPT_NAME = path.basename(__file__)
 
 def main():
     """Runs Climate Corridor tool"""
+    
+    # *************************************************************************
+    # ***** Tool Inputs *****
     proj_dir = "W:\\demoProject"  # Project Directory
 
     # Core Inputs
@@ -38,7 +41,9 @@ def main():
     max_nn = 4  # No of connected nearest neighbors
     nn_unit = "Cost-Weighted"  # NN Unit
     keep_constelations = "True"
-
+    
+    # *************************************************************************
+        
     # Setup path and run model
     sys.path.append('..\\toolbox\\scripts')
     import cc_main
