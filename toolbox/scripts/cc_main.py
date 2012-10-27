@@ -130,7 +130,8 @@ def main(argv=None):
     finally:
         cc_util.delete_feature(cc_env.prj_climate_rast)
         cc_util.delete_feature(cc_env.prj_resist_rast)
-        cc_util.delete_feature(cc_env.prj_area_rast)
+        if cc_env.prj_resist_rast <> cc_env.prj_area_rast:
+            cc_util.delete_feature(cc_env.prj_area_rast)
         cc_util.delete_feature(cc_env.prj_core_fc)
         if cc_env.simplify_cores:
             cc_util.delete_feature(cc_env.core_simp)
@@ -156,7 +157,7 @@ def cc_copy_inputs():
                                     cc_env.prj_resist_rast)
         else:
             # Resistance will the same file as the area raster (0 or 1 value)
-            cc_env.resist_rast = cc_env.prj_area_rast
+            cc_env.prj_resist_rast = cc_env.prj_area_rast
 
         arcpy.CopyRaster_management(cc_env.climate_rast,
                                     cc_env.prj_climate_rast)
