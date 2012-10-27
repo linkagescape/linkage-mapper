@@ -30,7 +30,7 @@ from lm_config import tool_env as lm_env
 import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
@@ -141,8 +141,7 @@ def cc_clip_inputs():
     """Clip Climate Corridor inputs to smallest extent"""
     ext_poly = "ext_poly.shp"  # Extent polygon
     try:
-        arcpy.AddMessage("\nCLIPPING TO SMALLEST EXTENT")
-        # Set environment so that smallest extent is used
+        arcpy.AddMessage("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
 
         # Set to minimum extent if resistance raster exists
         if cc_env.resist_rast is not None:
@@ -153,11 +152,14 @@ def cc_clip_inputs():
             xmax = min(climate_extent.XMax, resist_extent.XMax)
             ymax = min(climate_extent.YMax, resist_extent.YMax)
             arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
+            arcpy.CopyRaster_management(cc_env.resist_rast,
+                                    cc_env.prj_resist_rast)
+        else:
+            # Resistance will the same file as the area raster (0 or 1 value)
+            cc_env.resist_rast = cc_env.prj_area_rast
 
         arcpy.CopyRaster_management(cc_env.climate_rast,
                                     cc_env.prj_climate_rast)
-        arcpy.CopyRaster_management(cc_env.resist_rast,
-                                    cc_env.prj_resist_rast)
 
         arcpy.env.extent = None
 

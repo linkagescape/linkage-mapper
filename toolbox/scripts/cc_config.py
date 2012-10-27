@@ -57,14 +57,12 @@ class ClimateConfig():
         self.prj_core_fc = (os.path.join(
                             self.out_dir, "cores.shp"))  # Proj core area  name
         self.prj_climate_rast = os.path.join(self.out_dir, "climate")
-        self.simplify_cores = True
-        self.core_simp = os.path.join(cc_env.out_dir, "coresim.shp")
-
-        # Use project area raster if no resistance layer is provided
         if self.resist_rast is not None:
             self.prj_resist_rast = os.path.join(self.out_dir, "resist")
         else:
-            self.prj_resist_rast = self.prj_area_rast
+            self.prj_resist_rast = None
+        self.simplify_cores = True
+        self.core_simp = os.path.join(cc_env.out_dir, "coresim.shp")
 
 
 cc_env = ClimateConfig()
