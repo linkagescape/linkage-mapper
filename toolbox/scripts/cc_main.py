@@ -71,7 +71,7 @@ def main(argv=None):
         lm_util.create_dir(lm_env.DATAPASSDIR)
 
         # Clip inputs and create project area raster
-        cc_clip_inputs()
+        cc_copy_inputs()
 
         # Get zonal statistics for cores and climate
         arcpy.AddMessage("\nCALCULATING ZONAL STATISTICS FROM CLIMATE RASTER")
@@ -137,7 +137,7 @@ def main(argv=None):
         arcpy.CheckInExtension("Spatial")
 
 
-def cc_clip_inputs():
+def cc_copy_inputs():
     """Clip Climate Corridor inputs to smallest extent"""
     ext_poly = "ext_poly.shp"  # Extent polygon
     try:
