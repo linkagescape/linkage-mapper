@@ -60,7 +60,8 @@ class ClimateConfig():
         if self.resist_rast is not None:
             self.prj_resist_rast = os.path.join(self.out_dir, "resist")
         else:
-            self.prj_resist_rast = None
+            # Resistance will the same file as the area raster (0 or 1 value)
+            self.prj_resist_rast = self.prj_area_rast
         self.simplify_cores = True
         self.core_simp = os.path.join(cc_env.out_dir, "coresim.shp")
 
