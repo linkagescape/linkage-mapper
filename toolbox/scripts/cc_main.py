@@ -144,7 +144,7 @@ def cc_copy_inputs():
     try:
         arcpy.AddMessage("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
 
-        # Set to minimum extent if resistance raster exists
+        # Set to minimum extent if resistance raster was given
         if cc_env.resist_rast is not None:
             climate_extent = arcpy.Raster(cc_env.climate_rast).extent
             resist_extent = arcpy.Raster(cc_env.resist_rast).extent
@@ -155,10 +155,7 @@ def cc_copy_inputs():
             arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
             arcpy.CopyRaster_management(cc_env.resist_rast,
                                     cc_env.prj_resist_rast)
-        else:
-            # Resistance will the same file as the area raster (0 or 1 value)
-            cc_env.prj_resist_rast = cc_env.prj_area_rast
-
+       
         arcpy.CopyRaster_management(cc_env.climate_rast,
                                     cc_env.prj_climate_rast)
 
