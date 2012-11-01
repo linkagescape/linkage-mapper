@@ -50,7 +50,7 @@ def grass_cwd(core_list):
         arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
 
-        # Create reources file and setup workspace
+        # Create resource file and setup workspace
         write_grassrc(ccr_grassrc)
         grass_version = setup_wrkspace(gisdbase, ccr_grassrc, climate_asc)
 
@@ -82,6 +82,7 @@ def grass_cwd(core_list):
 
 
 def write_grassrc(ccr_grassrc):
+    """"Write GRASS resource file to project folder"""
     with open(ccr_grassrc, 'w') as f:
         f.write("GISDBASE: <UNKNOWN>\n")
         f.write("LOCATION_NAME: <UNKNOWN>\n")
