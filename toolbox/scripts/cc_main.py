@@ -16,9 +16,10 @@ import os
 import sys
 import csv
 import itertools
+import traceback
+from datetime import datetime, timedelta
 # import subprocess
 # import pickle
-import traceback
 
 import arcpy
 import arcpy.sa as sa
@@ -30,7 +31,7 @@ from lm_config import tool_env as lm_env
 import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
@@ -38,7 +39,11 @@ TO_COL = "To_Core"
 
 def main(argv=None):
     """Main function for Climate Corridor tool"""
-    arcpy.AddMessage("\nCLIMATE CORRIDOR " + __version__)
+    tformat = "%m/%d/%y %H:%M:%S"
+    stime = datetime.now()
+
+    arcpy.AddMessage("CLIMATE CORRIDOR " + __version__)
+    print "Start time: %s" % stime.strftime(tformat)  # Redundant in Arc
 
     zonal_tbl = "zstats.dbf"
 
@@ -60,7 +65,8 @@ def main(argv=None):
         arcpy.env.overwriteOutput = True
         cc_util.mk_proj_dir(cc_env.out_dir)
         arcpy.env.workspace = cc_env.out_dir
-        lm_outdir = cc_util.mk_proj_dir("lm_out")
+        # lm_outdir = cc_util.mk_proj_dir("lm_out")
+        lm_outdir = cc_env.proj_dir
 
         # Configure Linkage Mapper
         lm_arg = (_SCRIPT_NAME, lm_outdir, cc_env.prj_core_fc, cc_env.core_fld,
@@ -129,13 +135,21 @@ def main(argv=None):
                          "".join(traceback.format_tb(exc_traceback)))
     finally:
         cc_util.delete_feature(cc_env.prj_climate_rast)
-        cc_util.delete_feature(cc_env.prj_resist_rast)
+        # cc_util.delete_feature(cc_env.prj_resist_rast)  # Keeping for reruns
         if cc_env.prj_resist_rast <> cc_env.prj_area_rast:
             cc_util.delete_feature(cc_env.prj_area_rast)
-        cc_util.delete_feature(cc_env.prj_core_fc)
-        if cc_env.simplify_cores:
+        cc_util.delete_feature(cc_env.prj_core_fc)  # Keeping for reruns
+        if cc_env.simplify_cores:            
             cc_util.delete_feature(cc_env.core_simp)
         arcpy.CheckInExtension("Spatial")
+
+        # Print process time when running from script
+        etime = datetime.now()
+        rtime = etime - stime
+        hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
+                       (rtime.seconds // 60) % 60)
+        print "End time: %s" % etime.strftime(tformat)
+        print "Elapsed time: %s hrs %s mins" % (hours, minutes)
 
 
 def cc_copy_inputs():
@@ -155,7 +169,7 @@ def cc_copy_inputs():
             arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
             arcpy.CopyRaster_management(cc_env.resist_rast,
                                     cc_env.prj_resist_rast)
-       
+
         arcpy.CopyRaster_management(cc_env.climate_rast,
                                     cc_env.prj_climate_rast)
 
