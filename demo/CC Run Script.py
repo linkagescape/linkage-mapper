@@ -23,7 +23,7 @@ def main():
     climate_rast = "W:\\demoData\\cc_climate.img"  # Climate Raster
 
     # Resistance Raster
-    #resis_rast = "#"  # Can be run without resistance raster
+    # resis_rast = "#"  # Can be run without resistance raster
     resis_rast = "W:\\demoData\\cc_resist.img"
 
     # GRASS GIS Folder

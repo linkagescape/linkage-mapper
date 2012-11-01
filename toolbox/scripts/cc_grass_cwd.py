@@ -34,6 +34,7 @@ def grass_cwd(core_list):
     cur_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
                                 shell=True).stdout.read()
     gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
+    ccr_grassrc = os.path.join(cc_env.proj_dir, "ccr_grassrc")
     climate_asc = os.path.join(cc_env.out_dir, "cc_climate.asc")
     resist_asc = os.path.join(cc_env.out_dir, "cc_resist.asc")
     climate_lyr = "climate"
@@ -49,8 +50,9 @@ def grass_cwd(core_list):
         arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
 
-        # Setup workspace
-        grass_version = setup_wrkspace(gisdbase, climate_asc)
+        # Create reources file and setup workspace
+        write_grassrc(ccr_grassrc)
+        grass_version = setup_wrkspace(gisdbase, ccr_grassrc, climate_asc)
 
         # Make cwd folder for Linkage Mapper
         lm_util.make_cwd_paths(max(core_list))
@@ -76,15 +78,24 @@ def grass_cwd(core_list):
                              "Program will contine")
         cc_util.delete_feature(climate_asc)
         cc_util.delete_feature(resist_asc)
+        cc_util.delete_feature(ccr_grassrc)
 
 
-def setup_wrkspace(gisdbase, geo_file):
+def write_grassrc(ccr_grassrc):
+    with open(ccr_grassrc, 'w') as f:
+        f.write("GISDBASE: <UNKNOWN>\n")
+        f.write("LOCATION_NAME: <UNKNOWN>\n")
+        f.write("MAPSET: <UNKNOWN>\n")        
+
+        
+def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     """Setup GRASS workspace and modify windows path for GRASS GDAL"""
     arcpy.AddMessage("Creating GRASS workspace")
     gisbase = cc_env.gisbase
     location = "gcwd"
+    mapset = "PERMANENT"
 
-    os.environ['GISRC'] = os.path.join(cc_env.code_dir, "ccr_grassrc")
+    os.environ['GISRC'] = ccr_grassrc
     os.environ['LD_LIBRARY_PATH'] = os.path.join(gisbase, "lib")
     os.environ['GRASS_SH'] = os.path.join(gisbase, "msys", "bin", "sh.exe")
 
@@ -96,8 +107,6 @@ def setup_wrkspace(gisdbase, geo_file):
     env_list.insert(0, os.path.join(gisbase, "etc", "python"))
     env_list.insert(0, os.path.join(gisbase, "etc"))
     os.environ['PATH'] = ';'.join(env_list)
-
-    mapset = "PERMANENT"
 
     # Code to check GDAL dlls and system path
     # gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
