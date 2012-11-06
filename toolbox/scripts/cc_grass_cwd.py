@@ -51,7 +51,7 @@ def grass_cwd(core_list):
         arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
 
         # Create resource file and setup workspace
-        write_grassrc(ccr_grassrc)
+        write_grassrc(ccr_grassrc, gisdbase)
         grass_version = setup_wrkspace(gisdbase, ccr_grassrc, climate_asc)
 
         # Make cwd folder for Linkage Mapper
@@ -81,14 +81,14 @@ def grass_cwd(core_list):
         cc_util.delete_feature(ccr_grassrc)
 
 
-def write_grassrc(ccr_grassrc):
+def write_grassrc(ccr_grassrc, gisdbase):
     """"Write GRASS resource file to project folder"""
     with open(ccr_grassrc, 'w') as f:
-        f.write("GISDBASE: <UNKNOWN>\n")
+        f.write("GISDBASE: %s\n" % gisdbase)
         f.write("LOCATION_NAME: <UNKNOWN>\n")
-        f.write("MAPSET: <UNKNOWN>\n")        
+        f.write("MAPSET: <UNKNOWN>\n")
 
-        
+
 def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     """Setup GRASS workspace and modify windows path for GRASS GDAL"""
     arcpy.AddMessage("Creating GRASS workspace")
