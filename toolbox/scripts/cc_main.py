@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.6
 # Author: Darren Kavanagh
 
-"""Climate Corridor
+"""Climate Linkage Mapper
 
 Reguired Software:
 ArcGIS 10.x with Spatial Analyst extension
@@ -38,11 +38,11 @@ TO_COL = "To_Core"
 
 
 def main(argv=None):
-    """Main function for Climate Corridor tool"""
+    """Main function for Climate Linkage Mapper tool"""
     tformat = "%m/%d/%y %H:%M:%S"
     stime = datetime.now()
 
-    arcpy.AddMessage("CLIMATE CORRIDOR " + __version__)
+    arcpy.AddMessage("CLIMATE LINKAGE MAPPER " + __version__)
     print "Start time: %s" % stime.strftime(tformat)  # Redundant in Arc
 
     zonal_tbl = "zstats.dbf"
@@ -153,7 +153,7 @@ def main(argv=None):
 
 
 def cc_copy_inputs():
-    """Clip Climate Corridor inputs to smallest extent"""
+    """Clip Climate Linkage Mapper inputs to smallest extent"""
     ext_poly = "ext_poly.shp"  # Extent polygon
     try:
         arcpy.AddMessage("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
