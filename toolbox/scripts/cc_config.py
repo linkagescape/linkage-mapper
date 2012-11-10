@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.6
 # Author: Darren Kavanagh
 
-"""Climate Corridor configuration module.
+"""Climate Linkage Mapper configuration module.
 
 Assigns input parameters from ToolBox to variables, and sets constants
 

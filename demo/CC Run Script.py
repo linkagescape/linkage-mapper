@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.6
 
-"""Script to run Climate Corridor tool"""
+"""Script to run Climate Linkage Mapper tool"""
 
 import sys
 import os.path as path
@@ -10,8 +10,8 @@ _SCRIPT_NAME = path.basename(__file__)
 
 
 def main():
-    """Runs Climate Corridor tool"""
-    
+    """Runs Climate Linkage Mapper tool"""
+
     # *************************************************************************
     # ***** Tool Inputs *****
     proj_dir = "W:\\demoProject"  # Project Directory
@@ -41,9 +41,9 @@ def main():
     max_nn = 4  # No of connected nearest neighbors
     nn_unit = "Cost-Weighted"  # NN Unit
     keep_constelations = "True"
-    
+
     # *************************************************************************
-        
+
     # Setup path and run model
     sys.path.append('..\\toolbox\\scripts')
     import cc_main
