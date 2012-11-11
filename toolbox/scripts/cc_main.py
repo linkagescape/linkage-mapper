@@ -31,7 +31,7 @@ from lm_config import tool_env as lm_env
 import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
@@ -63,8 +63,7 @@ def main(argv=None):
 
         # Setup workspace
         arcpy.env.overwriteOutput = True
-        cc_util.mk_proj_dir(cc_env.out_dir)
-        arcpy.env.workspace = cc_env.out_dir
+        arcpy.env.workspace = cc_util.mk_proj_dir(cc_env.out_dir)
         # lm_outdir = cc_util.mk_proj_dir("lm_out")
         lm_outdir = cc_env.proj_dir
 

@@ -37,8 +37,8 @@ def main():
     climate_threashold = 1  # Climate Threashold (e.g. degrees Celsius)
     climate_cost = 50000  # Climate Cost (e.g. 1 degree C change = 50km cost)
 
-    prune_network = "False"
-    max_nn = 4  # No of connected nearest neighbors
+    prune_network = "true"  # "true" or "false" (mirroring tool input)
+    max_nn = 3  # No of connected nearest neighbors
     nn_unit = "Cost-Weighted"  # NN Unit
     keep_constelations = "True"
 
