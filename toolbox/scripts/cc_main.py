@@ -31,7 +31,7 @@ from lm_config import tool_env as lm_env
 import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
@@ -63,7 +63,9 @@ def main(argv=None):
 
         # Setup workspace
         arcpy.env.overwriteOutput = True
+        arcpy.env.cellSize = "MAXOF"  # Setting to default. For batch runs.
         arcpy.env.workspace = cc_util.mk_proj_dir(cc_env.out_dir)
+        arcpy.env.scratchWorkspace = cc_util.mk_proj_dir(cc_env.tmp_dir)
         # lm_outdir = cc_util.mk_proj_dir("lm_out")
         lm_outdir = cc_env.proj_dir
 
@@ -134,12 +136,19 @@ def main(argv=None):
                          "".join(traceback.format_tb(exc_traceback)))
     finally:
         cc_util.delete_feature(cc_env.prj_climate_rast)
-        # cc_util.delete_feature(cc_env.prj_resist_rast)  # Keeping for reruns
+        # cc_util.delete_feature(cc_env.prj_resist_rast)
         if cc_env.prj_resist_rast <> cc_env.prj_area_rast:
             cc_util.delete_feature(cc_env.prj_area_rast)
         cc_util.delete_feature(cc_env.prj_core_fc)  # Keeping for reruns
         if cc_env.simplify_cores:            
             cc_util.delete_feature(cc_env.core_simp)
+        cc_util.delete_feature(cc_env.tmp_dir)
+        
+        # Delete files left behind by arcpy
+        cpath = os.getcwd()
+        cc_util.delete_feature(os.path.join(cpath, ".prj"))
+        cc_util.delete_feature(os.path.join(cpath, "info"))
+        
         arcpy.CheckInExtension("Spatial")
 
         # Print process time when running from script
