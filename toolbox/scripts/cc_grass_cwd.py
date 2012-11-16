@@ -10,7 +10,6 @@ import shutil
 import subprocess
 # import pickle
 
-
 import arcpy
 
 # sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "python"))
@@ -78,7 +77,7 @@ def grass_cwd(core_list):
                              "Program will contine")
         cc_util.delete_feature(climate_asc)
         cc_util.delete_feature(resist_asc)
-        cc_util.delete_feature(ccr_grassrc)
+        cc_util.delete_feature(ccr_grassrc)       
 
 
 def write_grassrc(ccr_grassrc, gisdbase):
@@ -207,6 +206,6 @@ def run_grass_cmd(*args, **kwargs):
     ps = grass.start_command(*args, **kwargs)
     stderr = ps.communicate()[1]
     if 'ERROR:' in stderr:
-        raise Exception("GRASSS ERROR: %s" % stderr[8:])
+        raise Exception("GRASSS ERROR: %s" % stderr[7:])
     # elif stderr:
         # arcpy.AddMessage(stderr)

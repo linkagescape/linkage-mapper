@@ -53,6 +53,7 @@ class ClimateConfig():
         # Setup model global variables
         self.code_dir = os.path.dirname(os.path.abspath(__file__))
         self.out_dir = os.path.join(self.proj_dir, "clm_cor")  # CC directory
+        self.tmp_dir = os.path.join(self.proj_dir, "tmp")
         self.prj_area_rast = os.path.join(self.out_dir, "projarea")
         self.prj_core_fc = (os.path.join(
                             self.out_dir, "cores.shp"))  # Proj core area  name
