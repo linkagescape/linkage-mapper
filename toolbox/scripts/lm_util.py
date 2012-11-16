@@ -1631,9 +1631,9 @@ def delete_file(file):
 
 def delete_dir(dir):
     try:
-        gp.RefreshCatalog(dir)
-        shutil.rmtree(dir)
-        gc.collect()
+        if gp.Exists(dir):
+            shutil.rmtree(dir)
+        return
     except:
         snooze(5)
         try: #Try again following cleanup attempt
@@ -2067,7 +2067,8 @@ def print_arcgis_failures(statement, failures):
 def print_drive_warning():
     drive, depth = get_dir_depth(cfg.PROJECTDIR)
     if drive.lower() != 'c' or depth > 3 or 'dropbox' in drive.lower():
-        gp.AddWarning('Note: ArcGIS errors are more likely when writing to remote '
+        gprint('********************************************************'
+            'Note: ArcGIS errors are more likely when writing to remote '
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
             'Errors may also result from conflicts with anti-virus '
