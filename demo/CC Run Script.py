@@ -27,14 +27,13 @@ def main():
     resis_rast = "W:\\demoData\\cc_resist.img"
 
     # GRASS GIS Folder
-    #gisbase = "C:\\Program Files (x86)\\GRASS 6.4.2"
-    #gisbase = "C:\\Program Files (x86)\\GRASS GIS 6.5.svn"
-    gisbase = "C:\\Program Files (x86)\\GRASS GIS 7.0.svn"
+    gisbase = "C:\\Program Files (x86)\\GRASS GIS 6.5.svn"
+    # gisbase = "C:\\Program Files (x86)\\GRASS GIS 7.0.svn"
 
     # Model Settings
     min_euc_dist = 2000  # Minimum Euclidean Distance
     max_euc_dist = 50000  # Maximum Euclidean Distance
-    climate_threashold = 1  # Climate Threashold (e.g. degrees Celsius)
+    climate_threashold = 4  # Climate Threashold (e.g. degrees Celsius)
     climate_cost = 50000  # Climate Cost (e.g. 1 degree C change = 50km cost)
 
     prune_network = "true"  # "true" or "false" (mirroring tool input)
