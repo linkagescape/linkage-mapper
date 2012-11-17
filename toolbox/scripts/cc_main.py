@@ -42,7 +42,7 @@ def main(argv=None):
     tformat = "%m/%d/%y %H:%M:%S"
     stime = datetime.now()
 
-    arcpy.AddMessage("CLIMATE LINKAGE MAPPER " + __version__)
+    lm_util.gprint("CLIMATE LINKAGE MAPPER " + __version__)
     print "Start time: %s" % stime.strftime(tformat)  # Redundant in Arc
 
     zonal_tbl = "zstats.dbf"
@@ -68,7 +68,7 @@ def main(argv=None):
         arcpy.env.scratchWorkspace = cc_util.mk_proj_dir(cc_env.tmp_dir)
         # lm_outdir = cc_util.mk_proj_dir("lm_out")
         lm_outdir = cc_env.proj_dir
-
+        
         # Configure Linkage Mapper
         lm_arg = (_SCRIPT_NAME, lm_outdir, cc_env.prj_core_fc, cc_env.core_fld,
                   cc_env.prj_resist_rast, "false", "false", "#", "#", "true",
@@ -77,11 +77,17 @@ def main(argv=None):
         lm_env.configure(lm_env.TOOL_CC, lm_arg)
         lm_util.create_dir(lm_env.DATAPASSDIR)
 
+        # Set up logging
+        lm_util.create_dir(lm_env.LOGDIR)
+        lm_util.create_dir(lm_env.MESSAGEDIR)
+        lm_env.logFilePath=lm_util.create_log_file(lm_env.MESSAGEDIR, 
+                                            lm_env.TOOL, lm_env.PARAMS) 
+                                           
         # Clip inputs and create project area raster
         cc_copy_inputs()
 
         # Get zonal statistics for cores and climate
-        arcpy.AddMessage("\nCALCULATING ZONAL STATISTICS FROM CLIMATE RASTER")
+        lm_util.gprint("\nCALCULATING ZONAL STATISTICS FROM CLIMATE RASTER")
         climate_stats = arcpy.sa.ZonalStatisticsAsTable(cc_env.prj_core_fc,
             cc_env.core_fld, cc_env.prj_climate_rast, zonal_tbl, "DATA", "ALL")
 
@@ -119,20 +125,20 @@ def main(argv=None):
                                           # shell=True).stdout.read()
 
                 # Run Linkage Mapper
-                arcpy.AddMessage("\nRUNNING LINKAGE MAPPER "
+                lm_util.gprint("\nRUNNING LINKAGE MAPPER "
                                  "TO CREATE CLIMATE CORRIDORS")
                 lm_master.lm_master()
 
     except arcpy.ExecuteError:
         arcpy.AddError(arcpy.GetMessages(2))
         exc_traceback = sys.exc_info()[2]
-        arcpy.AddMessage("Traceback (most recent call last):\n" +
+        lm_util.gprint("Traceback (most recent call last):\n" +
                          "".join(traceback.format_tb(exc_traceback)[:-1]))
 
     except Exception:
         exc_value, exc_traceback = sys.exc_info()[1:]
         arcpy.AddError(exc_value)
-        arcpy.AddMessage("Traceback (most recent call last):\n" +
+        lm_util.gprint("Traceback (most recent call last):\n" +
                          "".join(traceback.format_tb(exc_traceback)))
     finally:
         cc_util.delete_feature(cc_env.prj_climate_rast)
@@ -164,7 +170,7 @@ def cc_copy_inputs():
     """Clip Climate Linkage Mapper inputs to smallest extent"""
     ext_poly = "ext_poly.shp"  # Extent polygon
     try:
-        arcpy.AddMessage("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
+        lm_util.gprint("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
 
         # Set to minimum extent if resistance raster was given
         if cc_env.resist_rast is not None:
@@ -212,7 +218,7 @@ def pair_cores(cpair_tbl):
     srow, srows, outputrow, irows = None, None, None, None
 
     try:
-        arcpy.AddMessage("\nCREATING CORE PAIRINGS TABLE")
+        lm_util.gprint("\nCREATING CORE PAIRINGS TABLE")
         arcpy.CreateTable_management(cc_env.out_dir, cpair_tbl, "", "")
         arcpy.AddField_management(cpair_tbl, FR_COL, "Short", "", "",
                                   "", "", "NON_NULLABLE")
@@ -226,7 +232,7 @@ def pair_cores(cpair_tbl):
         cores_list = [srow.getValue(cc_env.core_fld) for srow in srows]
         cores_product = list(itertools.combinations(cores_list, 2))
 
-        arcpy.AddMessage("There are " + str(len(cores_list)) + " unique "
+        lm_util.gprint("There are " + str(len(cores_list)) + " unique "
                          "cores and " + str(len(cores_product)) + " pairings")
 
         irows = arcpy.InsertCursor(cpair_tbl)
@@ -258,19 +264,19 @@ def limit_cores(pair_tbl, stats_tbl):
     core_id = cc_env.core_fld.upper()
 
     try:
-        arcpy.AddMessage("\nLIMITING CORE PAIRS BASED UPON CLIMATE "
+        lm_util.gprint("\nLIMITING CORE PAIRS BASED UPON CLIMATE "
                          "THRESHOLD")
 
         arcpy.MakeTableView_management(pair_tbl, pair_vw)
         arcpy.MakeTableView_management(stats_tbl, stats_vw)
 
         # Add basic stats to distance table
-        arcpy.AddMessage("Joining zonal statistics to pairings table")
+        lm_util.gprint("Joining zonal statistics to pairings table")
         add_stats(stats_vw, core_id, "fr", pair_vw, TO_COL)
         add_stats(stats_vw, core_id, "to", pair_vw, FR_COL)
 
         # Calculate difference of 2 std
-        arcpy.AddMessage("Calculating difference of 2 std")
+        lm_util.gprint("Calculating difference of 2 std")
         diffu_2std = "diffu_2std"
         arcpy.AddField_management(pair_vw, diffu_2std, "Float", "", "",
                                   "", "", "NULLABLE")
@@ -279,7 +285,7 @@ def limit_cores(pair_tbl, stats_tbl):
                                         "PYTHON")
 
         # Filter distance table based on inputed threshold and delete rows
-        arcpy.AddMessage("Filtering table based on threshold")
+        lm_util.gprint("Filtering table based on threshold")
         diffu2std_fld = arcpy.AddFieldDelimiters(pair_vw, diffu_2std)
         expression = diffu2std_fld + " <= " + str(cc_env.climate_threshold)
         arcpy.SelectLayerByAttribute_management(pair_vw, "NEW_SELECTION",
@@ -287,7 +293,7 @@ def limit_cores(pair_tbl, stats_tbl):
         rows_del = int(arcpy.GetCount_management(pair_vw).getOutput(0))
         if rows_del > 0:
             arcpy.DeleteRows_management(pair_vw)
-        arcpy.AddMessage(str(rows_del) + " rows deleted")
+        lm_util.gprint(str(rows_del) + " rows deleted")
 
     except Exception:
         raise
@@ -346,7 +352,7 @@ def process_pairings(pairings):
     Requires ArcInfo license.
 
     """
-    arcpy.AddMessage("\nLIMITING CORE PAIRS BASED ON INPUTED DISTANCES AND "
+    lm_util.gprint("\nLIMITING CORE PAIRS BASED ON INPUTED DISTANCES AND "
                      "GENERATING LINK TABLE")
     # Simplify cores based on booolean in config
     if cc_env.simplify_cores:
@@ -410,7 +416,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
             to_cores = ', '.join(to_cores_lst)
             expression = coreid_fld + " in (" + to_cores + ")"
             arcpy.MakeFeatureLayer_management(corefc, tcore_vw, expression)
-            arcpy.AddMessage("Calculating Euclidean distance/s from Core "
+            lm_util.gprint("Calculating Euclidean distance/s from Core "
                              + frm_core + " to " + str(len(to_cores_lst))
                              + " other cores" + " (" + str(core_no + 1) + "/"
                              + no_cores + ")")
@@ -463,7 +469,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
 
 def simplify_corefc():
     """Simplify core feature class"""
-    arcpy.AddMessage("Simplifying polygons to speed up core pair "
+    lm_util.gprint("Simplifying polygons to speed up core pair "
                      "distance calculations")
     corefc = cc_env.core_simp
     climate_rast = arcpy.Raster(cc_env.prj_climate_rast)
