@@ -311,7 +311,10 @@ def STEP3_calc_cwds():
 
         #----------------------------------------------------------------------
         # Loop through cores, do cwd calcs for each
-        gprint("\nStarting cost distance calculations.\n")
+        if cfg.TOOL == cfg.TOOL_CC:
+            gprint("\nMapping least-cost paths.\n")
+        else:
+            gprint("\nStarting cost distance calculations.\n")
         lcpLoop = 0
         failures = 0
         x = startIndex

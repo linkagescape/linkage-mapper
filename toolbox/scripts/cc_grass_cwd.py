@@ -41,11 +41,11 @@ def grass_cwd(core_list):
     core_lyr = "cores"
 
     try:
-        arcpy.AddMessage("\nRUNNING GRASS TO CREATE COST-WEIGHTED DISTANCE "
+        lm_util.gprint("\nRUNNING GRASS TO CREATE COST-WEIGHTED DISTANCE "
                          "RASTERS")
 
         # Convert input GRID rasters to ASCII
-        arcpy.AddMessage("Converting ARCINFO GRID rasters to ASCII")
+        lm_util.gprint("Converting ARCINFO GRID rasters to ASCII")
         arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
 
@@ -57,10 +57,10 @@ def grass_cwd(core_list):
         lm_util.make_cwd_paths(max(core_list))
 
         # Import files into GRASS
-        arcpy.AddMessage("Importing raster files into GRASS")
+        lm_util.gprint("Importing raster files into GRASS")
         run_grass_cmd("r.in.arc", input=climate_asc, output=climate_lyr)
         run_grass_cmd("r.in.arc", input=resist_asc, output=resist_lyr)
-        arcpy.AddMessage("Importing cores feature class into GRASS\n")
+        lm_util.gprint("Importing cores feature class into GRASS\n")
         run_grass_cmd("v.in.ogr", dsn=cc_env.out_dir, output=core_lyr)
 
         # Generate CWD and Back rasters
@@ -90,7 +90,7 @@ def write_grassrc(ccr_grassrc, gisdbase):
 
 def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     """Setup GRASS workspace and modify windows path for GRASS GDAL"""
-    arcpy.AddMessage("Creating GRASS workspace")
+    lm_util.gprint("Creating GRASS workspace")
     gisbase = cc_env.gisbase
     location = "gcwd"
     mapset = "PERMANENT"
@@ -111,11 +111,11 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     # Code to check GDAL dlls and system path
     # gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
     #                         shell=True).stdout.read()
-    # arcpy.AddMessage("GDAL DLL/s: " + gdal)
+    # lm_util.gprint("GDAL DLL/s: " + gdal)
 
     # os_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
     #                         shell=True).stdout.read()
-    # arcpy.AddMessage("Path: " + os_path)
+    # lm_util.gprint("Path: " + os_path)
 
     grass.create_location(gisdbase, location, filename=geo_file)
     gsetup.init(gisbase, gisdbase, location, mapset)
@@ -143,7 +143,7 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
     try:
         for position, core_no in enumerate(core_list):
             core_no_txt = str(core_no)
-            arcpy.AddMessage("Generating CWD and back rasters for"
+            lm_util.gprint("Generating CWD and back rasters for"
                 " Core " + core_no_txt + " (" + str(position + 1) + "/" +
                 str(len(core_list)) + ")")
 
@@ -208,4 +208,4 @@ def run_grass_cmd(*args, **kwargs):
     if 'ERROR:' in stderr:
         raise Exception("GRASSS ERROR: %s" % stderr[7:])
     # elif stderr:
-        # arcpy.AddMessage(stderr)
+        # lm_util.gprint(stderr)

@@ -64,7 +64,8 @@ def lm_master(argv=None):
         lu.delete_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
-        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
+        if cfg.TOOL == 'Linkage Mapper':
+            cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
                                              cfg.PARAMS)
         lu.print_drive_warning()
 
