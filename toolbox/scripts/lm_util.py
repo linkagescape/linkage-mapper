@@ -422,33 +422,32 @@ def get_adj_using_shift_method(alloc):
 
     gp.workspace = cfg.SCRATCHDIR
 
-    gprint('Calculating adjacencies crossing horizontal allocation '
-                  'boundaries...')
+    gprint('Calculating adjacencies crossing allocation boundaries...')
     start_time = time.clock()
     gp.Shift_management(alloc, "alloc_r", posShift, "0")
 
     alloc_r = "alloc_r"
     adjTable_r = get_allocs_from_shift(gp.workspace, alloc, alloc_r)
-    start_time = elapsed_time(start_time)
+    # start_time = elapsed_time(start_time)
 
-    gprint('Calculating adjacencies crossing upper-left diagonal '
-                      'allocation boundaries...')
+    # gprint('Calculating adjacencies crossing upper-left diagonal '
+                      # 'allocation boundaries...')
     gp.Shift_management(alloc, "alloc_ul", negShift, posShift)
 
     alloc_ul = "alloc_ul"
     adjTable_ul = get_allocs_from_shift(gp.workspace, alloc, alloc_ul)
-    start_time = elapsed_time(start_time)
+    # start_time = elapsed_time(start_time)
 
-    gprint('Calculating adjacencies crossing upper-right diagonal '
-                      'allocation boundaries...')
+    # gprint('Calculating adjacencies crossing upper-right diagonal '
+                      # 'allocation boundaries...')
     gp.Shift_management(alloc, "alloc_ur", posShift, posShift)
 
     alloc_ur = "alloc_ur"
     adjTable_ur = get_allocs_from_shift(gp.workspace, alloc, alloc_ur)
-    start_time = elapsed_time(start_time)
+    # start_time = elapsed_time(start_time)
 
-    gprint('Calculating adjacencies crossing vertical allocation '
-                      'boundaries...')
+    # gprint('Calculating adjacencies crossing vertical allocation '
+                      # 'boundaries...')
     gp.Shift_management(alloc, "alloc_u", "0", posShift)
 
     alloc_u = "alloc_u"
@@ -508,7 +507,9 @@ def get_allocs_from_shift(workspace, alloc, alloc_sh):
         combine_ras = os.path.join(gp.workspace, "combine")
         count = 0
         statement = ('gp.SingleOutputMapAlgebra_sa("combine(" + alloc + '
-                     '", " + alloc_sh + ")", combine_ras, alloc, alloc_sh)')
+                     '", " + alloc_sh + ")", combine_ras)')#, alloc, alloc_sh)') #xxx
+        # statement = ('gp.SingleOutputMapAlgebra_sa("combine(" + alloc + '
+                     # '", " + alloc_sh + ")", combine_ras, alloc, alloc_sh)')
         while True:
             try:
                 exec statement
@@ -729,14 +730,14 @@ def make_points(workspace, pointArray, outFC):
         gp.CreateFeatureclass_management(workspace, outFC, "POINT")
         #for field in fieldArray:
         if pointArray.shape[1] > 3:
-            gp.addfield(outFC, "corex", "LONG")
-            gp.addfield(outFC, "corey", "LONG")
-            gp.addfield(outFC, "radius", "DOUBLE")
-            gp.addfield(outFC, "cores_x_y", "TEXT")
+            gp.AddField_management(outFC, "corex", "LONG")
+            gp.AddField_management(outFC, "corey", "LONG")
+            gp.AddField_management(outFC, "radius", "DOUBLE")
+            gp.AddField_management(outFC, "cores_x_y", "TEXT")
         else:
-            gp.addfield(outFC, "XCoord", "DOUBLE")
-            gp.addfield(outFC, "YCoord", "DOUBLE")
-            gp.addfield(outFC, cfg.COREFN, "LONG")
+            gp.AddField_management(outFC, "XCoord", "DOUBLE")
+            gp.AddField_management(outFC, "YCoord", "DOUBLE")
+            gp.AddField_management(outFC, cfg.COREFN, "LONG")
         rows = gp.InsertCursor(outFC)
 
         numPoints = pointArray.shape[0]
@@ -1793,7 +1794,7 @@ def check_project_dir():
                '(something like "C:\PUMA").')
         raise_error(msg)
 
-    if "-" in cfg.PROJECTDIR or " " in cfg.PROJECTDIR:
+    if "-" in cfg.PROJECTDIR or " " in cfg.PROJECTDIR or "." in cfg.PROJECTDIR:
         msg = ('ERROR: Project directory cannot contain spaces, dashes, or '
                 'special characters.')
         raise_error(msg)
@@ -2013,26 +2014,26 @@ def get_cs_path():
 
 def rename_fields(FC):    
     try:
-        gp.addfield(FC, "cw_to_Euc_Dist_Ratio", "FLOAT")
+        gp.AddField_management(FC, "cw_to_Euc_Dist_Ratio", "FLOAT")
         gp.CalculateField_management(FC, "cw_to_Euc_Dist_Ratio","!cwd2Euc_R!", "PYTHON") 
         gp.deletefield(FC, "cwd2Euc_R")
 
         fieldList = gp.ListFields(FC)
         for field in fieldList:
             if str(field.Name) == "cwd2Path_R":
-                gp.addfield(FC, "cwd_to_Path_Length_Ratio", "FLOAT")
+                gp.AddField_management(FC, "cwd_to_Path_Length_Ratio", "FLOAT")
                 gp.CalculateField_management(FC, "cwd_to_Path_Length_Ratio","!cwd2Path_R!", "PYTHON") 
                 gp.deletefield(FC, "cwd2Path_R")
             
-        gp.addfield(FC, "Current_Flow_Centrality", "FLOAT")
+        gp.AddField_management(FC, "Current_Flow_Centrality", "FLOAT")
         gp.CalculateField_management(FC, "Current_Flow_Centrality","!CF_Central!", "PYTHON") 
         gp.deletefield(FC, "CF_Central")
         
-        gp.addfield(FC, "Effective_Resistance", "FLOAT")
+        gp.AddField_management(FC, "Effective_Resistance", "FLOAT")
         gp.CalculateField_management(FC, "Effective_Resistance","!Eff_Resist!", "PYTHON") 
         gp.deletefield(FC, "Eff_Resist")
         
-        gp.addfield(FC, "cwd_to_Eff_Resist_Ratio", "FLOAT")
+        gp.AddField_management(FC, "cwd_to_Eff_Resist_Ratio", "FLOAT")
         gp.CalculateField_management(FC, "cwd_to_Eff_Resist_Ratio","!cwd2EffR_r!", "PYTHON") 
         gp.deletefield(FC, "cwd2EffR_r")
         
@@ -2067,7 +2068,7 @@ def print_arcgis_failures(statement, failures):
 def print_drive_warning():
     drive, depth = get_dir_depth(cfg.PROJECTDIR)
     if drive.lower() != 'c' or depth > 3 or 'dropbox' in drive.lower():
-        gprint('********************************************************'
+        gprint('********************************************************\n'
             'Note: ArcGIS errors are more likely when writing to remote '
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
