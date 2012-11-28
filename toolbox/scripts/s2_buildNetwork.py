@@ -222,7 +222,6 @@ def STEP2_build_network():
 
         #----------------------------------------------------------------------
 
-
         if cfg.CONNECTFRAGS:               
             connect_clusters(linkTable)     
         else:

@@ -55,9 +55,9 @@ def STEP6_calc_barriers():
             arcpy.CreateFileGDB_management(cfg.OUTPUTDIR,
                                            path.basename(cfg.BARRIERGDB))             
                                            
-        startRadius = float(cfg.STARTRADIUS)
-        endRadius = float(cfg.ENDRADIUS)
-        radiusStep = float(cfg.RADIUSSTEP)
+        startRadius = int(cfg.STARTRADIUS)
+        endRadius = int(cfg.ENDRADIUS)
+        radiusStep = int(cfg.RADIUSSTEP)
         if radiusStep == 0:
             endRadius = startRadius # Calculate at just one radius value
             radiusStep = 1
