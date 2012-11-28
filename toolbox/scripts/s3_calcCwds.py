@@ -85,6 +85,7 @@ def STEP3_calc_cwds():
             # gprint('Max cost-weighted distance for CWD calcs set '
                               # 'to ' + str(cfg.TMAXCWDIST) + '\n')
 
+                              
         if (cfg.BUFFERDIST) is not None:
             gprint('Bounding circles plus a buffer of ' +
                               str(float(cfg.BUFFERDIST)) + ' map units will '
@@ -555,7 +556,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 gp.Extent = "MINOF"
 
             lu.delete_data(path.join(coreDir,"BACK"))
-
+            
             if arcpy:
                 statement = ('outCostDist = CostDistance(SRCRASTER, '
                              'bResistance, cfg.TMAXCWDIST, back_rast);'

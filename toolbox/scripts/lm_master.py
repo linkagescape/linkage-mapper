@@ -88,6 +88,10 @@ def lm_master(argv=None):
             cfg.STEP3 = False
             cfg.STEP4 = False
             cfg.STEP5 = False
+            if cfg.MAXEUCDIST == None:
+                raise RuntimeError('Maximum Euclidean distance required '
+                                   'for custom cluster mode.')
+                                   
         # Set data frame spatial reference to coordinate system of input data
         # Problems arise in this script (core raster creation) and in S2
         # (generate near table) if they differ.
@@ -174,6 +178,7 @@ def lm_master(argv=None):
         # Clean up
         lu.delete_dir(cfg.SCRATCHDIR)
         lu.close_log_file()
+        # lu.delete_data(cfg.FCORES)
 
         gp.addmessage('\nDONE!\n')
 
