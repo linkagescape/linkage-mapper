@@ -1744,7 +1744,7 @@ def make_cwd_paths(max_core_no):
                                        os.path.basename(cfg.CWDBASEDIR))
         gp.CreateFolder_management(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
 
-        no_dirs = max_core_no / 100
+        no_dirs = int(max_core_no / 100)
         if no_dirs > 1:
             gprint('...' + cfg.CWDSUBDIR_NM + '1')
             gprint('...etc.')
