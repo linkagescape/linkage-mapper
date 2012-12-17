@@ -26,3 +26,15 @@ def delete_feature(in_feature):
         except arcpy.ExecuteError:
             arcpy.AddWarning("Error deleting temporary %s. Program will "
                              "continue." % in_feature)
+
+def add_grass_path(gisbase):
+    env_list = os.environ['PATH'].split(';')
+    env_list.insert(0, os.path.join(gisbase, "msys", "bin"))
+    env_list.insert(0, os.path.join(gisbase, "extralib"))
+    env_list.insert(0, os.path.join(gisbase, "bin"))
+    env_list.insert(0, os.path.join(gisbase, "lib"))
+    env_list.insert(0, os.path.join(gisbase, "etc", "python"))
+    env_list.insert(0, os.path.join(gisbase, "etc"))
+    os.environ['PATH'] = ';'.join(env_list)  # Path should now prioritize 
+                                             # proper gdal dll location
+                             
