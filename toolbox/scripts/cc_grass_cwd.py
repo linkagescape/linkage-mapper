@@ -30,9 +30,11 @@ def grass_cwd(core_list):
     # cc_env.configure(argv)
     # lm_env.configure(lm_env.TOOL_CC, lm_arg)
 
+    
     cur_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
                                 shell=True).stdout.read()
     gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
+
     ccr_grassrc = os.path.join(cc_env.proj_dir, "ccr_grassrc")
     climate_asc = os.path.join(cc_env.out_dir, "cc_climate.asc")
     resist_asc = os.path.join(cc_env.out_dir, "cc_resist.asc")
@@ -99,25 +101,23 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     os.environ['LD_LIBRARY_PATH'] = os.path.join(gisbase, "lib")
     os.environ['GRASS_SH'] = os.path.join(gisbase, "msys", "bin", "sh.exe")
 
-    env_list = os.environ['PATH'].split(';')
-    env_list.insert(0, os.path.join(gisbase, "msys", "bin"))
-    env_list.insert(0, os.path.join(gisbase, "extralib"))
-    env_list.insert(0, os.path.join(gisbase, "bin"))
-    env_list.insert(0, os.path.join(gisbase, "lib"))
-    env_list.insert(0, os.path.join(gisbase, "etc", "python"))
-    env_list.insert(0, os.path.join(gisbase, "etc"))
-    os.environ['PATH'] = ';'.join(env_list)
+    cc_util.add_grass_path(gisbase)
 
-    # Code to check GDAL dlls and system path
-    # gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
-    #                         shell=True).stdout.read()
-    # lm_util.gprint("GDAL DLL/s: " + gdal)
+    gdal_check()
 
     # os_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
     #                         shell=True).stdout.read()
     # lm_util.gprint("Path: " + os_path)
 
-    grass.create_location(gisdbase, location, filename=geo_file)
+    try:
+        grass.create_location(gisdbase, location, filename=geo_file)
+    except:
+        arcpy.AddWarning("GRASS ERROR: This appears to be a conflict between")
+        arcpy.AddWarning("ArcGIS and GRASS.  Please use the 'CC Run Script.py'")
+        arcpy.AddWarning("Python script in the scripts directory where the")
+        arcpy.AddWarning("Linkage Mapper toolbox is installed instead of ")
+        arcpy.AddWarning("ArcGIS to call the tool (see user guide).")
+        raise Exception("GRASS ERROR: Cannot create workspace.")    
     gsetup.init(gisbase, gisdbase, location, mapset)
     run_grass_cmd("g.gisenv", set="OVERWRITE=1")
     os.environ['GRASS_VERBOSE'] = "0"  # only errors and warnings are printed
@@ -209,3 +209,9 @@ def run_grass_cmd(*args, **kwargs):
         raise Exception("GRASSS ERROR: %s" % stderr[7:])
     # elif stderr:
         # lm_util.gprint(stderr)
+
+def gdal_check():
+# Code to check GDAL dlls and system path
+    gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
+                            shell=True).stdout.read()
+    lm_util.gprint("\nGDAL DLL/s: " + gdal)

@@ -44,14 +44,24 @@ def main(argv=None):
 
     lm_util.gprint("CLIMATE LINKAGE MAPPER " + __version__)
     print "Start time: %s" % stime.strftime(tformat)  # Redundant in Arc
-
+  
     zonal_tbl = "zstats.dbf"
 
     if argv is None:
         argv = sys.argv
     try:
-        cc_env.configure(argv)
+        cc_env.configure(argv)        
+        gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
 
+        if os.path.exists(gisdbase):
+            try:
+                shutil.rmtree(gisdbase, True)
+            except OSError:
+                arcpy.AddWarning("Unable to delete temporary GRASS folder. "
+                                 "Program will contine")
+
+        cc_util.add_grass_path(cc_env.gisbase)
+            
         import cc_grass_cwd  # Cannot import until configured
 
         # Check out the ArcGIS Spatial Analyst extension license
@@ -478,5 +488,12 @@ def simplify_corefc():
         "POINT_REMOVE", tolerance, "#", "NO_CHECK")
     return corefc
 
+def gdal_check():
+    # Code to check GDAL dlls and system path
+    import subprocess
+    gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
+                            shell=True).stdout.read()
+    lm_util.gprint("\nGDAL DLL/s:\n" + gdal)
+    
 if __name__ == "__main__":
     main()
