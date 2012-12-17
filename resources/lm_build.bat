@@ -17,8 +17,6 @@ del ..\LinkageMapper"%1"\toolbox\scripts\bar*.*
 del ..\LinkageMapper"%1"\toolbox\climate*.*
 del ..\LinkageMapper"%1"\LM_demo\cc*.*
 del ..\LinkageMapper"%1"\LM_demo\demoData\cc*.*
-del ..\LinkageMapper"%1"\toolbox\*Plus.tbx
-del ..\LinkageMapper"%1"\toolbox\*Extras.tbx
 
 @ECHO OFF
 if "%2"=="cc" GOTO CCCopy
