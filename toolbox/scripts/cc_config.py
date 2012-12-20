@@ -57,9 +57,9 @@ class ClimateConfig():
         self.prj_area_rast = os.path.join(self.out_dir, "projarea")
         self.prj_core_fc = (os.path.join(
                             self.out_dir, "cores.shp"))  # Proj core area  name
-        self.prj_climate_rast = os.path.join(self.out_dir, "climate")
+        self.prj_climate_rast = os.path.join(self.out_dir, "climate.tif") #tif avoids dll conflict
         if self.resist_rast is not None:
-            self.prj_resist_rast = os.path.join(self.out_dir, "resist")
+            self.prj_resist_rast = os.path.join(self.out_dir, "resist.tif") #tif avoids dll conflict
         else:
             # Resistance will the same file as the area raster (0 or 1 value)
             self.prj_resist_rast = self.prj_area_rast

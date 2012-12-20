@@ -31,7 +31,7 @@ from lm_config import tool_env as lm_env
 import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-__version__ = "0.2.4"
+# __version__ = "0.2.4"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
@@ -42,7 +42,6 @@ def main(argv=None):
     tformat = "%m/%d/%y %H:%M:%S"
     stime = datetime.now()
 
-    lm_util.gprint("CLIMATE LINKAGE MAPPER " + __version__)
     print "Start time: %s" % stime.strftime(tformat)  # Redundant in Arc
   
     zonal_tbl = "zstats.dbf"
@@ -54,14 +53,19 @@ def main(argv=None):
         gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
 
         if os.path.exists(gisdbase):
+            import shutil
             try:
                 shutil.rmtree(gisdbase, True)
-            except OSError:
-                arcpy.AddWarning("Unable to delete temporary GRASS folder. "
-                                 "Program will contine")
+            except:
+                raise Exception("Cannot delete grass workspace: " + gisdbase)              
+            if os.path.exists(gisdbase):
+                raise Exception("Cannot delete grass workspace: " + gisdbase)  
 
         cc_util.add_grass_path(cc_env.gisbase)
-            
+        
+        # Make sure no dll conflict with grass and ArcGIS
+        gdal_check('startup')
+        
         import cc_grass_cwd  # Cannot import until configured
 
         # Check out the ArcGIS Spatial Analyst extension license
@@ -78,13 +82,15 @@ def main(argv=None):
         arcpy.env.scratchWorkspace = cc_util.mk_proj_dir(cc_env.tmp_dir)
         # lm_outdir = cc_util.mk_proj_dir("lm_out")
         lm_outdir = cc_env.proj_dir
-        
+
         # Configure Linkage Mapper
         lm_arg = (_SCRIPT_NAME, lm_outdir, cc_env.prj_core_fc, cc_env.core_fld,
                   cc_env.prj_resist_rast, "false", "false", "#", "#", "true",
                   "false", cc_env.prune_network, cc_env.max_nn, cc_env.nn_unit,
                   cc_env.keep_constelations, "true", "#", "#", "#")
         lm_env.configure(lm_env.TOOL_CC, lm_arg)
+        lm_util.gprint('\nClimate Linkage Mapper Version ' + lm_env.releaseNum)
+        
         lm_util.create_dir(lm_env.DATAPASSDIR)
 
         # Set up logging
@@ -152,7 +158,7 @@ def main(argv=None):
                          "".join(traceback.format_tb(exc_traceback)))
     finally:
         cc_util.delete_feature(cc_env.prj_climate_rast)
-        # cc_util.delete_feature(cc_env.prj_resist_rast)
+        cc_util.delete_feature(cc_env.prj_resist_rast)
         if cc_env.prj_resist_rast <> cc_env.prj_area_rast:
             cc_util.delete_feature(cc_env.prj_area_rast)
         cc_util.delete_feature(cc_env.prj_core_fc)  # Keeping for reruns
@@ -178,41 +184,62 @@ def main(argv=None):
 
 def cc_copy_inputs():
     """Clip Climate Linkage Mapper inputs to smallest extent"""
-    ext_poly = "ext_poly.shp"  # Extent polygon
+    ext_poly = os.path.join(cc_env.out_dir,"ext_poly.shp")  # Extent polygon
     try:
         lm_util.gprint("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
 
-        # Set to minimum extent if resistance raster was given
-        if cc_env.resist_rast is not None:
-            climate_extent = arcpy.Raster(cc_env.climate_rast).extent
-            resist_extent = arcpy.Raster(cc_env.resist_rast).extent
-            xmin = max(climate_extent.XMin, resist_extent.XMin)
-            ymin = max(climate_extent.YMin, resist_extent.YMin)
-            xmax = min(climate_extent.XMax, resist_extent.XMax)
-            ymax = min(climate_extent.YMax, resist_extent.YMax)
+        climate_extent = arcpy.Raster(cc_env.climate_rast).extent
+        resist_extent = arcpy.Raster(cc_env.resist_rast).extent
+        xmin = max(climate_extent.XMin, resist_extent.XMin)
+        ymin = max(climate_extent.YMin, resist_extent.YMin)
+        xmax = min(climate_extent.XMax, resist_extent.XMax)
+        ymax = min(climate_extent.YMax, resist_extent.YMax)
+        if cc_env.resist_rast is not None:       
+            # Set to minimum extent if resistance raster was given
             arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
-            arcpy.CopyRaster_management(cc_env.resist_rast,
-                                    cc_env.prj_resist_rast)
+            arcpy.CopyRaster_management(cc_env.resist_rast, cc_env.prj_resist_rast)
 
         arcpy.CopyRaster_management(cc_env.climate_rast,
                                     cc_env.prj_climate_rast)
 
         arcpy.env.extent = None
 
-        # Create project area raster
-        proj_area_rast = sa.Con(sa.IsNull(cc_env.prj_climate_rast),
-                                sa.Int(cc_env.prj_climate_rast), 1)
-        proj_area_rast.save(cc_env.prj_area_rast)
+        ## Create project area raster 
+        ## Replaced with extent coords code below
+        # proj_area_rast = sa.Con(sa.IsNull(cc_env.prj_climate_rast),
+                                # sa.Int(cc_env.prj_climate_rast), 1)
+        # proj_area_rast.save(cc_env.prj_area_rast)
 
+        
+        # # Clip core feature class
+        
+        # This invokes gdal- replace with polygon based on extent coords below
+        # arcpy.RasterToPolygon_conversion(proj_area_rast, ext_poly,
+                                         # "NO_SIMPLIFY", "VALUE")
+        
+        # Create array of boundary points                    
+        array = arcpy.Array()
+        pnt = arcpy.Point(xmin,ymin)
+        array.add(pnt)
+        pnt = arcpy.Point(xmax,ymin)
+        array.add(pnt)
+        pnt = arcpy.Point(xmax,ymax)
+        array.add(pnt)
+        pnt = arcpy.Point(xmin,ymax)
+        array.add(pnt)
+        # Add in the first point of the array again to close polygon boundary
+        array.add(array.getObject(0))
+        # Create a polygon geometry object using the array object
+        ext_feat = arcpy.Polygon(array)
+        arcpy.CopyFeatures_management(ext_feat, ext_poly)
         # Clip core feature class
-        arcpy.RasterToPolygon_conversion(proj_area_rast, ext_poly,
-                                         "NO_SIMPLIFY", "VALUE")
-        arcpy.Clip_analysis(cc_env.core_fc, ext_poly,
-                            cc_env.prj_core_fc)
+        arcpy.Clip_analysis(cc_env.core_fc, ext_poly, cc_env.prj_core_fc)                                          
+                            
     except Exception:
         raise
     finally:
         cc_util.delete_feature(ext_poly)
+
 
 
 def create_pair_tbl(climate_stats):
@@ -488,12 +515,18 @@ def simplify_corefc():
         "POINT_REMOVE", tolerance, "#", "NO_CHECK")
     return corefc
 
-def gdal_check():
+def gdal_check(msg):
     # Code to check GDAL dlls and system path
     import subprocess
     gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
                             shell=True).stdout.read()
-    lm_util.gprint("\nGDAL DLL/s:\n" + gdal)
+    # lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
+    gdalList = gdal.split('\n')                        
+    if 'arcgis' in gdalList[1].lower():
+        lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
+        arcpy.AddWarning("It looks like there is a conflict between ArcGIS")
+        arcpy.AddWarning("and GRASS.  Please *RESTART ArcGIS* and try again.'")
+        raise Exception("GDAL DLL conflict")
     
 if __name__ == "__main__":
     main()

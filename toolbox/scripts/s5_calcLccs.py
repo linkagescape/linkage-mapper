@@ -251,7 +251,8 @@ def calc_lccs(normalize):
                            + ' is much less than zero ('+str(rasterMin)+').'
                            '\nThis could mean that BOUNDING CIRCLE BUFFER DISTANCES '
                            'were too small and a corridor passed outside of a '
-                           'bounding circle. \n')
+                           'bounding circle, or that a corridor passed outside of the '
+                           'resistance map. \n')
                     gp.AddWarning(msg)
 
             
@@ -450,7 +451,8 @@ def calc_lccs(normalize):
                    'much less than zero ('+str(rasterMin)+').'
                    '\nThis could mean that BOUNDING CIRCLE BUFFER DISTANCES '
                    'were too small and a corridor passed outside of a '
-                   'bounding circle. \n')
+                   'bounding circle, or that a corridor passed outside of the '
+                   'resistance map. \n')
             gp.AddWarning(msg) 
                             
 

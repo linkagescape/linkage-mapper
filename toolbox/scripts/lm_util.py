@@ -2478,3 +2478,13 @@ def get_mem():
     totMem = float(int(10 * float(stat.ullTotalPhys)/1073741824))/10
     availMem = float(int(10 * float(stat.ullAvailPhys)/1073741824))/10
     return totMem, availMem
+    
+    
+    
+def gdal_check(msg):
+    # Code to check GDAL dlls and system path
+    import subprocess
+    gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
+                            shell=True).stdout.read()
+    gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
+    
