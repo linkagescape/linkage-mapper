@@ -127,7 +127,7 @@ def STEP3_calc_cwds():
             cfg.S3DROPLCCSic = False
         else:
             cfg.S3DROPLCCSic = cfg.S3DROPLCCS
-        gprint('Number of core areas to connect:' +
+        gprint('\nNumber of core areas to connect: ' +
                           str(numCoresToMap))
 
         if rerun:
@@ -329,7 +329,6 @@ def STEP3_calc_cwds():
 
             (linkTableReturned, failures, lcpLoop) = do_cwd_calcs(x,
                         linkTablePassed, coresToMap, lcpLoop, failures)
-
             if failures == 0:
                 # If iteration was successful, continue with next core
                 linkTableMod = linkTableReturned
@@ -512,7 +511,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
         else:
             bResistance = cfg.BOUNDRESIS
-
         # ---------------------------------------------------------
         # CWD Calculations
         outDistanceRaster = lu.get_cwd_path(sourceCore)
@@ -578,7 +576,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Extract cost distances from source core to target cores
         # Fixme: there will be redundant calls to b-a when already
         # done a-b
-
         ZNSTATS = path.join(coreDir, "zonestats.dbf")
         lu.delete_data(ZNSTATS)
 
@@ -662,7 +659,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     if failures < 20:
                         return None,failures,lcpLoop
                     else: exec statement
-
                 # Execute ZonalStatistics to get more precise cw distance if
                 # arc rounded it earlier (not critical, hence the try/pass)
                 if (linkTable[link,cfg.LTB_CWDIST] ==
@@ -683,6 +679,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 lcpRas = path.join(coreDir,"lcp" + tif)
                 lu.delete_data(lcpRas)
 
+                # Note: costpath (both gp and arcpy versions) uses GDAL.
                 if arcpy:
                     statement = ('outCostPath = CostPath(TARGETRASTER,'
                           'outDistanceRaster, back_rast, "BEST_SINGLE", ""); '
@@ -692,7 +689,9 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                  'outDistanceRaster, back_rast, '
                                  'lcpRas, "BEST_SINGLE", "")')
                 try:
+                    # lu.gdal_check('697')
                     exec statement
+                    # lu.gdal_check('699')
                     randomerror()
                 except:
                     failures = lu.print_arcgis_failures(statement, failures)
@@ -786,6 +785,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 lcpLoop = lu.create_lcp_shapefile(coreDir, linkTable,
                                                   sourceCore, targetCore,
                                                   lcpLoop)
+
         # Made it through, so reset failure count and return.
         failures = 0
         lu.delete_dir(coreDir)
