@@ -52,19 +52,24 @@ def main(argv=None):
         cc_env.configure(argv)        
         gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
 
+        # Remove GRASS workspace from earlier run if any
         if os.path.exists(gisdbase):
             import shutil
             try:
                 shutil.rmtree(gisdbase, True)
             except:
-                raise Exception("Cannot delete grass workspace: " + gisdbase)              
+                arcpy.AddWarning("\nCannot delete GRASS workspace from earlier"
+                                " run. Please choose a new project directory.")
+                raise Exception("Cannot delete GRASS workspace: " + gisdbase)              
             if os.path.exists(gisdbase):
-                raise Exception("Cannot delete grass workspace: " + gisdbase)  
+                arcpy.AddWarning("\nCannot delete GRASS workspace from earlier"
+                                " run. Please choose a new project directory.")
+                raise Exception("Cannot delete GRASS workspace: " + gisdbase)  
 
         cc_util.add_grass_path(cc_env.gisbase)
         
         # Make sure no dll conflict with grass and ArcGIS
-        gdal_check('startup')
+        gdal_check('Startup')
         
         import cc_grass_cwd  # Cannot import until configured
 
@@ -525,7 +530,11 @@ def gdal_check(msg):
     if 'arcgis' in gdalList[1].lower():
         lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
         arcpy.AddWarning("It looks like there is a conflict between ArcGIS")
-        arcpy.AddWarning("and GRASS.  Please *RESTART ArcGIS* and try again.'")
+        arcpy.AddWarning("and GRASS.  \nPlease *RESTART ArcGIS* and try again.'")
+        arcpy.AddWarning("\nIf that doesn't work you can try using ")
+        arcpy.AddWarning("the 'CC Run Script.py' python script in the ")
+        arcpy.AddWarning("scripts directory where the Linkage Mapper toolbox")
+        arcpy.AddWarning("is installed instead of ArcGIS to call the tool")
         raise Exception("GDAL DLL conflict")
     
 if __name__ == "__main__":

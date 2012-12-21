@@ -231,5 +231,9 @@ def gdal_fail_check(msg):
     if 'arcgis' in gdalList[1].lower():
         arcpy.AddWarning("It looks like there is a conflict between ArcGIS")
         arcpy.AddWarning("and GRASS. \nPlease *RESTART ArcGIS* and try again.")
+        arcpy.AddWarning("\nIf that doesn't work you can try using ")
+        arcpy.AddWarning("the 'CC Run Script.py' python script in the ")
+        arcpy.AddWarning("scripts directory where the Linkage Mapper toolbox")
+        arcpy.AddWarning("is installed instead of ArcGIS to call the tool")        
         raise Exception("GDAL DLL conflict")    
-    
+
