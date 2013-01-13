@@ -38,3 +38,39 @@ def add_grass_path(gisbase):
     os.environ['PATH'] = ';'.join(env_list)  # Path should now prioritize 
                                              # proper gdal dll location
                              
+def check_cc_project_dir():
+    """Checks to make sure path name is not too long.
+
+    Long path names can cause problems with ESRI grids.
+    """
+    if len(cc_env.proj_dir) > 140:
+        msg = ('ERROR: Project directory "' + cc_env.proj_dir +
+               '" is too deep.  Please choose a shallow directory'
+               '(something like "C:\PUMA").')
+        raise Exception(msg)
+
+    if "-" in cc_env.proj_dir or " " in cc_env.proj_dir or "." in cc_env.proj_dir:
+        msg = ('ERROR: Project directory cannot contain spaces, dashes, or '
+                'special characters.')
+        raise Exception(msg)
+    return
+    
+    
+def remove_grass_wkspc(gisdbase):
+        # Remove GRASS workspace from earlier run if any
+        if os.path.exists(gisdbase):
+            import shutil
+            try:
+                shutil.rmtree(gisdbase, True)
+            except:
+                arcpy.AddWarning("\nCannot delete GRASS workspace from earlier"
+                                " run."
+                                "\nPlease choose a new project directory.")
+                raise Exception("Cannot delete GRASS workspace: " + gisdbase)              
+            if os.path.exists(gisdbase):
+                arcpy.AddWarning("\nCannot delete GRASS workspace from earlier"
+                                " run."
+                                "\nPlease choose a new project directory.")
+                raise Exception("Cannot delete GRASS workspace: " + gisdbase)  
+    
+                             

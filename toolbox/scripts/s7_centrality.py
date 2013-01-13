@@ -28,7 +28,7 @@ gprint = lu.gprint
 
 
 def STEP7_calc_centrality():
-    """ Experimental code to analyze network centrality using Circuitscape
+    """ Analyze network centrality using Circuitscape
         given Linkage Mapper outputs
 
     """

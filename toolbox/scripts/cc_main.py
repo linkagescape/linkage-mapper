@@ -51,21 +51,8 @@ def main(argv=None):
     try:
         cc_env.configure(argv)        
         gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
-
-        # Remove GRASS workspace from earlier run if any
-        if os.path.exists(gisdbase):
-            import shutil
-            try:
-                shutil.rmtree(gisdbase, True)
-            except:
-                arcpy.AddWarning("\nCannot delete GRASS workspace from earlier"
-                                " run. Please choose a new project directory.")
-                raise Exception("Cannot delete GRASS workspace: " + gisdbase)              
-            if os.path.exists(gisdbase):
-                arcpy.AddWarning("\nCannot delete GRASS workspace from earlier"
-                                " run. Please choose a new project directory.")
-                raise Exception("Cannot delete GRASS workspace: " + gisdbase)  
-
+        cc_util.check_cc_project_dir()
+        cc_util.remove_grass_wkspc(gisdbase)
         cc_util.add_grass_path(cc_env.gisbase)
         
         # Make sure no dll conflict with grass and ArcGIS
