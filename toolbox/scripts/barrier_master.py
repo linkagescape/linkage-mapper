@@ -46,8 +46,6 @@ def bar_master():
         lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
         lu.dashline(1)
-        arcpy.AddWarning('This is experimental code.  Please do not cite '
-                         'without permission.')
         gprint('\nMaking local copy of resistance raster.')
         lu.delete_data(cfg.RESRAST)
 

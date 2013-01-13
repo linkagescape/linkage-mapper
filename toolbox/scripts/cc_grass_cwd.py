@@ -104,13 +104,8 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     # os_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
     #                         shell=True).stdout.read()
     # lm_util.gprint("Path: " + os_path)
-    if os.path.exists(gisdbase):
-        try:
-            shutil.rmtree(gisdbase, True)
-        except:
-            raise Exception("Cannot delete grass workspace: " + gisdbase)  
-        if os.path.exists(gisdbase):
-            raise Exception("Cannot delete grass workspace: " + gisdbase)    
+    cc_util.remove_grass_wkspc(gisdbase)
+
     try:
         grass.create_location(gisdbase, location, filename=geo_file)
     except:
