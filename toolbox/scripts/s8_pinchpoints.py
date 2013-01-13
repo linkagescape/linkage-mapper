@@ -36,7 +36,7 @@ tif = ".tif"
 
 @retry(2)
 def STEP8_calc_pinchpoints():
-    """ Experimental code map pinch points using Circuitscape
+    """ Maps pinch points in Linkage Mapper corridors using Circuitscape
         given CWD calculations from s3_calcCwds.py.
 
     """
