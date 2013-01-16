@@ -91,7 +91,7 @@ def STEP3_calc_cwds():
                               str(float(cfg.BUFFERDIST)) + ' map units will '
                               'be used \n to limit extent of cost distance '
                               'calculations.')
-        else:
+        elif cfg.TOOL <> cfg.TOOL_CC:
             gprint('NOT using bounding circles in cost distance '
                               'calculations.')
 
@@ -388,6 +388,15 @@ def STEP3_calc_cwds():
         tempFile = path.join(cfg.DATAPASSDIR, "temp_linkTable_s3_partial.csv")
         lu.delete_file(tempFile)
 
+        # Check if climate tool is calling linkage mapper
+        if cfg.TOOL == cfg.TOOL_CC:
+            coreList = npy.unique(linkTable[:, cfg.LTB_CORE1:cfg.LTB_CORE2 + 1])
+            for core in coreList:
+                cwdRaster = lu.get_cwd_path(int(core))
+                back_rast = cwdRaster.replace("cwd_", "back_")        
+                gprint(back_rast)
+                lu.delete_data(back_rast)
+        
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
@@ -789,8 +798,8 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Made it through, so reset failure count and return.
         failures = 0
         lu.delete_dir(coreDir)
-        if cfg.TOOL == cfg.TOOL_CC:
-                    lu.delete_data(back_rast)
+        # if cfg.TOOL == cfg.TOOL_CC:
+            # lu.delete_data(back_rast)
         return linkTable, failures, lcpLoop
 
     # Return GEOPROCESSING specific errors
