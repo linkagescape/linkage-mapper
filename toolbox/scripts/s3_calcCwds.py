@@ -394,7 +394,6 @@ def STEP3_calc_cwds():
             for core in coreList:
                 cwdRaster = lu.get_cwd_path(int(core))
                 back_rast = cwdRaster.replace("cwd_", "back_")        
-                gprint(back_rast)
                 lu.delete_data(back_rast)
         
 
