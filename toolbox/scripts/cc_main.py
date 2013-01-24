@@ -517,12 +517,17 @@ def gdal_check(msg):
     if 'arcgis' in gdalList[1].lower():
         lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
         arcpy.AddWarning("It looks like there is a conflict between ArcGIS")
-        arcpy.AddWarning("and GRASS.  \nPlease *RESTART ArcGIS* and try again.'")
-        arcpy.AddWarning("\nIf that doesn't work you can try using ")
-        arcpy.AddWarning("the 'CC Run Script.py' python script in the ")
-        arcpy.AddWarning("scripts directory where the Linkage Mapper toolbox")
-        arcpy.AddWarning("is installed instead of ArcGIS to call the tool")
-        raise Exception("GDAL DLL conflict")
+        arcpy.AddWarning("and GRASS. This might be caused by conflicts with ")
+        arcpy.AddWarning("pre-loaded ArcGIS extensions like Geostatistical") 
+        arcpy.AddWarning("Analyst.")
+        arcpy.AddWarning("\nPlease DISABLE ANY EXTENSIONS YOU ARE NOT USING") 
+        arcpy.AddWarning("(Click on Customize >> Extensions) and try again.")
+        arcpy.AddWarning("\nIf that doesn't work you can try closing Arc and ")
+        arcpy.AddWarning("instead run the tool using the 'CC Run Script.py' ")
+        arcpy.AddWarning("python script.  This script can be found in the ")
+        arcpy.AddWarning("'scripts' directory, located where the Linkage") 
+        arcpy.AddWarning("Mapper toolbox is installed.\n")
+        raise Exception("ArcGIS-GRASS GDAL DLL conflict")
     
 if __name__ == "__main__":
     main()
