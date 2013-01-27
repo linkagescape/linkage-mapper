@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.6
-# Author: Darren Kavanagh
+# Authors: Darren Kavanagh and Brad McRae
 
 """Climate Linkage Mapper configuration module.
 
@@ -58,6 +58,9 @@ class ClimateConfig():
         self.prj_core_fc = (os.path.join(
                             self.out_dir, "cores.shp"))  # Proj core area  name
         self.prj_climate_rast = os.path.join(self.out_dir, "climate.tif") #tif avoids dll conflict
+        self.prj_core_rast = (os.path.join(
+                            self.out_dir, "cores.tif"))  # Proj core area raster
+
         if self.resist_rast is not None:
             self.prj_resist_rast = os.path.join(self.out_dir, "resist.tif") #tif avoids dll conflict
         else:
