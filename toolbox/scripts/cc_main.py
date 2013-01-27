@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.6
-# Author: Darren Kavanagh
+# Authors: Darren Kavanagh and Brad McRae
 
 """Climate Linkage Mapper
 
@@ -186,14 +186,22 @@ def cc_copy_inputs():
         ymin = max(climate_extent.YMin, resist_extent.YMin)
         xmax = min(climate_extent.XMax, resist_extent.XMax)
         ymax = min(climate_extent.YMax, resist_extent.YMax)
+        
         if cc_env.resist_rast is not None:       
-            # Set to minimum extent if resistance raster was given
+            # Set to minimum extent if resistance raster was given   
             arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
-            arcpy.CopyRaster_management(cc_env.resist_rast, cc_env.prj_resist_rast)
+            arcpy.CopyRaster_management(cc_env.resist_rast, 
+                                        cc_env.prj_resist_rast)
 
         arcpy.CopyRaster_management(cc_env.climate_rast,
                                     cc_env.prj_climate_rast)
 
+        # Create core raster
+        arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax) 
+        lm_util.delete_data(cc_env.prj_core_rast) 
+        arcpy.FeatureToRaster_conversion(cc_env.core_fc, cc_env.core_fld,
+                                        cc_env.prj_core_rast, arcpy.Describe(
+                                        cc_env.climate_rast).MeanCellHeight)
         arcpy.env.extent = None
 
         ## Create project area raster 
@@ -204,12 +212,11 @@ def cc_copy_inputs():
 
         
         # # Clip core feature class
-        
         # This invokes gdal- replace with polygon based on extent coords below
         # arcpy.RasterToPolygon_conversion(proj_area_rast, ext_poly,
                                          # "NO_SIMPLIFY", "VALUE")
         
-        # Create array of boundary points                    
+        # Create array of boundary points                 
         array = arcpy.Array()
         pnt = arcpy.Point(xmin,ymin)
         array.add(pnt)
@@ -224,9 +231,10 @@ def cc_copy_inputs():
         # Create a polygon geometry object using the array object
         ext_feat = arcpy.Polygon(array)
         arcpy.CopyFeatures_management(ext_feat, ext_poly)
-        # Clip core feature class
+        # Clip core feature class 
         arcpy.Clip_analysis(cc_env.core_fc, ext_poly, cc_env.prj_core_fc)                                          
-                            
+
+        
     except Exception:
         raise
     finally:

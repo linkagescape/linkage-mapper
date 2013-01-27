@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.6
-# Author: Darren Kavanagh
+# Authors: Darren Kavanagh and Brad McRae
 
 """Climate Linkage Mapper grass module.
 
@@ -37,6 +37,7 @@ def grass_cwd(core_list):
     ccr_grassrc = os.path.join(cc_env.proj_dir, "ccr_grassrc")
     climate_asc = os.path.join(cc_env.out_dir, "cc_climate.asc")
     resist_asc = os.path.join(cc_env.out_dir, "cc_resist.asc")
+    core_asc = os.path.join(cc_env.out_dir, "cc_cores.asc")
     climate_lyr = "climate"
     resist_lyr = "resist"
     core_lyr = "cores"
@@ -49,6 +50,7 @@ def grass_cwd(core_list):
         lm_util.gprint("Converting ARCINFO GRID rasters to ASCII")
         arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
+        arcpy.RasterToASCII_conversion(cc_env.prj_core_rast, core_asc)
         # Create resource file and setup workspace
         write_grassrc(ccr_grassrc, gisdbase)
         
@@ -61,12 +63,13 @@ def grass_cwd(core_list):
         lm_util.gprint("Importing raster files into GRASS")
         run_grass_cmd("r.in.arc", input=climate_asc, output=climate_lyr)
         run_grass_cmd("r.in.arc", input=resist_asc, output=resist_lyr)
-        lm_util.gprint("Importing cores feature class into GRASS\n")
-        run_grass_cmd("v.in.ogr", dsn=cc_env.out_dir, output=core_lyr)
+        run_grass_cmd("r.in.arc", input=core_asc, output=core_lyr)
+        # lm_util.gprint("Importing cores feature class into GRASS\n")
+        # run_grass_cmd("v.in.ogr", dsn=cc_env.out_dir, output=core_lyr)
 
         # Generate CWD and Back rasters
         gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr,
-                     core_lyr)
+                     core_lyr) 
     except Exception:
         raise
     finally:
@@ -143,7 +146,7 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
                   + walk_coeff_downhill + "," + walk_coeff_downhill)
 
     core = "core"
-    core_rast = "core_rast"
+    focal_core_rast = "focal_core_rast"
     gcwd = "gcwd"
     gback = "gback"
     gbackrc = "gbackrc"
@@ -157,21 +160,27 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
                 " Core " + core_no_txt + " (" + str(position + 1) + "/" +
                 str(len(core_list)) + ")")
 
-            # Extracting current core
-            run_grass_cmd("v.extract", flags="t", input=core_lyr,
-                          type="area", output=core,
-                          where=cc_env.core_fld + " = " + core_no_txt) 
+            # Pull out focal core for cwd analysis
+            reclass_map="reclass_map"
+            tablePath = os.path.join(cc_env.out_dir, "reclass_table")
+            lm_util.delete_file(tablePath) 
+            try:
+                tableFile=open(tablePath,'a')
+            except:
+                tableFile=open(tablePath,'w')
+            tableFile.write(core_no_txt+'='+core_no_txt)
+            tableFile.close()
+            run_grass_cmd("r.reclass", input=core_lyr, output=focal_core_rast,
+                        overwrite = True, rules=tablePath)
 
-            # Converting core vector to raster
-            run_grass_cmd("v.to.rast", input=core, output=core_rast,
-                          use="val")
             # Converting raster core to point feature
-            if grass_version.startswith('7'):  # Command different in GRASS 7
-                run_grass_cmd("r.to.vect", flags="z", input=core_rast,
+            if grass_version.startswith('7'):  # Command different in GRASS 7 
+                run_grass_cmd("r.to.vect", flags="z", input=focal_core_rast,
                               output=core_points, type="point")
             else:
-                run_grass_cmd("r.to.vect", flags="z", input=core_rast,
-                              output=core_points, feature="point")
+                run_grass_cmd("r.to.vect", flags="z", input=focal_core_rast,
+                              output=core_points, feature="point") 
+
             # Running r.walk to create CWD and back raster
             run_grass_cmd("r.walk", elevation=climate_lyr,
                           friction=resist_lyr, output=gcwd, outdir=gback,
@@ -186,22 +195,18 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
 
             # Exporting CWD and back rasters to ASCII grids
             cwd_ascii = os.path.join(cc_env.out_dir,
-                                     "cwd_" + core_no_txt + ".asc") #xxxx
+                                     "cwd_" + core_no_txt + ".asc") 
             cwd_grid = lm_util.get_cwd_path(core_no)
             back_ascii = os.path.join(cc_env.out_dir,
-                                      "back_" + core_no_txt + ".asc") #xxxx
+                                      "back_" + core_no_txt + ".asc")
             back_grid = cwd_grid.replace("cwd_", "back_")                   
   
             run_grass_cmd("r.out.arc", input=gcwd, output=cwd_ascii)
             run_grass_cmd("r.out.arc", input=gbackrc, output=back_ascii)
 
             # # Take grass cwd and back asciis and write them as ARCINFO grids  
-            # ASCIIToRaster INVOKES GDAL- replaced with copyraster
-            # arcpy.ASCIIToRaster_conversion(cwd_ascii, 
-                                           # cwd_grid, "FLOAT") # 
             arcpy.CopyRaster_management(cwd_ascii,cwd_grid)
             os.remove(cwd_ascii)
-            # arcpy.ASCIIToRaster_conversion(back_ascii, back_grid, "INTEGER")
             arcpy.CopyRaster_management(back_ascii,back_grid)
             os.remove(back_ascii)
     except Exception:
