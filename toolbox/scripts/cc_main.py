@@ -533,7 +533,7 @@ def gdal_check(msg):
         arcpy.AddWarning("\nIf that doesn't work you can try closing Arc and ")
         arcpy.AddWarning("instead run the tool using the 'CC Run Script.py' ")
         arcpy.AddWarning("python script.  This script can be found in the ")
-        arcpy.AddWarning("'scripts' directory, located where the Linkage") 
+        arcpy.AddWarning("'demo' directory, located where the Linkage") 
         arcpy.AddWarning("Mapper toolbox is installed.\n")
         raise Exception("ArcGIS-GRASS GDAL DLL conflict")
     

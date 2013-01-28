@@ -116,7 +116,7 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
         arcpy.AddWarning("GRASS ERROR. Try rebooting and restarting ArcGIS.")
         arcpy.AddWarning("If that doesn't work you can try using ")
         arcpy.AddWarning("the 'CC Run Script.py' python script in the ")
-        arcpy.AddWarning("scripts directory where the Linkage Mapper toolbox")
+        arcpy.AddWarning("demo directory where the Linkage Mapper toolbox")
         arcpy.AddWarning("is installed instead of ArcGIS to call the tool")
         arcpy.AddWarning("(see user guide).")
         raise Exception("GRASS ERROR: Cannot create workspace.")    
@@ -249,7 +249,7 @@ def gdal_fail_check(msg):
         arcpy.AddWarning("\nIf that doesn't work you can try closing Arc and ")
         arcpy.AddWarning("instead run the tool using the 'CC Run Script.py' ")
         arcpy.AddWarning("python script.  This script can be found in the ")
-        arcpy.AddWarning("'scripts' directory, located where the Linkage") 
+        arcpy.AddWarning("'demo' directory, located where the Linkage") 
         arcpy.AddWarning("Mapper toolbox is installed.\n")
         raise Exception("ArcGIS-GRASS GDAL DLL conflict")
 
