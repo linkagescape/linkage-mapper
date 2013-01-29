@@ -3,17 +3,22 @@ IF "%1"=="" GOTO Stop
 
 echo Building Linkage Mapper Release number %1
 
-@ECHO ON
-xcopy /E/I/Y ..\demo ..\LinkageMapper"%1"\LM_demo
-xcopy /Y ..\toolbox\doc\*.pdf ..\LinkageMapper"%1"\*.pdf
-xcopy /E/I/Y ..\toolbox\scripts ..\LinkageMapper"%1"\toolbox\scripts
-xcopy /E/I/Y ..\toolbox\styles ..\LinkageMapper"%1"\toolbox\styles
-xcopy /Y ..\toolbox\*.tbx ..\LinkageMapper"%1"\toolbox\*.tbx
+SET "rel_text=%1"
+SETLOCAL EnableDelayedExpansion
+SET rel_text=!rel_text:.=_!
 
-del ..\LinkageMapper"%1"\toolbox\scripts\cc*.*
-del ..\LinkageMapper"%1"\toolbox\climate*.*
-del ..\LinkageMapper"%1"\LM_demo\cc*.*
-del ..\LinkageMapper"%1"\LM_demo\demoData\cc*.*
+@ECHO ON
+xcopy /E/I/Y ..\demo ..\LinkageMapper"%rel_text%"\LM_demo
+xcopy /E/I/Y ..\demo ..\LinkageMapper"%rel_text%"\LM_demo
+xcopy /Y ..\toolbox\doc\*.pdf ..\LinkageMapper"%rel_text%"\*.pdf
+xcopy /E/I/Y ..\toolbox\scripts ..\LinkageMapper"%rel_text%"\toolbox\scripts
+xcopy /E/I/Y ..\toolbox\styles ..\LinkageMapper"%rel_text%"\toolbox\styles
+xcopy /Y ..\toolbox\*.tbx ..\LinkageMapper"%rel_text%"\toolbox\*.tbx
+
+del ..\LinkageMapper"%rel_text%"\toolbox\scripts\cc*.*
+del ..\LinkageMapper"%rel_text%"\toolbox\climate*.*
+del ..\LinkageMapper"%rel_text%"\LM_demo\cc*.*
+del ..\LinkageMapper"%rel_text%"\LM_demo\demoData\cc*.*
 
 @ECHO OFF
 if "%2"=="cc" GOTO CCCopy
@@ -23,11 +28,11 @@ GOTO CMTest
 
 :CCCopy
 @ECHO ON
-xcopy /Y ..\toolbox\scripts\cc*.* ..\LinkageMapper"%1"\toolbox\scripts\cc*.*
-xcopy /Y ..\toolbox\climate*.tbx ..\LinkageMapper"%1"\toolbox\climate*.tbx
-xcopy /Y ..\demo\cc*.* ..\LinkageMapper"%1"\LM_demo\cc*.*
-xcopy /Y ..\demo\demoData\cc*.* ..\LinkageMapper"%1"\LM_demo\demoData\cc*.*
-xcopy /Y ..\toolbox\doc\climate*.pdf ..\LinkageMapper"%1"\climate*.pdf
+xcopy /Y ..\toolbox\scripts\cc*.* ..\LinkageMapper"%rel_text%"\toolbox\scripts\cc*.*
+xcopy /Y ..\toolbox\climate*.tbx ..\LinkageMapper"%rel_text%"\toolbox\climate*.tbx
+xcopy /Y ..\demo\cc*.* ..\LinkageMapper"%rel_text%"\LM_demo\cc*.*
+xcopy /Y ..\demo\demoData\cc*.* ..\LinkageMapper"%rel_text%"\LM_demo\demoData\cc*.*
+xcopy /Y ..\toolbox\doc\climate*.pdf ..\LinkageMapper"%rel_text%"\climate*.pdf
 
 :CMTest
 REM @ECHO OFF
@@ -40,12 +45,13 @@ REM GOTO BMTest
 
 :Finish
 @ECHO OFF
-echo releaseNum = "%1" > ..\LinkageMapper"%1"\toolbox\scripts\lm_version.py
+echo releaseNum = "%1" > ..\LinkageMapper"%rel_text%"\toolbox\scripts\lm_version.py
 echo.
 echo Finished building Linkage Mapper release number %1
 if "%2"=="" GOTO END
 echo Options: %2 %3 %4
 GOTO END
+ENDLOCAL
 
 :Stop
 @ECHO OFF
