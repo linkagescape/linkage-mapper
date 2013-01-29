@@ -154,6 +154,7 @@ def main(argv=None):
         if cc_env.prj_resist_rast <> cc_env.prj_area_rast:
             cc_util.delete_feature(cc_env.prj_area_rast)
         cc_util.delete_feature(cc_env.prj_core_fc)  # Keeping for reruns
+        cc_util.delete_feature(cc_env.prj_core_rast)
         if cc_env.simplify_cores:            
             cc_util.delete_feature(cc_env.core_simp)
         cc_util.delete_feature(cc_env.tmp_dir)
