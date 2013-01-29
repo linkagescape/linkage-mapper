@@ -697,9 +697,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                  'outDistanceRaster, back_rast, '
                                  'lcpRas, "BEST_SINGLE", "")')
                 try:
-                    # lu.gdal_check('697')
                     exec statement
-                    # lu.gdal_check('699')
                     randomerror()
                 except:
                     failures = lu.print_arcgis_failures(statement, failures)
