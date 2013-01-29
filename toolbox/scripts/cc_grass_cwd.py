@@ -81,6 +81,7 @@ def grass_cwd(core_list):
                              "Program will contine")
         cc_util.delete_feature(climate_asc)
         cc_util.delete_feature(resist_asc)
+        cc_util.delete_feature(core_asc)
         cc_util.delete_feature(ccr_grassrc)       
 
 
