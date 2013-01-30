@@ -522,7 +522,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # ---------------------------------------------------------
         # CWD Calculations
         outDistanceRaster = lu.get_cwd_path(sourceCore)
-
         # Check if climate tool is calling linkage mapper
         if cfg.TOOL == cfg.TOOL_CC:
             back_rast = outDistanceRaster.replace("cwd_", "back_")
@@ -586,13 +585,16 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # done a-b
         ZNSTATS = path.join(coreDir, "zonestats.dbf")
         lu.delete_data(ZNSTATS)
-
         #Fixme: zonalstatistics is returning integer values for minimum. Why???
         #Extra zonalstatistics code implemented later in script to correct
         #values.
-        statement = ('gp.zonalstatisticsastable_sa('
+        if arcpy:
+            statement = ('outZSaT = ZonalStatisticsAsTable(cfg.CORERAS, '
+                    '"VALUE", outDistanceRaster,ZNSTATS, "DATA", "MINIMUM")')
+        else:
+            statement = ('gp.zonalstatisticsastable_sa('
                       'cfg.CORERAS, "VALUE", outDistanceRaster, ZNSTATS)')
-
+                      
         try:
             exec statement
             randomerror()
@@ -601,12 +603,15 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             if failures < 20:
                 return None,failures,lcpLoop
             else:
-                msg = ('ERROR in Zonal Stats. Restarting ArcMap '
-                   'then restarting Linkage Mapper at step 3 usually\n'
-                   'solves this one so please restart and try again.')
+                if cfg.TOOL == cfg.TOOL_CC:
+                    msg = ('ERROR in Zonal Stats. Please restart ArcMap '
+                        'and try again.')                
+                else:
+                    msg = ('ERROR in Zonal Stats. Restarting ArcMap '
+                        'then restarting Linkage Mapper at step 3 usually\n'
+                        'solves this one so please restart and try again.')
 
                 lu.raise_error(msg)
-
         tableRows = gp.searchcursor(ZNSTATS)
         tableRow = tableRows.Next()
         while tableRow:
@@ -687,7 +692,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 lcpRas = path.join(coreDir,"lcp" + tif)
                 lu.delete_data(lcpRas)
 
-                # Note: costpath (both gp and arcpy versions) uses GDAL.
+                # Note: costpath (both gp and arcpy versions) uses GDAL.               
                 if arcpy:
                     statement = ('outCostPath = CostPath(TARGETRASTER,'
                           'outDistanceRaster, back_rast, "BEST_SINGLE", ""); '
@@ -697,7 +702,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                  'outDistanceRaster, back_rast, '
                                  'lcpRas, "BEST_SINGLE", "")')
                 try:
-                    exec statement
+                    exec statement                    
                     randomerror()
                 except:
                     failures = lu.print_arcgis_failures(statement, failures)
@@ -712,7 +717,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                             'Retrying one more time in 5 minutes.')
                         lu.snooze(300)
                         exec statement
-
+                
                 # fixme: may be fastest to not do selection, do
                 # EXTRACTBYMASK, getvaluelist, use code snippet at end
                 # of file to discard src and target values. Still this
