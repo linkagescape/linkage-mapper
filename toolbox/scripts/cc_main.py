@@ -182,18 +182,28 @@ def cc_copy_inputs():
         lm_util.gprint("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
 
         climate_extent = arcpy.Raster(cc_env.climate_rast).extent
-        resist_extent = arcpy.Raster(cc_env.resist_rast).extent
-        xmin = max(climate_extent.XMin, resist_extent.XMin)
-        ymin = max(climate_extent.YMin, resist_extent.YMin)
-        xmax = min(climate_extent.XMax, resist_extent.XMax)
-        ymax = min(climate_extent.YMax, resist_extent.YMax)
         
         if cc_env.resist_rast is not None:       
+            resist_extent = arcpy.Raster(cc_env.resist_rast).extent
+            xmin = max(climate_extent.XMin, resist_extent.XMin)
+            ymin = max(climate_extent.YMin, resist_extent.YMin)
+            xmax = min(climate_extent.XMax, resist_extent.XMax)
+            ymax = min(climate_extent.YMax, resist_extent.YMax)
+
             # Set to minimum extent if resistance raster was given   
             arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
             arcpy.CopyRaster_management(cc_env.resist_rast, 
                                         cc_env.prj_resist_rast)
 
+        else:
+            xmin = climate_extent.XMin
+            ymin = climate_extent.YMin
+            xmax = climate_extent.XMax
+            ymax = climate_extent.YMax
+            proj_area_rast = sa.Con(sa.IsNull(cc_env.climate_rast),
+                                sa.Int(cc_env.climate_rast), 1)
+            proj_area_rast.save(cc_env.prj_resist_rast)
+                                        
         arcpy.CopyRaster_management(cc_env.climate_rast,
                                     cc_env.prj_climate_rast)
 

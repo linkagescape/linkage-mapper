@@ -48,7 +48,7 @@ def grass_cwd(core_list):
 
         # Convert input GRID rasters to ASCII
         lm_util.gprint("Converting ARCINFO GRID rasters to ASCII")
-        arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
+        arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)  
         arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_core_rast, core_asc)
         # Create resource file and setup workspace
@@ -124,14 +124,6 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     gsetup.init(gisbase, gisdbase, location, mapset)
     run_grass_cmd("g.gisenv", set="OVERWRITE=1")
     os.environ['GRASS_VERBOSE'] = "0"  # only errors and warnings are printed
-
-    # dbpath = os.path.join(gisdbase, location , mapset, 'dbf')
-    # grass.run_command('db.connect', driver='dbf', database=dbpath)
-    # kv = grass.db_connection()
-    # database = kv['database']
-    # driver = kv['driver']
-    # lm_util.gprint(database)
-    # lm_util.gprint(driver)
 
     return grass.version()['version']
 
