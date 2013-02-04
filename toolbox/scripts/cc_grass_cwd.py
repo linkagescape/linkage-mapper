@@ -44,11 +44,11 @@ def grass_cwd(core_list):
 
     try:
         lm_util.gprint("\nRUNNING GRASS TO CREATE COST-WEIGHTED DISTANCE "
-                         "RASTERS")
+                       "RASTERS")
 
         # Convert input GRID rasters to ASCII
         lm_util.gprint("Converting ARCINFO GRID rasters to ASCII")
-        arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)  
+        arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_core_rast, core_asc)
         # Create resource file and setup workspace
@@ -138,28 +138,26 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
     walk_coeff = (walk_coeff_flat + "," + walk_coeff_uphill + ","
                   + walk_coeff_downhill + "," + walk_coeff_downhill)
 
-    core = "core"
     focal_core_rast = "focal_core_rast"
     gcwd = "gcwd"
     gback = "gback"
     gbackrc = "gbackrc"
     core_points = "corepoints"
-    RC_RULES = "0=5\n45=4\n90=3\n135=2\n180=1\n225=8\n270=7\n315=6"
+    rc_rules = "0=5\n45=4\n90=3\n135=2\n180=1\n225=8\n270=7\n315=6"
+    no_cores = str(len(core_list))
 
     try:
         for position, core_no in enumerate(core_list):
             core_no_txt = str(core_no)
-            core='core' + core_no_txt
-            lm_util.gprint("Generating CWD and back rasters for"
-                " Core " + core_no_txt + " (" + str(position + 1) + "/" +
-                str(len(core_list)) + ")")
+            lm_util.gprint("Generating CWD and back rasters for Core " +
+                           core_no_txt + " (" + str(position + 1) + "/" +
+                           no_cores + ")")
 
             # Pull out focal core for cwd analysis
-            reclass_map="reclass_map"
-            write_grass_cmd("r.reclass", input=core_lyr, output=focal_core_rast,
-                        overwrite = True, rules="-",
-                        stdin=core_no_txt + '=' + core_no_txt)
-            
+            write_grass_cmd("r.reclass", input=core_lyr,
+                            output=focal_core_rast, overwrite=True,
+                            rules="-", stdin=core_no_txt + '=' + core_no_txt)
+
             # Converting raster core to point feature
             if grass_version.startswith('7'):  # Command different in GRASS 7
                 run_grass_cmd("r.to.vect", flags="z", input=focal_core_rast,
@@ -175,9 +173,9 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
                           slope_factor=slope_factor)
 
             # Reclassify from the directional degree output from GRASS to
-            # Arc's 1 to 8 directions format           
+            # Arc's 1 to 8 directions format
             write_grass_cmd("r.reclass", input=gback, output=gbackrc,
-                          rules="-", stdin=RC_RULES)
+                            rules="-", stdin=rc_rules)
 
             # Exporting CWD and back rasters to ASCII grids
             cwd_ascii = os.path.join(cc_env.out_dir,
@@ -191,9 +189,9 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
             run_grass_cmd("r.out.arc", input=gbackrc, output=back_ascii)
 
             # # Take grass cwd and back asciis and write them as ARCINFO grids
-            arcpy.CopyRaster_management(cwd_ascii,cwd_grid)
+            arcpy.CopyRaster_management(cwd_ascii, cwd_grid)
             os.remove(cwd_ascii)
-            arcpy.CopyRaster_management(back_ascii,back_grid)
+            arcpy.CopyRaster_management(back_ascii, back_grid)
             os.remove(back_ascii)
     except Exception:
         raise
@@ -219,7 +217,7 @@ def run_grass_cmd(*args, **kwargs):
     """Run inputed GRASS command"""
     ps = start_grass_cmd(*args, **kwargs)
     chk_stderr(ps.communicate()[1])
-    
+
 
 def write_grass_cmd(*args, **kwargs):
     """Feeds stdin string to process stdin and runs inputed GRASS command"""
@@ -230,17 +228,18 @@ def write_grass_cmd(*args, **kwargs):
 
 
 def gdal_check(msg):
-# Code to check GDAL dlls and system path
+    """Code to check GDAL dlls and system path"""
     gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
                             shell=True).stdout.read()
     lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
 
+
 def gdal_fail_check(msg):
-# Code to check GDAL dlls and system path
+    """Code to check GDAL dlls and system path"""
     gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
                             shell=True).stdout.read()
-    gdalList = gdal.split('\n')
-    if 'arcgis' in gdalList[1].lower():
+    gdal_list = gdal.split('\n')
+    if 'arcgis' in gdal_list[1].lower():
         lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
         arcpy.AddWarning("It looks like there is a conflict between ArcGIS")
         arcpy.AddWarning("and GRASS. This might be caused by conflicts with ")
@@ -254,4 +253,3 @@ def gdal_fail_check(msg):
         arcpy.AddWarning("'demo' directory, located where the Linkage")
         arcpy.AddWarning("Mapper toolbox is installed.\n")
         raise Exception("ArcGIS-GRASS GDAL DLL conflict")
-
