@@ -657,9 +657,16 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 lu.delete_data(path.join(coreDir,TARGETRASTER))
                 try:
                     if arcpy:
-                        statement = ('conRaster = Con(Raster('
-                                    'cfg.CORERAS) == int(targetCore), 1);'
-                                    'conRaster.save(TARGETRASTER)')
+                        # For climate corridors, errors occur when core raster
+                        # overlaps null values in cwd rasters
+                        statement = ('conRaster = Con(IsNull(outDistanceRaster'
+                            '), Int(outDistanceRaster), Con(Raster'
+                            '(cfg.CORERAS) == int(targetCore), 1));'
+                            'conRaster.save(TARGETRASTER)') 
+                        # statement = ('conRaster = Con(Raster('
+                                    # 'cfg.CORERAS) == int(targetCore), 1);'
+                                    # 'conRaster.save(TARGETRASTER)')
+
                     else:
                         expression = ("con(" + cfg.CORERAS + " == " +
                         str(int(targetCore)) + ",1)")

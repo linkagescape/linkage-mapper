@@ -48,9 +48,11 @@ def grass_cwd(core_list):
 
         # Convert input GRID rasters to ASCII
         lm_util.gprint("Converting ARCINFO GRID rasters to ASCII")
+        # Note: consider moving these to main:
         arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_core_rast, core_asc)
+
         # Create resource file and setup workspace
         write_grassrc(ccr_grassrc, gisdbase)
 
@@ -70,6 +72,7 @@ def grass_cwd(core_list):
         # Generate CWD and Back rasters
         gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr,
                      core_lyr)
+
     except Exception:
         raise
     finally:
@@ -189,9 +192,14 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
             run_grass_cmd("r.out.arc", input=gbackrc, output=back_ascii)
 
             # # Take grass cwd and back asciis and write them as ARCINFO grids
-            arcpy.CopyRaster_management(cwd_ascii, cwd_grid)
+            descData = arcpy.Describe(cc_env.prj_core_rast)
+            # Core raster is what carries over to step 3, use SR from that
+            SR = descData.spatialReference
+            arcpy.CopyRaster_management(cwd_ascii, cwd_grid) 
+            arcpy.DefineProjection_management(cwd_grid, SR)
             os.remove(cwd_ascii)
             arcpy.CopyRaster_management(back_ascii, back_grid)
+            arcpy.DefineProjection_management(back_grid, SR)
             os.remove(back_ascii)
     except Exception:
         raise
@@ -233,7 +241,6 @@ def gdal_check(msg):
                             shell=True).stdout.read()
     lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
 
-
 def gdal_fail_check(msg):
     """Code to check GDAL dlls and system path"""
     gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
@@ -242,14 +249,18 @@ def gdal_fail_check(msg):
     if 'arcgis' in gdal_list[1].lower():
         lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
         arcpy.AddWarning("It looks like there is a conflict between ArcGIS")
-        arcpy.AddWarning("and GRASS. This might be caused by conflicts with ")
-        arcpy.AddWarning("pre-loaded ArcGIS extensions like Geostatistical")
-        arcpy.AddWarning("Analyst.")
-        arcpy.AddWarning("\nPlease DISABLE ANY EXTENSIONS YOU ARE NOT USING")
+        arcpy.AddWarning("and GRASS. This could be the result of a previous ")
+        arcpy.AddWarning("analysis (like a Linkage Mapper run) or it might be")
+        arcpy.AddWarning("caused by conflicts with pre-loaded ArcGIS ") 
+        arcpy.AddWarning("extensions like Geostatistical Analyst.")
+        arcpy.AddWarning("\nPlease RESTART ARCMAP and try again. ")
+        arcpy.AddWarning("If that doesn't work then restart again and ")
+        arcpy.AddWarning("DISABLE ANY EXTENSIONS YOU ARE NOT USING") 
         arcpy.AddWarning("(Click on Customize >> Extensions) and try again.")
-        arcpy.AddWarning("\nIf that doesn't work you can try closing Arc and ")
+        arcpy.AddWarning("\nAnd if that doesn't work try closing Arc and ")
         arcpy.AddWarning("instead run the tool using the 'CC Run Script.py' ")
         arcpy.AddWarning("python script.  This script can be found in the ")
-        arcpy.AddWarning("'demo' directory, located where the Linkage")
+        arcpy.AddWarning("'demo' directory, located where the Linkage") 
         arcpy.AddWarning("Mapper toolbox is installed.\n")
         raise Exception("ArcGIS-GRASS GDAL DLL conflict")
+

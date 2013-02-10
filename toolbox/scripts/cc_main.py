@@ -138,7 +138,9 @@ def main(argv=None):
                 lm_master.lm_master()
 
     except arcpy.ExecuteError:
+        msg=arcpy.GetMessages(2)
         arcpy.AddError(arcpy.GetMessages(2))
+        lm_util.write_log(msg)
         exc_traceback = sys.exc_info()[2]
         lm_util.gprint("Traceback (most recent call last):\n" +
                          "".join(traceback.format_tb(exc_traceback)[:-1]))
@@ -151,14 +153,14 @@ def main(argv=None):
     finally:
         cc_util.delete_feature(cc_env.prj_climate_rast)
         cc_util.delete_feature(cc_env.prj_resist_rast)
-        if cc_env.prj_resist_rast <> cc_env.prj_area_rast:
-            cc_util.delete_feature(cc_env.prj_area_rast)
+        # if cc_env.prj_resist_rast <> cc_env.prj_area_rast:
+            # cc_util.delete_feature(cc_env.prj_area_rast)
         cc_util.delete_feature(cc_env.prj_core_fc)  # Keeping for reruns
         cc_util.delete_feature(cc_env.prj_core_rast)
         if cc_env.simplify_cores:            
             cc_util.delete_feature(cc_env.core_simp)
         cc_util.delete_feature(cc_env.tmp_dir)
-        
+        cc_util.delete_feature(cc_env.out_dir)
         # Delete files left behind by arcpy
         cpath = os.getcwd()
         cc_util.delete_feature(os.path.join(cpath, ".prj"))
@@ -180,7 +182,9 @@ def cc_copy_inputs():
     ext_poly = os.path.join(cc_env.out_dir,"ext_poly.shp")  # Extent polygon
     try:
         lm_util.gprint("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
-
+        if not arcpy.Exists(cc_env.scratch_gdb):
+            arcpy.CreateFileGDB_management(os.path.dirname(cc_env.scratch_gdb),
+                                        os.path.basename(cc_env.scratch_gdb))
         climate_extent = arcpy.Raster(cc_env.climate_rast).extent
         
         if cc_env.resist_rast is not None:       
@@ -192,18 +196,24 @@ def cc_copy_inputs():
 
             # Set to minimum extent if resistance raster was given   
             arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
-            arcpy.CopyRaster_management(cc_env.resist_rast, 
-                                        cc_env.prj_resist_rast)
+            # Want climate and resistance rasters in same spatial ref
+            # with same nodata cells
+            proj_resist_rast = sa.Con(sa.IsNull(cc_env.climate_rast),
+                               sa.Int(cc_env.climate_rast), cc_env.resist_rast)
+            proj_resist_rast.save(cc_env.prj_resist_rast)            
+            # arcpy.CopyRaster_management(cc_env.resist_rast, 
+                                        # cc_env.prj_resist_rast)
 
         else:
             xmin = climate_extent.XMin
             ymin = climate_extent.YMin
             xmax = climate_extent.XMax
             ymax = climate_extent.YMax
-            proj_area_rast = sa.Con(sa.IsNull(cc_env.climate_rast),
+            # Copying to gdb avoids gdal conflict later with ascii conversion
+            ones_resist_rast = sa.Con(sa.IsNull(cc_env.climate_rast),
                                 sa.Int(cc_env.climate_rast), 1)
-            proj_area_rast.save(cc_env.prj_resist_rast)
-                                        
+            ones_resist_rast.save(cc_env.prj_resist_rast)
+
         arcpy.CopyRaster_management(cc_env.climate_rast,
                                     cc_env.prj_climate_rast)
 
@@ -536,12 +546,15 @@ def gdal_check(msg):
     if 'arcgis' in gdalList[1].lower():
         lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
         arcpy.AddWarning("It looks like there is a conflict between ArcGIS")
-        arcpy.AddWarning("and GRASS. This might be caused by conflicts with ")
-        arcpy.AddWarning("pre-loaded ArcGIS extensions like Geostatistical") 
-        arcpy.AddWarning("Analyst.")
-        arcpy.AddWarning("\nPlease DISABLE ANY EXTENSIONS YOU ARE NOT USING") 
+        arcpy.AddWarning("and GRASS. This could be the result of a previous ")
+        arcpy.AddWarning("analysis (like a Linkage Mapper run) or it might be")
+        arcpy.AddWarning("caused by conflicts with pre-loaded ArcGIS ") 
+        arcpy.AddWarning("extensions like Geostatistical Analyst.")
+        arcpy.AddWarning("\nPlease RESTART ARCMAP and try again. ")
+        arcpy.AddWarning("If that doesn't work then restart again and ")
+        arcpy.AddWarning("DISABLE ANY EXTENSIONS YOU ARE NOT USING") 
         arcpy.AddWarning("(Click on Customize >> Extensions) and try again.")
-        arcpy.AddWarning("\nIf that doesn't work you can try closing Arc and ")
+        arcpy.AddWarning("\nAnd if that doesn't work try closing Arc and ")
         arcpy.AddWarning("instead run the tool using the 'CC Run Script.py' ")
         arcpy.AddWarning("python script.  This script can be found in the ")
         arcpy.AddWarning("'demo' directory, located where the Linkage") 

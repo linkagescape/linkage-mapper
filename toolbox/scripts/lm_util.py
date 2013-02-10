@@ -791,7 +791,7 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
 
         lcpline = os.path.join(ws, "lcpline.shp")
         lcpRas = os.path.join(ws, "lcp")
-#        gprint(lcpRas)
+        
         gp.RasterToPolyline_conversion(lcpRas, lcpline, "NODATA", "",
                                            "NO_SIMPLIFY")
 
@@ -2263,10 +2263,13 @@ def exit_with_geoproc_error(filename):
     gp.AddError(msg)
     write_log(msg) #xxx
     dashline(1)
-    for msg in range(0, gp.MessageCount):
-        if gp.GetSeverity(msg) == 2:
-            gp.AddReturnMessage(msg)
-            #write_log(msg) #xxx
+    msg=gp.GetMessages(2)
+    gp.AddError(gp.GetMessages(2))
+    write_log(msg)
+    # for msg in range(0, gp.MessageCount):
+        # if gp.GetSeverity(msg) == 2:
+            # gp.AddReturnMessage(msg)
+            # #write_log(msg) #xxx
     dashline()
     print_drive_warning()
     close_log_file()
