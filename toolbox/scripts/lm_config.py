@@ -327,7 +327,7 @@ def config_circuitscape(config, arg):
 class Configure(object):
     """Class container to hold global variables"""
     TOOL_LM = 'Linkage Mapper'
-    TOOL_CC = 'Climate Corridor'
+    TOOL_CC = 'Linkage Mapper Climate'
     TOOL_BM = 'Barrier mapper'
     TOOL_CS = 'Circuitscape'
 
