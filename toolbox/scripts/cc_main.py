@@ -70,6 +70,8 @@ def main(argv=None):
         # Setup workspace
         arcpy.env.overwriteOutput = True
         arcpy.env.cellSize = "MAXOF"  # Setting to default. For batch runs.
+        if arcpy.Exists(cc_env.out_dir):
+            cc_util.delete_feature(cc_env.out_dir)
         arcpy.env.workspace = cc_util.mk_proj_dir(cc_env.out_dir)
         arcpy.env.scratchWorkspace = cc_util.mk_proj_dir(cc_env.tmp_dir)
         # lm_outdir = cc_util.mk_proj_dir("lm_out")
@@ -152,15 +154,15 @@ def main(argv=None):
                          "".join(traceback.format_tb(exc_traceback)))
     finally:
         cc_util.delete_feature(cc_env.prj_climate_rast)
-        cc_util.delete_feature(cc_env.prj_resist_rast)
+        # cc_util.delete_feature(cc_env.prj_resist_rast) # keep for reruns
         # if cc_env.prj_resist_rast <> cc_env.prj_area_rast:
             # cc_util.delete_feature(cc_env.prj_area_rast)
-        cc_util.delete_feature(cc_env.prj_core_fc)  # Keeping for reruns
+        # cc_util.delete_feature(cc_env.prj_core_fc) # keep for reruns
         cc_util.delete_feature(cc_env.prj_core_rast)
         if cc_env.simplify_cores:            
             cc_util.delete_feature(cc_env.core_simp)
         cc_util.delete_feature(cc_env.tmp_dir)
-        cc_util.delete_feature(cc_env.out_dir)
+        # cc_util.delete_feature(cc_env.out_dir) # keep for reruns
         # Delete files left behind by arcpy
         cpath = os.getcwd()
         cc_util.delete_feature(os.path.join(cpath, ".prj"))
@@ -182,9 +184,9 @@ def cc_copy_inputs():
     ext_poly = os.path.join(cc_env.out_dir,"ext_poly.shp")  # Extent polygon
     try:
         lm_util.gprint("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
-        if not arcpy.Exists(cc_env.scratch_gdb):
-            arcpy.CreateFileGDB_management(os.path.dirname(cc_env.scratch_gdb),
-                                        os.path.basename(cc_env.scratch_gdb))
+        if not arcpy.Exists(cc_env.inputs_gdb):
+            arcpy.CreateFileGDB_management(os.path.dirname(cc_env.inputs_gdb),
+                                        os.path.basename(cc_env.inputs_gdb))
         climate_extent = arcpy.Raster(cc_env.climate_rast).extent
         
         if cc_env.resist_rast is not None:       
@@ -201,8 +203,6 @@ def cc_copy_inputs():
             proj_resist_rast = sa.Con(sa.IsNull(cc_env.climate_rast),
                                sa.Int(cc_env.climate_rast), cc_env.resist_rast)
             proj_resist_rast.save(cc_env.prj_resist_rast)            
-            # arcpy.CopyRaster_management(cc_env.resist_rast, 
-                                        # cc_env.prj_resist_rast)
 
         else:
             xmin = climate_extent.XMin
