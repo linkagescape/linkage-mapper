@@ -155,8 +155,6 @@ def main(argv=None):
     finally:
         cc_util.delete_feature(cc_env.prj_climate_rast)
         # cc_util.delete_feature(cc_env.prj_resist_rast) # keep for reruns
-        # if cc_env.prj_resist_rast <> cc_env.prj_area_rast:
-            # cc_util.delete_feature(cc_env.prj_area_rast)
         # cc_util.delete_feature(cc_env.prj_core_fc) # keep for reruns
         cc_util.delete_feature(cc_env.prj_core_rast)
         if cc_env.simplify_cores:            
@@ -541,7 +539,6 @@ def gdal_check(msg):
     import subprocess
     gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
                             shell=True).stdout.read()
-    # lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
     gdalList = gdal.split('\n')                        
     if 'arcgis' in gdalList[1].lower():
         lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
@@ -550,9 +547,11 @@ def gdal_check(msg):
         arcpy.AddWarning("analysis (like a Linkage Mapper run) or it might be")
         arcpy.AddWarning("caused by conflicts with pre-loaded ArcGIS ") 
         arcpy.AddWarning("extensions like Geostatistical Analyst.")
-        arcpy.AddWarning("\nPlease RESTART ARCMAP and try again. ")
-        arcpy.AddWarning("If that doesn't work then restart again and ")
-        arcpy.AddWarning("DISABLE ANY EXTENSIONS YOU ARE NOT USING") 
+        arcpy.AddWarning("\nThis error often goes away if you run the tool in")
+        arcpy.AddWarning("the background (see user guide). ")
+        arcpy.AddWarning("\nIf that doesn't work, try restarting ArcMap.")
+        arcpy.AddWarning("\nIf that doesn't work then restart again and ")
+        arcpy.AddWarning("disable any extensions you are not using") 
         arcpy.AddWarning("(Click on Customize >> Extensions) and try again.")
         arcpy.AddWarning("\nAnd if that doesn't work try closing Arc and ")
         arcpy.AddWarning("instead run the tool using the 'CC Run Script.py' ")
