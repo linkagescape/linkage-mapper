@@ -84,6 +84,10 @@ def main(argv=None):
                   cc_env.keep_constelations, "true", "#", "#", "#")
         lm_env.configure(lm_env.TOOL_CC, lm_arg)
         lm_util.gprint('\nClimate Linkage Mapper Version ' + lm_env.releaseNum)
+        lm_util.dashline(1)
+        lm_util.gprint('NOTE: This tool runs best with BACKGROUND '
+                       'PROCESSING (see user guide).')
+
         
         lm_util.create_dir(lm_env.DATAPASSDIR)
 
@@ -546,13 +550,13 @@ def gdal_check(msg):
         arcpy.AddWarning("and GRASS. This could be the result of a previous ")
         arcpy.AddWarning("analysis (like a Linkage Mapper run) or it might be")
         arcpy.AddWarning("caused by conflicts with pre-loaded ArcGIS ") 
-        arcpy.AddWarning("extensions like Geostatistical Analyst.")
+        arcpy.AddWarning("extensions.")
         arcpy.AddWarning("\nThis error often goes away if you run the tool in")
         arcpy.AddWarning("the background (see user guide). ")
         arcpy.AddWarning("\nIf that doesn't work, try restarting ArcMap.")
-        arcpy.AddWarning("\nIf that doesn't work then restart again and ")
-        arcpy.AddWarning("disable any extensions you are not using") 
-        arcpy.AddWarning("(Click on Customize >> Extensions) and try again.")
+        arcpy.AddWarning("\nIf you still get an error, then restart again ")
+        arcpy.AddWarning("and disable any extensions you are not using") 
+        arcpy.AddWarning("(Click on Customize >> Extensions).")
         arcpy.AddWarning("\nAnd if that doesn't work try closing Arc and ")
         arcpy.AddWarning("instead run the tool using the 'CC Run Script.py' ")
         arcpy.AddWarning("python script.  This script can be found in the ")
