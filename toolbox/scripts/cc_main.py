@@ -84,10 +84,8 @@ def main(argv=None):
                   cc_env.keep_constelations, "true", "#", "#", "#")
         lm_env.configure(lm_env.TOOL_CC, lm_arg)
         lm_util.gprint('\nClimate Linkage Mapper Version ' + lm_env.releaseNum)
-        lm_util.dashline(1)
         lm_util.gprint('NOTE: This tool runs best with BACKGROUND '
                        'PROCESSING (see user guide).')
-
         
         lm_util.create_dir(lm_env.DATAPASSDIR)
 
