@@ -36,7 +36,8 @@ except:
 # # Arcpy not working in some cases unless s3 executed in same run.
 # # For nso3 dataset, map algebra adding rasters results in empty rasters. 
 # # for now there seems to be no speed improvement with arcpy.
-useArcpy = False
+
+cfg.useArcpy = False
 gp = cfg.gp
 import arcgisscripting
 arcObj = cfg.gp
@@ -86,7 +87,7 @@ def calc_lccs(normalize):
         lu.dashline(1)
         gprint('Running script ' + _SCRIPT_NAME)
         linkTableFile = lu.get_prev_step_link_table(step=5)
-        if useArcpy:
+        if cfg.useArcpy:
             arcpy.env.workspace = cfg.SCRATCHDIR
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
             arcpy.env.overwriteOutput = True  
@@ -109,7 +110,7 @@ def calc_lccs(normalize):
 
         # set the analysis extent and cell size to that of the resistance
         # surface
-        if useArcpy:
+        if cfg.useArcpy:
             arcpy.env.Extent = cfg.RESRAST
             arcpy.env.cellSize = cfg.RESRAST
             arcpy.env.snapRaster = cfg.RESRAST
@@ -194,7 +195,7 @@ def calc_lccs(normalize):
             
             lccNormRaster = path.join(clccdir, str(corex) + "_" +
                                       str(corey))# + ".tif")
-            if useArcpy: 
+            if cfg.useArcpy: 
                 arcpy.env.Extent = "MINOF"
             else:
                 gp.Extent = "MINOF"
@@ -211,8 +212,8 @@ def calc_lccs(normalize):
             # subtracting the least cost distance between them.
             count = 0
             if arcpyAvailable:
-                useArcpy = True # Fixes Conran Liu's bug with lcDist
-            if useArcpy:
+                cfg.useArcpy = True # Fixes Conran Liu's bug with lcDist
+            if cfg.useArcpy:
                 
                 lcDist = (float(linkTable[link,cfg.LTB_CWDIST]) - offset) 
                 
@@ -242,9 +243,9 @@ def calc_lccs(normalize):
                     if not tryAgain:    
                         exec statement
                 else: break
-            useArcpy = False # End fix for Conran Liu's bug with lcDist
+            cfg.useArcpy = False # End fix for Conran Liu's bug with lcDist
             
-            if normalize and useArcpy: 
+            if normalize and cfg.useArcpy: 
                 try: 
                     minObject = gp.GetRasterProperties(lccNormRaster, "MINIMUM") 
                     rasterMin = float(str(minObject.getoutput(0)))
@@ -266,7 +267,7 @@ def calc_lccs(normalize):
                     gp.AddWarning(msg)
 
             
-            if useArcpy: 
+            if cfg.useArcpy: 
                 arcpy.env.Extent = cfg.RESRAST
             else:
                 gp.Extent = (gp.Describe(cfg.RESRAST)).Extent
@@ -367,7 +368,7 @@ def calc_lccs(normalize):
         if not gp.exists(outputGDB):
             gp.createfilegdb(cfg.OUTPUTDIR, path.basename(outputGDB))
 
-        if useArcpy:
+        if cfg.useArcpy:
             arcpy.env.workspace = outputGDB
         else:        
             gp.workspace = outputGDB
@@ -390,7 +391,7 @@ def calc_lccs(normalize):
         # ---------------------------------------------------------------------
         # convert mosaic raster to integer
         intRaster = path.join(outputGDB,PREFIX + mosaicBaseName)
-        if useArcpy:
+        if cfg.useArcpy:
             statement = ('outras = Int(Raster(mosaicRaster) - offset + 0.5); ' 
                         'outras.save(intRaster)')
         else:
@@ -421,7 +422,7 @@ def calc_lccs(normalize):
                            '_truncated_at_' + cutoffText)
 
             count = 0
-            if useArcpy:
+            if cfg.useArcpy:
                 statement = ('outRas = Raster(intRaster) * '
                             '(Con(Raster(intRaster) <= cfg.CWDTHRESH,1)); '
                             'outRas.save(truncRaster)')
