@@ -225,9 +225,25 @@ def config_lm(config, arg, scratch_dir):
             config.S2ADJMETH_CW = False
         
     config.MAXEUCDIST = nullfloat(arg[18])
+    
+    # config.USELMSETTINGS = str2bool(arg[19])  #In progress.  Will need to change 9.3 toolbox too.
+    
     # if config.MAXEUCDIST == 0: Now done in nullfloat
         # config.MAXEUCDIST = None
 
+    #Default values for lm_settings (used when box is not checked)
+        ### USER SETTABLE VARIABLES
+    # CALCNONNORMLCCS = False  # Mosiac non-normalized LCCs in step 5 (Boolean- set to True or False)
+    # WRITETRUNCRASTER = True  # Truncate mosaic corridor raster at an upper limit, i.e., use width cutoff. (Boolean- set to True or False)
+    # CWDTHRESH = 200000  # CWD corridor width cutoff to use in truncated raster (Integer)
+    # MINCOSTDIST = None  # Minimum cost distance- any corridor shorter than this will not be mapped (Integer)
+    # MINEUCDIST = None  # Minimum euclidean distance- any core areas closer than this will not be connected (Integer)
+    # SAVENORMLCCS = False  # Save inidvidual normalized LCC grids, not just mosaic (Boolean- set to True or False)
+    # SIMPLIFY_CORES = True  # Simplify cores before calculating distances (Boolean- set to True or False)
+                           # # This speeds up distance calculations in step 2,
+                           # # but Euclidean distances will be less precise.
+
+    # if config.USELMSETTINGS: #In progress.  Will need to change 9.3 toolbox too.
     for setting in dir(lm_settings):
         if setting == setting.upper():
             setting_value = getattr(lm_settings, setting)
