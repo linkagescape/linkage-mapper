@@ -31,7 +31,7 @@ try:
     from arcpy.sa import *
     arcpyAvailable = True
 except:
-    arcpy = False
+    arcpyAvailable = False
 
 # # Arcpy not working in some cases unless s3 executed in same run.
 # # For nso3 dataset, map algebra adding rasters results in empty rasters. 
@@ -212,7 +212,7 @@ def calc_lccs(normalize):
             # subtracting the least cost distance between them.
             count = 0
             if arcpyAvailable:
-                cfg.useArcpy = True # Fixes Conran Liu's bug with lcDist
+                cfg.useArcpy = True # Fixes Canran Liu's bug with lcDist
             if cfg.useArcpy:
                 
                 lcDist = (float(linkTable[link,cfg.LTB_CWDIST]) - offset) 
