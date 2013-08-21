@@ -3,14 +3,14 @@
 """Aggregates resistance rasters to coarser cell size using average resistance.
     Written by Brad McRae
 Reguired Software:
-ArcGIS 9.3 with Spatial Analyst extension
+ArcGIS 9.3 with Spatial Analyst extension (toolbox is Arc 10).
 Python 2.5
 
 
 """
 
 __filename__ = "raster_aggregator.py"
-__version__ = "0.3"
+__version__ = "2013_0610"
 
 import os.path as path
 import arcgisscripting
@@ -38,13 +38,14 @@ def raster_aggregator():
         
         OUTPUTDIR = sys.argv[1]  # Output directory  
         AG_FACTOR =  int(sys.argv[2])
-        SMOOTH = str2bool(sys.argv[3])
+        METHOD = sys.argv[3]
+        SMOOTH = str2bool(sys.argv[4])
         RESRAS = {}#list of resistance rasters       
-        RESRAS[1] = sys.argv[4]
-        RESRAS[2] = sys.argv[5]
-        RESRAS[3] = sys.argv[6]
-        RESRAS[4] = sys.argv[7]
-        RESRAS[5] = sys.argv[8]
+        RESRAS[1] = sys.argv[5]
+        RESRAS[2] = sys.argv[6]
+        RESRAS[3] = sys.argv[7]
+        RESRAS[4] = sys.argv[8]
+        RESRAS[5] = sys.argv[9]
         
         if AG_FACTOR < 2 or AG_FACTOR > 99:
             msg = ('ERROR: Cell factor must be between 2 and 99.')
@@ -67,24 +68,17 @@ def raster_aggregator():
             numRasters = 4
         if RESRAS[5] != '#':
             numRasters = 5
-        if numRasters > 1:
-            gprint('\nThere are ' + str(numRasters) + ' rasters to aggregate.')
-        else:
-            gprint('\nThere is ' + str(numRasters) + ' raster to aggregate.')
+            
+        gprint('\nThere are ' + str(numRasters) + ' rasters to aggregate.')
         gprint('\nCell factor is ' + str(AG_FACTOR))
         gprint('\nCell sizes will be multiplied by this amount')
         for rasterNum in range(1,numRasters+1):
             inputRaster = RESRAS[rasterNum]
-
             gp.SnapRaster = inputRaster
-            
             oldCellSize = gp.Describe(inputRaster).MeanCellHeight
-
             dir,fileName = path.split(inputRaster)  
-
-
-#NEW CODE 10/3/111            
-            if SMOOTH == True:
+        
+            if SMOOTH == True and METHOD == "MEAN":
                 gprint('\nSmoothing cell values by taking mean of ' + str(AG_FACTOR) +'x' + str(AG_FACTOR) + ' neighborhood')
                 if len(fileName)>10:
                     smoothRasterFN = fileName[0:10] + '_sm'
@@ -101,7 +95,6 @@ def raster_aggregator():
                 gp.FocalStatistics_sa(inputRaster, smoothRasterFull, InNeighborhood, "", InNoDataOption)
 
                 inputRaster = smoothRasterFull
-#END NEW CODE
 
             if len(fileName)>10:
                 outRasterFN = fileName[0:10] + '_ag'
@@ -116,14 +109,14 @@ def raster_aggregator():
             gprint('\nAggregating raster "' + str(inputRaster) + '"')
             gprint('Old size was ' + str(oldCellSize))
             gprint('New cell size will be ' + str(oldCellSize * AG_FACTOR))
-
-            gp.Aggregate_sa(inputRaster, outRasterFN, AG_FACTOR, "MEAN", 
+            gprint('Aggregation method: ' + METHOD)
+            gp.Aggregate_sa(inputRaster, outRasterFN, AG_FACTOR, METHOD, 
                             "TRUNCATE", "NODATA")        
 
-            if SMOOTH == True:
-                finalRasterFN = fileName + '_CellFactor' + str(AG_FACTOR) + '_sm'
+            if SMOOTH == True and METHOD == 'MEAN':
+                finalRasterFN = fileName + '_CellFactor' + str(AG_FACTOR) + '_' + METHOD + '_sm'
             else:
-                finalRasterFN = fileName + '_CellFactor' + str(AG_FACTOR)                            
+                finalRasterFN = fileName + '_CellFactor' + str(AG_FACTOR) + '_' + METHOD     
                     
             gp.SnapRaster = agRasterFull           
 
@@ -144,8 +137,6 @@ def raster_aggregator():
                     pass
                 
         gprint('Done.')
-        
-        
         
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
