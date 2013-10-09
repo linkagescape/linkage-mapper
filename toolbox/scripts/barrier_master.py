@@ -3,7 +3,7 @@
 """Master script for barrier analysis in linkage mapper.
 
 Reguired Software:
-ArcGIS 10 with Spatial Analyst extension
+ArcGIS 10.x with Spatial Analyst extension
 Python 2.6
 Numpy
 
@@ -21,13 +21,17 @@ import s6_barriers as s6
 
 _SCRIPT_NAME = "barrier_master.py"
 
-def bar_master():
+def bar_master(argv=None):
     """ Experimental code to detect barriers using cost-weighted distance
     outputs from Linkage Mapper tool.
 
     """
-    cfg.configure(cfg.TOOL_BM, sys.argv)
-    gprint = lu.gprint
+    if argv is None:
+        argv = sys.argv
+    # cfg.configure(argv)    
+    cfg.configure(cfg.TOOL_BM, argv) #xxx was sys.argv
+    gprint = lu.gprint   
+        
     try:
         
         lu.create_dir(cfg.LOGDIR)
@@ -74,7 +78,7 @@ def bar_master():
         lu.delete_dir(cfg.SCRATCHDIR)
         if not cfg.SAVEBARRIERDIR:
             lu.delete_dir(cfg.BARRIERBASEDIR)
-        gprint('\nDONE!\n')
+        gprint('\nDone with barrier mapping.\n')
 
     # Return GEOPROCESSING specific errors
     except arcpy.ExecuteError:

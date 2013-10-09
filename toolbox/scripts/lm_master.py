@@ -4,8 +4,8 @@
 """Master script for Linkage Lapper.
 
 Reguired Software:
-ArcGIS 9.3 with Spatial Analyst extension
-Python 2.5
+ArcGIS 9.3+ with Spatial Analyst extension
+Python 2.5+
 Numpy
 
 """
@@ -35,10 +35,10 @@ def lm_master(argv=None):
 
     """
     # Setup global variables
-    if not cfg.lm_configured:
-        if argv is None:
-            argv = sys.argv       
-        cfg.configure(cfg.TOOL_LM, argv)
+    # if not cfg.lm_configured: # Causing problems with iterative scripting
+    if argv is None:
+        argv = sys.argv       
+    cfg.configure(cfg.TOOL_LM, argv)
 
     gp = cfg.gp
 
@@ -180,7 +180,7 @@ def lm_master(argv=None):
         lu.close_log_file()
         # lu.delete_data(cfg.FCORES)
 
-        gp.addmessage('\nDONE!\n')
+        gp.addmessage('\nDone with linkage mapping.\n')
 
         if cfg.STEP5:
             lu.dashline()
