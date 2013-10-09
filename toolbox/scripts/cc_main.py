@@ -513,7 +513,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
     except Exception:
         raise
     finally:
-        cc_util.delete_feature(near_tbl)
+        cc_util.delete_feature(near_tbl) 
         cc_util.delete_feature(os.path.splitext(corefc)[0] + "_Pnt.shp")
         if link_tbl:
             link_tbl.close()
