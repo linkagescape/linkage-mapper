@@ -19,12 +19,13 @@ del ..\LinkageMapper"%rel_text%"\toolbox\scripts\cc*.*
 del ..\LinkageMapper"%rel_text%"\toolbox\climate*.*
 del ..\LinkageMapper"%rel_text%"\LM_demo\cc*.*
 del ..\LinkageMapper"%rel_text%"\LM_demo\demoData\cc*.*
+del ..\LinkageMapper"%rel_text%"\toolbox\scripts\iterate*.*
 
-@ECHO OFF
-if "%2"=="cc" GOTO CCCopy
-if "%3"=="cc" GOTO CCCopy
-if "%4"=="cc" GOTO CCCopy
-GOTO CMTest
+REM @ECHO OFF
+REM if "%2"=="cc" GOTO CCCopy
+REM if "%3"=="cc" GOTO CCCopy
+REM if "%4"=="cc" GOTO CCCopy
+REM GOTO CMTest
 
 :CCCopy
 @ECHO ON
@@ -57,8 +58,8 @@ ENDLOCAL
 @ECHO OFF
 echo.
 echo Error: must supply a version string
-echo syntax: lm_build (version) (option to include climate tool)
-echo example: lm_build 0.8.4 cc
+echo syntax: lm_build (version)
+echo example: lm_build 0.8.4
 echo.
 
 :End
