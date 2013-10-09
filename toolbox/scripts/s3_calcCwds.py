@@ -784,7 +784,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                         coreDir, lcpRas, corePairRas)
 
                     if coreDetected:
-                        lu.dashline()
+                        # lu.dashline()
                         gprint(
                             "Found an intermediate core in the "
                             "least-cost path between cores " +
