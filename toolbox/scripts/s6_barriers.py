@@ -1,6 +1,3 @@
-#check statements like this - could new code screw up?
-# outCon = arcpy.sa.Con(Raster (barrierRaster) < 0, lastMosaicRaster, #check!! culd 
-
 #!/usr/bin/env python2.6
 # Author: Brad McRae
 
@@ -672,9 +669,9 @@ def STEP6_calc_barriers():
             lu.build_stats(raster)
 
         #Clean up temporary files and directories
-        # if not cfg.SAVEBARRIERRASTERS:
-            # lu.delete_dir(cbarrierdir)
-            # lu.delete_dir(cfg.BARRIERBASEDIR)
+        if not cfg.SAVEBARRIERRASTERS:
+            lu.delete_dir(cbarrierdir)
+            lu.delete_dir(cfg.BARRIERBASEDIR)
 
         if not cfg.SAVEFOCALRASTERS:
             for radius in range(startRadius, endRadius + 1, radiusStep):
