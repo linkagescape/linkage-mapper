@@ -20,7 +20,10 @@ import numpy as npy
 import arcgisscripting
 
 from lm_config import tool_env as cfg
-
+try:
+    test = cfg.releaseNum
+except:
+    cfg.releaseNum = 'unknown'
 
 _SCRIPT_NAME = "lm_util.py"
 
@@ -630,12 +633,12 @@ def get_centroids(shapefile, field):
                 msg = ('ERROR: It appears that your region settings are not in '
                         'USA format (decimal commas are used instead of decimal '
                         'points). '
-                        'Please change your region settings in Windows to USA or '
-                        'another region that uses decimal points.')
-                raise_error(msg)
+                    'Please change your region settings in Windows to USA or '
+                    'another region that uses decimal points.  You may need to'
+                    'modify the coordinate system of your input files as well.')
+                raise_error(msg)            
             xyArray[0, 0] = float(xy[0])
             xyArray[0, 1] = float(xy[1])
-                
             value = row.GetValue(field)
             xyArray[0, 2] = int(value)
             xyCumArray = npy.append(xyCumArray, xyArray, axis=0)
@@ -2166,10 +2169,11 @@ def check_cores(FC,FN):
         xy = center.split(" ")
         if "," in xy[0]:
             msg = ('ERROR: It appears that your region settings are not in '
-                    'USA format (decimal commas are used instead of decimal '
-                    'points). '
-                    'Please change your region settings in Windows to USA or '
-                    'another region that uses decimal points.')
+                  'USA format (decimal commas are used instead of decimal '
+                  'points). '
+                  'Please change your region settings in Windows to USA or '
+                  'another region that uses decimal points.  You may need to'
+                  'to modify the coordinate system of your input files as well.')
             raise_error(msg)
             
     except arcgisscripting.ExecuteError:

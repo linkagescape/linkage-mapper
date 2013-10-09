@@ -412,6 +412,8 @@ def calc_lccs(normalize):
         if writeTruncRaster:
             # -----------------------------------------------------------------
             # Set anything beyond cfg.CWDTHRESH to NODATA.
+            if arcpyAvailable:
+                cfg.useArcpy = True # For Alissa Pump's error with 10.1
             cutoffText = str(cfg.CWDTHRESH)
             if cutoffText[-6:] == '000000':
                 cutoffText = cutoffText[0:-6]+'m' 
@@ -440,6 +442,7 @@ def calc_lccs(normalize):
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain: exec statement
                 else: break
+            cfg.useArcpy = False # End fix for Alissa Pump's error with 10.1                
         # ---------------------------------------------------------------------
         # Check for unreasonably low minimum NLCC values    
         try:
