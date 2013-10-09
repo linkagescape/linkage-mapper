@@ -1,10 +1,13 @@
+#check statements like this - could new code screw up?
+# outCon = arcpy.sa.Con(Raster (barrierRaster) < 0, lastMosaicRaster, #check!! culd 
+
 #!/usr/bin/env python2.6
 # Author: Brad McRae
 
 """Detects influential barriers given CWD calculations from
     Linkage Mapper step 3.
 Reguired Software:
-ArcGIS 10 with Spatial Analyst extension
+ArcGIS 10.x with Spatial Analyst extension
 Python 2.6
 Numpy
 """
@@ -24,9 +27,13 @@ import lm_util as lu
 tif = '.tif'
 gprint = lu.gprint
 
+
+setCoresToNull = False # If search area overlaps a core, set output to NoData,
+                      # which ends up as 0 in mosaic xxx
+                      
+
 _SCRIPT_NAME = "s6_Barriers.py"
-
-
+                 
 def STEP6_calc_barriers():
     """Detects influential barriers given CWD calculations from
        s3_calcCwds.py.
@@ -37,6 +44,10 @@ def STEP6_calc_barriers():
         arcpy.CheckOutExtension("spatial")
         lu.dashline(0)
         gprint('Running script ' + _SCRIPT_NAME)
+        
+        if cfg.BARRIER_CWD_THRESH is not None:
+            lu.dashline(1)
+            gprint('Invoking CWD Threshold of ' + str(cfg.BARRIER_CWD_THRESH) + ' map units.')
         
         if cfg.SUM_BARRIERS:
             sumSuffix = '_Sum'
@@ -49,7 +60,7 @@ def STEP6_calc_barriers():
             sumSuffix = ''
 
         # Delete contents of final ouptut geodatabase           
-        lu.clean_out_workspace(cfg.BARRIERGDB)
+        # lu.clean_out_workspace(cfg.BARRIERGDB) #xxx try not doing this to allow multiple radii to be analyzed in separate runs
         if not arcpy.Exists(cfg.BARRIERGDB):
             # Create output geodatabase
             arcpy.CreateFileGDB_management(cfg.OUTPUTDIR,
@@ -186,17 +197,29 @@ def STEP6_calc_barriers():
                         # Get cwd rasters for source and target cores
                         cwdRaster1 = lu.get_cwd_path(corex)
                         cwdRaster2 = lu.get_cwd_path(corey)
+                        
+                        # Mask out areas above CWD threshold
+                        cwdTemp1 = None
+                        cwdTemp2 = None
+                        if cfg.BARRIER_CWD_THRESH is not None:
+                            if x == 1:
+                                lu.dashline(1)
+                                gprint('  Using CWD threshold of ' + str(cfg.BARRIER_CWD_THRESH) + ' map units.')
+                            arcpy.env.extent = cfg.RESRAST
+                            arcpy.env.cellSize = cfg.RESRAST
+                            arcpy.env.snapRaster = cfg.RESRAST
+                            cwdTemp1 = path.join(cfg.SCRATCHDIR, "tmp"+str(corex))
+                            outCon = arcpy.sa.Con(cwdRaster1 < float(cfg.BARRIER_CWD_THRESH),cwdRaster1)
+                            outCon.save(cwdTemp1)
+                            cwdRaster1 = cwdTemp1
+                            cwdTemp2 = path.join(cfg.SCRATCHDIR, "tmp"+str(corey))
+                            outCon = arcpy.sa.Con(cwdRaster2 < float(cfg.BARRIER_CWD_THRESH),cwdRaster2)
+                            outCon.save(cwdTemp2)
+                            cwdRaster2 = cwdTemp2                        
+                        
                         focalRaster1 = lu.get_focal_path(corex,radius)
                         focalRaster2 = lu.get_focal_path(corey,radius)
-                        
-                        @retry(10)
-                        def setExtent():
-                            randomerror()
-                            arcpy.env.extent = cfg.RESRAST
-                            if not cfg.SUM_BARRIERS:
-                                arcpy.env.extent = "MINOF"
-                        setExtent()
-                                              
+                                                                     
                         link = lu.get_links_from_core_pairs(linkTable,
                                                             corex, corey)
                         lcDist = float(linkTable[link,cfg.LTB_CWDIST])
@@ -215,15 +238,31 @@ def STEP6_calc_barriers():
                             randomerror()
                             # Execute FocalStatistics
                             if not path.exists(focalRaster1):
+                                arcpy.env.extent = cwdRaster1
                                 outFocalStats = arcpy.sa.FocalStatistics(cwdRaster1,
                                                     InNeighborhood, "MINIMUM","DATA")
-                                outFocalStats.save(focalRaster1)
+                                if setCoresToNull:                    
+                                    outFocalStats2 = arcpy.sa.Con(outFocalStats > 0, outFocalStats) # Set areas overlapping cores to NoData xxx
+                                    outFocalStats2.save(focalRaster1) #xxx
+                                else:
+                                    outFocalStats.save(focalRaster1) #xxx
+                                arcpy.env.extent = cfg.RESRAST
 
                             if not path.exists(focalRaster2):
+                                arcpy.env.extent = cwdRaster2
                                 outFocalStats = arcpy.sa.FocalStatistics(cwdRaster2,
                                                 InNeighborhood, "MINIMUM","DATA")
-                                outFocalStats.save(focalRaster2)
+                                if setCoresToNull:                    
+                                    outFocalStats2 = arcpy.sa.Con(outFocalStats > 0, outFocalStats) # Set areas overlapping cores to NoData xxx
+                                    outFocalStats2.save(focalRaster2)#xxx
+                                else:
+                                    outFocalStats.save(focalRaster2) #xxx
+
+                                arcpy.env.extent = cfg.RESRAST
                         execFocal()
+                                                
+                        lu.delete_data(cwdTemp1)
+                        lu.delete_data(cwdTemp2)
                         
                         barrierRaster = path.join(cbarrierdir, "b" + str(radius)
                               + "_" + str(corex) + "_" +
@@ -233,9 +272,9 @@ def STEP6_calc_barriers():
                                              # create trim rasters as we go
 
                             outRas = ((lcDist - Raster(focalRaster1) - 
-                            Raster(focalRaster2) - dia) / dia)
+                                      Raster(focalRaster2) - dia) / dia)
                             outCon = arcpy.sa.Con(IsNull(outRas),0,outRas)
-                            outCon2 = arcpy.sa.Con(outCon<0,0,outCon)
+                            outCon2 = arcpy.sa.Con(outCon<0,0,outCon)                            
                             outCon2.save(barrierRaster)
                             
                             # Execute FocalStatistics to fill out search radii                            
@@ -317,6 +356,9 @@ def STEP6_calc_barriers():
                                         "32_BIT_FLOAT", arcpy.env.cellSize, "1", 
                                         "MAXIMUM", "MATCH")
                                 mosaicToNew()
+                                # gprint(str(corex)+'0'+str(corey))
+                                
+                                
                         if linkLoop>1: #Clean up from previous loop
                             lu.delete_data(lastMosaicRaster)
                             lastMosaicDir =path.dirname(lastMosaicRaster) 
@@ -404,14 +446,21 @@ def STEP6_calc_barriers():
 
                 # -----------------------------------------------------------------
                 
-                # Set negative values to null and write geodatabase.
+                # Set negative values to null or zero and write geodatabase. 
                 mosaicFN = (PREFIX + "_BarrierCenters" + sumSuffix + "_Rad" + 
                            str(radius))
+                mosaicRaster = path.join(cfg.BARRIERGDB, mosaicFN) 
                 arcpy.env.extent = cfg.RESRAST
+                
+                # if setCoresToNull:                
+                    # outCon = arcpy.sa.Con(Raster(tempMosaicRaster) < 0, 0, 
+                                   # tempMosaicRaster) #xxx
+                    # outCon.save(mosaicRaster) #xxx                            
+                # else:
                 outSetNull = arcpy.sa.SetNull(tempMosaicRaster, tempMosaicRaster,
-                                              "VALUE < 0")
-                mosaicRaster = path.join(cfg.BARRIERGDB, mosaicFN)
+                                              "VALUE < 0") #xxx orig
                 outSetNull.save(mosaicRaster)
+                
                 lu.delete_data(tempMosaicRaster)
                 
                 if cfg.SUM_BARRIERS and cfg.WRITE_TRIM_RASTERS:
@@ -623,9 +672,9 @@ def STEP6_calc_barriers():
             lu.build_stats(raster)
 
         #Clean up temporary files and directories
-        if not cfg.SAVEBARRIERRASTERS:
-            lu.delete_dir(cbarrierdir)
-            lu.delete_dir(cfg.BARRIERBASEDIR)
+        # if not cfg.SAVEBARRIERRASTERS:
+            # lu.delete_dir(cbarrierdir)
+            # lu.delete_dir(cfg.BARRIERBASEDIR)
 
         if not cfg.SAVEFOCALRASTERS:
             for radius in range(startRadius, endRadius + 1, radiusStep):
