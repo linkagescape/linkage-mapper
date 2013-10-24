@@ -39,7 +39,7 @@ def main():
     prune_network = "true"  # "true" or "false" (mirroring tool input)
     max_nn = 3  # No of connected nearest neighbors
     nn_unit = "Cost-Weighted"  # NN Unit
-    keep_constelations = "True"
+    keep_constelations = "true"
 
     # *************************************************************************
 
