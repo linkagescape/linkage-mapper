@@ -15,6 +15,7 @@ import shutil
 import sys
 
 import arcgisscripting
+import arcpy
 
 from lm_config import tool_env as cfg
 import lm_util as lu
@@ -28,18 +29,21 @@ import s8_pinchpoints as s8
 _SCRIPT_NAME = "circuitscape_master.py"
 
 
-def circuitscape_master():
+def circuitscape_master(argv=None):
     """
 
     """
     gprint = lu.gprint
     gwarn = arcpy.AddWarning
-    cfg.configure(cfg.TOOL_CS, sys.argv)
+
+    if argv is None:
+        argv = sys.argv    
+    
+    cfg.configure(cfg.TOOL_CS, argv)
     gp = cfg.gp
 
     
     try:
-            
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
         cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
