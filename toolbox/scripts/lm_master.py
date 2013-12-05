@@ -35,10 +35,10 @@ def lm_master(argv=None):
 
     """
     # Setup global variables
-    # if not cfg.lm_configured: # Causing problems with iterative scripting
-    if argv is None:
-        argv = sys.argv       
-    cfg.configure(cfg.TOOL_LM, argv)
+    if not cfg.lm_configured: # Causing problems with iterative scripting
+        if argv is None:
+            argv = sys.argv       
+        cfg.configure(cfg.TOOL_LM, argv)
 
     gp = cfg.gp
 
