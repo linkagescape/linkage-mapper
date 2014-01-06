@@ -278,9 +278,9 @@ def pair_cores(cpair_tbl):
     try:
         lm_util.gprint("\nCREATING CORE PAIRINGS TABLE")
         arcpy.CreateTable_management(cc_env.out_dir, cpair_tbl, "", "")
-        arcpy.AddField_management(cpair_tbl, FR_COL, "Short", "", "",
+        arcpy.AddField_management(cpair_tbl, FR_COL, "Long", "", "",
                                   "", "", "NON_NULLABLE")
-        arcpy.AddField_management(cpair_tbl, TO_COL, "Short", "", "",
+        arcpy.AddField_management(cpair_tbl, TO_COL, "Long", "", "",
                                   "", "", "NON_NULLABLE")
         arcpy.DeleteField_management(cpair_tbl, "Field1")
 
