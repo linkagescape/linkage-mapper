@@ -54,14 +54,14 @@ class ClimateConfig():
         self.code_dir = os.path.dirname(os.path.abspath(__file__))
         self.out_dir = os.path.join(self.proj_dir, "clm_cor")  # CC directory
         self.tmp_dir = os.path.join(self.proj_dir, "tmp")
-        self.inputs_gdb = os.path.join(self.out_dir,"LM_inputs.gdb")
-        # self.prj_area_rast = os.path.join(self.out_dir, "projarea")
-        # Project area files
-        self.prj_core_fc = (os.path.join(self.inputs_gdb, "cc_cores"))  
-        # Using gdb seems to best best avoids dll conflict           
+        self.inputs_gdb = os.path.join(self.out_dir, "LM_inputs.gdb")
+
+        # Define project area files
+        # Using gdb seems to best best avoids dll conflict
+        self.prj_core_fc = (os.path.join(self.inputs_gdb, "cc_cores"))
         self.prj_climate_rast = os.path.join(self.inputs_gdb, "climate")
-        self.prj_core_rast = os.path.join(self.inputs_gdb,"cores")
-        self.prj_resist_rast = os.path.join(self.inputs_gdb, "cc_resist") 
+        self.prj_core_rast = os.path.join(self.inputs_gdb, "cores")
+        self.prj_resist_rast = os.path.join(self.inputs_gdb, "cc_resist")
         self.simplify_cores = True
         self.core_simp = os.path.join(cc_env.out_dir, "coresim.shp")
 

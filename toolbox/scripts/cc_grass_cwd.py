@@ -6,30 +6,20 @@
 """
 
 import os
-import shutil
 import subprocess
-# import pickle
 
 import arcpy
 
-# sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "python"))
 import grass.script as grass
 import grass.script.setup as gsetup
 
 from cc_config import cc_env
-# from lm_config import tool_env as lm_env
 import cc_util
 import lm_util
 
 
 def grass_cwd(core_list):
-# def grass_cwd(pfile_nm):
     """Creating CWD and Back rasters using GRASS r.walk function"""
-    # with open(pfile_nm, "rb") as pfile:
-        # argv, lm_arg, core_list = pickle.load(pfile)
-    # cc_env.configure(argv)
-    # lm_env.configure(lm_env.TOOL_CC, lm_arg)
-
     cur_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
                                 shell=True).stdout.read()
     gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
@@ -56,7 +46,7 @@ def grass_cwd(core_list):
         # Create resource file and setup workspace
         write_grassrc(ccr_grassrc, gisdbase)
 
-        grass_version = setup_wrkspace(gisdbase, ccr_grassrc, climate_asc)
+        setup_wrkspace(gisdbase, ccr_grassrc, climate_asc)
 
         # Make cwd folder for Linkage Mapper
         lm_util.make_cwd_paths(max(core_list))
@@ -66,34 +56,27 @@ def grass_cwd(core_list):
         run_grass_cmd("r.in.arc", input=climate_asc, output=climate_lyr)
         run_grass_cmd("r.in.arc", input=resist_asc, output=resist_lyr)
         run_grass_cmd("r.in.arc", input=core_asc, output=core_lyr)
-        # lm_util.gprint("Importing cores feature class into GRASS\n")
-        # run_grass_cmd("v.in.ogr", dsn=cc_env.out_dir, output=core_lyr)
 
         # Generate CWD and Back rasters
-        gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr,
-                     core_lyr)
+        gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr)
 
     except Exception:
         raise
     finally:
         os.environ['PATH'] = cur_path  # Revert to original windows path
-        try:
-            shutil.rmtree(gisdbase, True)
-        except OSError:
+        if not cc_util.remove_grass_wkspc(gisdbase):
             arcpy.AddWarning("Unable to delete temporary GRASS folder. "
-                             "Program will contine")
-        cc_util.delete_feature(climate_asc)
-        cc_util.delete_feature(resist_asc)
-        cc_util.delete_feature(core_asc)
-        cc_util.delete_feature(ccr_grassrc)
+                             "Program will contine.")
+        cc_util.delete_features(
+            [climate_asc, resist_asc, core_asc, ccr_grassrc])
 
 
 def write_grassrc(ccr_grassrc, gisdbase):
     """"Write GRASS resource file to project folder"""
-    with open(ccr_grassrc, 'w') as f:
-        f.write("GISDBASE: %s\n" % gisdbase)
-        f.write("LOCATION_NAME: <UNKNOWN>\n")
-        f.write("MAPSET: <UNKNOWN>\n")
+    with open(ccr_grassrc, 'w') as rc_file:
+        rc_file.write("GISDBASE: %s\n" % gisdbase)
+        rc_file.write("LOCATION_NAME: <UNKNOWN>\n")
+        rc_file.write("MAPSET: <UNKNOWN>\n")
 
 
 def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
@@ -107,16 +90,10 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     os.environ['LD_LIBRARY_PATH'] = os.path.join(gisbase, "lib")
     os.environ['GRASS_SH'] = os.path.join(gisbase, "msys", "bin", "sh.exe")
 
-    cc_util.add_grass_path(gisbase)
-    # os_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
-    #                         shell=True).stdout.read()
-    # lm_util.gprint("Path: " + os_path)
-    cc_util.remove_grass_wkspc(gisdbase)
-
     try:
         grass.create_location(gisdbase, location, filename=geo_file)
     except:
-        gdal_fail_check('create location failure')
+        cc_util.gdal_fail_check()
         arcpy.AddWarning("GRASS ERROR. Try rebooting and restarting ArcGIS.")
         arcpy.AddWarning("If that doesn't work you can try using ")
         arcpy.AddWarning("the 'CC Run Script.py' python script in the ")
@@ -126,14 +103,11 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
         raise Exception("GRASS ERROR: Cannot create workspace.")
     gsetup.init(gisbase, gisdbase, location, mapset)
     run_grass_cmd("g.gisenv", set="OVERWRITE=1")
-    os.environ['GRASS_VERBOSE'] = "0"  # only errors and warnings are printed
-
-    return grass.version()['version']
+    os.environ['GRASS_VERBOSE'] = "0"  # Only errors and warnings are printed
 
 
-def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
+def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
     """"Generate CWD and back rasters using r.walk in GRASS"""
-
     slope_factor = "1"
     walk_coeff_flat = "1"
     walk_coeff_uphill = str(cc_env.climate_cost)
@@ -146,8 +120,12 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
     gback = "gback"
     gbackrc = "gbackrc"
     core_points = "corepoints"
-    rc_rules = "0=5\n45=4\n90=3\n135=2\n180=1\n225=8\n270=7\n315=6"
     no_cores = str(len(core_list))
+
+    # Map from directional degree output from GRASS to Arc's 1 to 8 directions
+    # format. See r.walk source code and ArcGIS's 'Understanding cost distance
+    # analysis' help page.
+    rc_rules = "180=5\n225=4\n270=3\n315=2\n360=1\n45=8\n90=7\n135=6"
 
     try:
         for position, core_no in enumerate(core_list):
@@ -162,12 +140,8 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
                             rules="-", stdin=core_no_txt + '=' + core_no_txt)
 
             # Converting raster core to point feature
-            if grass_version.startswith('7'):  # Command different in GRASS 7
-                run_grass_cmd("r.to.vect", flags="z", input=focal_core_rast,
-                              output=core_points, type="point")
-            else:
-                run_grass_cmd("r.to.vect", flags="z", input=focal_core_rast,
-                              output=core_points, feature="point")
+            run_grass_cmd("r.to.vect", flags="z", input=focal_core_rast,
+                          output=core_points, type="point")
 
             # Running r.walk to create CWD and back raster
             run_grass_cmd("r.walk", elevation=climate_lyr,
@@ -175,32 +149,30 @@ def gen_cwd_back(grass_version, core_list, climate_lyr, resist_lyr, core_lyr):
                           start_points=core_points, walk_coeff=walk_coeff,
                           slope_factor=slope_factor)
 
-            # Reclassify from the directional degree output from GRASS to
-            # Arc's 1 to 8 directions format
+            # Reclassify back raster directional degree output to ArcGIS format
             write_grass_cmd("r.reclass", input=gback, output=gbackrc,
                             rules="-", stdin=rc_rules)
 
-            # Exporting CWD and back rasters to ASCII grids
-            cwd_ascii = os.path.join(cc_env.out_dir,
-                                     "cwd_" + core_no_txt + ".asc")
-            cwd_grid = lm_util.get_cwd_path(core_no)
-            back_ascii = os.path.join(cc_env.out_dir,
-                                      "back_" + core_no_txt + ".asc")
-            back_grid = cwd_grid.replace("cwd_", "back_")
+            # Get spatial reference for defining ARCINFO raster projections
+            desc_data = arcpy.Describe(cc_env.prj_core_rast)
+            spatial_ref = desc_data.spatialReference
 
-            run_grass_cmd("r.out.arc", input=gcwd, output=cwd_ascii)
-            run_grass_cmd("r.out.arc", input=gbackrc, output=back_ascii)
+            # Get cwd path (e.g. ..\datapass\cwd\cw\cwd_3)
+            cwd_path = lm_util.get_cwd_path(core_no)
 
-            # # Take grass cwd and back asciis and write them as ARCINFO grids
-            descData = arcpy.Describe(cc_env.prj_core_rast)
-            # Core raster is what carries over to step 3, use SR from that
-            SR = descData.spatialReference
-            arcpy.CopyRaster_management(cwd_ascii, cwd_grid) 
-            arcpy.DefineProjection_management(cwd_grid, SR)
-            os.remove(cwd_ascii)
-            arcpy.CopyRaster_management(back_ascii, back_grid)
-            arcpy.DefineProjection_management(back_grid, SR)
-            os.remove(back_ascii)
+            def create_arcgrid(rtype, grass_grid):
+                """Export GRASS raster to ASCII grid and then to ARCINFO grid
+                """
+                ascii_grid = os.path.join(cc_env.out_dir,
+                                          rtype + core_no_txt + ".asc")
+                arc_grid = cwd_path.replace("cwd_", rtype)
+                run_grass_cmd("r.out.arc", input=grass_grid, output=ascii_grid)
+                arcpy.CopyRaster_management(ascii_grid, arc_grid)
+                arcpy.DefineProjection_management(arc_grid, spatial_ref)
+                os.remove(ascii_grid)
+
+            create_arcgrid("cwd_", gcwd)  # Export CWD raster
+            create_arcgrid("back_", gbackrc)  # Export reclassified back raster
     except Exception:
         raise
 
@@ -223,46 +195,13 @@ def chk_stderr(stderr):
 
 def run_grass_cmd(*args, **kwargs):
     """Run inputed GRASS command"""
-    ps = start_grass_cmd(*args, **kwargs)
-    chk_stderr(ps.communicate()[1])
+    return_ps = start_grass_cmd(*args, **kwargs)
+    chk_stderr(return_ps.communicate()[1])
 
 
 def write_grass_cmd(*args, **kwargs):
     """Feeds stdin string to process stdin and runs inputed GRASS command"""
     stdin = kwargs['stdin']
     kwargs['stdin'] = grass.PIPE
-    ps = start_grass_cmd(*args, **kwargs)
-    chk_stderr(ps.communicate(input=stdin)[1])
-
-
-def gdal_check(msg):
-    """Code to check GDAL dlls and system path"""
-    gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
-                            shell=True).stdout.read()
-    lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
-
-def gdal_fail_check(msg):
-    """Code to check GDAL dlls and system path"""
-    gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
-                            shell=True).stdout.read()
-    gdal_list = gdal.split('\n')
-    if 'arcgis' in gdal_list[1].lower():
-        lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
-        arcpy.AddWarning("It looks like there is a conflict between ArcGIS")
-        arcpy.AddWarning("and GRASS. This could be the result of a previous ")
-        arcpy.AddWarning("analysis (like a Linkage Mapper run) or it might be")
-        arcpy.AddWarning("caused by conflicts with pre-loaded ArcGIS ") 
-        arcpy.AddWarning("extensions.")
-        arcpy.AddWarning("\nThis error often goes away if you run the tool in")
-        arcpy.AddWarning("the background (see user guide). ")
-        arcpy.AddWarning("\nIf that doesn't work, try restarting ArcMap.")
-        arcpy.AddWarning("\nIf you still get an error, then restart again ")
-        arcpy.AddWarning("and disable any extensions you are not using") 
-        arcpy.AddWarning("(Click on Customize >> Extensions).")
-        arcpy.AddWarning("\nAnd if that doesn't work try closing Arc and ")
-        arcpy.AddWarning("instead run the tool using the 'CC Run Script.py' ")
-        arcpy.AddWarning("python script.  This script can be found in the ")
-        arcpy.AddWarning("'demo' directory, located where the Linkage") 
-        arcpy.AddWarning("Mapper toolbox is installed.\n")
-        raise Exception("ArcGIS-GRASS GDAL DLL conflict")
-
+    return_ps = start_grass_cmd(*args, **kwargs)
+    chk_stderr(return_ps.communicate(input=stdin)[1])
