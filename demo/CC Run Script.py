@@ -27,8 +27,7 @@ def main():
     resis_rast = "W:\\demoData\\cc_resist.img"
 
     # GRASS GIS Folder
-    gisbase = "C:\\Program Files (x86)\\GRASS GIS 6.5.svn"
-    # gisbase = "C:\\Program Files (x86)\\GRASS GIS 7.0.svn"
+    gisbase = "C:\\Program Files (x86)\\GRASS GIS 7.0.0"
 
     # Model Settings
     min_euc_dist = 2000  # Minimum Euclidean Distance

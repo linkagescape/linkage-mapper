@@ -17,9 +17,7 @@ import sys
 import csv
 import itertools
 import traceback
-from datetime import datetime, timedelta
-# import subprocess
-# import pickle
+from datetime import datetime
 
 import arcpy
 import arcpy.sa as sa
@@ -31,7 +29,8 @@ from lm_config import tool_env as lm_env
 import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
-# __version__ = "0.2.4"
+
+TFORMAT = "%m/%d/%y %H:%M:%S"
 
 FR_COL = "From_Core"
 TO_COL = "To_Core"
@@ -39,228 +38,205 @@ TO_COL = "To_Core"
 
 def main(argv=None):
     """Main function for Climate Linkage Mapper tool"""
-    tformat = "%m/%d/%y %H:%M:%S"
-    stime = datetime.now()
 
-    print "Start time: %s" % stime.strftime(tformat)  # Redundant in Arc
-  
-    zonal_tbl = "zstats.dbf"
+    start_time = datetime.now()
+    print "Start time: %s" % start_time.strftime(TFORMAT)
 
     if argv is None:
         argv = sys.argv
     try:
-        cc_env.configure(argv)        
-        gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
+        cc_env.configure(argv)
         cc_util.check_cc_project_dir()
-        cc_util.remove_grass_wkspc(gisdbase)
-        cc_util.add_grass_path(cc_env.gisbase)
-        
-        # Make sure no dll conflict with grass and ArcGIS
-        gdal_check('Startup')
-        
-        import cc_grass_cwd  # Cannot import until configured
 
-        # Check out the ArcGIS Spatial Analyst extension license
-        os.environ['ESRI_SOFTWARE_CLASS'] = 'Professional'
-        if arcpy.CheckExtension("Spatial") == "Available":
-            arcpy.CheckOutExtension("Spatial")
-        else:
-            raise
+        grass_dir_setup()
+        cc_util.gdal_fail_check()  # Make sure no dll conflict
 
-        # Setup workspace
-        arcpy.env.overwriteOutput = True
-        arcpy.env.cellSize = "MAXOF"  # Setting to default. For batch runs.
-        if arcpy.Exists(cc_env.out_dir):
-            cc_util.delete_feature(cc_env.out_dir)
-        arcpy.env.workspace = cc_util.mk_proj_dir(cc_env.out_dir)
-        arcpy.env.scratchWorkspace = cc_util.mk_proj_dir(cc_env.tmp_dir)
-        # lm_outdir = cc_util.mk_proj_dir("lm_out")
-        lm_outdir = cc_env.proj_dir
+        check_out_sa_license()
+        arc_wksp_setup()
+        config_lm()
+        log_setup()
 
-        # Configure Linkage Mapper
-        lm_arg = (_SCRIPT_NAME, lm_outdir, cc_env.prj_core_fc, cc_env.core_fld,
-                  cc_env.prj_resist_rast, "false", "false", "#", "#", "true",
-                  "false", cc_env.prune_network, cc_env.max_nn, cc_env.nn_unit,
-                  cc_env.keep_constelations, "true", "#", "#", "#")
-        lm_env.configure(lm_env.TOOL_CC, lm_arg)
-        lm_util.gprint('\nClimate Linkage Mapper Version ' + lm_env.releaseNum)
-        lm_util.gprint('NOTE: This tool runs best with BACKGROUND '
-                       'PROCESSING (see user guide).')
-        
-        lm_util.create_dir(lm_env.DATAPASSDIR)
-
-        # Set up logging
-        lm_util.create_dir(lm_env.LOGDIR)
-        lm_util.create_dir(lm_env.MESSAGEDIR)
-        lm_env.logFilePath=lm_util.create_log_file(lm_env.MESSAGEDIR, 
-                                            lm_env.TOOL, lm_env.PARAMS) 
-                                           
-        # Clip inputs and create project area raster
-        cc_copy_inputs()
-
-        # Get zonal statistics for cores and climate
-        lm_util.gprint("\nCALCULATING ZONAL STATISTICS FROM CLIMATE RASTER")
-        climate_stats = arcpy.sa.ZonalStatisticsAsTable(cc_env.prj_core_fc,
-            cc_env.core_fld, cc_env.prj_climate_rast, zonal_tbl, "DATA", "ALL")
-
-        # Create core pairings table and limit based upon climate threshold
-        core_pairings = create_pair_tbl(climate_stats)
-
-        # Generate link table, calculate CWD and run Linkage Mapper
-        if int(arcpy.GetCount_management(core_pairings).getOutput(0)) == 0:
-            arcpy.AddWarning("\nNo core pairs within climate threshold. "
-                             "Program will end")
-        else:
-            # Process pairings and generate link table
-            grass_cores = process_pairings(core_pairings)
-            if not grass_cores:
-                arcpy.AddWarning("\nNo core pairs within Euclidean distances. "
-                                 "Progam program will end")
-            else:
-                # Create CWD using Grass
-                cc_grass_cwd.grass_cwd(grass_cores)
-
-                # Alternative ways to call Grass module
-                # pfile_nm = os.path.join(cc_env.out_dir, "tmp.pck")
-                # with open(pfile_nm, "wb") as pfile:
-                    # pickle.dump((argv, lm_arg, grass_cores), pfile)
-                # mod_path = cc_env.code_dir
-                # cargs = ("import sys; sys.path.append('" + mod_path + "'); "
-                         # "import cc_grass_cwd; "
-                         # "cc_grass_cwd.grass_cwd('" + pfile_nm + "')")
-                # cargs = cargs.replace("\\", "\\\\")
-                # mybat = os.path.join(mod_path, "cc_rgrass")
-                # cmd = '""%s" "%s""' % (mybat, cargs)
-                # os.system(cmd)
-                # output = subprocess.Popen(['python', '-c', cargs],
-                                          # stdout=subprocess.PIPE,
-                                          # shell=True).stdout.read()
-
-                # Run Linkage Mapper
-                lm_util.gprint("\nRUNNING LINKAGE MAPPER "
-                                 "TO CREATE CLIMATE CORRIDORS")
-                lm_master.lm_master()
+        run_analysis()
 
     except arcpy.ExecuteError:
-        msg=arcpy.GetMessages(2)
+        msg = arcpy.GetMessages(2)
         arcpy.AddError(arcpy.GetMessages(2))
         lm_util.write_log(msg)
         exc_traceback = sys.exc_info()[2]
         lm_util.gprint("Traceback (most recent call last):\n" +
-                         "".join(traceback.format_tb(exc_traceback)[:-1]))
+                       "".join(traceback.format_tb(exc_traceback)[:-1]))
 
     except Exception:
         exc_value, exc_traceback = sys.exc_info()[1:]
         arcpy.AddError(exc_value)
         lm_util.gprint("Traceback (most recent call last):\n" +
-                         "".join(traceback.format_tb(exc_traceback)))
+                       "".join(traceback.format_tb(exc_traceback)))
     finally:
-        cc_util.delete_feature(cc_env.prj_climate_rast)
-        # cc_util.delete_feature(cc_env.prj_resist_rast) # keep for reruns
-        # cc_util.delete_feature(cc_env.prj_core_fc) # keep for reruns
-        cc_util.delete_feature(cc_env.prj_core_rast)
-        if cc_env.simplify_cores:            
-            cc_util.delete_feature(cc_env.core_simp)
-        cc_util.delete_feature(cc_env.tmp_dir)
-        # cc_util.delete_feature(cc_env.out_dir) # keep for reruns
-        # Delete files left behind by arcpy
-        cpath = os.getcwd()
-        cc_util.delete_feature(os.path.join(cpath, ".prj"))
-        cc_util.delete_feature(os.path.join(cpath, "info"))
-        
+        delete_proj_files()
         arcpy.CheckInExtension("Spatial")
+        print_runtime(start_time)
 
-        # Print process time when running from script
-        etime = datetime.now()
-        rtime = etime - stime
-        hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
-                       (rtime.seconds // 60) % 60)
-        print "End time: %s" % etime.strftime(tformat)
-        print "Elapsed time: %s hrs %s mins" % (hours, minutes)
+
+def grass_dir_setup():
+    """Create new folder for GRASS workspace"""
+    gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
+
+    # Remove GRASS directory if it exists
+    if not cc_util.remove_grass_wkspc(gisdbase):
+        arcpy.AddWarning("\nCannot delete GRASS workspace from earlier"
+                         " run."
+                         "\nPlease choose a new project directory.")
+        raise Exception("Cannot delete GRASS workspace: " + gisdbase)
+
+    cc_util.add_grass_path(cc_env.gisbase)
+
+
+def check_out_sa_license():
+    """Check out the ArcGIS Spatial Analyst extension license"""
+    os.environ['ESRI_SOFTWARE_CLASS'] = 'Professional'
+    if arcpy.CheckExtension("Spatial") == "Available":
+        arcpy.CheckOutExtension("Spatial")
+    else:
+        raise
+
+
+def arc_wksp_setup():
+    """Setup ArcPy workspace"""
+    arcpy.env.overwriteOutput = True
+    arcpy.env.cellSize = "MAXOF"  # Setting to default. For batch runs.
+    if arcpy.Exists(cc_env.out_dir):
+        cc_util.delete_features(cc_env.out_dir)
+    arcpy.env.workspace = cc_util.mk_proj_dir(cc_env.out_dir)
+    arcpy.env.scratchWorkspace = cc_util.mk_proj_dir(cc_env.tmp_dir)
+
+
+def config_lm():
+    """Configure Linkage Mapper"""
+    lm_arg = (_SCRIPT_NAME, cc_env.proj_dir, cc_env.prj_core_fc,
+              cc_env.core_fld, cc_env.prj_resist_rast, "false", "false", "#",
+              "#", "true", "false", cc_env.prune_network, cc_env.max_nn,
+              cc_env.nn_unit, cc_env.keep_constelations, "true", "#", "#", "#")
+    lm_env.configure(lm_env.TOOL_CC, lm_arg)
+    lm_util.create_dir(lm_env.DATAPASSDIR)
+    lm_util.gprint('\nClimate Linkage Mapper Version ' + lm_env.releaseNum)
+    lm_util.gprint('NOTE: This tool runs best with BACKGROUND '
+                   'PROCESSING (see user guide).')
+
+
+def log_setup():
+    """Set up Linkage Mapper logging"""
+    lm_util.create_dir(lm_env.LOGDIR)
+    lm_util.create_dir(lm_env.MESSAGEDIR)
+    lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR,
+                                                 lm_env.TOOL,
+                                                 lm_env.PARAMS)
+
+
+def run_analysis():
+    """Run Climate Linkage Mapper analysis"""
+    import cc_grass_cwd  # Cannot import until configured
+
+    zonal_tbl = "zstats.dbf"
+
+    cc_copy_inputs()  # Clip inputs and create project area raster
+
+    # Get zonal statistics for cores and climate
+    lm_util.gprint("\nCALCULATING ZONAL STATISTICS FROM CLIMATE RASTER")
+    climate_stats = arcpy.sa.ZonalStatisticsAsTable(
+        cc_env.prj_core_fc, cc_env.core_fld, cc_env.prj_climate_rast,
+        zonal_tbl, "DATA", "ALL")
+
+    # Create core pairings table and limit based upon climate threshold
+    core_pairings = create_pair_tbl(climate_stats)
+
+    # Generate link table, calculate CWD and run Linkage Mapper
+    if int(arcpy.GetCount_management(core_pairings).getOutput(0)) == 0:
+        arcpy.AddWarning("\nNo core pairs within climate threshold. "
+                         "Program will end")
+    else:
+        # Process pairings and generate link table
+        grass_cores = process_pairings(core_pairings)
+        if not grass_cores:
+            arcpy.AddWarning("\nNo core pairs within Euclidean distances. "
+                             "Progam program will end")
+        else:
+            # Create CWD using Grass
+            cc_grass_cwd.grass_cwd(grass_cores)
+            # Run Linkage Mapper
+            lm_util.gprint("\nRUNNING LINKAGE MAPPER "
+                           "TO CREATE CLIMATE CORRIDORS")
+            lm_master.lm_master()
 
 
 def cc_copy_inputs():
     """Clip Climate Linkage Mapper inputs to smallest extent"""
-    ext_poly = os.path.join(cc_env.out_dir,"ext_poly.shp")  # Extent polygon
+    ext_poly = os.path.join(cc_env.out_dir, "ext_poly.shp")  # Extent polygon
     try:
         lm_util.gprint("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
         if not arcpy.Exists(cc_env.inputs_gdb):
             arcpy.CreateFileGDB_management(os.path.dirname(cc_env.inputs_gdb),
-                                        os.path.basename(cc_env.inputs_gdb))
+                                           os.path.basename(cc_env.inputs_gdb))
         climate_extent = arcpy.Raster(cc_env.climate_rast).extent
-        
-        if cc_env.resist_rast is not None:       
+
+        if cc_env.resist_rast is not None:
             resist_extent = arcpy.Raster(cc_env.resist_rast).extent
             xmin = max(climate_extent.XMin, resist_extent.XMin)
             ymin = max(climate_extent.YMin, resist_extent.YMin)
             xmax = min(climate_extent.XMax, resist_extent.XMax)
             ymax = min(climate_extent.YMax, resist_extent.YMax)
 
-            # Set to minimum extent if resistance raster was given   
+            # Set to minimum extent if resistance raster was given
             arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
             # Want climate and resistance rasters in same spatial ref
             # with same nodata cells
-            proj_resist_rast = sa.Con(sa.IsNull(cc_env.climate_rast),
-                               sa.Int(cc_env.climate_rast), cc_env.resist_rast)
-            proj_resist_rast.save(cc_env.prj_resist_rast)            
-
+            proj_resist_rast = sa.Con(
+                sa.IsNull(cc_env.climate_rast),
+                sa.Int(cc_env.climate_rast), cc_env.resist_rast)
+            proj_resist_rast.save(cc_env.prj_resist_rast)
         else:
             xmin = climate_extent.XMin
             ymin = climate_extent.YMin
             xmax = climate_extent.XMax
             ymax = climate_extent.YMax
             # Copying to gdb avoids gdal conflict later with ascii conversion
-            ones_resist_rast = sa.Con(sa.IsNull(cc_env.climate_rast),
-                                sa.Int(cc_env.climate_rast), 1)
+            ones_resist_rast = sa.Con(
+                sa.IsNull(cc_env.climate_rast),
+                sa.Int(cc_env.climate_rast), 1)
             ones_resist_rast.save(cc_env.prj_resist_rast)
 
         arcpy.CopyRaster_management(cc_env.climate_rast,
                                     cc_env.prj_climate_rast)
 
         # Create core raster
-        arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax) 
-        lm_util.delete_data(cc_env.prj_core_rast) 
-        arcpy.FeatureToRaster_conversion(cc_env.core_fc, cc_env.core_fld,
-                                        cc_env.prj_core_rast, arcpy.Describe(
-                                        cc_env.climate_rast).MeanCellHeight)
+        arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
+        lm_util.delete_data(cc_env.prj_core_rast)
+        arcpy.FeatureToRaster_conversion(
+            cc_env.core_fc, cc_env.core_fld,
+            cc_env.prj_core_rast,
+            arcpy.Describe(cc_env.climate_rast).MeanCellHeight)
         arcpy.env.extent = None
 
-        ## Create project area raster 
-        ## Replaced with extent coords code below
-        # proj_area_rast = sa.Con(sa.IsNull(cc_env.prj_climate_rast),
-                                # sa.Int(cc_env.prj_climate_rast), 1)
-        # proj_area_rast.save(cc_env.prj_area_rast)
-
-        
-        # # Clip core feature class
-        # This invokes gdal- replace with polygon based on extent coords below
-        # arcpy.RasterToPolygon_conversion(proj_area_rast, ext_poly,
-                                         # "NO_SIMPLIFY", "VALUE")
-        
-        # Create array of boundary points                 
+        # Create array of boundary points
         array = arcpy.Array()
-        pnt = arcpy.Point(xmin,ymin)
+        pnt = arcpy.Point(xmin, ymin)
         array.add(pnt)
-        pnt = arcpy.Point(xmax,ymin)
+        pnt = arcpy.Point(xmax, ymin)
         array.add(pnt)
-        pnt = arcpy.Point(xmax,ymax)
+        pnt = arcpy.Point(xmax, ymax)
         array.add(pnt)
-        pnt = arcpy.Point(xmin,ymax)
+        pnt = arcpy.Point(xmin, ymax)
         array.add(pnt)
         # Add in the first point of the array again to close polygon boundary
         array.add(array.getObject(0))
         # Create a polygon geometry object using the array object
         ext_feat = arcpy.Polygon(array)
         arcpy.CopyFeatures_management(ext_feat, ext_poly)
-        # Clip core feature class 
-        arcpy.Clip_analysis(cc_env.core_fc, ext_poly, cc_env.prj_core_fc)                                          
-
-        
+        # Clip core feature class
+        arcpy.Clip_analysis(cc_env.core_fc, ext_poly, cc_env.prj_core_fc)
     except Exception:
         raise
     finally:
-        cc_util.delete_feature(ext_poly)
-
+        cc_util.delete_features(ext_poly)
 
 
 def create_pair_tbl(climate_stats):
@@ -273,7 +249,7 @@ def create_pair_tbl(climate_stats):
 
 def pair_cores(cpair_tbl):
     """Create table with all possible core to core combinations"""
-    srow, srows, outputrow, irows = None, None, None, None
+    srows, outputrow, irows = None, None, None
 
     try:
         lm_util.gprint("\nCREATING CORE PAIRINGS TABLE")
@@ -291,7 +267,7 @@ def pair_cores(cpair_tbl):
         cores_product = list(itertools.combinations(cores_list, 2))
 
         lm_util.gprint("There are " + str(len(cores_list)) + " unique "
-                         "cores and " + str(len(cores_product)) + " pairings")
+                       "cores and " + str(len(cores_product)) + " pairings")
 
         irows = arcpy.InsertCursor(cpair_tbl)
         for nrow in cores_product:
@@ -305,8 +281,6 @@ def pair_cores(cpair_tbl):
     except Exception:
         raise
     finally:
-        if srow:
-            del srow
         if srows:
             del srows
         if outputrow:
@@ -323,7 +297,7 @@ def limit_cores(pair_tbl, stats_tbl):
 
     try:
         lm_util.gprint("\nLIMITING CORE PAIRS BASED UPON CLIMATE "
-                         "THRESHOLD")
+                       "THRESHOLD")
 
         arcpy.MakeTableView_management(pair_tbl, pair_vw)
         arcpy.MakeTableView_management(stats_tbl, stats_vw)
@@ -356,8 +330,7 @@ def limit_cores(pair_tbl, stats_tbl):
     except Exception:
         raise
     finally:
-        cc_util.delete_feature(stats_vw)
-        cc_util.delete_feature(pair_vw)
+        cc_util.delete_features([stats_vw, pair_vw])
 
 
 def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
@@ -411,7 +384,7 @@ def process_pairings(pairings):
 
     """
     lm_util.gprint("\nLIMITING CORE PAIRS BASED ON INPUTED DISTANCES AND "
-                     "GENERATING LINK TABLE")
+                   "GENERATING LINK TABLE")
     # Simplify cores based on booolean in config
     if cc_env.simplify_cores:
         corefc = simplify_corefc()
@@ -441,10 +414,6 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
     """Create link table file and limit based on near table results"""
     fcore_vw = "fcore_vw"
     tcore_vw = "tcore_vw"
-    ntblid_fn = "FID"
-    fmid_fn = "IN_FID"
-    toid_fn = "NEAR_FID"
-    ndist_fn = "NEAR_DIST"
     jtocore_fn = cc_env.core_fld[:8] + "_1"  # dbf field length
     near_tbl = os.path.join(cc_env.out_dir, "neartbl.dbf")
     link_file = os.path.join(lm_env.DATAPASSDIR, "linkTable_s2.csv")
@@ -475,27 +444,28 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
             expression = coreid_fld + " in (" + to_cores + ")"
             arcpy.MakeFeatureLayer_management(corefc, tcore_vw, expression)
             lm_util.gprint("Calculating Euclidean distance/s from Core "
-                             + frm_core + " to " + str(len(to_cores_lst))
-                             + " other cores" + " (" + str(core_no + 1) + "/"
-                             + no_cores + ")")
+                           + frm_core + " to " + str(len(to_cores_lst))
+                           + " other cores" + " (" + str(core_no + 1) + "/"
+                           + no_cores + ")")
 
             # Generate near table for these core pairings
-            arcpy.GenerateNearTable_analysis(fcore_vw, tcore_vw, near_tbl,
-                 cc_env.max_euc_dist, "NO_LOCATION", "NO_ANGLE", "ALL")
+            arcpy.GenerateNearTable_analysis(
+                fcore_vw, tcore_vw, near_tbl,
+                cc_env.max_euc_dist, "NO_LOCATION", "NO_ANGLE", "ALL")
 
             # Join near table to core table
-            arcpy.JoinField_management(near_tbl, fmid_fn, corefc,
-                                       ntblid_fn, cc_env.core_fld)
-            arcpy.JoinField_management(near_tbl, toid_fn, corefc,
-                                       ntblid_fn, cc_env.core_fld)
+            arcpy.JoinField_management(near_tbl, "IN_FID", corefc,
+                                       "FID", cc_env.core_fld)
+            arcpy.JoinField_management(near_tbl, "NEAR_FID", corefc,
+                                       "FID", cc_env.core_fld)
 
             # Limit pairings based on inputed Euclidean distances
             srow, srows = None, None
-            euc_dist_fld = arcpy.AddFieldDelimiters(near_tbl, ndist_fn)
+            euc_dist_fld = arcpy.AddFieldDelimiters(near_tbl, "NEAR_DIST")
             expression = (euc_dist_fld + " > " + str(cc_env.min_euc_dist))
             srows = arcpy.SearchCursor(near_tbl, expression, "",
-                                       jtocore_fn + "; " + ndist_fn,
-                                       jtocore_fn + " A; " + ndist_fn + " A")
+                                       jtocore_fn + "; NEAR_DIST",
+                                       jtocore_fn + " A; NEAR_DIST A")
 
             # Process near table and output into a link table
             srow = srows.next()
@@ -503,7 +473,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
                 core_list.add(int(frm_core))
                 while srow:
                     to_coreid = srow.getValue(jtocore_fn)
-                    dist_value = srow.getValue(ndist_fn)
+                    dist_value = srow.getValue("NEAR_DIST")
                     writer.writerow([i, frm_core, to_coreid, -1, -1, 1,
                                      dist_value, -1, -1, -1])
                     core_list.add(to_coreid)
@@ -513,8 +483,8 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
     except Exception:
         raise
     finally:
-        cc_util.delete_feature(near_tbl) 
-        cc_util.delete_feature(os.path.splitext(corefc)[0] + "_Pnt.shp")
+        cc_util.delete_features(
+            [near_tbl, os.path.splitext(corefc)[0] + "_Pnt.shp"])
         if link_tbl:
             link_tbl.close()
         if srow:
@@ -528,39 +498,40 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
 def simplify_corefc():
     """Simplify core feature class"""
     lm_util.gprint("Simplifying polygons to speed up core pair "
-                     "distance calculations")
+                   "distance calculations")
     corefc = cc_env.core_simp
     climate_rast = arcpy.Raster(cc_env.prj_climate_rast)
     tolerance = climate_rast.meanCellHeight / 3
-    arcpy.cartography.SimplifyPolygon(cc_env.prj_core_fc, corefc,
+    arcpy.cartography.SimplifyPolygon(
+        cc_env.prj_core_fc, corefc,
         "POINT_REMOVE", tolerance, "#", "NO_CHECK")
     return corefc
 
-def gdal_check(msg):
-    # Code to check GDAL dlls and system path
-    import subprocess
-    gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
-                            shell=True).stdout.read()
-    gdalList = gdal.split('\n')                        
-    if 'arcgis' in gdalList[1].lower():
-        lm_util.gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
-        arcpy.AddWarning("It looks like there is a conflict between ArcGIS")
-        arcpy.AddWarning("and GRASS. This could be the result of a previous ")
-        arcpy.AddWarning("analysis (like a Linkage Mapper run) or it might be")
-        arcpy.AddWarning("caused by conflicts with pre-loaded ArcGIS ") 
-        arcpy.AddWarning("extensions.")
-        arcpy.AddWarning("\nThis error often goes away if you run the tool in")
-        arcpy.AddWarning("the background (see user guide). ")
-        arcpy.AddWarning("\nIf that doesn't work, try restarting ArcMap.")
-        arcpy.AddWarning("\nIf you still get an error, then restart again ")
-        arcpy.AddWarning("and disable any extensions you are not using") 
-        arcpy.AddWarning("(Click on Customize >> Extensions).")
-        arcpy.AddWarning("\nAnd if that doesn't work try closing Arc and ")
-        arcpy.AddWarning("instead run the tool using the 'CC Run Script.py' ")
-        arcpy.AddWarning("python script.  This script can be found in the ")
-        arcpy.AddWarning("'demo' directory, located where the Linkage") 
-        arcpy.AddWarning("Mapper toolbox is installed.\n")
-        raise Exception("ArcGIS-GRASS GDAL DLL conflict")
-    
+
+def delete_proj_files():
+    """Delete project input files on ending of analysis
+
+    Keep prj_resist_rast, prj_core_fc and out_dir for reruns.
+
+    """
+    cpath = os.getcwd()  # For files left behind by arcpy
+    prj_files = (
+        [cc_env.prj_climate_rast, cc_env.prj_core_rast, cc_env.tmp_dir,
+         os.path.join(cpath, ".prj"), os.path.join(cpath, "info")])
+    if cc_env.simplify_cores:
+        prj_files.append(cc_env.core_simp)
+    cc_util.delete_features(prj_files)
+
+
+def print_runtime(stime):
+    """Print process time when running from script"""
+    etime = datetime.now()
+    rtime = etime - stime
+    hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
+                      (rtime.seconds // 60) % 60)
+    print "End time: %s" % etime.strftime(TFORMAT)
+    print "Elapsed time: %s hrs %s mins" % (hours, minutes)
+
+
 if __name__ == "__main__":
     main()
