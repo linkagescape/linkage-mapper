@@ -636,7 +636,7 @@ def get_centroids(shapefile, field):
                     'Please change your region settings in Windows to USA or '
                     'another region that uses decimal points.  You may need to'
                     'modify the coordinate system of your input files as well.')
-                raise_error(msg)            
+                raise_error(msg)
             xyArray[0, 0] = float(xy[0])
             xyArray[0, 1] = float(xy[1])
             value = row.GetValue(field)
@@ -802,7 +802,7 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
 
         lcpline = os.path.join(ws, "lcpline.shp")
         lcpRas = os.path.join(ws, "lcp")
-        
+
         gp.RasterToPolyline_conversion(lcpRas, lcpline, "NODATA", "",
                                            "NO_SIMPLIFY")
 
@@ -1247,13 +1247,15 @@ def write_log(string):
     finally:
         logFile.close()
 
+
 def close_log_file():
     timeNow = time.ctime()
     try:
-        cfg.logFile.write('\nStop time:\t\t%s \n\n' % (timeNow))
-        cfg.logFile.close()
+        write_log('\nStop time:\t\t%s \n\n' % (timeNow))
+        # cfg.logFile.close() # DMK - Log closed after each write
     except:
         pass
+
 
 def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
     """Writes link tables to pass link data between steps """
@@ -1750,7 +1752,7 @@ def make_cwd_paths(max_core_no):
 
         gprint("\nCreating cost-weighted distance output folders")
         gprint('...' + cfg.CWDSUBDIR_NM)
-        
+
         gp.CreateFolder_management(os.path.dirname(cfg.CWDBASEDIR),
                                        os.path.basename(cfg.CWDBASEDIR))
         gp.CreateFolder_management(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
@@ -1922,8 +1924,8 @@ def copy_final_link_maps(step):
 
         if gp.exists(coreLinksShapefile):
             gp.MakeFeatureLayer(coreLinksShapefile, "flinks")
-                        
-            
+
+
             field = "Active"
             expression = field + " = " + str(1)
             gp.selectlayerbyattribute("flinks", "NEW_SELECTION",
@@ -1934,7 +1936,7 @@ def copy_final_link_maps(step):
             gp.CopyFeatures_management("flinks", activeLinksShapefile)
 
             rename_fields(activeLinksShapefile)
-            
+
             expression = field + " = " + str(0)
             gp.selectlayerbyattribute("flinks", "NEW_SELECTION",
                                           expression)
@@ -1951,10 +1953,10 @@ def copy_final_link_maps(step):
 
             activeLcpShapefile = os.path.join(cfg.LINKMAPGDB,
                                               PREFIX + '_LCPs')
-            
+
             gp.CopyFeatures_management("flcp", activeLcpShapefile)
-            rename_fields(activeLcpShapefile)                                              
-            
+            rename_fields(activeLcpShapefile)
+
             expression = field + " = " + str(0)
             gp.selectlayerbyattribute("flcp", "NEW_SELECTION", expression)
             inActiveLcpShapefile = os.path.join(cfg.LINKMAPGDB,
@@ -2021,37 +2023,37 @@ def get_cs_path():
             if os.path.exists(csPath): return csPath
         except: pass
     return None
-    
 
-def rename_fields(FC):    
+
+def rename_fields(FC):
     try:
         gp.AddField_management(FC, "cw_to_Euc_Dist_Ratio", "FLOAT")
-        gp.CalculateField_management(FC, "cw_to_Euc_Dist_Ratio","!cwd2Euc_R!", "PYTHON") 
+        gp.CalculateField_management(FC, "cw_to_Euc_Dist_Ratio","!cwd2Euc_R!", "PYTHON")
         gp.deletefield(FC, "cwd2Euc_R")
 
         fieldList = gp.ListFields(FC)
         for field in fieldList:
             if str(field.Name) == "cwd2Path_R":
                 gp.AddField_management(FC, "cwd_to_Path_Length_Ratio", "FLOAT")
-                gp.CalculateField_management(FC, "cwd_to_Path_Length_Ratio","!cwd2Path_R!", "PYTHON") 
+                gp.CalculateField_management(FC, "cwd_to_Path_Length_Ratio","!cwd2Path_R!", "PYTHON")
                 gp.deletefield(FC, "cwd2Path_R")
-            
+
         gp.AddField_management(FC, "Current_Flow_Centrality", "FLOAT")
-        gp.CalculateField_management(FC, "Current_Flow_Centrality","!CF_Central!", "PYTHON") 
+        gp.CalculateField_management(FC, "Current_Flow_Centrality","!CF_Central!", "PYTHON")
         gp.deletefield(FC, "CF_Central")
-        
+
         gp.AddField_management(FC, "Effective_Resistance", "FLOAT")
-        gp.CalculateField_management(FC, "Effective_Resistance","!Eff_Resist!", "PYTHON") 
+        gp.CalculateField_management(FC, "Effective_Resistance","!Eff_Resist!", "PYTHON")
         gp.deletefield(FC, "Eff_Resist")
-        
+
         gp.AddField_management(FC, "cwd_to_Eff_Resist_Ratio", "FLOAT")
-        gp.CalculateField_management(FC, "cwd_to_Eff_Resist_Ratio","!cwd2EffR_r!", "PYTHON") 
+        gp.CalculateField_management(FC, "cwd_to_Eff_Resist_Ratio","!cwd2EffR_r!", "PYTHON")
         gp.deletefield(FC, "cwd2EffR_r")
-        
+
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except:
-        exit_with_python_error(_SCRIPT_NAME)    
+        exit_with_python_error(_SCRIPT_NAME)
 
 ############################################################################
 ##Error Checking and Handling Functions ####################################
@@ -2175,7 +2177,7 @@ def check_cores(FC,FN):
                   'another region that uses decimal points.  You may need to'
                   'to modify the coordinate system of your input files as well.')
             raise_error(msg)
-            
+
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except:
@@ -2487,19 +2489,18 @@ class MEMORYSTATUSEX(ctypes.Structure):
         self.dwLength = 2*4 + 7*8     # size = 2 ints, 7 longs
         return super(MEMORYSTATUSEX, self).__init__()
 
-def get_mem():    
+def get_mem():
     stat = MEMORYSTATUSEX()
     ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
     totMem = float(int(10 * float(stat.ullTotalPhys)/1073741824))/10
     availMem = float(int(10 * float(stat.ullAvailPhys)/1073741824))/10
     return totMem, availMem
-    
-    
-    
+
+
+
 def gdal_check(msg):
     # Code to check GDAL dlls and system path
     import subprocess
     gdal = subprocess.Popen("where gdal*", stdout=subprocess.PIPE,
                             shell=True).stdout.read()
     gprint("\nGDAL DLL/s at " + msg + ': ' + gdal)
-    
