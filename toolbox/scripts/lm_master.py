@@ -37,7 +37,7 @@ def lm_master(argv=None):
     # Setup global variables
     if not cfg.lm_configured: # Causing problems with iterative scripting
         if argv is None:
-            argv = sys.argv       
+            argv = sys.argv
         cfg.configure(cfg.TOOL_LM, argv)
 
     gp = cfg.gp
@@ -77,7 +77,7 @@ def lm_master(argv=None):
         except:
             pass
 
-        if cfg.CONNECTFRAGS:               
+        if cfg.CONNECTFRAGS:
             gwarn = gp.AddWarning
             lu.dashline(1)
             gwarn('Custom mode: will run steps 1-2 ONLY to cluster core polygons within ')
@@ -91,7 +91,7 @@ def lm_master(argv=None):
             if cfg.MAXEUCDIST == None:
                 raise RuntimeError('Maximum Euclidean distance required '
                                    'for custom cluster mode.')
-                                   
+
         # Set data frame spatial reference to coordinate system of input data
         # Problems arise in this script (core raster creation) and in S2
         # (generate near table) if they differ.
@@ -132,6 +132,7 @@ def lm_master(argv=None):
         gp.Extent = gp.Describe(cfg.RESRAST_IN).Extent
         gp.SnapRaster = cfg.RESRAST_IN
         gp.cellSize = gp.Describe(cfg.RESRAST_IN).MeanCellHeight
+        # import pdb; pdb.set_trace()
         gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
 
         if (cfg.STEP1) or (cfg.STEP3):
@@ -174,19 +175,16 @@ def lm_master(argv=None):
             s4.STEP4_refine_network()
         if cfg.STEP5:
             s5.STEP5_calc_lccs()
-
-        # Clean up
-        lu.delete_dir(cfg.SCRATCHDIR)
-        lu.close_log_file()
-        # lu.delete_data(cfg.FCORES)
-
-        gp.addmessage('\nDone with linkage mapping.\n')
-
-        if cfg.STEP5:
             lu.dashline()
             gprint('Results from this run can be found in your output '
                     'directory:')
             gprint(cfg.OUTPUTDIR)
+
+        # Clean up
+        lu.delete_dir(cfg.SCRATCHDIR)
+        # lu.delete_data(cfg.FCORES)
+
+        gp.addmessage('\nDone with linkage mapping.\n')
 
 
     # Return GEOPROCESSING specific errors
@@ -203,7 +201,7 @@ def lm_master(argv=None):
                'log directory:')
         gprint(cfg.MESSAGEDIR)
         lu.dashline(2)
-
+        lu.close_log_file()
 
 if __name__ == "__main__":
     lm_master()
