@@ -669,12 +669,14 @@ def call_circuitscape(CSPATH, outConfigFile):
                 'node_map' not in output and (('--' in output) or 
                 ('sec' in output) or (failFlag == True))):
             gprint("      " + output.replace("\r\n",""))                
-    
+
     # Catch any output lost if process closes too quickly
     output=proc.communicate()[0]
     for line in output.split('\r\n'):
         if 'Traceback' in line:
             gprint("\nCircuitscape failed.")
+            if 'valid sources' in output.lower():
+                gprint('Corridors may be too narrow. Try upping your CWD cutoff distance.') 
             if 'memory' in line:
                 memFlag = True
         if ('Processing' not in line and 'laplacian' not in line and 

@@ -1811,8 +1811,16 @@ def check_project_dir():
         msg = ('ERROR: Project directory cannot contain spaces, dashes, or '
                 'special characters.')
         raise_error(msg)
+    head=cfg.PROJECTDIR
+    for i in range(1,100):
+        if len(head) < 4: # We've gotten to the base of the tree
+            break
+        head,tail=os.path.split(head)
+        if tail[0].isdigit():
+            msg = ('ERROR: No directory names in project directory path can start with a number or '
+                    'else Arc will crash. Please change name of "' + tail + '" or choose a new directory.')
+            raise_error(msg)
     return
-
 
 def get_prev_step_link_table(step):
     """Returns the name of the link table created by the previous step"""
@@ -2022,7 +2030,15 @@ def get_cs_path():
             csPath = os.path.join(pfPath,'Circuitscape\\cs_run.exe')
             if os.path.exists(csPath): return csPath
         except: pass
-    return None
+    # If can't find Circuitscape, code below executes
+    gprint('\nLooking for Circuitscape in the following locations:')
+    for x in range (0,len(envList)):
+        pfPath = os.environ[envList[x]]
+        csPath = os.path.join(pfPath,'Circuitscape\\cs_run.exe')
+        gprint(csPath)
+    msg = ("Error: Cannot find Circuitscape installed in any of the usual "
+                   "places listed above.\n")
+    raise_error(msg)
 
 
 def rename_fields(FC):
