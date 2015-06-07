@@ -38,14 +38,12 @@ def grass_cwd(core_list):
 
         # Convert input GRID rasters to ASCII
         lm_util.gprint("Converting ARCINFO GRID rasters to ASCII")
-        # Note: consider moving these to main:
         arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_core_rast, core_asc)
 
         # Create resource file and setup workspace
         write_grassrc(ccr_grassrc, gisdbase)
-
         setup_wrkspace(gisdbase, ccr_grassrc, climate_asc)
 
         # Make cwd folder for Linkage Mapper
@@ -53,9 +51,9 @@ def grass_cwd(core_list):
 
         # Import files into GRASS
         lm_util.gprint("Importing raster files into GRASS")
-        run_grass_cmd("r.in.arc", input=climate_asc, output=climate_lyr)
-        run_grass_cmd("r.in.arc", input=resist_asc, output=resist_lyr)
-        run_grass_cmd("r.in.arc", input=core_asc, output=core_lyr)
+        run_grass_cmd("r.in.gdal", input=climate_asc, output=climate_lyr)
+        run_grass_cmd("r.in.gdal", input=resist_asc, output=resist_lyr)
+        run_grass_cmd("r.in.gdal", input=core_asc, output=core_lyr)
 
         # Generate CWD and Back rasters
         gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr)
@@ -166,7 +164,8 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
                 ascii_grid = os.path.join(cc_env.out_dir,
                                           rtype + core_no_txt + ".asc")
                 arc_grid = cwd_path.replace("cwd_", rtype)
-                run_grass_cmd("r.out.arc", input=grass_grid, output=ascii_grid)
+                run_grass_cmd("r.out.gdal", input=grass_grid,
+                              output=ascii_grid, format="AAIGrid")
                 arcpy.CopyRaster_management(ascii_grid, arc_grid)
                 arcpy.DefineProjection_management(arc_grid, spatial_ref)
                 os.remove(ascii_grid)
