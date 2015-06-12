@@ -6,7 +6,6 @@
 """
 
 import os
-import subprocess
 
 import arcpy
 
@@ -20,8 +19,6 @@ import lm_util
 
 def grass_cwd(core_list):
     """Creating CWD and Back rasters using GRASS r.walk function"""
-    cur_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
-                                shell=True).stdout.read()
     gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
 
     ccr_grassrc = os.path.join(cc_env.proj_dir, "ccr_grassrc")
@@ -43,6 +40,8 @@ def grass_cwd(core_list):
         arcpy.RasterToASCII_conversion(cc_env.prj_core_rast, core_asc)
 
         # Create resource file and setup workspace
+        start_path = os.environ["PATH"]
+        os.environ["PATH"] = cc_env.gpath
         write_grassrc(ccr_grassrc, gisdbase)
         setup_wrkspace(gisdbase, ccr_grassrc, climate_asc)
 
@@ -61,7 +60,7 @@ def grass_cwd(core_list):
     except Exception:
         raise
     finally:
-        os.environ['PATH'] = cur_path  # Revert to original windows path
+        os.environ["PATH"] = start_path
         if not cc_util.remove_grass_wkspc(gisdbase):
             arcpy.AddWarning("Unable to delete temporary GRASS folder. "
                              "Program will contine.")
@@ -78,7 +77,7 @@ def write_grassrc(ccr_grassrc, gisdbase):
 
 
 def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
-    """Setup GRASS workspace and modify windows path for GRASS GDAL"""
+    """Setup GRASS workspace"""
     lm_util.gprint("Creating GRASS workspace")
     gisbase = cc_env.gisbase
     location = "gcwd"
@@ -91,7 +90,6 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     try:
         grass.create_location(gisdbase, location, filename=geo_file)
     except:
-        cc_util.gdal_fail_check()
         arcpy.AddWarning("GRASS ERROR. Try rebooting and restarting ArcGIS.")
         arcpy.AddWarning("If that doesn't work you can try using ")
         arcpy.AddWarning("the 'CC Run Script.py' python script in the ")

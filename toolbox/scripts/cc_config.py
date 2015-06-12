@@ -33,9 +33,12 @@ class ClimateConfig():
         self.climate_rast = arg[4]  # Climate raster (+ path)
         self.resist_rast = nullstring(arg[5])  # Resistance raster (+ path)
 
-        # Setup GRASS base folder environmental setting
+        # Setup GRASS environmental variables
         self.gisbase = os.environ['GISBASE'] = arg[6]  # GRASS path
         sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "python"))
+        self.gpath = (''.join([os.path.join(cc_env.gisbase, gpath) + os.pathsep
+                               for gpath in [r'mysys\bin', 'bin', 'extrabin',
+                                             'lib', r'etc\python', 'etc']]))
 
         # Tool settings
         self.min_euc_dist = float(arg[7])  # Min distance between core pairs
@@ -57,7 +60,6 @@ class ClimateConfig():
         self.inputs_gdb = os.path.join(self.out_dir, "LM_inputs.gdb")
 
         # Define project area files
-        # Using gdb seems to best best avoids dll conflict
         self.prj_core_fc = (os.path.join(self.inputs_gdb, "cc_cores"))
         self.prj_climate_rast = os.path.join(self.inputs_gdb, "climate")
         self.prj_core_rast = os.path.join(self.inputs_gdb, "cores")
