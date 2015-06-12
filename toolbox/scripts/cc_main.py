@@ -19,6 +19,7 @@ import itertools
 import traceback
 from datetime import datetime
 
+import arcinfo  # Import arcinfo license. Needed before arcpy import.
 import arcpy
 import arcpy.sa as sa
 
@@ -90,7 +91,6 @@ def grass_dir_setup():
 
 def check_out_sa_license():
     """Check out the ArcGIS Spatial Analyst extension license"""
-    os.environ['ESRI_SOFTWARE_CLASS'] = 'Professional'
     if arcpy.CheckExtension("Spatial") == "Available":
         arcpy.CheckOutExtension("Spatial")
     else:
