@@ -811,33 +811,37 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
 
         gp.AddField_management(lcplineDslv, "Link_ID", "LONG", "5")
         gp.CalculateField_management(lcplineDslv, "Link_ID",
-                                         int(linktable[link, cfg.LTB_LINKID]))
+                                     int(linktable[link, cfg.LTB_LINKID]),
+                                     "PYTHON_9.3")
 
         linktypecode = linktable[link, cfg.LTB_LINKTYPE]
         activelink, linktypedesc = get_link_type_desc(linktypecode)
 
         gp.AddField_management(lcplineDslv, "Active", "SHORT")
-        gp.CalculateField_management(lcplineDslv, "Active", activelink)
+        gp.CalculateField_management(lcplineDslv, "Active", activelink,
+                                     "PYTHON_9.3")
 
         gp.AddField_management(lcplineDslv, "Link_Info", "TEXT")
         gp.CalculateField_management(lcplineDslv, "Link_Info",
-                                         linktypedesc)
+                                         linktypedesc, "PYTHON_9.3")
 
         gp.AddField_management(lcplineDslv, "From_Core", "LONG", "5")
         gp.CalculateField_management(lcplineDslv, "From_Core",
-                                         int(sourceCore))
+                                         int(sourceCore), "PYTHON_9.3")
         gp.AddField_management(lcplineDslv, "To_Core", "LONG", "5")
         gp.CalculateField_management(lcplineDslv, "To_Core",
-                                         int(targetCore))
+                                         int(targetCore), "PYTHON_9.3")
 
         gp.AddField_management(lcplineDslv, "Euc_Dist", "DOUBLE", "10",
                                    "2")
         gp.CalculateField_management(lcplineDslv, "Euc_Dist",
-                                         linktable[link, cfg.LTB_EUCDIST])
+                                     linktable[link, cfg.LTB_EUCDIST],
+                                     "PYTHON_9.3")
 
         gp.AddField_management(lcplineDslv, "CW_Dist", "DOUBLE", "10", "2")
         gp.CalculateField_management(lcplineDslv, "CW_Dist",
-                                         linktable[link, cfg.LTB_CWDIST])
+                                     linktable[link, cfg.LTB_CWDIST],
+                                     "PYTHON_9.3")
         gp.AddField_management(lcplineDslv, "LCP_Length", "DOUBLE", "10",
                                    "2")
         rows = gp.UpdateCursor(lcplineDslv)
@@ -858,7 +862,8 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
 
         gp.AddField_management(lcplineDslv, "cwd2Euc_R", "DOUBLE", "10",
                                    "2")
-        gp.CalculateField_management(lcplineDslv, "cwd2Euc_R", distRatio1)
+        gp.CalculateField_management(lcplineDslv, "cwd2Euc_R", distRatio1,
+                                     "PYTHON_9.3")
 
         try:
             distRatio2 = (float(linktable[link, cfg.LTB_CWDIST])
@@ -868,7 +873,8 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
 
         gp.AddField_management(lcplineDslv, "cwd2Path_R", "DOUBLE", "10",
                                    "2")
-        gp.CalculateField_management(lcplineDslv, "cwd2Path_R", distRatio2)
+        gp.CalculateField_management(lcplineDslv, "cwd2Path_R", distRatio2,
+                                     "PYTHON_9.3")
 
         lcpLoop = lcpLoop + 1
         lcpShapefile = os.path.join(cfg.DATAPASSDIR, "lcpLines_s3.shp")

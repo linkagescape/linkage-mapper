@@ -314,7 +314,7 @@ def limit_cores(pair_tbl, stats_tbl):
                                   "", "", "NULLABLE")
         arcpy.CalculateField_management(pair_vw, diffu_2std,
                                         "abs(!frumin2std! - !toumin2std!)",
-                                        "PYTHON")
+                                        "PYTHON_9.3")
 
         # Filter distance table based on inputed threshold and delete rows
         lm_util.gprint("Filtering table based on threshold")
@@ -366,12 +366,12 @@ def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
     std_fld = "!" + tbl_name + "." + tmp_std + "!"
 
     arcpy.CalculateField_management(table_vw, tmp_mea, mean_value,
-                                    "PYTHON")
+                                    "PYTHON_9.3")
     arcpy.CalculateField_management(table_vw, tmp_std, std_value,
-                                    "PYTHON")
+                                    "PYTHON_9.3")
     expression = mea_fld + " - " + std_fld + " - " + std_fld
     arcpy.CalculateField_management(table_vw, umin2std, expression,
-                                    "PYTHON")
+                                    "PYTHON_9.3")
 
     # Remove join
     arcpy.RemoveJoin_management(table_vw, stats_tbl_nm)
