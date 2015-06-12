@@ -8,6 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 import os
+import subprocess
 import sys
 
 
@@ -39,6 +40,12 @@ class ClimateConfig():
         self.gpath = (''.join([os.path.join(cc_env.gisbase, gpath) + os.pathsep
                                for gpath in [r'mysys\bin', 'bin', 'extrabin',
                                              'lib', r'etc\python', 'etc']]))
+
+        # Overwrite default startup subprocess variables to insure the console
+        # window is hidden. This is necessary as functions within the GRASS
+        # scripting library open subprocesses with the console window open.
+        subprocess.STARTUPINFO.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        subprocess.STARTUPINFO.wShowWindow = subprocess.SW_HIDE
 
         # Tool settings
         self.min_euc_dist = float(arg[7])  # Min distance between core pairs
