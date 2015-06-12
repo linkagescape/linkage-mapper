@@ -49,7 +49,6 @@ def main(argv=None):
         cc_util.check_cc_project_dir()
 
         grass_dir_setup()
-        cc_util.gdal_fail_check()  # Make sure no dll conflict
 
         check_out_sa_license()
         arc_wksp_setup()
@@ -87,8 +86,6 @@ def grass_dir_setup():
                          " run."
                          "\nPlease choose a new project directory.")
         raise Exception("Cannot delete GRASS workspace: " + gisdbase)
-
-    cc_util.add_grass_path(cc_env.gisbase)
 
 
 def check_out_sa_license():
@@ -187,6 +184,7 @@ def cc_copy_inputs():
 
             # Set to minimum extent if resistance raster was given
             arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
+
             # Want climate and resistance rasters in same spatial ref
             # with same nodata cells
             proj_resist_rast = sa.Con(
@@ -198,7 +196,7 @@ def cc_copy_inputs():
             ymin = climate_extent.YMin
             xmax = climate_extent.XMax
             ymax = climate_extent.YMax
-            # Copying to gdb avoids gdal conflict later with ascii conversion
+
             ones_resist_rast = sa.Con(
                 sa.IsNull(cc_env.climate_rast),
                 sa.Int(cc_env.climate_rast), 1)
