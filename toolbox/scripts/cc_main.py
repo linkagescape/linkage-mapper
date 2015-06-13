@@ -404,7 +404,7 @@ def pairs_from_list(pairings):
         to_core = str(srow.getValue(TO_COL))
         frm_cores.add(from_core)
         core_pairs.append([str(from_core), to_core])
-    frm_cores = map(str, sorted(frm_cores))
+    frm_cores = [str(x) for x in frm_cores]
     return core_pairs, frm_cores
 
 
@@ -441,10 +441,10 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
             to_cores = ', '.join(to_cores_lst)
             expression = coreid_fld + " in (" + to_cores + ")"
             arcpy.MakeFeatureLayer_management(corefc, tcore_vw, expression)
-            lm_util.gprint("Calculating Euclidean distance/s from Core "
-                           + frm_core + " to " + str(len(to_cores_lst))
-                           + " other cores" + " (" + str(core_no + 1) + "/"
-                           + no_cores + ")")
+            lm_util.gprint("Calculating Euclidean distance/s from Core " +
+                           frm_core + " to " + str(len(to_cores_lst)) +
+                           " other cores" + " (" + str(core_no + 1) + "/" +
+                           no_cores + ")")
 
             # Generate near table for these core pairings
             arcpy.GenerateNearTable_analysis(
