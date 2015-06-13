@@ -19,7 +19,7 @@ def nullstring(arg_string):
     return arg_string
 
 
-class ClimateConfig():
+class ClimateConfig(object):
     """Class container to hold Climate Tool global variables"""
     def __init__(self):
         """Init class (empty)"""

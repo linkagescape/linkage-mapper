@@ -108,8 +108,8 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
     walk_coeff_flat = "1"
     walk_coeff_uphill = str(cc_env.climate_cost)
     walk_coeff_downhill = str(cc_env.climate_cost * -1)
-    walk_coeff = (walk_coeff_flat + "," + walk_coeff_uphill + ","
-                  + walk_coeff_downhill + "," + walk_coeff_downhill)
+    walk_coeff = (walk_coeff_flat + "," + walk_coeff_uphill + "," +
+                  walk_coeff_downhill + "," + walk_coeff_downhill)
 
     focal_core_rast = "focal_core_rast"
     gcwd = "gcwd"
