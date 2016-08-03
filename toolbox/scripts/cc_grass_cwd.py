@@ -6,7 +6,6 @@
 """
 
 import os
-import subprocess
 
 import arcpy
 
@@ -20,8 +19,6 @@ import lm_util
 
 def grass_cwd(core_list):
     """Creating CWD and Back rasters using GRASS r.walk function"""
-    cur_path = subprocess.Popen("echo %PATH%", stdout=subprocess.PIPE,
-                                shell=True).stdout.read()
     gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
 
     ccr_grassrc = os.path.join(cc_env.proj_dir, "ccr_grassrc")
@@ -38,14 +35,14 @@ def grass_cwd(core_list):
 
         # Convert input GRID rasters to ASCII
         lm_util.gprint("Converting ARCINFO GRID rasters to ASCII")
-        # Note: consider moving these to main:
         arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_resist_rast, resist_asc)
         arcpy.RasterToASCII_conversion(cc_env.prj_core_rast, core_asc)
 
         # Create resource file and setup workspace
+        start_path = os.environ["PATH"]
+        os.environ["PATH"] = cc_env.gpath
         write_grassrc(ccr_grassrc, gisdbase)
-
         setup_wrkspace(gisdbase, ccr_grassrc, climate_asc)
 
         # Make cwd folder for Linkage Mapper
@@ -53,9 +50,9 @@ def grass_cwd(core_list):
 
         # Import files into GRASS
         lm_util.gprint("Importing raster files into GRASS")
-        run_grass_cmd("r.in.arc", input=climate_asc, output=climate_lyr)
-        run_grass_cmd("r.in.arc", input=resist_asc, output=resist_lyr)
-        run_grass_cmd("r.in.arc", input=core_asc, output=core_lyr)
+        run_grass_cmd("r.in.gdal", input=climate_asc, output=climate_lyr)
+        run_grass_cmd("r.in.gdal", input=resist_asc, output=resist_lyr)
+        run_grass_cmd("r.in.gdal", input=core_asc, output=core_lyr)
 
         # Generate CWD and Back rasters
         gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr)
@@ -63,7 +60,7 @@ def grass_cwd(core_list):
     except Exception:
         raise
     finally:
-        os.environ['PATH'] = cur_path  # Revert to original windows path
+        os.environ["PATH"] = start_path
         if not cc_util.remove_grass_wkspc(gisdbase):
             arcpy.AddWarning("Unable to delete temporary GRASS folder. "
                              "Program will contine.")
@@ -80,7 +77,7 @@ def write_grassrc(ccr_grassrc, gisdbase):
 
 
 def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
-    """Setup GRASS workspace and modify windows path for GRASS GDAL"""
+    """Setup GRASS workspace"""
     lm_util.gprint("Creating GRASS workspace")
     gisbase = cc_env.gisbase
     location = "gcwd"
@@ -93,7 +90,6 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     try:
         grass.create_location(gisdbase, location, filename=geo_file)
     except:
-        cc_util.gdal_fail_check()
         arcpy.AddWarning("GRASS ERROR. Try rebooting and restarting ArcGIS.")
         arcpy.AddWarning("If that doesn't work you can try using ")
         arcpy.AddWarning("the 'CC Run Script.py' python script in the ")
@@ -112,8 +108,8 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
     walk_coeff_flat = "1"
     walk_coeff_uphill = str(cc_env.climate_cost)
     walk_coeff_downhill = str(cc_env.climate_cost * -1)
-    walk_coeff = (walk_coeff_flat + "," + walk_coeff_uphill + ","
-                  + walk_coeff_downhill + "," + walk_coeff_downhill)
+    walk_coeff = (walk_coeff_flat + "," + walk_coeff_uphill + "," +
+                  walk_coeff_downhill + "," + walk_coeff_downhill)
 
     focal_core_rast = "focal_core_rast"
     gcwd = "gcwd"
@@ -166,7 +162,8 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
                 ascii_grid = os.path.join(cc_env.out_dir,
                                           rtype + core_no_txt + ".asc")
                 arc_grid = cwd_path.replace("cwd_", rtype)
-                run_grass_cmd("r.out.arc", input=grass_grid, output=ascii_grid)
+                run_grass_cmd("r.out.gdal", input=grass_grid,
+                              output=ascii_grid, format="AAIGrid")
                 arcpy.CopyRaster_management(ascii_grid, arc_grid)
                 arcpy.DefineProjection_management(arc_grid, spatial_ref)
                 os.remove(ascii_grid)

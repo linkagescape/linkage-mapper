@@ -8,6 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants
 """
 
 import os
+import subprocess
 import sys
 
 
@@ -18,7 +19,7 @@ def nullstring(arg_string):
     return arg_string
 
 
-class ClimateConfig():
+class ClimateConfig(object):
     """Class container to hold Climate Tool global variables"""
     def __init__(self):
         """Init class (empty)"""
@@ -33,9 +34,18 @@ class ClimateConfig():
         self.climate_rast = arg[4]  # Climate raster (+ path)
         self.resist_rast = nullstring(arg[5])  # Resistance raster (+ path)
 
-        # Setup GRASS base folder environmental setting
+        # Setup GRASS environmental variables
         self.gisbase = os.environ['GISBASE'] = arg[6]  # GRASS path
         sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "python"))
+        self.gpath = (''.join([os.path.join(cc_env.gisbase, gpath) + os.pathsep
+                               for gpath in [r'mysys\bin', 'bin', 'extrabin',
+                                             'lib', r'etc\python', 'etc']]))
+
+        # Overwrite default startup subprocess variables to insure the console
+        # window is hidden. This is necessary as functions within the GRASS
+        # scripting library open subprocesses with the console window open.
+        subprocess.STARTUPINFO.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        subprocess.STARTUPINFO.wShowWindow = subprocess.SW_HIDE
 
         # Tool settings
         self.min_euc_dist = float(arg[7])  # Min distance between core pairs
@@ -57,7 +67,6 @@ class ClimateConfig():
         self.inputs_gdb = os.path.join(self.out_dir, "LM_inputs.gdb")
 
         # Define project area files
-        # Using gdb seems to best best avoids dll conflict
         self.prj_core_fc = (os.path.join(self.inputs_gdb, "cc_cores"))
         self.prj_climate_rast = os.path.join(self.inputs_gdb, "climate")
         self.prj_core_rast = os.path.join(self.inputs_gdb, "cores")
