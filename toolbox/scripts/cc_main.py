@@ -39,9 +39,8 @@ TO_COL = "To_Core"
 
 def main(argv=None):
     """Main function for Climate Linkage Mapper tool"""
-
     start_time = datetime.now()
-    print "Start time: %s" % start_time.strftime(TFORMAT)
+    # print "Start time: %s" % start_time.strftime(TFORMAT)
 
     if argv is None:
         argv = sys.argv
@@ -83,7 +82,7 @@ def grass_dir_setup():
 
     # Remove GRASS directory if it exists
     if not cc_util.remove_grass_wkspc(gisdbase):
-        arcpy.AddWarning("\nCannot delete GRASS workspace from earlier"
+        lm_util.warn("\nCannot delete GRASS workspace from earlier"
                          " run."
                          "\nPlease choose a new project directory.")
         raise Exception("Cannot delete GRASS workspace: " + gisdbase)
@@ -148,13 +147,13 @@ def run_analysis():
 
     # Generate link table, calculate CWD and run Linkage Mapper
     if int(arcpy.GetCount_management(core_pairings).getOutput(0)) == 0:
-        arcpy.AddWarning("\nNo core pairs within climate threshold. "
+        lm_util.warn("\nNo core pairs within climate threshold. "
                          "Program will end")
     else:
         # Process pairings and generate link table
         grass_cores = process_pairings(core_pairings)
         if not grass_cores:
-            arcpy.AddWarning("\nNo core pairs within Euclidean distances. "
+            lm_util.warn("\nNo core pairs within Euclidean distances. "
                              "Progam program will end")
         else:
             # Create CWD using Grass

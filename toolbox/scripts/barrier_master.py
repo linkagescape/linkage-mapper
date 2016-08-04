@@ -56,8 +56,13 @@ def bar_master(argv=None):
         desc = arcpy.Describe(cfg.RESRAST_IN)
         if hasattr(desc, "catalogPath"):
             cfg.RESRAST_IN = arcpy.Describe(cfg.RESRAST_IN).catalogPath
+        try:    
+            arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
+        except:
+            msg = ('ERROR: Could not make a copy of your resistance raster. ' +
+                    'Try re-starting ArcMap to release the file lock.')
+            lu.raise_error(msg)
             
-        arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
         arcpy.env.extent = cfg.RESRAST
         arcpy.env.snapRaster = cfg.RESRAST
         

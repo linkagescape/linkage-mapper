@@ -62,7 +62,7 @@ def grass_cwd(core_list):
     finally:
         os.environ["PATH"] = start_path
         if not cc_util.remove_grass_wkspc(gisdbase):
-            arcpy.AddWarning("Unable to delete temporary GRASS folder. "
+            lm_util.warn("Unable to delete temporary GRASS folder. "
                              "Program will contine.")
         cc_util.delete_features(
             [climate_asc, resist_asc, core_asc, ccr_grassrc])
@@ -90,12 +90,12 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     try:
         grass.create_location(gisdbase, location, filename=geo_file)
     except:
-        arcpy.AddWarning("GRASS ERROR. Try rebooting and restarting ArcGIS.")
-        arcpy.AddWarning("If that doesn't work you can try using ")
-        arcpy.AddWarning("the 'CC Run Script.py' python script in the ")
-        arcpy.AddWarning("demo directory where the Linkage Mapper toolbox")
-        arcpy.AddWarning("is installed instead of ArcGIS to call the tool")
-        arcpy.AddWarning("(see user guide).")
+        lm_util.warn("GRASS ERROR. Try rebooting and restarting ArcGIS.")
+        lm_util.warn("If that doesn't work you can try using ")
+        lm_util.warn("the 'CC Run Script.py' python script in the ")
+        lm_util.warn("demo directory where the Linkage Mapper toolbox")
+        lm_util.warn("is installed instead of ArcGIS to call the tool")
+        lm_util.warn("(see user guide).")
         raise Exception("GRASS ERROR: Cannot create workspace.")
     gsetup.init(gisbase, gisdbase, location, mapset)
     run_grass_cmd("g.gisenv", set="OVERWRITE=1")

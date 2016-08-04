@@ -250,12 +250,11 @@ def calc_lccs(normalize):
                     minObject = gp.GetRasterProperties(lccNormRaster, "MINIMUM") 
                     rasterMin = float(str(minObject.getoutput(0)))
                 except:
-                    gp.AddWarning('\n------------------------------------------------')
-                    gp.AddWarning('WARNING: Raster minimum check failed in step 5. \n'
+                    lu.warn('\n------------------------------------------------')
+                    lu.warn('WARNING: Raster minimum check failed in step 5. \n'
                         'This may mean the output rasters are corrupted. Please \n'
                         'be sure to check for valid rasters in '+ outputGDB)
                     rasterMin = 0
-                tolerance = (float(gp.cellSize) * -10) + offset
                 if rasterMin < tolerance:
                     lu.dashline(1)
                     msg = ('WARNING: Minimum value of a corridor #' + str(x+1) 
@@ -264,7 +263,7 @@ def calc_lccs(normalize):
                            'were too small and a corridor passed outside of a '
                            'bounding circle, or that a corridor passed outside of the '
                            'resistance map. \n')
-                    gp.AddWarning(msg)
+                    lu.warn(msg)
 
             
             if cfg.useArcpy: 
@@ -452,13 +451,12 @@ def calc_lccs(normalize):
             minObject = gp.GetRasterProperties(mosaicGrid, "MINIMUM") 
             rasterMin = float(str(minObject.getoutput(0)))
         except:
-            gp.AddWarning('\n------------------------------------------------')
-            gp.AddWarning('WARNING: Raster minimum check failed in step 5. \n'
+            lu.warn('\n------------------------------------------------')
+            lu.warn('WARNING: Raster minimum check failed in step 5. \n'
                 'This may mean the output rasters are corrupted. Please \n'
                 'be sure to check for valid rasters in '+ outputGDB)
             rasterMin = 0
         tolerance = (float(gp.cellSize) * -10)
-           
         if rasterMin < tolerance:
             lu.dashline(1)
             msg = ('WARNING: Minimum value of mosaicked corridor map is ' 
@@ -467,7 +465,7 @@ def calc_lccs(normalize):
                    'were too small and a corridor passed outside of a '
                    'bounding circle, or that a corridor passed outside of the '
                    'resistance map. \n')
-            gp.AddWarning(msg) 
+            lu.warn(msg) 
                             
 
         gprint('\nWriting final LCP maps...')
@@ -523,6 +521,7 @@ def calc_lccs(normalize):
             gp.addmessage('Building output statistics '
                               'for truncated corridor raster')
             lu.build_stats(truncRaster)
+        
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:

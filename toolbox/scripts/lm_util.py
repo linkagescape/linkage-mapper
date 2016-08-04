@@ -12,6 +12,7 @@ import shutil
 import gc
 import glob
 import ctypes
+import locale
 from lm_retry_decorator import retry
 
 
@@ -633,8 +634,8 @@ def get_centroids(shapefile, field):
                 msg = ('ERROR: It appears that your region settings are not in '
                         'USA format (decimal commas are used instead of decimal '
                         'points). '
-                    'Please change your region settings in Windows to USA or '
-                    'another region that uses decimal points.  You may need to'
+                    'Please change your region settings in Windows to English (USA) or '
+                    'another convention that uses decimal points.  You may need to'
                     'modify the coordinate system of your input files as well.')
                 raise_error(msg)
             xyArray[0, 0] = float(xy[0])
@@ -1238,6 +1239,12 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('Start time:\t%s \n' % (timeNow))
         logFile.write('Parameters:\t%s \n\n' % (inParameters))
     logFile.close()
+    dashline()
+    gprint('A record of run settings and messages can be found in your '
+           'log directory:')
+    gprint(cfg.MESSAGEDIR)
+    dashline(2)
+
     return filePath
 
 def write_log(string):
@@ -2100,18 +2107,30 @@ def print_arcgis_failures(statement, failures):
     failures = failures + 1
     return failures
 
+    
 def print_drive_warning():
-    drive, depth = get_dir_depth(cfg.PROJECTDIR)
-    if drive.lower() != 'c' or depth > 3 or 'dropbox' in drive.lower():
-        gprint('********************************************************\n'
-            'Note: ArcGIS errors are more likely when writing to remote '
+    gprint('\n********************************************************')
+    drive, depth, realpath = get_dir_depth(cfg.PROJECTDIR)
+    if drive.lower() != 'c' or depth > 3 or 'dropbox' in realpath.lower():
+        gprint('NOTE: ArcGIS errors are more likely when writing to remote '
             'drives or deep file structures. We recommend shallow '
             'project directories on local drives, like C:\puma. '
             'Errors may also result from conflicts with anti-virus '
             'software (known problems with AVG). We have also seen '
-            'conflicts when writing to synchronized folders like Dropbox.\n ')
-
-
+            'conflicts when writing to synchronized folders like DROPBOX.\n\n'
+            'Note also that Linkage Mapper tools often work best when run '
+            'from ArcCatalog instead of ArcMap. \n ')
+    else:
+        gprint('NOTE: Linkage Mapper tools often work best when run  '
+            'from ArcCatalog instead of ArcMap. \n')
+    localdict = locale.localeconv()
+    if localdict['decimal_point'] != '.':
+        msg = ('ERROR: It looks like decimals are indicated by commas instead of decimal points.\n'
+            'Try changing your Windows Regional and Language settings to English (United States)\n'
+            'or another convention that uses decimal points.\n')
+        raise_error(msg)
+        
+        
 def get_dir_depth(dir):
     import string
     realpath = os.path.normpath(dir)
@@ -2120,7 +2139,7 @@ def get_dir_depth(dir):
     for i in range(0, len(realpath)):
         if realpath[i] == os.path.sep:
             depth = depth + 1
-    return drive, depth
+    return drive, depth, realpath
 
 
 def check_steps():
@@ -2195,8 +2214,8 @@ def check_cores(FC,FN):
             msg = ('ERROR: It appears that your region settings are not in '
                   'USA format (decimal commas are used instead of decimal '
                   'points). '
-                  'Please change your region settings in Windows to USA or '
-                  'another region that uses decimal points.  You may need to'
+                  'Please change your region settings in Windows to English (USA) or '
+                  'another convention that uses decimal points.  You may need to'
                   'to modify the coordinate system of your input files as well.')
             raise_error(msg)
 
@@ -2493,6 +2512,13 @@ def writeCircuitscapeConfigFile(configFile, options):
     config.write(f)
     f.close()
 
+def warn(string):
+    gp.AddWarning(string)
+    try:
+        if cfg.LOGMESSAGES:
+            write_log(string)
+    except:
+        pass
 
 
 class MEMORYSTATUSEX(ctypes.Structure):
@@ -2517,3 +2543,5 @@ def get_mem():
     totMem = float(int(10 * float(stat.ullTotalPhys)/1073741824))/10
     availMem = float(int(10 * float(stat.ullAvailPhys)/1073741824))/10
     return totMem, availMem
+
+    

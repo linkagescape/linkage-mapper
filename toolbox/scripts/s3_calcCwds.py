@@ -137,7 +137,11 @@ def STEP3_calc_cwds():
             gprint ('**** NOTE: This mode picks up step 3 where a\n'
                     'previous run left off due to a crash or user\n'
                     'abort.  It assumes you are using the same input\n'
-                    'data used in the terminated run.****\n')
+                    'data used in the terminated run.\n\n')
+            lu.warn('IMPORTANT: Your LCP and stick feature classes\n'
+                    'will LOSE LCPs that were already created, but\n'
+                    'your final raster corridor map should be complete.\n')
+                    
             lu.dashline(0)
             lu.snooze(10)
             savedLinkTableFile = path.join(cfg.DATAPASSDIR,

@@ -5,7 +5,6 @@
 
 import os
 import shutil
-
 import arcpy
 
 from cc_config import cc_env
@@ -45,7 +44,7 @@ def check_cc_project_dir():
             "." in cc_env.proj_dir):
         msg = ('ERROR: Project directory cannot contain spaces, dashes, or '
                'special characters.')
-        raise Exception(msg)
+        raise Exception(msg)    
     return
 
 

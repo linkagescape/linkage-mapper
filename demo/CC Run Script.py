@@ -14,20 +14,20 @@ def main():
 
     # *************************************************************************
     # ***** Tool Inputs *****
-    proj_dir = "W:\\demoProject"  # Project Directory
+    proj_dir = "C:\\demoProject"  # Project Directory
 
     # Core Inputs
-    core_fc = "W:\\demoData\\cc_cores.shp"  # Core Feature Class
+    core_fc = "C:\\demoData\\cc_cores.shp"  # Core Feature Class
     core_fl = "HCA_ID"  # Core Identifer in Core Feature Class
 
-    climate_rast = "W:\\demoData\\cc_climate.img"  # Climate Raster
+    climate_rast = "C:\\demoData\\cc_climate.img"  # Climate Raster
 
     # Resistance Raster
     # resis_rast = "#"  # Can be run without resistance raster
-    resis_rast = "W:\\demoData\\cc_resist.img"
+    resis_rast = "C:\\demoData\\cc_resist.img"
 
     # GRASS GIS Folder
-    gisbase = "C:\\Program Files (x86)\\GRASS GIS 7.0.0"
+    gisbase = "C:\\Program Files (x86)\\GRASS GIS 7.0.3"
 
     # Model Settings
     min_euc_dist = 2000  # Minimum Euclidean Distance

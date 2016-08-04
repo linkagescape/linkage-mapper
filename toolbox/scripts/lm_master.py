@@ -67,8 +67,8 @@ def lm_master(argv=None):
         if cfg.TOOL == 'Linkage Mapper':
             cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
                                              cfg.PARAMS)
-        lu.print_drive_warning()
-
+        lu.print_drive_warning()        
+        
         installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + cfg.releaseNum)
         try:
@@ -78,12 +78,12 @@ def lm_master(argv=None):
             pass
 
         if cfg.CONNECTFRAGS:
-            gwarn = gp.AddWarning
+            # gwarn = gp.AddWarning
             lu.dashline(1)
-            gwarn('Custom mode: will run steps 1-2 ONLY to cluster core polygons within ')
-            gwarn('the maximum Euclidean corridor distance from one another ')
-            gwarn('into polygons with a single cluster_ID value.')
-            gwarn('Make sure you have set a Maximum Euclidean corridor distance.')
+            lu.warn('Custom mode: will run steps 1-2 ONLY to cluster core polygons within ')
+            lu.warn('the maximum Euclidean corridor distance from one another ')
+            lu.warn('into polygons with a single cluster_ID value.')
+            lu.warn('Make sure you have set a Maximum Euclidean corridor distance.')
             lu.dashline(2)
             cfg.STEP3 = False
             cfg.STEP4 = False
@@ -133,7 +133,12 @@ def lm_master(argv=None):
         gp.SnapRaster = cfg.RESRAST_IN
         gp.cellSize = gp.Describe(cfg.RESRAST_IN).MeanCellHeight
         # import pdb; pdb.set_trace()
-        gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
+        try:
+            gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
+        except:
+            msg = ('ERROR: Could not make a copy of your resistance raster. ' +
+                    'Try re-starting ArcMap to release the file lock.')
+            lu.raise_error(msg)
 
         if (cfg.STEP1) or (cfg.STEP3):
             # Make core raster file
