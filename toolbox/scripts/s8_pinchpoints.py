@@ -29,7 +29,7 @@ arcpy.CheckOutExtension("spatial")
 
 SETCORESTONULL = True
 gprint = lu.gprint
-gwarn = arcpy.AddWarning
+# gwarn = arcpy.AddWarning
 tif = ".tif"
 #tif = ""
 
@@ -221,9 +221,9 @@ def STEP8_calc_pinchpoints():
                 # gprint('Total memory: str(totMem))
                 if numResistanceNodes / availMem > 2000000:
                     lu.dashline(1)
-                    gwarn('Warning:')
-                    gwarn('Circuitscape can only solve 2-3 million nodes')
-                    gwarn('per gigabyte of available RAM. \nTotal physical RAM'
+                    lu.warn('Warning:')
+                    lu.warn('Circuitscape can only solve 2-3 million nodes')
+                    lu.warn('per gigabyte of available RAM. \nTotal physical RAM'
                             ' on your machine is ~' + str(totMem) 
                             + ' GB. \nAvailable memory is ~'+ str(availMem) 
                             + ' GB. \nYour resistance raster has '
@@ -461,9 +461,9 @@ def STEP8_calc_pinchpoints():
         # gprint('Total memory: str(totMem))
         if numResistanceNodes / availMem > 2000000:
             lu.dashline(1)
-            gwarn('Warning:')
-            gwarn('Circuitscape can only solve 2-3 million nodes')
-            gwarn('per gigabyte of available RAM. \nTotal physical RAM '
+            lu.warn('Warning:')
+            lu.warn('Circuitscape can only solve 2-3 million nodes')
+            lu.warn('per gigabyte of available RAM. \nTotal physical RAM '
                     'on your machine is ~' + str(totMem)
                     + ' GB. \nAvailable memory is ~'+ str(availMem)
                     + ' GB. \nYour resistance raster has '

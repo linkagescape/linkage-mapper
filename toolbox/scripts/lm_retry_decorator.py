@@ -7,7 +7,7 @@ import time
 import arcgisscripting
 import lm_util as lu
 gp = arcgisscripting.create(9.3)
-gwarn = gp.addwarning
+# gwarn = gp.addwarning
 gprint = gp.addmessage
 
 class retry(object):
@@ -40,18 +40,18 @@ class retry(object):
                     line = tbinfo.split(", ")[1]
                     filename = tbinfo.split(", ")[0]
                     filename = filename.rsplit("File ")[1]
-                    gwarn('--------------------------------------------------')
+                    lu.warn('--------------------------------------------------')
                     msg = ("The following error is being reported "
                            "on " + line + " of " + filename + ":")                        
-                    gwarn(msg)
-                    lu.write_log(msg)
-                    gwarn(str(e))
-                    lu.write_log(str(e))
+                    lu.warn(msg)
+                    # lu.write_log(msg)
+                    lu.warn(str(e))
+                    # lu.write_log(str(e))
                     lu.print_drive_warning()
 
                     delaytime = self.delay*10*(_ + 1)
-                    gwarn("Will try again. ")
-                    gwarn('---------RETRY #' + str(_+1) + ' OUT OF ' + 
+                    lu.warn("Will try again. ")
+                    lu.warn('---------RETRY #' + str(_+1) + ' OUT OF ' + 
                                   str(self.tries) + ' IN ' +
                                   str(delaytime) + ' SECONDS---------\n')
                     lu.snooze(delaytime)

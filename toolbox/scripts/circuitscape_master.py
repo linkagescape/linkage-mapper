@@ -34,7 +34,7 @@ def circuitscape_master(argv=None):
 
     """
     gprint = lu.gprint
-    gwarn = arcpy.AddWarning
+    # gwarn = arcpy.AddWarning
 
     if argv is None:
         argv = sys.argv    
@@ -60,11 +60,11 @@ def circuitscape_master(argv=None):
         try:
             csDir, fn = path.split(CSPATH)
             if 'flush' not in open(path.join(csDir,'cs_compute.py')).read():
-                gwarn('\n---------------------------------------------')
-                gwarn('Your version of Circuitscape is out of date. ')
-                gwarn('---------------------------------------------\n')
-                gwarn('Please get the latest from www.circuitscape.org.')
-                gwarn('The new version interacts more smoothly with ArcMap.')
+                lu.warn('\n---------------------------------------------')
+                lu.warn('Your version of Circuitscape is out of date. ')
+                lu.warn('---------------------------------------------\n')
+                lu.warn('Please get the latest from www.circuitscape.org.')
+                lu.warn('The new version interacts more smoothly with ArcMap.')
                 gprint('Proceeding...\n')
         except: pass
         
@@ -125,11 +125,18 @@ def circuitscape_master(argv=None):
             if hasattr(desc, "catalogPath"):
                 cfg.RESRAST_IN = arcpy.Describe(cfg.RESRAST_IN).catalogPath
             
-            arcpy.env.extent = cfg.RESRAST_IN
-            arcpy.env.snapRaster = cfg.RESRAST_IN
+            # arcpy.env.extent = cfg.RESRAST_IN
+            # arcpy.env.snapRaster = cfg.RESRAST_IN
             gprint('\nMaking local copy of resistance raster.')
-            gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
-
+            try:
+                gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
+            except:
+                msg = ('ERROR: Could not make a copy of your resistance raster. ' +
+                    'Try re-starting ArcMap to release the file lock.')
+                lu.raise_error(msg)
+            arcpy.env.extent = cfg.RESRAST
+            arcpy.env.snapRaster = cfg.RESRAST
+            
         if cfg.DOCENTRALITY:
             gprint("Creating output folder: " + cfg.CENTRALITYBASEDIR)
             if path.exists(cfg.CENTRALITYBASEDIR):
