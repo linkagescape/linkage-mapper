@@ -1217,7 +1217,10 @@ def load_link_table(linkTableFile):
 ## Output Functions ########################################################
 ############################################################################
 def gprint(string):
-    gp.addmessage(string)
+    if string[0:7] == "Warning":
+        gp.AddWarning(string)
+    else:
+        gp.AddMessage(string)
     try:
         if cfg.LOGMESSAGES:
             write_log(string)
@@ -1238,6 +1241,18 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
         logFile.write('Start time:\t%s \n' % (timeNow))
         logFile.write('Parameters:\t%s \n\n' % (inParameters))
+        # {(added by Randal Greene and John Gallo 2017)
+        if toolName == "Linkage Mapper":
+            if cfg.LMCUSTSETTINGS:
+                logFile.write('Linkage Mapper (LM) settings from' + cfg.LMCUSTSETTINGS + ':\n')
+            else:
+                logFile.write('Linkage Mapper (LM) settings from lm_settings.py:\n')
+            logFile.write('CALCNONNORMLCCS: %s \n' % (cfg.CALCNONNORMLCCS))
+            logFile.write('MINCOSTDIST: %s \n' % (cfg.MINCOSTDIST))
+            logFile.write('MINEUCDIST: %s \n' % (cfg.MINEUCDIST))
+            logFile.write('SAVENORMLCCS: %s \n' % (cfg.SAVENORMLCCS))
+            logFile.write('SIMPLIFY_CORES: %s \n' % (cfg.SIMPLIFY_CORES))
+        # }
     logFile.close()
     dashline()
     gprint('A record of run settings and messages can be found in your '
@@ -1337,8 +1352,11 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
             outFile.write("\n# Drop Corridors that Intersect Core Areas: "
                            + str(cfg.S3DROPLCCS))
             outFile.write("\n# Step 4 - Refine Network: " + str(cfg.STEP4))
-            outFile.write("\n# Option A - Number of Connected Nearest Neighbors: "
-                           + str(cfg.S4MAXNN))
+            if cfg.IGNORES4MAXNN:
+                outFile.write("\n# Option A - Number of Connected Nearest Neighbors: Unlimimted")
+            else:
+                outFile.write("\n# Option A - Number of Connected Nearest Neighbors: "
+                               + str(cfg.S4MAXNN))
             outFile.write("\n# Option B - Nearest Neighbor Measurement Unit is "
                            "Cost-Weighted Distance: " + str(cfg.S4DISTTYPE_CW))
             outFile.write("\n# Option C - Connect Neighboring Constellations : "
