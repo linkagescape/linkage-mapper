@@ -204,26 +204,27 @@ def check_add_field(feature_class, field_name, data_type):
 def normalize_field(in_table, in_field, out_field, normalization_method, invert=False):
     """Normalize values in in_field into out_field using score range or max score method, with optional inversion."""
     check_add_field(in_table, out_field, "DOUBLE")
-    min = arcpy.SearchCursor(in_table, "", "", "", in_field + " A").next().getValue(in_field)
-    max = arcpy.SearchCursor(in_table, "", "", "", in_field + " D").next().getValue(in_field)
-    if max > 0:
+    min_val = arcpy.SearchCursor(in_table, "", "", "", in_field + " A").next().getValue(in_field)
+    max_val = arcpy.SearchCursor(in_table, "", "", "", in_field + " D").next().getValue(in_field)
+    if max_val > 0:
         if normalization_method == 0:
             # 0 to 1 score range normalization
             if invert:
                 arcpy.CalculateField_management(in_table, out_field,
-                                                "(" + str(max) + " - !" + in_field + "!) / " + str(max - min),
+                                                "(" + str(max_val) + " - !" + in_field + "!) / " + str(max_val - min_val),
                                                 "PYTHON_9.3")
             else:
                 arcpy.CalculateField_management(in_table, out_field,
-                                                "(!" + in_field  + "! - " + str(min) + ") / " + str(max - min),
+                                                "(!" + in_field  + "! - " + str(min_val) + ") / " + str(max_val - min_val),
                                                 "PYTHON_9.3")
         else:
-            # max score normalization
+            # max_val score normalization
             if invert:
-                arcpy.CalculateField_management(in_table, out_field, "(" + str(max + min) + " - !" + in_field + "!) / " +
-                                                                     str(max), "PYTHON_9.3")
+                arcpy.CalculateField_management(in_table, out_field,
+                                                "(" + str(max_val + min_val) + " - !" + in_field + "!) / " +
+                                                str(max_val), "PYTHON_9.3")
             else:
-                arcpy.CalculateField_management(in_table, out_field, "!" + in_field + "! / " + str(max), "PYTHON_9.3")
+                arcpy.CalculateField_management(in_table, out_field, "!" + in_field + "! / " + str(max_val), "PYTHON_9.3")
     else:
         # set all 0s
         arcpy.CalculateField_management(in_table, out_field, "0", "PYTHON_9.3")
@@ -233,22 +234,22 @@ def normalize_raster(in_raster, normalization_method, invert=False):
     """Normalize values in in_raster using score range or max score method, with optional inversion."""
     lm_util.build_stats(in_raster)
     result = arcpy.GetRasterProperties_management(in_raster, "MINIMUM")
-    min = float(result.getOutput(0))
+    min_val = float(result.getOutput(0))
     result = arcpy.GetRasterProperties_management(in_raster, "MAXIMUM")
-    max = float(result.getOutput(0))
-    if max > 0:
+    max_val = float(result.getOutput(0))
+    if max_val > 0:
         if normalization_method == 0:
             # 0-1 score range normalization
             if invert:
-                return (max - in_raster) / (max - min)
+                return (max_val - in_raster) / (max_val - min_val)
             else:
-                return (in_raster - min) / (max - min)
+                return (in_raster - min_val) / (max_val - min_val)
         else:
             # max score normalization
             if invert:
-                return (max + min - in_raster) / max
+                return (max_val + min_val - in_raster) / max_val
             else:
-                return in_raster / max
+                return in_raster / max_val
     else:
         # set all 0s
         return in_raster * 0
@@ -349,8 +350,8 @@ def cav():
                                             "[" + lm_env.PREFIX + "_Cores.CF_Central]")
             arcpy.RemoveJoin_management("core_lyr")
         # ensure cores have at least one non-0 value for CFC (could have been copied above or set earlier)
-        max = arcpy.SearchCursor(lm_env.COREFC, "", "", "", "CF_Central D").next().getValue("CF_Central")
-        if max is None or max == 0:
+        max_val = arcpy.SearchCursor(lm_env.COREFC, "", "", "", "CF_Central D").next().getValue("CF_Central")
+        if max_val is None or max_val == 0:
             msg = ("ERROR: A Current Flow Centrality Weight (CFCWEIGHT) was provided but no Current Flow Centrality " +
                    "(CF_Central) values are available. Please run Centrality Mapper on this project, then run " +
                    "Linkage Priority.")
@@ -397,7 +398,7 @@ def cav():
         ocav_raster = (Raster(lp_env.OCAVRAST_IN) - min_ocav) / (max_ocav - min_ocav)
         # calc aerial mean ocav for each core
         ocav_table = ZonalStatisticsAsTable(lp_env.COREFC, lp_env.COREFN, ocav_raster,
-                                           os.path.join(lm_env.SCRATCHDIR, "scratch.gdb", "core_ocav_stats"))
+                                            os.path.join(lm_env.SCRATCHDIR, "scratch.gdb", "core_ocav_stats"))
         arcpy.AddJoin_management("core_lyr", lp_env.COREFN, ocav_table, lp_env.COREFN)
         arcpy.CalculateField_management("core_lyr", lp_env.CORENAME + ".ocav", "[core_ocav_stats.MEAN]")
         arcpy.RemoveJoin_management("core_lyr")
@@ -520,9 +521,9 @@ def csp(sum_rasters, count_non_null_cells_rasters, max_rasters, lcp_lines):
                 link = links.next()
                 # get and avg CAVs for the core pair
                 x_cav = arcpy.SearchCursor("core_lyr", lp_env.COREFN + " = " + from_core, "", "",
-                                          "").next().getValue("norm_cav")
+                                           "").next().getValue("norm_cav")
                 y_cav = arcpy.SearchCursor("core_lyr", lp_env.COREFN + " = " + to_core, "", "",
-                                          "").next().getValue("norm_cav")
+                                           "").next().getValue("norm_cav")
                 avg_cav = (x_cav + y_cav) / 2
 
                 # get ECIV for the core pair
