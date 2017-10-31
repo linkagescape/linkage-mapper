@@ -1,4 +1,4 @@
-# Linkage Priority user-configurable settings
+"""Linkage Priority user-configurable settings."""
 # Authors: John Gallo and Randal Greene 2017
 
 

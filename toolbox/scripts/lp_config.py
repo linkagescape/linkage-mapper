@@ -1,4 +1,4 @@
-# Linkage Priority configuration module
+"""Linkage Priority configuration module."""
 # Authors: John Gallo and Randal Greene 2017
 
 
@@ -9,7 +9,7 @@ GP_NULL = "#"
 
 
 def nullfloat(innum):
-    """Convert ESRI float or null to Python float"""
+    """Convert ESRI float or null to Python float."""
     if innum == GP_NULL:
         nfloat = None
     else:
@@ -20,19 +20,19 @@ def nullfloat(innum):
 
 
 def nullstring(arg_string):
-    """Convert ESRI nullstring to Python null"""
+    """Convert ESRI nullstring to Python null."""
     if arg_string == GP_NULL:
         arg_string = None
     return arg_string
 
 
 def str2bool(pstr):
-    """Convert ESRI boolean string to Python boolean type"""
+    """Convert ESRI boolean string to Python boolean type."""
     return pstr == "true"
 
 
 class lp_config(object):
-    """Class container to hold Linkage Priority parameters and settings"""
+    """Class container to hold Linkage Priority parameters and settings."""
     def __init__(self):
         """Init class (empty)"""
         pass
