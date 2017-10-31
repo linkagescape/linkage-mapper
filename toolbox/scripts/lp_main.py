@@ -163,8 +163,6 @@ def config_lm():
 
 def log_setup():
     """Set up Linkage Mapper logging."""
-    # lm_util.create_dir(lm_env.LOGDIR)
-    # lm_util.create_dir(lm_env.MESSAGEDIR)
     lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR, lm_env.TOOL, lp_env.PARAMS)
     if lp_env.LPCUSTSETTINGS_IN:
         lm_util.write_log("Linkage Priority (LP) settings from " + lp_env.LPCUSTSETTINGS_IN + ":")
@@ -629,10 +627,6 @@ def cpv(sum_rasters, count_non_null_cells_rasters, max_rasters, cpv_raster):
                 nlc_str = str(nlc_idx)
             if not os.path.exists(os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str)):
                 break
-            # nlc files are needed for next run of LP - can't delete...
-            # arcpy.env.workspace = os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str)
-            # for inRaster in arcpy.ListRasters():
-            #     lm_util.delete_data(inRaster)
             arcpy.env.workspace = os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str, "inv_norm")
             for inRaster in arcpy.ListRasters():
                 lm_util.delete_data(inRaster)
@@ -694,8 +688,6 @@ def run_analysis():
             not os.path.exists(os.path.join(lm_env.DATAPASSDIR, "linkTable_s5.csv")):
         msg = ("ERROR: Project directory must contain a successful Linkage Mapper run with Steps 3, 4 and 5.")
         raise Exception(msg)
-
-    # # check for less than 2 cores? (not necessary because LM will have failed with less than 2)
 
     # check/create gdb for scratch
     if not os.path.isdir(lm_env.SCRATCHDIR):

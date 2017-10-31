@@ -14,9 +14,7 @@ import arcgisscripting
 import lm_version as ver
 import lm_settings
 
-# { (added by Randal Greene and John Gallo 2017 for optional custom settings file)
 import imp
-# }
 
 GP_NULL = '#'
 
@@ -189,10 +187,8 @@ def config_lm(config, arg, scratch_dir):
     """ Configure global variables for Linkage Mapper"""
     config.CONNECTFRAGS = False
     config.COREFC = arg[2]  # Core area feature class
-    # {(added by Randal Greene and John Gallo 2017)
     splits = config.COREFC.split("\\")
     config.CORENAME = splits[len(splits) - 1].split(".")[0]
-    # }
     config.COREFN = arg[3]  # Core area field name
     config.RESRAST_IN = arg[4]  # Resistance raster
 
@@ -213,14 +209,12 @@ def config_lm(config, arg, scratch_dir):
     # Drop LCC's passing through intermediate cores
     config.S3DROPLCCS = str2bool(arg[10])
     config.STEP4 = str2bool(arg[11])
-    # {(added/modified by Randal Greene and John Gallo 2017)
     if arg[12] == "Unlimited":
         config.S4MAXNN = 99
         config.IGNORES4MAXNN = True
     else:
         config.S4MAXNN = int(arg[12])  # No of connected nearest neighbors
         config.IGNORES4MAXNN = False
-    # }
     # NN Unit
     config.S4DISTTYPE_CW, config.S4DISTTYPE_EU = setadjmeth(arg[13])
     config.S4CONNECT = str2bool(arg[14])
@@ -241,12 +235,10 @@ def config_lm(config, arg, scratch_dir):
         
     config.MAXEUCDIST = nullfloat(arg[18])
 
-    # {(added by Randal Greene and John Gallo 2017)
     config.OUTPUTFORMODELBUILDER = nullstring(arg[19])
     config.WRITETRUNCRASTER = str2bool(arg[20])
     config.CWDTHRESH = int(arg[21])
     config.LMCUSTSETTINGS = nullstring(arg[22])
-    # }
 
     # config.USELMSETTINGS = str2bool(arg[19])  #In progress.  Will need to change 9.3 toolbox too.
     
@@ -267,7 +259,6 @@ def config_lm(config, arg, scratch_dir):
 
     # if config.USELMSETTINGS: #In progress.  Will need to change 9.3 toolbox too.
 
-    # {(added by Randal Greene and John Gallo 2017 new logic for optional custom settings file)
     if config.LMCUSTSETTINGS:
         cust_settings = imp.load_source(config.LMCUSTSETTINGS.split(".")[0], config.LMCUSTSETTINGS)
         for setting in dir(cust_settings):
@@ -275,7 +266,6 @@ def config_lm(config, arg, scratch_dir):
                 setting_value = getattr(cust_settings, setting)
                 setattr(config, setting, setting_value)
     else:
-    # }
         for setting in dir(lm_settings):
             if setting == setting.upper():
                 setting_value = getattr(lm_settings, setting)

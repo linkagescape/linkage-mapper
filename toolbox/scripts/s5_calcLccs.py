@@ -74,14 +74,7 @@ def calc_lccs(normalize):
             mosaicBaseName = "_corridors"
             writeTruncRaster = cfg.WRITETRUNCRASTER
             outputGDB = cfg.OUTPUTGDB
-            # {(changed by Randal Greene and John Gallo 2017)
-            # calc/save normal independent of non-normal
-            # if cfg.CALCNONNORMLCCS:
-            #     SAVENORMLCCS = False
-            # else:
-            #     SAVENORMLCCS = cfg.SAVENORMLCCS
             SAVENORMLCCS = cfg.SAVENORMLCCS
-            # }
         else:
             mosaicBaseName = "_NON_NORMALIZED_corridors"
             SAVENORMLCCS = False
@@ -526,11 +519,8 @@ def calc_lccs(normalize):
                               'for truncated corridor raster')
             lu.build_stats(truncRaster)
         
-        # {(added by Randal Greene and John Gallo 2017)
-        # save a copy of Cores as the "Output for ModelBuilder Precondition"
         if cfg.OUTPUTFORMODELBUILDER:
             arcpy.CopyFeatures_management(cfg.COREFC, cfg.OUTPUTFORMODELBUILDER)
-        # }
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
