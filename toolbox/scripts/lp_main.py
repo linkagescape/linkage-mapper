@@ -296,6 +296,7 @@ def inv_norm():
 def cav():
     """Calculate Core Area Value (CAV) and its components for each core"""
     lm_util.gprint("Calculating Core Area Value (CAV) and its components for each core")
+    arcpy.MakeFeatureLayer_management(lp_env.COREFC, "core_lyr")
 
     # check weights and warn if issues
     if lp_env.OCAVRAST_IN:
@@ -331,16 +332,31 @@ def cav():
             lm_util.gprint("Warning: ECAVWEIGHT > 0 but no ecav field in Cores feature class")
         arcpy.CalculateField_management(lp_env.COREFC, "ecav", "0")
     check_add_field(lp_env.COREFC, "necav", "DOUBLE")
+
+    # current flow centrality (CFC, CF_Central) is copied from Centrality Mapper
     if not check_add_field(lp_env.COREFC, "CF_Central", "DOUBLE"):
-        if lp_env.CFCWEIGHT > 0:
-            lm_util.gprint("Warning: CFCWEIGHT > 0 but no CF_Central field in Cores feature class")
+        # default to 0s
         arcpy.CalculateField_management(lp_env.COREFC, "CF_Central", "0")
+    if lp_env.CFCWEIGHT > 0:
+        # copy values from Centrality Mapper output (core_centrality.gdb.project_Cores) if available
+        centrality_cores = os.path.join(lm_env.CORECENTRALITYGDB, lm_env.PREFIX + "_Cores")
+        if arcpy.Exists(centrality_cores):
+            arcpy.AddJoin_management("core_lyr", lp_env.COREFN, centrality_cores, lp_env.COREFN)
+            arcpy.CalculateField_management("core_lyr", lp_env.CORENAME + ".CF_Central",
+                                            "[" + lm_env.PREFIX + "_Cores.CF_Central]")
+            arcpy.RemoveJoin_management("core_lyr")
+        # ensure cores have at least one non-0 value for CFC (could have been copied above or set earlier)
+        max = arcpy.SearchCursor(lm_env.COREFC, "", "", "", "CF_Central D").next().getValue("CF_Central")
+        if max is None or max == 0:
+            msg = ("ERROR: A Current Flow Centrality Weight (CFCWEIGHT) was provided but no Current Flow Centrality " +
+                   "(CF_Central) values are available. Please run Centrality Mapper on this project, then run " +
+                   "Linkage Priority.")
+            raise Exception(msg)
     check_add_field(lp_env.COREFC, "ncfc", "DOUBLE")
 
     # calc mean resistance
     stats_table = ZonalStatisticsAsTable(lp_env.COREFC, lp_env.COREFN, lp_env.RESRAST_IN,
                                         os.path.join(lm_env.SCRATCHDIR, "scratch.gdb", "core_resistance_stats"))
-    arcpy.MakeFeatureLayer_management(lp_env.COREFC, "core_lyr")
     arcpy.AddJoin_management("core_lyr", lp_env.COREFN, stats_table, lp_env.COREFN)
     arcpy.CalculateField_management("core_lyr", lp_env.CORENAME + ".mean_res", "[core_resistance_stats.MEAN]")
     arcpy.RemoveJoin_management("core_lyr")
@@ -483,7 +499,7 @@ def csp(sum_rasters, count_non_null_cells_rasters, max_rasters, lcp_lines):
         # process each corridor raster in folder
         for inRaster in arcpy.ListRasters():
             # check for max 1
-            result = arcpy.GetRasterProperties_management( inRaster, "MAXIMUM")
+            result = arcpy.GetRasterProperties_management(inRaster, "MAXIMUM")
             max_in = float(result.getOutput(0))
             if max_in <> 1.0:
                 lm_util.gprint("Warning: maximum " + inRaster + " value <> 1.0")
