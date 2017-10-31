@@ -126,6 +126,9 @@ def config_lm():
     """Configure Linkage Mapper"""
     # get log file for last LM run
     folder = os.path.join(lp_env.PROJDIR, "run_history", "log") # lm_env.LOGDIR
+    if not os.path.exists(folder):
+        raise Exception("ERROR: Log file for last Linkage Mapper run not found. Please ensure Linkage Mapper is run " +
+                        "for this project before running Linkage Priority.")
     entries = (os.path.join(folder, filename) for filename in os.listdir(folder))
     entries = ((os.stat(filepath), filepath) for filepath in entries)
     entries = ((stats.st_ctime, filepath) for stats, filepath in entries)
