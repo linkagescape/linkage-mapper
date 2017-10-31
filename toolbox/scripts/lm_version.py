@@ -1,1 +1,1 @@
-releaseNum = "2.0.0 beta4"
+releaseNum = "2.0.0 beta5"
