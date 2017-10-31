@@ -1241,7 +1241,6 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
         logFile.write('Start time:\t%s \n' % (timeNow))
         logFile.write('Parameters:\t%s \n\n' % (inParameters))
-        # {(added by Randal Greene and John Gallo 2017)
         if toolName == "Linkage Mapper":
             if cfg.LMCUSTSETTINGS:
                 logFile.write('Linkage Mapper (LM) settings from' + cfg.LMCUSTSETTINGS + ':\n')
@@ -1252,7 +1251,6 @@ def create_log_file(messageDir, toolName, inParameters):
             logFile.write('MINEUCDIST: %s \n' % (cfg.MINEUCDIST))
             logFile.write('SAVENORMLCCS: %s \n' % (cfg.SAVENORMLCCS))
             logFile.write('SIMPLIFY_CORES: %s \n' % (cfg.SIMPLIFY_CORES))
-        # }
     logFile.close()
     dashline()
     gprint('A record of run settings and messages can be found in your '

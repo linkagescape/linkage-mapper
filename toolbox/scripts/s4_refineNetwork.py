@@ -71,12 +71,10 @@ def STEP4_refine_network():
         # Flag links that do not connect any core areas to their nearest
         # N neighbors. (N = cfg.S4MAXNN)
         lu.dashline(1)
-        # {(added by Randal Greene and John Gallo 2017)
         # optionally ignore max nearest neighbor setting
         if cfg.IGNORES4MAXNN:
             gprint('Connecting each core area to all its neighbors.')
         else:
-        # }
             gprint('Connecting each core area to its nearest ' +
                           str(cfg.S4MAXNN) + ' nearest neighbors.')
 
@@ -91,12 +89,10 @@ def STEP4_refine_network():
             distsFromCore = distsFromCore[ind]
 
             # Set N nearest neighbor connections to Nearest Neighbor (NNCT)
-            # {(added by Randal Greene and John Gallo 2017)
             # optionally ignore max nearest neighbor setting
             if cfg.IGNORES4MAXNN:
                 maxRange = len(rows)
             else:
-            # }
                 maxRange = min(len(rows), cfg.S4MAXNN)
             for link in range (0, maxRange):
                 linkId = distsFromCore[link, cfg.LTB_LINKID]

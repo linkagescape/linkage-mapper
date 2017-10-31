@@ -1,10 +1,5 @@
 ### USER SETTABLE VARIABLES
 CALCNONNORMLCCS = False  # Mosiac non-normalized LCCs in step 5 (Boolean- set to True or False)
-# {(commented by Randal Greene and John Gallo 2017 because options "daylighted" in tool GUI)
-# WRITETRUNCRASTER = True  # Truncate mosaic corridor raster at an upper limit, i.e., use width cutoff.
-#                          # (Boolean- set to True or False)
-# CWDTHRESH = 200000  # CWD corridor width cutoff to use in truncated raster (Integer)
-# }
 MINCOSTDIST = None  # Minimum cost distance- any corridor shorter than this will not be mapped (Integer)
 MINEUCDIST = None  # Minimum euclidean distance- any core areas closer than this will not be connected (Integer)
 SAVENORMLCCS = True  # Save individual normalized LCC grids, not just mosaic (Boolean- set to True or False)

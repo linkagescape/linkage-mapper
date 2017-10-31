@@ -70,7 +70,6 @@ def STEP7_calc_centrality():
         coreCopy =  path.join(cfg.SCRATCHDIR, 'cores.shp')
 
         arcpy.CopyFeatures_management(cfg.COREFC, coreCopy)
-        # {(changed by Randal Greene and John Gallo 2017 to check before adding and to remove precision limits)
         exists = False
         field_names = [field.name for field in arcpy.ListFields(coreCopy)]
         if "CF_Central" in field_names:
@@ -78,7 +77,6 @@ def STEP7_calc_centrality():
         if not exists:
             # arcpy.AddField_management(coreCopy, "CF_Central", "DOUBLE", "10", "2")
             arcpy.AddField_management(coreCopy, "CF_Central", "DOUBLE")
-        # }
 
         inLinkTableFile = lu.get_prev_step_link_table(step=7)
         linkTable = lu.load_link_table(inLinkTableFile)
