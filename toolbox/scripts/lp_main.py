@@ -1,4 +1,4 @@
-# Linkage Priority main module
+"""Linkage Priority main module."""
 # Authors: John Gallo and Randal Greene 2017
 
 
@@ -18,14 +18,14 @@ TFORMAT = "%m/%d/%y %H:%M:%S"
 
 
 def delete_datasets_in_workspace():
-    """Delete all datasets in workspace"""
+    """Delete all datasets in workspace."""
     datasets = arcpy.ListDatasets()
     for dataset in datasets:
         delete_dataset(dataset)
 
 
 def delete_dataset(dataset):
-    """Delete one dataset"""
+    """Delete one dataset."""
     try:
         arcpy.Delete_management(dataset)
     except arcpy.ExecuteError:
@@ -33,7 +33,7 @@ def delete_dataset(dataset):
 
 
 def delete_arcpy_temp_datasets():
-    """Delete datasets left behind by arcpy"""
+    """Delete datasets left behind by arcpy."""
     if arcpy.Exists(os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")):
         # datasets in scratch gdb (including core_resistance_stats and old hangovers)
         arcpy.env.workspace = os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")
@@ -49,7 +49,7 @@ def delete_arcpy_temp_datasets():
 
 
 def print_runtime(stime):
-    """Print process time when running from script"""
+    """Print process time when running from script."""
     etime = datetime.datetime.now()
     rtime = etime - stime
     hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
@@ -59,7 +59,7 @@ def print_runtime(stime):
 
 
 def main(argv=None):
-    """Main function for Linkage Priority tool"""
+    """Main function for Linkage Priority tool."""
     start_time = datetime.datetime.now()
     print "Start time: %s" % start_time.strftime(TFORMAT)
 
@@ -109,7 +109,7 @@ def check_lp_project_dir():
 
 
 def check_out_sa_license():
-    """Check out the ArcGIS Spatial Analyst extension license"""
+    """Check out the ArcGIS Spatial Analyst extension license."""
     if arcpy.CheckExtension("Spatial") == "Available":
         arcpy.CheckOutExtension("Spatial")
     else:
@@ -118,12 +118,12 @@ def check_out_sa_license():
 
 
 def arc_wksp_setup():
-    """Setup ArcPy workspace"""
+    """Setup ArcPy workspace."""
     arcpy.env.overwriteOutput = True
 
 
 def config_lm():
-    """Configure Linkage Mapper"""
+    """Configure Linkage Mapper."""
     # get log file for last LM run
     folder = os.path.join(lp_env.PROJDIR, "run_history", "log") # lm_env.LOGDIR
     if not os.path.exists(folder):
@@ -162,7 +162,7 @@ def config_lm():
 
 
 def log_setup():
-    """Set up Linkage Mapper logging"""
+    """Set up Linkage Mapper logging."""
     # lm_util.create_dir(lm_env.LOGDIR)
     # lm_util.create_dir(lm_env.MESSAGEDIR)
     lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR, lm_env.TOOL, lp_env.PARAMS)
@@ -191,7 +191,7 @@ def log_setup():
 
 
 def check_add_field(feature_class, field_name, data_type):
-    """check if field exists, and if not then add"""
+    """Check if field exists, and if not then add."""
     exists = False
     field_names = [field.name for field in arcpy.ListFields(feature_class)]
     if field_name in field_names:
@@ -202,7 +202,7 @@ def check_add_field(feature_class, field_name, data_type):
 
 
 def normalize_field(in_table, in_field, out_field, normalization_method, invert=False):
-    """normalize values in in_field into out_field using score range or max score method, with optional inversion"""
+    """Normalize values in in_field into out_field using score range or max score method, with optional inversion."""
     check_add_field(in_table, out_field, "DOUBLE")
     min = arcpy.SearchCursor(in_table, "", "", "", in_field + " A").next().getValue(in_field)
     max = arcpy.SearchCursor(in_table, "", "", "", in_field + " D").next().getValue(in_field)
@@ -230,7 +230,7 @@ def normalize_field(in_table, in_field, out_field, normalization_method, invert=
 
 
 def normalize_raster(in_raster, normalization_method, invert=False):
-    """normalize values in in_raster using score range or max score method, with optional inversion"""
+    """Normalize values in in_raster using score range or max score method, with optional inversion."""
     lm_util.build_stats(in_raster)
     result = arcpy.GetRasterProperties_management(in_raster, "MINIMUM")
     min = float(result.getOutput(0))
@@ -255,7 +255,7 @@ def normalize_raster(in_raster, normalization_method, invert=False):
 
 
 def calc_permeability(lcp_lines):
-    """Calculate raw and relative permeability for each Least Cost Path"""
+    """Calculate raw and relative permeability for each Least Cost Path."""
     # raw
     lm_util.gprint("Calculating raw permeability for each LCP line")
     check_add_field(lcp_lines, "Raw_Perm", "DOUBLE")
@@ -267,13 +267,13 @@ def calc_permeability(lcp_lines):
 
 
 def calc_closeness(lcp_lines):
-    """Calculate relative closeness for each Least Cost Path"""
+    """Calculate relative closeness for each Least Cost Path."""
     lm_util.gprint("Calculating relative closeness for each LCP line")
     normalize_field(lcp_lines, "LCP_Length", "Rel_Close", lp_env.RELCLOSENORMETH, True)
 
 
 def inv_norm():
-    """Invert and normalize each corridor"""
+    """Invert and normalize each corridor."""
     lm_util.gprint("Inverting and normalizing each corridor")
     prev_ws = arcpy.env.workspace
     # could be multiple nlc folders
@@ -297,7 +297,7 @@ def inv_norm():
 
 
 def cav():
-    """Calculate Core Area Value (CAV) and its components for each core"""
+    """Calculate Core Area Value (CAV) and its components for each core."""
     lm_util.gprint("Calculating Core Area Value (CAV) and its components for each core")
     arcpy.MakeFeatureLayer_management(lp_env.COREFC, "core_lyr")
 
@@ -424,7 +424,7 @@ def cav():
 
 
 def clim_env():
-    """Calculate Climate Envelope(s) for each core"""
+    """Calculate Climate Envelope(s) for each core."""
     lm_util.gprint("Calculating Current Climate Envelope (clim_env) for each core")
 
     # calc score range normalization on current climate envelope
@@ -459,7 +459,7 @@ def clim_env():
 
 
 def eciv():
-    """Normalize Expert Corridor Importance Value (ECIV) for each corridor"""
+    """Normalize Expert Corridor Importance Value (ECIV) for each corridor."""
     if lp_env.COREPAIRSTABLE_IN and lp_env.ECIVFIELD:
         lm_util.gprint("Normalizing Expert Corridor Importance Value (ECIV) for each corridor")
 
@@ -468,7 +468,7 @@ def eciv():
 
 
 def csp(sum_rasters, count_non_null_cells_rasters, max_rasters, lcp_lines):
-    """Calculate Corridor Specific Priority (CSP) for each corridor"""
+    """Calculate Corridor Specific Priority (CSP) for each corridor."""
     lm_util.gprint("Calculating Corridor Specific Priority (CSP) for each corridor")
     prev_ws = arcpy.env.workspace
 
@@ -609,13 +609,13 @@ def csp(sum_rasters, count_non_null_cells_rasters, max_rasters, lcp_lines):
 
 
 def cpv(sum_rasters, count_non_null_cells_rasters, max_rasters, cpv_raster):
-    """Combine CSPs using Max and Mean to create overall Corridor Priority Value (CPV)"""
+    """Combine CSPs using Max and Mean to create overall Corridor Priority Value (CPV)."""
     lm_util.gprint("Combining CSPs using Max and Mean to create overall Corridor Priority Value (CPV)")
     sum_all_raster = CellStatistics(sum_rasters, "SUM", "DATA")
     count_all_non_null_cells_rasters = CellStatistics(count_non_null_cells_rasters, "SUM", "DATA")
     max_all_raster = CellStatistics(max_rasters, "MAXIMUM", "DATA")
     cpv_raster_tmp = (max_all_raster * lp_env.MAXCSPWEIGHT) + ((sum_all_raster / count_all_non_null_cells_rasters)
-                                                         * lp_env.MEANCSPWEIGHT)
+                                                               * lp_env.MEANCSPWEIGHT)
     cpv_raster_tmp.save(cpv_raster)
     if not lp_env.KEEPINTERMEDIATE:
         # clean-up CSP input rasters
@@ -640,7 +640,7 @@ def cpv(sum_rasters, count_non_null_cells_rasters, max_rasters, cpv_raster):
 
 
 def rci(cpv_raster, rci_raster):
-    """Clip CPV to the MINCPV and renormalize to create relative corridor importance (RCI)"""
+    """Clip CPV to the MINCPV and renormalize to create relative corridor importance (RCI)."""
     lm_util.gprint("Calculating overall Relative Corridor Importance (RCI)")
     tmp_raster = ExtractByAttributes(cpv_raster, " VALUE >= " + str(lp_env.MINCPV))
     if lp_env.NORMALIZERCI:
@@ -652,7 +652,7 @@ def rci(cpv_raster, rci_raster):
 
 
 def linkage_priority(rci_raster, trunc_raster, lp_raster):
-    """Clip RCI to extent of truncated raster (LP)"""
+    """Clip RCI to extent of truncated raster (LP)."""
     lm_util.gprint("Calculating overall Linkage Priority")
     # mask RCI based on extent of truncated raster (which is based on CWDTHRESH)
     tmp_raster2 = ExtractByMask(rci_raster, trunc_raster)
@@ -665,14 +665,14 @@ def linkage_priority(rci_raster, trunc_raster, lp_raster):
 
 
 def norm_trunc(trunc_raster, norm_trunc_raster):
-    """Invert and normalize truncated raster (NORMTRUNC)"""
+    """Invert and normalize truncated raster (NORMTRUNC)."""
     lm_util.gprint("Inverting and normalizing truncated raster (NORMTRUNC)")
     norm_trunc_raster_tmp = normalize_raster(Raster(trunc_raster), lp_env.TRUNCNORMETH, True)
     arcpy.CopyRaster_management(norm_trunc_raster_tmp, norm_trunc_raster, None, None, None, None, None, "32_BIT_FLOAT")
 
 
 def blended_priority(norm_trunc_raster, lp_raster, bp_raster):
-    """Calculate overall Blended Priority"""
+    """Calculate overall Blended Priority."""
     lm_util.gprint("Calculating overall Blended Priority")
     tmp_raster3 = (lp_env.TRUNCWEIGHT * Raster(norm_trunc_raster)) + (lp_env.LPWEIGHT * Raster(lp_raster))
     if lp_env.NORMALIZEBP:
@@ -684,7 +684,7 @@ def blended_priority(norm_trunc_raster, lp_raster, bp_raster):
 
 
 def run_analysis():
-    """Run main Linkage Priority analysis"""
+    """Run main Linkage Priority analysis."""
     lm_util.gprint("Checking inputs")
 
     # check that LM finished with steps 3, 4 and 5
