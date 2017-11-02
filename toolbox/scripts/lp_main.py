@@ -682,11 +682,10 @@ def run_analysis():
     """Run main Linkage Priority analysis."""
     lm_util.gprint("Checking inputs")
 
-    # check that LM finished with steps 3, 4 and 5
+    # check that LM finished with steps 3 and 5
     if not os.path.exists(os.path.join(lm_env.DATAPASSDIR, "linkTable_s3.csv")) or\
-            not os.path.exists(os.path.join(lm_env.DATAPASSDIR, "linkTable_s4.csv")) or\
             not os.path.exists(os.path.join(lm_env.DATAPASSDIR, "linkTable_s5.csv")):
-        msg = ("ERROR: Project directory must contain a successful Linkage Mapper run with Steps 3, 4 and 5.")
+        msg = ("ERROR: Project directory must contain a successful Linkage Mapper run with Steps 3 and 5.")
         raise Exception(msg)
 
     # check/create gdb for scratch
