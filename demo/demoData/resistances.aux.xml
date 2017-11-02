@@ -14,9 +14,9 @@
     </Histograms>
     <Metadata>
       <MDI key="LAYER_TYPE">athematic</MDI>
-      <MDI key="STATISTICS_MINIMUM">1</MDI>
       <MDI key="STATISTICS_MAXIMUM">2028</MDI>
       <MDI key="STATISTICS_MEAN">53.54669406863</MDI>
+      <MDI key="STATISTICS_MINIMUM">1</MDI>
       <MDI key="STATISTICS_STDDEV">202.73254544551</MDI>
     </Metadata>
   </PAMRasterBand>
