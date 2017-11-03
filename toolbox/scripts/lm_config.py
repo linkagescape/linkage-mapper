@@ -250,6 +250,13 @@ def config_lm(config, arg, scratch_dir):
         config.WRITETRUNCRASTER = str2bool(arg[20])
         config.CWDTHRESH = int(arg[21])
         config.LMCUSTSETTINGS = nullstring(arg[22])
+    else:
+        config.OUTPUTFORMODELBUILDER = None
+        # these two settings are hardcoded based on the values used in lm_settings,
+        # before they were daylighted in the toolbox in LM 2.0.0+ for ArcGIS10.x
+        config.WRITETRUNCRASTER = True
+        config.CWDTHRESH = 200000
+        config.LMCUSTSETTINGS = None
 
     # config.USELMSETTINGS = str2bool(arg[19])  #In progress.  Will need to change 9.3 toolbox too.
     
