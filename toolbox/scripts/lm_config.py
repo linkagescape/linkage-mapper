@@ -235,10 +235,21 @@ def config_lm(config, arg, scratch_dir):
         
     config.MAXEUCDIST = nullfloat(arg[18])
 
-    config.OUTPUTFORMODELBUILDER = nullstring(arg[19])
-    config.WRITETRUNCRASTER = str2bool(arg[20])
-    config.CWDTHRESH = int(arg[21])
-    config.LMCUSTSETTINGS = nullstring(arg[22])
+    # Optional parameters that only apply to 2.0.0+ toolbox, for ArcGIS 10.x only
+    v10plus = True
+    installD = config.gp.GetInstallInfo("desktop")
+    try:
+        arcgis_major_version = installD['Version'].split(".")[0]
+        # config.gp.AddMessage("VER:" + arcgis_major_version)
+        if arcgis_major_version == "9":
+            v10plus = False
+    except:
+        pass
+    if v10plus:
+        config.OUTPUTFORMODELBUILDER = nullstring(arg[19])
+        config.WRITETRUNCRASTER = str2bool(arg[20])
+        config.CWDTHRESH = int(arg[21])
+        config.LMCUSTSETTINGS = nullstring(arg[22])
 
     # config.USELMSETTINGS = str2bool(arg[19])  #In progress.  Will need to change 9.3 toolbox too.
     
