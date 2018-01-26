@@ -20,12 +20,12 @@ GP_NULL = '#'
 
 
 def str2bool(pstr):
-    """Convert ESRI boolean string to Python boolean type"""
+    """Convert ESRI boolean string to Python boolean type."""
     return pstr == 'true'
 
 
 def setadjmeth(inparam):
-    """Return boolean variables for adjacency methods"""
+    """Return boolean variables for adjacency methods."""
     if "cost" in inparam.lower():
         meth_cw = True
     else:
@@ -39,7 +39,7 @@ def setadjmeth(inparam):
 
 
 def nullfloat(innum):
-    """Convert ESRI float or null to Python float"""
+    """Convert ESRI float or null to Python float."""
     if innum == GP_NULL:
         nfloat = None
     else:
@@ -50,14 +50,14 @@ def nullfloat(innum):
 
 
 def nullstring(arg_string):
-    """Convert ESRI nullstring to Python null"""
+    """Convert ESRI nullstring to Python null."""
     if arg_string == GP_NULL:
         arg_string = None
     return arg_string
 
 
 def config_global(config, arg):
-    """Configure global variables for all tools"""
+    """Configure global variables for all tools."""
     config.PARAMS = str(arg)  # Convert to string in case '\' exists
     config.releaseNum = ver.releaseNum
     config.LOGMESSAGES = True
@@ -167,7 +167,7 @@ def config_global(config, arg):
 
 
 def config_lm(config, arg, scratch_dir):
-    """ Configure global variables for Linkage Mapper"""
+    """Configure global variables for Linkage Mapper."""
     config.CONNECTFRAGS = False
     config.COREFC = arg[2]  # Core area feature class
     splits = config.COREFC.split("\\")
@@ -260,7 +260,7 @@ def config_lm(config, arg, scratch_dir):
 
 
 def config_barrier(config, arg):
-    """Configure global variables for Barrier tool"""
+    """Configure global variables for Barrier tool."""
     config.RESRAST_IN = arg[2]
     config.STARTRADIUS = arg[3]
     config.ENDRADIUS = arg[4]
@@ -307,17 +307,17 @@ def config_barrier(config, arg):
 
 
 def config_climate(config, arg):
-    """Configure global variables for Climate Corridor tool"""
+    """Configure global variables for Climate Corridor tool."""
     config.lm_configured = config_lm(config, arg, config.SCRATCHDIR)
 
 
 def config_lp(config, arg):
-    """Configure global variables for Linkage Priority tool"""
+    """Configure global variables for Linkage Priority tool."""
     config.lm_configured = config_lm(config, arg, config.SCRATCHDIR)
 
 
 def config_circuitscape(config, arg):
-    """Configure global variables for Circuitscape"""
+    """Configure global variables for Circuitscape."""
     config.COREFC = arg[2]
     config.COREFN = arg[3]
 
@@ -350,7 +350,7 @@ def config_circuitscape(config, arg):
 
 
 class Configure(object):
-    """Class container to hold global variables"""
+    """Class container to hold global variables."""
     TOOL_LM = 'Linkage Mapper'
     TOOL_CC = 'Linkage Mapper Climate'
     TOOL_LP = 'Linkage Priority'
@@ -359,7 +359,7 @@ class Configure(object):
 
 
     def __init__(self):
-        """Initialize class and create single geoprocessor object"""
+        """Initialize class and create single geoprocessor object."""
         self.gp = arcgisscripting.create(9.3)
         self.gp.CheckOutExtension("Spatial")
         self.gp.OverwriteOutput = True
@@ -367,7 +367,7 @@ class Configure(object):
 
 
     def configure(self, tool, arg):
-        """Setup variables for Configure class"""
+        """Setup variables for Configure class."""
         config_global(self, arg)
 
         if tool == Configure.TOOL_LM:
