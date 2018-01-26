@@ -27,10 +27,10 @@ def str2bool(pstr):
 def setadjmeth(inparam):
     """Return boolean variables for adjacency methods"""
     if "cost" in inparam.lower():
-        meth_cw = True 
+        meth_cw = True
     else:
         meth_cw = False
-        
+
     if "euclid" in inparam.lower():
         meth_eu = True
     else:
@@ -102,10 +102,10 @@ def config_global(config, arg):
 
     # Save individual current maps from Circuitscape
     config.SAVECURRENTMAPS = False
-        
+
     config.SAVECIRCUITDIR = False
     config.SAVE_TEMP_CIRCUIT_FILES = False
-    
+
     # Write voltage maps from pinchpoint analysis
     config.WRITE_VOLT_MAPS = False
 
@@ -205,14 +205,14 @@ def config_lm(config, arg, scratch_dir):
     config.MAXCOSTDIST = nullfloat(arg[17])
 
     if config.S2EUCDISTFILE != None:
-        if config.S2EUCDISTFILE.lower() == 'cluster': 
+        if config.S2EUCDISTFILE.lower() == 'cluster':
             # Custom code to consolidate nearby cores will be called
             config.S2EUCDISTFILE = None
             config.CONNECTFRAGS = True
             config.MAXCOSTDIST = None
             config.S1ADJMETH_CW = False
             config.S2ADJMETH_CW = False
-        
+
     config.MAXEUCDIST = nullfloat(arg[18])
 
     # Optional parameters that only apply to 2.0.0+ toolbox, for ArcGIS 10.x only
@@ -266,7 +266,7 @@ def config_barrier(config, arg):
     config.ENDRADIUS = arg[4]
     config.RADIUSSTEP = arg[5]
     config.BARRIER_METH = arg[6]
-    config.SAVE_RADIUS_RASTERS = str2bool(arg[7])    
+    config.SAVE_RADIUS_RASTERS = str2bool(arg[7])
     config.WRITE_PCT_RASTERS = str2bool(arg[8])
     if len(arg) > 9:
         config.BARRIER_CWD_THRESH = arg[9]
@@ -274,7 +274,7 @@ def config_barrier(config, arg):
             config.BARRIER_CWD_THRESH = None
     else:
         config.BARRIER_CWD_THRESH = None
-            
+
     if 'max' in config.BARRIER_METH.lower():
         config.BARRIER_METH_MAX = True
     else:
@@ -282,15 +282,15 @@ def config_barrier(config, arg):
     if 'sum' in config.BARRIER_METH.lower():
         config.BARRIER_METH_SUM = True
     else:
-        config.BARRIER_METH_SUM = False           
-    
+        config.BARRIER_METH_SUM = False
+
     if config.RADIUSSTEP == GP_NULL or config.ENDRADIUS == config.STARTRADIUS:
         config.RADIUSSTEP = 0
     if float(config.STARTRADIUS) + float(config.RADIUSSTEP) > float(config.ENDRADIUS):
         config.RADIUSSTEP = 0
     if config.RADIUSSTEP == 0:
         config.SAVE_RADIUS_RASTERS = True
-        
+
     # Save individual focal grids for barrier analysis
     config.SAVEFOCALRASTERS = False
 
@@ -300,10 +300,10 @@ def config_barrier(config, arg):
     # Calculate minimum of resistance and improvement score
     config.WRITE_TRIM_RASTERS = False
 
-    # Save individual barrier grids for each core area pair   
-    config.SAVEBARRIERRASTERS = False 
+    # Save individual barrier grids for each core area pair
+    config.SAVEBARRIERRASTERS = False
 
-    config.STEP1 = False    
+    config.STEP1 = False
 
 
 def config_climate(config, arg):
@@ -320,7 +320,7 @@ def config_circuitscape(config, arg):
     """Configure global variables for Circuitscape"""
     config.COREFC = arg[2]
     config.COREFN = arg[3]
-    
+
     if len(arg) == 4:
         config.DOCENTRALITY = True
         config.DOPINCH = False
@@ -329,7 +329,7 @@ def config_circuitscape(config, arg):
     else:
         config.DOPINCH = True
         config.DOCENTRALITY = False
-        config.RESRAST_IN = arg[4]        
+        config.RESRAST_IN = arg[4]
         config.CWDCUTOFF = int(nullfloat(arg[5]))  # CDW cutoff distance
         config.SQUARERESISTANCES = str2bool(arg[6])  # Square resistance values
 
@@ -345,7 +345,7 @@ def config_circuitscape(config, arg):
                 config.ALL_PAIR_SCENARIO = 'all-to-one'
 
     config.STEP1 = False
-    
+
     config.SAVECENTRALITYDIR = False
 
 
