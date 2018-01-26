@@ -26,15 +26,8 @@ def str2bool(pstr):
 
 def setadjmeth(inparam):
     """Return boolean variables for adjacency methods."""
-    if "cost" in inparam.lower():
-        meth_cw = True
-    else:
-        meth_cw = False
-
-    if "euclid" in inparam.lower():
-        meth_eu = True
-    else:
-        meth_eu = False
+    meth_cw = "cost" in inparam.lower()
+    meth_eu = "euclid" in inparam.lower()
     return meth_cw, meth_eu
 
 
@@ -275,14 +268,8 @@ def config_barrier(config, arg):
     else:
         config.BARRIER_CWD_THRESH = None
 
-    if 'max' in config.BARRIER_METH.lower():
-        config.BARRIER_METH_MAX = True
-    else:
-        config.BARRIER_METH_MAX = False
-    if 'sum' in config.BARRIER_METH.lower():
-        config.BARRIER_METH_SUM = True
-    else:
-        config.BARRIER_METH_SUM = False
+    config.BARRIER_METH_MAX = 'max' in config.BARRIER_METH.lower()
+    config.BARRIER_METH_SUM = 'sum' in config.BARRIER_METH.lower()
 
     if config.RADIUSSTEP == GP_NULL or config.ENDRADIUS == config.STARTRADIUS:
         config.RADIUSSTEP = 0
