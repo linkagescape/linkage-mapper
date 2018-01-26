@@ -27,22 +27,14 @@ def str2bool(pstr):
 def setadjmeth(inparam):
     """Return boolean variables for adjacency methods"""
     if "cost" in inparam.lower():
-        meth_cw = True
-        #meth_eu = False
+        meth_cw = True 
     else:
         meth_cw = False
         
     if "euclid" in inparam.lower():
-        #meth_cw = False
         meth_eu = True
     else:
         meth_eu = False
-    # elif inparam == "Cost-Weighted & Euclidean":
-        # meth_cw = True
-        # meth_eu = True
-    # else:
-        # meth_cw = False
-        # meth_eu = False
     return meth_cw, meth_eu
 
 
@@ -170,15 +162,6 @@ def config_global(config, arg):
     # TEMP NN corridor links (s4), may be able to get rid of this
     config.LT_NNCT = 30
 
-    # 1 corridor
-    # 10 NN corridor
-    # 11 1st nn (future)
-    # 12 2nd nn etc (future)
-    # 20 constel
-    # 21 1st nn constel (future)
-    # 22 2nd nn constel etc (future)
-    # 30 temp saved nnconstel.  maybe able to get rid of this
-
     #Temporary resistance raster copy to be created in master scripts
     config.RESRAST = path.join(config.SCRATCHDIR, 'resrast')
 
@@ -194,9 +177,6 @@ def config_lm(config, arg, scratch_dir):
 
     # Processing steps inputs
     config.STEP1 = str2bool(arg[5])
-
-    ### SETTING BOTH ADJ METHODS TO TRUE FOR S1 IN FUTURE RELEASES ###
-    # config.S1ADJMETH_CW, config.S1ADJMETH_EU = setadjmeth(arg[6])
 
     config.S1ADJMETH_CW = True
     config.S1ADJMETH_EU = True
@@ -258,25 +238,6 @@ def config_lm(config, arg, scratch_dir):
         config.CWDTHRESH = 200000
         config.LMCUSTSETTINGS = None
 
-    # config.USELMSETTINGS = str2bool(arg[19])  #In progress.  Will need to change 9.3 toolbox too.
-    
-    # if config.MAXEUCDIST == 0: Now done in nullfloat
-        # config.MAXEUCDIST = None
-
-    #Default values for lm_settings (used when box is not checked)
-        ### USER SETTABLE VARIABLES
-    # CALCNONNORMLCCS = False  # Mosiac non-normalized LCCs in step 5 (Boolean- set to True or False)
-    # WRITETRUNCRASTER = True  # Truncate mosaic corridor raster at an upper limit, i.e., use width cutoff. (Boolean- set to True or False)
-    # CWDTHRESH = 200000  # CWD corridor width cutoff to use in truncated raster (Integer)
-    # MINCOSTDIST = None  # Minimum cost distance- any corridor shorter than this will not be mapped (Integer)
-    # MINEUCDIST = None  # Minimum euclidean distance- any core areas closer than this will not be connected (Integer)
-    # SAVENORMLCCS = False  # Save inidvidual normalized LCC grids, not just mosaic (Boolean- set to True or False)
-    # SIMPLIFY_CORES = True  # Simplify cores before calculating distances (Boolean- set to True or False)
-                           # # This speeds up distance calculations in step 2,
-                           # # but Euclidean distances will be less precise.
-
-    # if config.USELMSETTINGS: #In progress.  Will need to change 9.3 toolbox too.
-
     if config.LMCUSTSETTINGS:
         cust_settings = imp.load_source(config.LMCUSTSETTINGS.split(".")[0], config.LMCUSTSETTINGS)
         for setting in dir(cust_settings):
@@ -292,15 +253,8 @@ def config_lm(config, arg, scratch_dir):
     if config.MAXCOSTDIST is None:
         config.TMAXCWDIST = None
     elif config.CWDTHRESH is not None:
-        config.TMAXCWDIST = None  # Max is disabled for now- see line below
-        # Will limit cw calc
-        # config.TMAXCWDIST = MAXCOSTDIST + CWDTHRESH
-
+        config.TMAXCWDIST = None
     config.SCRATCHGDB = path.join(scratch_dir, "scratch.gdb")
-    # Permanent copy of core area FC made at step 1 and used in all steps
-    # config.COREDIR = path.join(config.DATAPASSDIR, "corecopy")
-    # config.COREFC = path.join(config.COREDIR, "core_copy.shp")
-    # config.COREFN = "GRIDCODE"
     config.CORERAS = path.join(config.SCRATCHDIR, "core_ras")
     return True
 
