@@ -159,7 +159,7 @@ def config_global(config, arg):
     config.RESRAST = path.join(config.SCRATCHDIR, 'resrast')
 
 
-def config_lm(config, arg, scratch_dir):
+def config_lm(config, arg):
     """Configure global variables for Linkage Mapper."""
     config.CONNECTFRAGS = False
     config.COREFC = arg[2]  # Core area feature class
@@ -243,7 +243,7 @@ def config_lm(config, arg, scratch_dir):
         config.TMAXCWDIST = None
     elif config.CWDTHRESH is not None:
         config.TMAXCWDIST = None
-    config.SCRATCHGDB = path.join(scratch_dir, "scratch.gdb")
+    config.SCRATCHGDB = path.join(config.SCRATCHDIR, "scratch.gdb")
     config.CORERAS = path.join(config.SCRATCHDIR, "core_ras")
     return True
 
@@ -292,12 +292,12 @@ def config_barrier(config, arg):
 
 def config_climate(config, arg):
     """Configure global variables for Climate Corridor tool."""
-    config.lm_configured = config_lm(config, arg, config.SCRATCHDIR)
+    config.lm_configured = config_lm(config, arg)
 
 
 def config_lp(config, arg):
     """Configure global variables for Linkage Priority tool."""
-    config.lm_configured = config_lm(config, arg, config.SCRATCHDIR)
+    config.lm_configured = config_lm(config, arg)
 
 
 def config_circuitscape(config, arg):
@@ -355,7 +355,7 @@ class Configure(object):
         config_global(self, arg)
 
         if tool == Configure.TOOL_LM:
-            self.lm_configured = config_lm(self, arg, self.SCRATCHDIR)
+            self.lm_configured = config_lm(self, arg)
         elif tool == Configure.TOOL_CC:
             config_climate(self, arg)
         elif tool == Configure.TOOL_LP:
