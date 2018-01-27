@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.
+#!/usr/bin/env python2
 # Authors: Brad McRae and Darren Kavanagh
 
 """Linkage Mapper configuration module.
@@ -7,6 +7,7 @@ Assigns input parameters from ToolBox to variables, and sets constants.
 
 """
 
+import imp
 import os.path as path
 
 import arcgisscripting
@@ -14,7 +15,6 @@ import arcgisscripting
 import lm_version as ver
 import lm_settings
 
-import imp
 
 GP_NULL = '#'
 
@@ -68,7 +68,7 @@ def config_global(config, arg):
     config.LOGDIR_OLD = path.join(proj_dir, "logFiles")
     config.logFile = None
     config.logFilePath = None
-    config.logFileCopyPath = path.join(proj_dir,'last_run_log.txt')
+    config.logFileCopyPath = path.join(proj_dir, 'last_run_log.txt')
     config.MESSAGEDIR = path.join(config.LOGDIR, "log")
     config.MESSAGEDIR_OLD = path.join(config.LOGDIR, "Messages")
     config.ADJACENCYDIR = path.join(config.DATAPASSDIR, "adj")
@@ -155,7 +155,7 @@ def config_global(config, arg):
     # TEMP NN corridor links (s4), may be able to get rid of this
     config.LT_NNCT = 30
 
-    #Temporary resistance raster copy to be created in master scripts
+    # Temporary resistance raster copy to be created in master scripts
     config.RESRAST = path.join(config.SCRATCHDIR, 'resrast')
 
 
@@ -197,7 +197,7 @@ def config_lm(config, arg, scratch_dir):
     config.BUFFERDIST = nullfloat(arg[16])
     config.MAXCOSTDIST = nullfloat(arg[17])
 
-    if config.S2EUCDISTFILE != None:
+    if config.S2EUCDISTFILE is not None:
         if config.S2EUCDISTFILE.lower() == 'cluster':
             # Custom code to consolidate nearby cores will be called
             config.S2EUCDISTFILE = None
@@ -208,7 +208,8 @@ def config_lm(config, arg, scratch_dir):
 
     config.MAXEUCDIST = nullfloat(arg[18])
 
-    # Optional parameters that only apply to 2.0.0+ toolbox, for ArcGIS 10.x only
+    # Optional parameters that only apply to 2.0.0+ toolbox,
+    # for ArcGIS 10.x only
     v10plus = True
     installD = config.gp.GetInstallInfo("desktop")
     try:
@@ -225,14 +226,18 @@ def config_lm(config, arg, scratch_dir):
         config.LMCUSTSETTINGS = nullstring(arg[22])
     else:
         config.OUTPUTFORMODELBUILDER = None
-        # these two settings are hardcoded based on the values used in lm_settings,
-        # before they were daylighted in the toolbox in LM 2.0.0+ for ArcGIS10.x
+
+        # These two settings are hardcoded based on the values
+        # used in lm_settings, before they were daylighted in
+        # the toolbox in LM 2.0.0+ for ArcGIS10.x
         config.WRITETRUNCRASTER = True
         config.CWDTHRESH = 200000
+
         config.LMCUSTSETTINGS = None
 
     if config.LMCUSTSETTINGS:
-        cust_settings = imp.load_source(config.LMCUSTSETTINGS.split(".")[0], config.LMCUSTSETTINGS)
+        cust_settings = (imp.load_source(
+            config.LMCUSTSETTINGS.split(".")[0], config.LMCUSTSETTINGS))
         for setting in dir(cust_settings):
             if setting == setting.upper():
                 setting_value = getattr(cust_settings, setting)
@@ -273,7 +278,8 @@ def config_barrier(config, arg):
 
     if config.RADIUSSTEP == GP_NULL or config.ENDRADIUS == config.STARTRADIUS:
         config.RADIUSSTEP = 0
-    if float(config.STARTRADIUS) + float(config.RADIUSSTEP) > float(config.ENDRADIUS):
+    if ((float(config.STARTRADIUS) + float(config.RADIUSSTEP))
+            > float(config.ENDRADIUS)):
         config.RADIUSSTEP = 0
     if config.RADIUSSTEP == 0:
         config.SAVE_RADIUS_RASTERS = True
@@ -320,12 +326,13 @@ def config_circuitscape(config, arg):
         config.CWDCUTOFF = int(nullfloat(arg[5]))  # CDW cutoff distance
         config.SQUARERESISTANCES = str2bool(arg[6])  # Square resistance values
 
-        # Do adjacent pair corridor pinchpoint calculations using raster CWD maps
+        # Do adjacent pair corridor pinchpoint calculations
+        # using raster CWD maps
         config.DO_ADJACENTPAIRS = str2bool(arg[7])
         # Do all-pair current calculations using raster corridor map
         config.DO_ALLPAIRS = str2bool(arg[8])
         config.ALL_PAIR_CHOICE = arg[9]
-        if config.DO_ALLPAIRS == True:
+        if config.DO_ALLPAIRS:
             if "pairwise" in config.ALL_PAIR_CHOICE.lower():
                 config.ALL_PAIR_SCENARIO = 'pairwise'
             else:
@@ -338,12 +345,12 @@ def config_circuitscape(config, arg):
 
 class Configure(object):
     """Class container to hold global variables."""
+
     TOOL_LM = 'Linkage Mapper'
     TOOL_CC = 'Linkage Mapper Climate'
     TOOL_LP = 'Linkage Priority'
     TOOL_BM = 'Barrier mapper'
     TOOL_CS = 'Circuitscape'
-
 
     def __init__(self):
         """Initialize class and create single geoprocessor object."""
@@ -352,9 +359,8 @@ class Configure(object):
         self.gp.OverwriteOutput = True
         self.lm_configured = False
 
-
     def configure(self, tool, arg):
-        """Setup variables for Configure class."""
+        """Assign variables for Configure class."""
         config_global(self, arg)
 
         if tool == Configure.TOOL_LM:
