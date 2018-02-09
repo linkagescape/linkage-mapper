@@ -154,7 +154,7 @@ def run_analysis():
         grass_cores = process_pairings(core_pairings)
         if not grass_cores:
             lm_util.warn("\nNo core pairs within Euclidean distances. "
-                             "Progam program will end")
+                             "Progam will end")
         else:
             # Create CWD using Grass
             cc_grass_cwd.grass_cwd(grass_cores)
