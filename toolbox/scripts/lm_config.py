@@ -194,8 +194,8 @@ def config_lm(config, arg):
     config.STEP5 = str2bool(arg[15])
 
     # Optional input parameters
-    config.BUFFERDIST = nullfloat(arg[16])
-    config.MAXCOSTDIST = nullfloat(arg[17])
+    config.BUFFERDIST = nullfloat(arg[18])
+    config.MAXCOSTDIST = nullfloat(arg[19])
 
     if config.S2EUCDISTFILE is not None:
         if config.S2EUCDISTFILE.lower() == 'cluster':
@@ -206,14 +206,14 @@ def config_lm(config, arg):
             config.S1ADJMETH_CW = False
             config.S2ADJMETH_CW = False
 
-    config.MAXEUCDIST = nullfloat(arg[18])
+    config.MAXEUCDIST = nullfloat(arg[20])
 
     # Optional parameters that only apply to 2.0.0+ toolbox,
     # for ArcGIS 10.x only
     if "10." in config.gp.GetInstallInfo('desktop')['Version']:
-        config.OUTPUTFORMODELBUILDER = nullstring(arg[19])
-        config.WRITETRUNCRASTER = str2bool(arg[20])
-        config.CWDTHRESH = int(arg[21])
+        config.WRITETRUNCRASTER = str2bool(arg[16])
+        config.CWDTHRESH = int(arg[17])
+        config.OUTPUTFORMODELBUILDER = nullstring(arg[21])
         config.LMCUSTSETTINGS = nullstring(arg[22])
     else:
         config.OUTPUTFORMODELBUILDER = None

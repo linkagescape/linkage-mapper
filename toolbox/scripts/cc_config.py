@@ -73,9 +73,9 @@ class ClimateConfig(object):
         self.prj_resist_rast = os.path.join(self.inputs_gdb, "cc_resist")
         self.simplify_cores = True
         self.core_simp = os.path.join(cc_env.out_dir, "coresim.shp")
-        self.OUTPUTFORMODELBUILDER = "#"
         self.WRITETRUNCRASTER = "true"
         self.CWDTHRESH = "200000"
+        self.OUTPUTFORMODELBUILDER = "#"
         self.LMCUSTSETTINGS = "#"
 
 cc_env = ClimateConfig()
