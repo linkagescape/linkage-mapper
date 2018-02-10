@@ -1,3 +1,11 @@
+# Python
 *.py[cod]
+
+# ArcGIS
 *.lock
+
+# Word temporary
+~$*.doc*
+
+# LM build
 *.pdf
