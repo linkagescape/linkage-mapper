@@ -53,19 +53,19 @@ def bar_master(argv=None):
         gprint('\nMaking local copy of resistance raster.')
         lu.delete_data(cfg.RESRAST)
 
+        arcpy.env.extent = arcpy.Describe(cfg.RESRAST_IN).Extent
         desc = arcpy.Describe(cfg.RESRAST_IN)
         if hasattr(desc, "catalogPath"):
             cfg.RESRAST_IN = arcpy.Describe(cfg.RESRAST_IN).catalogPath
-        try:    
+        try:
             arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
         except:
             msg = ('ERROR: Could not make a copy of your resistance raster. ' +
                     'Try re-starting ArcMap to release the file lock.')
             lu.raise_error(msg)
-            
-        arcpy.env.extent = cfg.RESRAST
+
         arcpy.env.snapRaster = cfg.RESRAST
-        
+
         if cfg.BARRIER_METH_MAX:
             cfg.SUM_BARRIERS = False
             lu.dashline(1)
