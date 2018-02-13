@@ -120,13 +120,12 @@ def circuitscape_master(argv=None):
                 msg = ('ERROR: Resistance raster is required for pinch point'
                         ' analyses, but was not found.')
                 lu.raise_error(msg)
-            
+
+            arcpy.env.extent = cfg.RESRAST_IN
             desc = arcpy.Describe(cfg.RESRAST_IN)
             if hasattr(desc, "catalogPath"):
                 cfg.RESRAST_IN = arcpy.Describe(cfg.RESRAST_IN).catalogPath
-            
-            # arcpy.env.extent = cfg.RESRAST_IN
-            # arcpy.env.snapRaster = cfg.RESRAST_IN
+
             gprint('\nMaking local copy of resistance raster.')
             try:
                 gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
@@ -134,9 +133,9 @@ def circuitscape_master(argv=None):
                 msg = ('ERROR: Could not make a copy of your resistance raster. ' +
                     'Try re-starting ArcMap to release the file lock.')
                 lu.raise_error(msg)
-            arcpy.env.extent = cfg.RESRAST
+
             arcpy.env.snapRaster = cfg.RESRAST
-            
+
         if cfg.DOCENTRALITY:
             gprint("Creating output folder: " + cfg.CENTRALITYBASEDIR)
             if path.exists(cfg.CENTRALITYBASEDIR):
