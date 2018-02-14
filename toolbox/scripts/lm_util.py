@@ -2145,7 +2145,7 @@ def print_arcgis_failures(statement, failures):
     failures = failures + 1
     return failures
 
-    
+
 def print_drive_warning():
     gprint('\n********************************************************')
     drive, depth, realpath = get_dir_depth(cfg.PROJECTDIR)
@@ -2167,8 +2167,8 @@ def print_drive_warning():
             'Try changing your Windows Regional and Language settings to English (United States)\n'
             'or another convention that uses decimal points.\n')
         raise_error(msg)
-        
-        
+
+
 def get_dir_depth(dir):
     import string
     realpath = os.path.normpath(dir)
@@ -2582,4 +2582,4 @@ def get_mem():
     availMem = float(int(10 * float(stat.ullAvailPhys)/1073741824))/10
     return totMem, availMem
 
-    
+

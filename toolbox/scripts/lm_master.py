@@ -68,8 +68,8 @@ def lm_master(argv=None):
         if cfg.TOOL == cfg.TOOL_LM:
             cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
                                              cfg.PARAMS)
-        lu.print_drive_warning()        
-        
+        lu.print_drive_warning()
+
         installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + cfg.releaseNum)
         try:

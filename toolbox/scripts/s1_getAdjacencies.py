@@ -54,16 +54,16 @@ def STEP1_get_adjacencies():
         lu.delete_dir(cfg.ADJACENCYDIR)
         lu.delete_data(cfg.CWDADJFILE)
         lu.delete_data(cfg.EUCADJFILE)
-        
-        if not cfg.S2ADJMETH_CW and not cfg.S2ADJMETH_EU:  
-            # Adjacency not needed      
-            return                                            
+
+        if not cfg.S2ADJMETH_CW and not cfg.S2ADJMETH_EU:
+            # Adjacency not needed
+            return
 
         lu.create_dir(cfg.ADJACENCYDIR)
-        
+
         gprint('Adjacency files will be written to ' +
-                          cfg.ADJACENCYDIR)          
-                          
+                          cfg.ADJACENCYDIR)
+
         # ------------------------------------------------------------------
         # Create bounding circles to limit cwd and allocation calculations
         if cfg.BUFFERDIST is not None:
@@ -123,7 +123,7 @@ def cwadjacency():
     try:
         ALLOC_RASFN = "CWD_alloc_ras"
 
-        
+
         gprint('\nCalculating cost-weighted distance adjacency')
         outcsvfile = cfg.CWDADJFILE
         outcsvLogfile = path.join(cfg.LOGDIR, "cwdAdj_STEP1.csv")

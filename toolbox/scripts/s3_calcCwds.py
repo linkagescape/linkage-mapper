@@ -85,7 +85,7 @@ def STEP3_calc_cwds():
             # gprint('Max cost-weighted distance for CWD calcs set '
                               # 'to ' + str(cfg.TMAXCWDIST) + '\n')
 
-                              
+
         if (cfg.BUFFERDIST) is not None:
             gprint('Bounding circles plus a buffer of ' +
                               str(float(cfg.BUFFERDIST)) + ' map units will '
@@ -141,7 +141,7 @@ def STEP3_calc_cwds():
             lu.warn('IMPORTANT: Your LCP and stick feature classes\n'
                     'will LOSE LCPs that were already created, but\n'
                     'your final raster corridor map should be complete.\n')
-                    
+
             lu.dashline(0)
             lu.snooze(10)
             savedLinkTableFile = path.join(cfg.DATAPASSDIR,
@@ -397,9 +397,9 @@ def STEP3_calc_cwds():
             coreList = npy.unique(linkTable[:, cfg.LTB_CORE1:cfg.LTB_CORE2 + 1])
             for core in coreList:
                 cwdRaster = lu.get_cwd_path(int(core))
-                back_rast = cwdRaster.replace("cwd_", "back_")        
+                back_rast = cwdRaster.replace("cwd_", "back_")
                 lu.delete_data(back_rast)
-        
+
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
@@ -565,7 +565,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 gp.Extent = "MINOF"
 
             lu.delete_data(path.join(coreDir,"BACK"))
-            
+
             if arcpy:
                 statement = ('outCostDist = CostDistance(SRCRASTER, '
                              'bResistance, cfg.TMAXCWDIST, back_rast);'
@@ -598,7 +598,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         else:
             statement = ('gp.zonalstatisticsastable_sa('
                       'cfg.CORERAS, "VALUE", outDistanceRaster, ZNSTATS)')
-                      
+
         try:
             exec statement
             randomerror()
@@ -609,7 +609,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             else:
                 if cfg.TOOL == cfg.TOOL_CC:
                     msg = ('ERROR in Zonal Stats. Please restart ArcMap '
-                        'and try again.')                
+                        'and try again.')
                 else:
                     msg = ('ERROR in Zonal Stats. Restarting ArcMap '
                         'then restarting Linkage Mapper at step 3 usually\n'
@@ -666,7 +666,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         statement = ('conRaster = Con(IsNull(outDistanceRaster'
                             '), Int(outDistanceRaster), Con(Raster'
                             '(cfg.CORERAS) == int(targetCore), 1));'
-                            'conRaster.save(TARGETRASTER)') 
+                            'conRaster.save(TARGETRASTER)')
                         # statement = ('conRaster = Con(Raster('
                                     # 'cfg.CORERAS) == int(targetCore), 1);'
                                     # 'conRaster.save(TARGETRASTER)')
@@ -703,7 +703,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 lcpRas = path.join(coreDir,"lcp" + tif)
                 lu.delete_data(lcpRas)
 
-                # Note: costpath (both gp and arcpy versions) uses GDAL.               
+                # Note: costpath (both gp and arcpy versions) uses GDAL.
                 if arcpy:
                     statement = ('outCostPath = CostPath(TARGETRASTER,'
                           'outDistanceRaster, back_rast, "BEST_SINGLE", ""); '
@@ -713,7 +713,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                  'outDistanceRaster, back_rast, '
                                  'lcpRas, "BEST_SINGLE", "")')
                 try:
-                    exec statement                    
+                    exec statement
                     randomerror()
                 except:
                     failures = lu.print_arcgis_failures(statement, failures)
@@ -728,7 +728,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                             'Retrying one more time in 5 minutes.')
                         lu.snooze(300)
                         exec statement
-                
+
                 # fixme: may be fastest to not do selection, do
                 # EXTRACTBYMASK, getvaluelist, use code snippet at end
                 # of file to discard src and target values. Still this

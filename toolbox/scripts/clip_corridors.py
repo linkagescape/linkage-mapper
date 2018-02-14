@@ -32,23 +32,23 @@ def clip_corridor():
         inRaster = sys.argv[1]
         cutoffVal = sys.argv[2]
         outputGDB = sys.argv[3]
-        
+
         cutoffText = str(cutoffVal)
         if cutoffText[-6:] == '000000':
-            cutoffText = cutoffText[0:-6]+'m' 
+            cutoffText = cutoffText[0:-6]+'m'
         elif cutoffText[-3:] == '000':
-            cutoffText = cutoffText[0:-3]+'k' 
-        
+            cutoffText = cutoffText[0:-3]+'k'
+
         inPath,FN = path.split(inRaster) # In case raster is in a group layer
-        outRasterFN = FN + '_truncated_' + cutoffText         
+        outRasterFN = FN + '_truncated_' + cutoffText
         outRaster = path.join(outputGDB,outRasterFN)
         delete_data(outRaster)
-        
+
         desc = gp.Describe(inRaster)
         if hasattr(desc, "catalogPath"):
             inRaster = gp.Describe(inRaster).catalogPath
         if arc10:
-            arcpy.env.overwriteOutput = True  
+            arcpy.env.overwriteOutput = True
             arcpy.env.workspace = outputGDB
             arcpy.env.scratchWorkspace = outputGDB
             arcpy.env.extent = inRaster
@@ -56,22 +56,22 @@ def clip_corridor():
             output = arcpy.sa.Con(Raster(inRaster) <= float(cutoffVal),inRaster)
             output.save(outRaster)
         else:
-            gp.OverwriteOutput = True  
+            gp.OverwriteOutput = True
             gp.extent = gp.Describe(inRaster).extent
             gp.cellSize = gp.Describe(inRaster).MeanCellHeight
             gp.workspace = outputGDB
             gp.scratchWorkspace = outputGDB
-            
-            expression = ("(" + inRaster + " * (con(" + inRaster + " <= " 
+
+            expression = ("(" + inRaster + " * (con(" + inRaster + " <= "
                               + str(cutoffVal) + ",1)))")
             gp.SingleOutputMapAlgebra_sa(expression, outRaster)
-        
+
         gprint('Building output statistics for truncated raster')
         build_stats(outRaster)
 
         gprint('\nThe new truncated corridor raster "'+ outRasterFN + '" can '
                 'be found in the corridor geodatabase:')
-        gprint(outputGDB)            
+        gprint(outputGDB)
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
@@ -83,7 +83,7 @@ def clip_corridor():
 
     return
 
-def exit_with_geoproc_error(filename): 
+def exit_with_geoproc_error(filename):
     """Handle geoprocessor errors and provide details to user"""
     tb = sys.exc_info()[2]  # get the traceback object
     # tbinfo contains the error's line number and the code
@@ -97,8 +97,8 @@ def exit_with_geoproc_error(filename):
             gp.AddReturnMessage(msg)
         print gp.AddReturnMessage(msg)
     exit(0)
-    
-def exit_with_python_error(filename): 
+
+def exit_with_python_error(filename):
     """Handle python errors and provide details to user"""
     tb = sys.exc_info()[2]  # get the traceback object
     # tbinfo contains the error's line number and the code
@@ -116,7 +116,7 @@ def delete_data(dataset):
     except:
         pass
 
-        
+
 def build_stats(raster):
     """Builds statistics and pyramids for output rasters"""
     try:
@@ -128,10 +128,10 @@ def build_stats(raster):
     except:
         gprint('Pyramids failed. They can still be built manually.')
     return
-        
-        
+
+
 if __name__ == "__main__":
     clip_corridor()
-    
-    
-    
+
+
+

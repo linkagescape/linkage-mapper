@@ -15,8 +15,8 @@ class retry(object):
     def __init__(self, tries, exceptions=None, delay=1):
         """
         Decorator for retrying a function if exception occurs
-        
-        tries -- num tries 
+
+        tries -- num tries
         exceptions -- exceptions to catch
         delay -- wait between retries
         """
@@ -42,7 +42,7 @@ class retry(object):
                     filename = filename.rsplit("File ")[1]
                     lu.warn('--------------------------------------------------')
                     msg = ("The following error is being reported "
-                           "on " + line + " of " + filename + ":")                        
+                           "on " + line + " of " + filename + ":")
                     lu.warn(msg)
                     # lu.write_log(msg)
                     lu.warn(str(e))
@@ -51,7 +51,7 @@ class retry(object):
 
                     delaytime = self.delay*10*(_ + 1)
                     lu.warn("Will try again. ")
-                    lu.warn('---------RETRY #' + str(_+1) + ' OUT OF ' + 
+                    lu.warn('---------RETRY #' + str(_+1) + ' OUT OF ' +
                                   str(self.tries) + ' IN ' +
                                   str(delaytime) + ' SECONDS---------\n')
                     lu.snooze(delaytime)

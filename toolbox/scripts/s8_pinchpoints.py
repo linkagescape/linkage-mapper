@@ -40,14 +40,14 @@ def STEP8_calc_pinchpoints():
     try:
         lu.dashline(0)
         gprint('Running script ' + _SCRIPT_NAME)
-        
+
         restartFlag = False
         if cfg.CWDCUTOFF < 0:
             cfg.CWDCUTOFF = cfg.CWDCUTOFF * -1
             restartFlag = True # Restart code in progress
-                
+
         outputGDB = path.join(cfg.OUTPUTDIR, path.basename(cfg.PINCHGDB))
-        
+
         arcpy.OverWriteOutput = True
         arcpy.env.workspace = cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
@@ -63,13 +63,13 @@ def STEP8_calc_pinchpoints():
         resRaster = cfg.RESRAST
         arcpy.env.extent = "MINOF"
 
-        
-        minObject = arcpy.GetRasterProperties_management(resRaster, "MINIMUM") 
+
+        minObject = arcpy.GetRasterProperties_management(resRaster, "MINIMUM")
         rasterMin = float(str(minObject.getOutput(0)))
         if rasterMin <= 0:
             msg = ('Error: resistance raster cannot have 0 or negative values.')
             lu.raise_error(msg)
-                
+
         if cfg.DO_ADJACENTPAIRS:
             prevLcpShapefile = lu.get_lcp_shapefile(None, thisStep = 8)
             if not arcpy.Exists(prevLcpShapefile):
@@ -128,9 +128,9 @@ def STEP8_calc_pinchpoints():
         # Cutoff value text to append to filenames
         cutoffText = str(cfg.CWDCUTOFF)
         if cutoffText[-6:] == '000000':
-            cutoffText = cutoffText[0:-6]+'m' 
+            cutoffText = cutoffText[0:-6]+'m'
         elif cutoffText[-3:] == '000':
-            cutoffText = cutoffText[0:-3]+'k' 
+            cutoffText = cutoffText[0:-3]+'k'
 
         if cfg.SQUARERESISTANCES:
             # Square resistance values
@@ -149,10 +149,10 @@ def STEP8_calc_pinchpoints():
             lu.dashline(1)
             gprint('If you try to cancel your run and the Arc dialog hangs, ')
             gprint('you can kill Circuitscape by opening Windows Task Manager')
-            gprint('and ending the cs_run.exe process.')                    
+            gprint('and ending the cs_run.exe process.')
             lu.dashline(2)
 
-            for x in range(0,numLinks):            
+            for x in range(0,numLinks):
                 linkId = str(int(linkTable[x,cfg.LTB_LINKID]))
                 if not (linkTable[x,cfg.LTB_LINKTYPE] > 0):
                     continue
@@ -202,17 +202,17 @@ def STEP8_calc_pinchpoints():
                 # Includes 0 values in some cases with CP LI model if tif
                 # so using ESRI Grid format
                 resClipRasterMasked = path.join(linkDir,
-                                                'res_clip_m') 
-                # Extract masked resistance raster.  
+                                                'res_clip_m')
+                # Extract masked resistance raster.
                 # Needs to be float to get export to npy to work.
-                outRas = arcpy.sa.ExtractByMask(resRaster, resMaskPoly) + 0.0 
+                outRas = arcpy.sa.ExtractByMask(resRaster, resMaskPoly) + 0.0
                 outRas.save(resClipRasterMasked)
-               
+
                 resNpyFN = 'resistances_link_' + linkId + '.npy'
                 resNpyFile = path.join(INCIRCUITDIR, resNpyFN)
                 numElements, numResistanceNodes = export_ras_to_npy(resClipRasterMasked,
                                                           resNpyFile)
-                
+
                 totMem, availMem = lu.get_mem()
                 # gprint('Total memory: str(totMem))
                 if numResistanceNodes / availMem > 2000000:
@@ -220,10 +220,10 @@ def STEP8_calc_pinchpoints():
                     lu.warn('Warning:')
                     lu.warn('Circuitscape can only solve 2-3 million nodes')
                     lu.warn('per gigabyte of available RAM. \nTotal physical RAM'
-                            ' on your machine is ~' + str(totMem) 
-                            + ' GB. \nAvailable memory is ~'+ str(availMem) 
+                            ' on your machine is ~' + str(totMem)
+                            + ' GB. \nAvailable memory is ~'+ str(availMem)
                             + ' GB. \nYour resistance raster has '
-                            + str(numResistanceNodes) + ' nodes.')                                                          
+                            + str(numResistanceNodes) + ' nodes.')
                     lu.dashline(2)
                 corePairRaster = path.join(linkDir, 'core_pairs'+tif)
                 arcpy.env.extent = resClipRasterMasked
@@ -245,10 +245,10 @@ def STEP8_calc_pinchpoints():
                 if cfg.WRITE_VOLT_MAPS == True:
                     options['write_volt_maps']=True
                 options['habitat_file'] = resNpyFile
-                
+
                 # if int(linkId) > 2:
                     # options['habitat_file'] = 'c:\\test.dummy'
-                                
+
                 options['point_file'] = coreNpyFile
                 options['set_focal_node_currents_to_zero']=True
                 outputFN = 'Circuitscape_link' + linkId + '.out'
@@ -258,27 +258,27 @@ def STEP8_calc_pinchpoints():
                 configFN = 'pinchpoint_config' + linkId + '.ini'
 
                 outConfigFile = path.join(CONFIGDIR, configFN)
-                lu.writeCircuitscapeConfigFile(outConfigFile, options)                    
+                lu.writeCircuitscapeConfigFile(outConfigFile, options)
                 gprint('Processing link ID #' + str(linkId) + '. Resistance map'
-                        ' has ' + str(int(numResistanceNodes)) + ' nodes.') 
+                        ' has ' + str(int(numResistanceNodes)) + ' nodes.')
 
                 memFlag = lu.call_circuitscape(cfg.CSPATH, outConfigFile)
 
-                currentFN = ('Circuitscape_link' + linkId 
+                currentFN = ('Circuitscape_link' + linkId
                             + '_cum_curmap.npy')
                 currentMap = path.join(OUTCIRCUITDIR, currentFN)
-                
+
                 if not arcpy.Exists(currentMap):
                     print_failure(numResistanceNodes, memFlag, 10)
                     numElements, numNodes = export_ras_to_npy(
                                                 resClipRasterMasked,resNpyFile)
                     memFlag = lu.call_circuitscape(cfg.CSPATH, outConfigFile)
 
-                    currentFN = ('Circuitscape_link' + linkId 
+                    currentFN = ('Circuitscape_link' + linkId
                                 + '_cum_curmap.npy')
                     currentMap = path.join(OUTCIRCUITDIR, currentFN)
-                
-                if not arcpy.Exists(currentMap):                
+
+                if not arcpy.Exists(currentMap):
                     msg = ('\nCircuitscape failed. See error information above.')
                     arcpy.AddError(msg)
                     lu.write_log(msg)
@@ -288,18 +288,18 @@ def STEP8_calc_pinchpoints():
                 # divide each by its radius
                 currentRaster = path.join(linkDir, "current" + tif)
                 import_npy_to_ras(currentMap,corePairRaster,currentRaster)
-                
+
                 if cfg.WRITE_VOLT_MAPS == True:
                     voltFN = ('Circuitscape_link' + linkId + '_voltmap_'
                            + str(corex) + '_'+str(corey) + '.npy')
                     voltMap = path.join(OUTCIRCUITDIR, voltFN)
                     voltRaster = path.join(outputGDB,
-                             cfg.PREFIX + "_voltMap_"+ str(corex) + '_'+str(corey))                
+                             cfg.PREFIX + "_voltMap_"+ str(corex) + '_'+str(corey))
                     import_npy_to_ras(voltMap,corePairRaster,voltRaster)
                     gprint('Building output statistics and pyramids '
                                    'for voltage raster\n')
-                    lu.build_stats(voltRaster) 
-                    
+                    lu.build_stats(voltRaster)
+
                 arcpy.env.extent = currentRaster
 
                 if SETCORESTONULL:
@@ -319,11 +319,11 @@ def STEP8_calc_pinchpoints():
                     copyRas2()
                 else:
                     @retry(10)
-                    def mosaicRas():                
+                    def mosaicRas():
                         arcpy.Mosaic_management(currentRaster,
                                          mosaicRaster, "MAXIMUM", "MATCH")
                     mosaicRas()
-                    
+
                 resistancesFN = ('Circuitscape_link' + linkId
                             + '_resistances_3columns.out')
 
@@ -342,25 +342,25 @@ def STEP8_calc_pinchpoints():
                 if cfg.SAVE_TEMP_CIRCUIT_FILES == False:
                     lu.delete_file(coreNpyFile)
                     coreNpyBase, extension = path.splitext(coreNpyFile)
-                    lu.delete_data(coreNpyBase + '.hdr')                    
+                    lu.delete_data(coreNpyBase + '.hdr')
                     lu.delete_file(resNpyFile)
                     resNpyBase, extension = path.splitext(resNpyFile)
-                    lu.delete_data(resNpyBase + '.hdr')                    
+                    lu.delete_data(resNpyBase + '.hdr')
                     lu.delete_file(currentMap)
                     curMapBase, extension = path.splitext(currentMap)
                     lu.delete_data(curMapBase + '.hdr')
-                    lu.delete_data(currentRaster) 
+                    lu.delete_data(currentRaster)
                     lu.clean_out_workspace(linkDir)
-                    lu.delete_dir(linkDir) 
-                gprint('Finished with link ID #' + str(linkId) + '. ' + 
-                        str(linkLoop) + ' out of ' + str(numCorridorLinks) + 
+                    lu.delete_dir(linkDir)
+                gprint('Finished with link ID #' + str(linkId) + '. ' +
+                        str(linkLoop) + ' out of ' + str(numCorridorLinks) +
                         ' links have been processed.')
                 start_time1 = lu.elapsed_time(start_time1)
-                
-            outputRaster = path.join(outputGDB, cfg.PREFIX + 
+
+            outputRaster = path.join(outputGDB, cfg.PREFIX +
                                      "_current_adjacentPairs_" + cutoffText)
             lu.delete_data(outputRaster)
-            
+
             @retry(10)
             def copyRas():
                 arcpy.CopyRaster_management(mosaicRaster, outputRaster)
@@ -369,13 +369,13 @@ def STEP8_calc_pinchpoints():
             gprint('Building output statistics and pyramids '
                                   'for corridor pinch point raster\n')
             lu.build_stats(outputRaster)
-            
+
             finalLinkTable = lu.update_lcp_shapefile(linkTable, lastStep=5,
                                                       thisStep=8)
 
             linkTableFile = path.join(cfg.DATAPASSDIR, "linkTable_s5_plus.csv")
             lu.write_link_table(finalLinkTable, linkTableFile, inLinkTableFile)
-            linkTableFinalFile = path.join(cfg.OUTPUTDIR, cfg.PREFIX + 
+            linkTableFinalFile = path.join(cfg.OUTPUTDIR, cfg.PREFIX +
                                            "_linkTable_s5_plus.csv")
             lu.write_link_table(finalLinkTable,
                                 linkTableFinalFile, inLinkTableFile)
@@ -399,13 +399,13 @@ def STEP8_calc_pinchpoints():
 
         lu.dashline(1)
         gprint('Mapping global pinch points among all\n'
-                'core area pairs using Circuitscape.')                   
-                
+                'core area pairs using Circuitscape.')
+
         if cfg.ALL_PAIR_SCENARIO=='pairwise':
             gprint('Circuitscape will be run in PAIRWISE mode.')
-                        
+
         else:
-            gprint('Circuitscape will be run in ALL-TO-ONE mode.')     
+            gprint('Circuitscape will be run in ALL-TO-ONE mode.')
         arcpy.env.workspace = cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         arcpy.env.extent = cfg.RESRAST
@@ -426,9 +426,9 @@ def STEP8_calc_pinchpoints():
         outCon = arcpy.sa.Con(Raster(s8CoreRasPath) > 0, 1)
         outCon.save(binaryCoreRaster)
         s5corridorRas = path.join(cfg.OUTPUTGDB,cfg.PREFIX + "_corridors")
-        
+
         if not arcpy.Exists(s5corridorRas):
-            s5corridorRas = path.join(cfg.OUTPUTGDB,cfg.PREFIX + 
+            s5corridorRas = path.join(cfg.OUTPUTGDB,cfg.PREFIX +
                                       "_lcc_mosaic_int")
 
         outCon = arcpy.sa.Con(Raster(s5corridorRas) <= cfg.CWDCUTOFF, Raster(
@@ -443,10 +443,10 @@ def STEP8_calc_pinchpoints():
         s8CoreRasClipped = s8CoreRasPath + '_c'
 
         # Produce core raster with same extent as clipped resistance raster
-        # added to ensure correct data type- nodata values were positive for 
+        # added to ensure correct data type- nodata values were positive for
         # cores otherwise
-        outCon = arcpy.sa.Con(arcpy.sa.IsNull(Raster(s8CoreRasPath)), 
-                              -9999, Raster(s8CoreRasPath))  
+        outCon = arcpy.sa.Con(arcpy.sa.IsNull(Raster(s8CoreRasPath)),
+                              -9999, Raster(s8CoreRasPath))
         outCon.save(s8CoreRasClipped)
 
         resNpyFN = 'resistances.npy'
@@ -463,7 +463,7 @@ def STEP8_calc_pinchpoints():
                     'on your machine is ~' + str(totMem)
                     + ' GB. \nAvailable memory is ~'+ str(availMem)
                     + ' GB. \nYour resistance raster has '
-                    + str(numResistanceNodes) + ' nodes.')   
+                    + str(numResistanceNodes) + ' nodes.')
             lu.dashline(0)
 
         coreNpyFN = 'cores.npy'
@@ -483,18 +483,18 @@ def STEP8_calc_pinchpoints():
         configFN = 'pinchpoint_allpair_config.ini'
         outConfigFile = path.join(CONFIGDIR, configFN)
         lu.writeCircuitscapeConfigFile(outConfigFile, options)
-        gprint('\nResistance map has ' + str(int(numResistanceNodes)) + ' nodes.') 
+        gprint('\nResistance map has ' + str(int(numResistanceNodes)) + ' nodes.')
         lu.dashline(1)
         gprint('If you try to cancel your run and the Arc dialog hangs, ')
         gprint('you can kill Circuitscape by opening Windows Task Manager')
-        gprint('and ending the cs_run.exe process.')             
+        gprint('and ending the cs_run.exe process.')
         lu.dashline(0)
 
         lu.call_circuitscape(cfg.CSPATH, outConfigFile)
 
         if options['scenario']=='pairwise':
             rasterSuffix =  "_current_allPairs_" + cutoffText
-                        
+
         else:
             rasterSuffix =  "_current_allToOne_" + cutoffText
 
@@ -519,16 +519,16 @@ def STEP8_calc_pinchpoints():
             lu.write_log(msg)
             exit(1)
 
-        #set core areas to nodata 
-        if SETCORESTONULL:                  
+        #set core areas to nodata
+        if SETCORESTONULL:
             # Set core areas to NoData in current map for color ramping
-            outputRasterND = outputRaster + '_noDataCores' 
-            outCon = arcpy.sa.SetNull(Raster(s8CoreRasClipped) > 0, 
-                                      Raster(outputRaster))   
-            outCon.save(outputRasterND)                
+            outputRasterND = outputRaster + '_noDataCores'
+            outCon = arcpy.sa.SetNull(Raster(s8CoreRasClipped) > 0,
+                                      Raster(outputRaster))
+            outCon.save(outputRasterND)
 
-        gprint('\nBuilding output statistics and pyramids ' 
-                'for centrality raster.')        
+        gprint('\nBuilding output statistics and pyramids '
+                'for centrality raster.')
         lu.build_stats(outputRaster)
         lu.build_stats(outputRasterND)
 
@@ -555,7 +555,7 @@ def export_ras_to_npy(raster,npyFile):
     cellSize=descData.meanCellHeight
     extent=descData.Extent
     spatialReference=descData.spatialReference
-    
+
     pnt=arcpy.Point(extent.XMin,extent.YMin)
     outData = arcpy.RasterToNumPyArray(raster,"#","#","#",-9999)
     #outData = npy.where(outData==noDataVal,-9999,outData)
@@ -563,13 +563,13 @@ def export_ras_to_npy(raster,npyFile):
         outData = outData.astype('int32')
     npy.save(npyFile, outData)
     write_header(raster,outData,npyFile)
-            
+
     numElements = (outData.shape[0] * outData.shape[1])
     #rows,cols = npy.where(outData != -9999)
-    numNodes = (npy.where(outData != -9999, 1, 0)).sum() 
-    #numZeros = (npy.where(outData != -9999, 1, 0)).sum() 
+    numNodes = (npy.where(outData != -9999, 1, 0)).sum()
+    #numZeros = (npy.where(outData != -9999, 1, 0)).sum()
     #del rows
-    
+
     del outData
     return numElements, numNodes
 
@@ -581,13 +581,13 @@ def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     cellSize=descData.meanCellHeight
     extent=descData.Extent
     spatialReference=descData.spatialReference
-    
+
     pnt=arcpy.Point(extent.XMin,extent.YMin)
     newRaster = arcpy.NumPyArrayToRaster(npyArray,pnt,
                                          cellSize,cellSize,-9999)
     newRaster.save(outRasterPath)
     return
-        
+
     # # Return GEOPROCESSING specific errors
     # except arcpy.ExecuteError:
         # lu.dashline(1)
@@ -627,12 +627,12 @@ def write_header(raster,numpyArray,numpyFile):
 def print_failure(numResistanceNodes, memFlag, sleepTime):
     gprint('\nCircuitscape failed. See error information above.')
     if memFlag == True:
-        totMem, availMem = lu.get_mem()                    
+        totMem, availMem = lu.get_mem()
         gprint('Note: Circuitscape can only solve 2-3 million nodes')
         gprint('per gigabyte of available RAM. Your resistance raster had ')
-        gprint(str(int(numResistanceNodes)) + ' nodes.\n')  
-        gprint('Total physical RAM on your machine is ~' 
-               + str(totMem) 
+        gprint(str(int(numResistanceNodes)) + ' nodes.\n')
+        gprint('Total physical RAM on your machine is ~'
+               + str(totMem)
                + ' GB. \nAvailable memory is ~'
                + str(availMem) + ' GB. \n')
     gprint('Trying again in ' + str(sleepTime) + ' seconds.')

@@ -28,16 +28,16 @@ def bar_master(argv=None):
     """
     if argv is None:
         argv = sys.argv
-    # cfg.configure(argv)    
+    # cfg.configure(argv)
     cfg.configure(cfg.TOOL_BM, argv) #xxx was sys.argv
-    gprint = lu.gprint   
-        
+    gprint = lu.gprint
+
     try:
-        
+
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
 
-        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
+        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
                                              cfg.PARAMS)
 
         lu.print_drive_warning()
@@ -78,7 +78,7 @@ def bar_master(argv=None):
             lu.dashline()
             gprint('Calculating SUM of barrier effects across core area pairs')
             s6.STEP6_calc_barriers()
-        
+
         #clean up
         lu.delete_dir(cfg.SCRATCHDIR)
         if not cfg.SAVEBARRIERDIR:

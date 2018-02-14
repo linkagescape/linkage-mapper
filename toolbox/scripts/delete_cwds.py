@@ -15,7 +15,7 @@ except:
     arc10 = False
     import arcgisscripting
     gp = arcgisscripting.create()
-    
+
 gprint = gp.addmessage
 
 _SCRIPT_NAME = "lm_delete_cwds"
@@ -24,7 +24,7 @@ _SCRIPT_NAME = "lm_delete_cwds"
 def delete_cwd_dir():
     """Deletes cost-weighted distance directory and CWD rasters
 
-    """               
+    """
     projectDir = sys.argv[1]
     cwdBaseDir = os.path.join(projectDir, "datapass\\cwd")
     try:
@@ -42,8 +42,8 @@ def delete_cwd_dir():
                 if gp.GetSeverity(msg) == 2:
                     gp.AddReturnMessage(msg)
                 print gp.AddReturnMessage(msg)
-            exit(0)        
-        
+            exit(0)
+
     return
 
 if __name__ == "__main__":
