@@ -246,7 +246,7 @@ def STEP2_build_network():
             gprint('Creating shapefiles with linework for links.\n')
             try:
                 lu.write_link_maps(outlinkTableFile, step=2)
-            except:
+            except Exception:
                 lu.write_link_maps(outlinkTableFile, step=2)
             gprint('Linework shapefiles written.')
 
@@ -260,7 +260,7 @@ def STEP2_build_network():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -288,7 +288,7 @@ def get_adj_list(adjFile):
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -313,7 +313,7 @@ def generate_distance_file():
                 try:
                     import arcpy
                     import arcpy.cartography as CA
-                except:
+                except Exception:
                     arcpy = False
                 if arcpy:
                     CA.SimplifyPolygon(cfg.COREFC, COREFC_SIMP, "POINT_REMOVE",
@@ -324,7 +324,7 @@ def generate_distance_file():
                                         tolerance, "#", "NO_CHECK")
 
                 S2COREFC = COREFC_SIMP
-            except:
+            except Exception:
                 pass # In case point geometry is entered for core area FC
 
 
@@ -405,7 +405,7 @@ def generate_distance_file():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -474,7 +474,7 @@ def get_full_adj_list():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -614,7 +614,7 @@ def connect_clusters(linkTable):
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)

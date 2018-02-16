@@ -686,7 +686,7 @@ def STEP6_calc_barriers():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 6. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)

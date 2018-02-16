@@ -11,7 +11,7 @@ try:
     gp = arcpy.gp
     arcgisscripting = arcpy
     arc10 = True
-except:
+except Exception:
     arc10 = False
     import arcgisscripting
     gp = arcgisscripting.create()
@@ -30,11 +30,11 @@ def delete_cwd_dir():
     try:
         if os.path.exists(cwdBaseDir):
             gp.delete_management(cwdBaseDir)
-    except:
+    except Exception:
         try:
             if os.path.exists(cwdBaseDir):
                 shutil.rmtree(cwdBaseDir)
-        except:
+        except Exception:
             gp.AddError("Unable to delete cwd directory.  One of the rasters "
                         "might have been open in ArcMap.\n You may "
                         'need to re-start ArcMap to release the file lock.')

@@ -59,7 +59,7 @@ def bar_master(argv=None):
             cfg.RESRAST_IN = arcpy.Describe(cfg.RESRAST_IN).catalogPath
         try:
             arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
-        except:
+        except Exception:
             msg = ('ERROR: Could not make a copy of your resistance raster. ' +
                     'Try re-starting ArcMap to release the file lock.')
             lu.raise_error(msg)
@@ -90,7 +90,7 @@ def bar_master(argv=None):
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.exit_with_python_error(_SCRIPT_NAME)
 
 if __name__ == "__main__":

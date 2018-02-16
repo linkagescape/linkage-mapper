@@ -23,7 +23,7 @@ try:
     arcpy.CheckOutExtension("spatial")
     gp = arcpy.gp
     arcgisscripting = arcpy
-except:
+except Exception:
     arcpy = False
     import arcgisscripting
     gp = cfg.gp
@@ -106,7 +106,7 @@ def STEP1_get_adjacencies():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -184,7 +184,7 @@ def cwadjacency():
         while True:
             try:
                 exec statement
-            except:
+            except Exception:
                 count, tryAgain = lu.retry_arc_error(count, statement)
                 if not tryAgain:
                     exec statement
@@ -204,7 +204,7 @@ def cwadjacency():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -248,7 +248,7 @@ def euadjacency():
         while True:
             try:
                 exec statement
-            except:
+            except Exception:
                 count, tryAgain = lu.retry_arc_error(count, statement)
                 if not tryAgain:
                     exec statement
@@ -272,7 +272,7 @@ def euadjacency():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
 

@@ -23,7 +23,7 @@ import lm_util as lu
 
 try:
     import s7_centrality as s7
-except:
+except Exception:
     pass
 import s8_pinchpoints as s8
 
@@ -116,7 +116,7 @@ def circuitscape_master(argv=None):
             gprint('\nMaking local copy of resistance raster.')
             try:
                 gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
-            except:
+            except Exception:
                 msg = ('ERROR: Could not make a copy of your resistance raster. ' +
                     'Try re-starting ArcMap to release the file lock.')
                 lu.raise_error(msg)

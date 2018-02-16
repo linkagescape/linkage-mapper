@@ -24,12 +24,12 @@ _SCRIPT_NAME = "s5_calcLccs.py"
     # arcgisscripting = arcpy
     # arcpy.CheckOutExtension("spatial")
     # arcObj = arcpy
-# except:
+# except Exception:
 try:
     import arcpy # want to know if arcpy is available
     from arcpy.sa import *
     arcpyAvailable = True
-except:
+except Exception:
     arcpyAvailable = False
 
 # # Arcpy not working in some cases unless s3 executed in same run.
@@ -61,7 +61,7 @@ def STEP5_calc_lccs():
             calc_lccs(normalize)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -234,7 +234,7 @@ def calc_lccs(normalize):
                 try:
                     exec statement
                     randomerror()
-                except:
+                except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain:
                         exec statement
@@ -245,7 +245,7 @@ def calc_lccs(normalize):
                 try:
                     minObject = gp.GetRasterProperties(lccNormRaster, "MINIMUM")
                     rasterMin = float(str(minObject.getoutput(0)))
-                except:
+                except Exception:
                     lu.warn('\n------------------------------------------------')
                     lu.warn('WARNING: Raster minimum check failed in step 5. \n'
                         'This may mean the output rasters are corrupted. Please \n'
@@ -292,7 +292,7 @@ def calc_lccs(normalize):
                         exec statement
                         lu.write_log('Done with mosaic.')
                         randomerror()
-                    except:
+                    except Exception:
                         count,tryAgain = lu.retry_arc_error(count,statement)
                         lu.delete_data(mosaicRaster)
                         lu.delete_dir(mosaicDir)
@@ -379,7 +379,7 @@ def calc_lccs(normalize):
             statement = 'arcObj.CopyRaster_management(mosaicRaster, floatRaster)'
             try:
                 exec statement
-            except:
+            except Exception:
                 pass
 
 
@@ -397,7 +397,7 @@ def calc_lccs(normalize):
             try:
                 exec statement
                 randomerror()
-            except:
+            except Exception:
                 count,tryAgain = lu.retry_arc_error(count,statement)
                 if not tryAgain: exec statement
             else: break
@@ -433,7 +433,7 @@ def calc_lccs(normalize):
                 try:
                     exec statement
                     randomerror()
-                except:
+                except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain: exec statement
                 else: break
@@ -446,7 +446,7 @@ def calc_lccs(normalize):
             arcObj.CopyRaster_management(mosaicRaster, mosaicGrid)
             minObject = gp.GetRasterProperties(mosaicGrid, "MINIMUM")
             rasterMin = float(str(minObject.getoutput(0)))
-        except:
+        except Exception:
             lu.warn('\n------------------------------------------------')
             lu.warn('WARNING: Raster minimum check failed in step 5. \n'
                 'This may mean the output rasters are corrupted. Please \n'
@@ -498,7 +498,7 @@ def calc_lccs(normalize):
         gprint('Creating shapefiles with linework for links.')
         try:
             lu.write_link_maps(outlinkTableFile, step=5)
-        except:
+        except Exception:
             lu.write_link_maps(outlinkTableFile, step=5)
 
         # Create final linkmap files in output directory, and remove files from
@@ -528,7 +528,7 @@ def calc_lccs(normalize):
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)

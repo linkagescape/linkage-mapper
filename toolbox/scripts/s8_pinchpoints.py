@@ -504,7 +504,7 @@ def STEP8_calc_pinchpoints():
 
         try:
             import_npy_to_ras(currentMap,resRasClipPath,outputRaster)
-        except:
+        except Exception:
             lu.dashline(1)
             msg = ('ERROR: Circuitscape failed. \n'
                   'Note: Circuitscape can only solve 2-3 million nodes'
@@ -542,7 +542,7 @@ def STEP8_calc_pinchpoints():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 8. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -594,7 +594,7 @@ def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
         # lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # # Return any PYTHON or system specific errors
-    # except:
+    # except Exception:
         # lu.dashline(1)
         # gprint('****Failed in step 8. Details follow.****')
         # lu.exit_with_python_error(_SCRIPT_NAME)

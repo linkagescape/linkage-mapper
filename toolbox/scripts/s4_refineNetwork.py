@@ -217,7 +217,7 @@ def STEP4_refine_network():
         gprint('Creating shapefiles with linework for links.')
         try:
             lu.write_link_maps(outlinkTableFile, step=4)
-        except:
+        except Exception:
             lu.write_link_maps(outlinkTableFile, step=4)
 
     # Return GEOPROCESSING specific errors
@@ -226,7 +226,7 @@ def STEP4_refine_network():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         gprint('****Failed in step 4. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 

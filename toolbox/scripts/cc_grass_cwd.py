@@ -88,7 +88,7 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
 
     try:
         grass.create_location(gisdbase, location, filename=geo_file)
-    except:
+    except Exception:
         warn_msg = ("Cannot create GRASS workspace.\n"
                     "Try rebooting and restarting ArcGIS. If that doesn't\n"
                     "work you can try using the 'cc_demo.py' python script\n"

@@ -128,12 +128,12 @@ def raster_aggregator():
             #clean up
             try:
                 gp.delete_management(agRasterFull)
-            except:
+            except Exception:
                 pass
             if SMOOTH == True:
                 try:
                     gp.delete_management(smoothRasterFull)
-                except:
+                except Exception:
                     pass
 
         gprint('Done.')
@@ -143,7 +143,7 @@ def raster_aggregator():
         raise_geoproc_error(__filename__)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         raise_python_error(__filename__)
 
 

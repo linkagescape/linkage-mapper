@@ -223,7 +223,7 @@ def STEP7_calc_centrality():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -241,11 +241,11 @@ def load_graph(filename,graphType,datatype):
     f = open(filename, 'r')
     try:
         graphObject = npy.loadtxt(filename, dtype = 'Float64', comments='#')
-    except:
+    except Exception:
         try:
             graphObject = npy.loadtxt(filename, dtype = 'Float64',
                                       comments='#', delimiter=',')
-        except:
+        except Exception:
             raise RuntimeError('Error reading',type,
                                'file.  Please check file format')
     return graphObject
@@ -269,7 +269,7 @@ def make_graph_from_list(graphList):
         return g_graph, nodeNames
 
         # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)

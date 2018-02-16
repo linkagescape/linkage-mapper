@@ -25,7 +25,7 @@ try:
     gp = arcpy.gp
     arcgisscripting = arcpy
     tif = ''
-except:
+except Exception:
     arcpy = False
     import arcgisscripting
     gp = cfg.gp
@@ -52,7 +52,7 @@ def write_cores_to_map(x, coresToMap):
         outFile.close()
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -273,7 +273,7 @@ def STEP3_calc_cwds():
                 try:
                     exec statement
                     randomerror()
-                except:
+                except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain: exec statement
                 else: break
@@ -376,7 +376,7 @@ def STEP3_calc_cwds():
         gprint('Creating shapefiles with linework for links...')
         try:
             lu.write_link_maps(outlinkTableFile, step=3)
-        except:
+        except Exception:
             lu.write_link_maps(outlinkTableFile, step=3)
         start_time = lu.elapsed_time(start_time)
 
@@ -407,7 +407,7 @@ def STEP3_calc_cwds():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -514,7 +514,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             try:
                 exec statement
                 randomerror()
-            except:
+            except Exception:
                 failures = lu.print_arcgis_failures(statement, failures)
                 if failures < 20:
                     return None,failures,lcpLoop
@@ -551,7 +551,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             try:
                 exec statement
                 randomerror()
-            except:
+            except Exception:
                 failures = lu.print_arcgis_failures(statement, failures)
                 if failures < 20:
                     return None, failures, lcpLoop
@@ -575,7 +575,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             try:
                 exec statement
                 randomerror()
-            except:
+            except Exception:
                 failures = lu.print_arcgis_failures(statement, failures)
                 if failures < 20:
                     return None, failures, lcpLoop
@@ -601,7 +601,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         try:
             exec statement
             randomerror()
-        except:
+        except Exception:
             failures = lu.print_arcgis_failures(statement, failures)
             if failures < 20:
                 return None,failures,lcpLoop
@@ -677,7 +677,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                      ' TARGETRASTER)')
                     exec statement
                     randomerror()
-                except:
+                except Exception:
                     failures = lu.print_arcgis_failures(statement, failures)
                     if failures < 20:
                         return None,failures,lcpLoop
@@ -695,7 +695,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         rasterMin = float(str(minObject.getOutput(0)))
                         linkTable[link,cfg.LTB_CWDIST] = rasterMin
                         lu.delete_data(zonalRas)
-                    except:
+                    except Exception:
                         pass
                 # Cost path maps the least cost path
                 # between source and target
@@ -714,7 +714,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 try:
                     exec statement
                     randomerror()
-                except:
+                except Exception:
                     failures = lu.print_arcgis_failures(statement, failures)
                     if failures < 20:
                         return None,failures,lcpLoop
@@ -763,7 +763,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     try:
                         exec statement
                         randomerror()
-                    except:
+                    except Exception:
                         failures = lu.print_arcgis_failures(statement,
                                                             failures)
                         if failures < 20:
@@ -776,7 +776,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         coreDetected = test_for_intermediate_core(coreDir,
                                                 lcpRas, corePairRas)
                         randomerror()
-                    except:
+                    except Exception:
                         statement = 'test_for_intermediate_core'
                         failures = lu.print_arcgis_failures(statement,
                                                             failures)
@@ -821,7 +821,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -848,7 +848,7 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
             try:
                 exec statement
                 randomerror()
-            except:
+            except Exception:
                 count,tryAgain = lu.retry_arc_error(count,statement)
                 if not tryAgain: exec statement
             else: break
@@ -866,7 +866,7 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)

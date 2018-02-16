@@ -278,7 +278,7 @@ def main():
                 # Save max ROI to point
                 try:
                     arcpy.RasterToPoint_conversion(maxRoiRaster, outPoint)
-                except:
+                except Exception:
                     msg = ('Error: it looks like there are no viable restoration candidates.')
                     lu.raise_error(msg)
 
@@ -291,7 +291,7 @@ def main():
                 # Save max barrier to point
                 try:
                     arcpy.RasterToPoint_conversion(maxBarrierRaster, outPoint)
-                except:
+                except Exception:
                     msg = ('Error: it looks like there are no viable restoration candidates.')
                     lu.raise_error(msg)
 
@@ -365,7 +365,7 @@ def main():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Iteration script failed. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)

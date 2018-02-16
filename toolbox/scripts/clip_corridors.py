@@ -13,7 +13,7 @@ try:
     gp = arcpy.gp
     arcgisscripting = arcpy
     arc10 = True
-except:
+except Exception:
     arc10 = False
     import arcgisscripting
     gp = arcgisscripting.create()
@@ -78,7 +78,7 @@ def clip_corridor():
         exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
     return
@@ -113,7 +113,7 @@ def delete_data(dataset):
     try:
         if gp.Exists(dataset):
             gp.delete_management(dataset)
-    except:
+    except Exception:
         pass
 
 
@@ -121,11 +121,11 @@ def build_stats(raster):
     """Builds statistics and pyramids for output rasters"""
     try:
         gp.CalculateStatistics_management(raster, "1", "1", "#")
-    except:
+    except Exception:
         gprint('Statistics failed. They can still be calculated manually.')
     try:
         gp.BuildPyramids_management(raster)
-    except:
+    except Exception:
         gprint('Pyramids failed. They can still be built manually.')
     return
 

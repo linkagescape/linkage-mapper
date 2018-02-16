@@ -75,7 +75,7 @@ def lm_master(argv=None):
         try:
             gprint('on ArcGIS ' + installD['ProductName'] + ' ' +
                 installD['Version'] + ' Service Pack ' + installD['SPNumber'])
-        except:
+        except Exception:
             pass
 
         if cfg.CONNECTFRAGS:
@@ -136,7 +136,7 @@ def lm_master(argv=None):
         # import pdb; pdb.set_trace()
         try:
             gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
-        except:
+        except Exception:
             msg = ('ERROR: Could not make a copy of your resistance raster. ' +
                     'Try re-starting ArcMap to release the file lock.')
             lu.raise_error(msg)
@@ -155,7 +155,7 @@ def lm_master(argv=None):
             if gp.Exists(finalgdb) and cfg.STEP5:
                 try:
                     lu.clean_out_workspace(finalgdb)
-                except:
+                except Exception:
                     lu.dashline(1)
                     msg = ('ERROR: Could not remove contents of geodatabase ' +
                            finalgdb + '. \nIs it open in ArcMap? You may '
@@ -198,7 +198,7 @@ def lm_master(argv=None):
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.exit_with_python_error(_SCRIPT_NAME)
 
     finally:

@@ -23,7 +23,7 @@ import arcgisscripting
 from lm_config import tool_env as cfg
 try:
     test = cfg.releaseNum
-except:
+except Exception:
     cfg.releaseNum = 'unknown'
 
 _SCRIPT_NAME = "lm_util.py"
@@ -44,7 +44,7 @@ def get_linktable_row(linkid, linktable):
                 if linktable[linktablerow, cfg.LTB_LINKID] == linkid:
                     return linktablerow
         return -1  # Not found
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -116,7 +116,7 @@ def get_links_from_core_pairs(linktable, firstCore, secondCore):
                   int(firstCore)):
                 rows = npy.append(rows, link)
         return rows
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -226,7 +226,7 @@ def drop_links(linktable, maxeud, mineud, maxcwd, mincwd,
                                 linktable[x, cfg.LTB_LINKTYPE] = cfg.LT_TSLC
                                 numDroppedLinks = numDroppedLinks + 1
         return linktable, numDroppedLinks
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -248,7 +248,7 @@ def get_zonal_minimum(dbfFile):
         return coreMin
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -294,7 +294,7 @@ def get_core_list(coreFC, coreFN):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -320,7 +320,7 @@ def get_core_targets(core, linktable):
         targetList = npy.unique(npy.asarray(targetList))
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
     return targetList
 
@@ -345,7 +345,7 @@ def elapsed_time(start_time):
                               str(mins) + ' minutes and ' + str(secs) +
                               ' seconds.\n')
         return now
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -360,7 +360,7 @@ def report_pct_done(current, goal, last):
             return 10*int((npy.floor(pctDone/10)))
         else:
             return last
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -388,7 +388,7 @@ def report_links(linktable):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
     return numCorridorLinks + numComponentLinks
 
@@ -397,11 +397,11 @@ def build_stats(raster):
     """Builds statistics and pyramids for output rasters"""
     try:
         gp.CalculateStatistics_management(raster, "1", "1", "#")
-    except:
+    except Exception:
         gprint('Statistics failed. They can still be calculated manually.')
     try:
         gp.BuildPyramids_management(raster)
-    except:
+    except Exception:
         gprint('Pyramids failed. They can still be built manually.')
     return
 
@@ -499,7 +499,7 @@ def combine_adjacency_tables(adjTable_r, adjTable_u, adjTable_ur, adjTable_ul):
         return adjTable
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -517,7 +517,7 @@ def get_allocs_from_shift(workspace, alloc, alloc_sh):
         while True:
             try:
                 exec statement
-            except:
+            except Exception:
                 count, tryAgain = retry_arc_error(count, statement)
                 if not tryAgain:
                     exec statement
@@ -529,7 +529,7 @@ def get_allocs_from_shift(workspace, alloc, alloc_sh):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -568,7 +568,7 @@ def get_alloc_lookup_table(workspace, combine_ras):
         return allocLookupTable
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -606,7 +606,7 @@ def new_extent(fc, field, value):
         del searchRows
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
     # return [xMin,yMin,xMax,yMax]
@@ -651,7 +651,7 @@ def get_centroids(shapefile, field):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -691,7 +691,7 @@ def get_bounding_circle_data(extentBoxList, corex, corey, distbuff):
         circlePointData[0, :] = [centX, centY, corex, corey, radius]
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
     return circlePointData
@@ -722,7 +722,7 @@ def get_extent_box_coords(fieldValue=None):
         boxData[0, :] = [fieldValue, ulx, lrx, uly, lry]
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
     return boxData
@@ -780,7 +780,7 @@ def make_points(workspace, pointArray, outFC):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
     return
 
@@ -885,7 +885,7 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
                 try:
                     gp.Delete(lcpShapefile)
 
-                except:
+                except Exception:
                     dashline(1)
                     msg = ('ERROR: Could not remove LCP shapefile ' +
                            lcpShapefile + '. Was it open in ArcMap?\n You may '
@@ -900,7 +900,7 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -944,7 +944,7 @@ def get_lcp_shapefile(lastStep, thisStep):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -1019,7 +1019,7 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
         if gp.exists(outputLcpShapefile):
             try:
                 gp.delete_management(outputLcpShapefile)
-            except:
+            except Exception:
                 dashline(1)
                 msg = ('ERROR: Could not remove lcp shapefile from output '
                        'directory: ' + outputLcpShapefile +
@@ -1033,7 +1033,7 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -1051,7 +1051,7 @@ def delete_row(A, delrow):
         n = A.shape[1]
         keeprows = npy.delete(npy.arange(0, m), delrow)
         keepcols = npy.arange(0, n)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
     return A[keeprows][:, keepcols]
 
@@ -1067,7 +1067,7 @@ def delete_col(A, delcol):
         n = A.shape[1]
         keeprows = npy.arange(0, m)
         keepcols = npy.delete(npy.arange(0, n), delcol)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
     return A[keeprows][:, keepcols]
 
@@ -1084,7 +1084,7 @@ def delete_row_col(A, delrow, delcol):
 
         keeprows = npy.delete(npy.arange(0, m), delrow)
         keepcols = npy.delete(npy.arange(0, n), delcol)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
     return A[keeprows][:, keepcols]
 
@@ -1116,7 +1116,7 @@ def components_no_sparse(G):
 
             if sum(star) == n:
                 all_stars = True
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -1209,7 +1209,7 @@ def load_link_table(linkTableFile):
         else:
             linktable = linkTable1
         return linktable
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -1224,7 +1224,7 @@ def gprint(string):
     try:
         if cfg.LOGMESSAGES:
             write_log(string)
-    except:
+    except Exception:
         pass
 
 def create_log_file(messageDir, toolName, inParameters):
@@ -1234,7 +1234,7 @@ def create_log_file(messageDir, toolName, inParameters):
     filePath = os.path.join(messageDir,fileName)
     try:
         logFile=open(filePath,'a')
-    except:
+    except Exception:
         logFile=open(filePath,'w')
     if inParameters is not None:
         logFile.write('*'*70 + '\n')
@@ -1263,7 +1263,7 @@ def create_log_file(messageDir, toolName, inParameters):
 def write_log(string):
     try:
         logFile=open(cfg.logFilePath,'a')
-    except:
+    except Exception:
         logFile=open(cfg.logFilePath,'w')
     try:
         #Sometimes int objects returned for arc failures so need str below
@@ -1279,7 +1279,7 @@ def close_log_file():
     try:
         write_log('\nStop time:\t\t%s \n\n' % (timeNow))
         # cfg.logFile.close() # DMK - Log closed after each write
-    except:
+    except Exception:
         pass
 
 
@@ -1395,7 +1395,7 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
         outFile.close()
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
     return
 
@@ -1491,7 +1491,7 @@ def write_link_maps(linkTableFile, step):
             try:
                 gp.Delete(file)
 
-            except:
+            except Exception:
                 dashline(1)
                 msg = ('ERROR: Could not remove shapefile ' +
                        coreLinksShapefile + '. Was it open in ArcMap?\n You may '
@@ -1588,7 +1588,7 @@ def write_link_maps(linkTableFile, step):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -1600,22 +1600,22 @@ def set_dataframe_sr():
     """
     try:
         import arcpy
-    except:
+    except Exception:
         return
     try:
         sr = arcpy.Describe(cfg.COREFC).spatialReference
         gprint('Setting data frame spatial reference to that of '
                 'core area feature class.')
-    except:
+    except Exception:
         try:
             sr = arcpy.Describe(cfg.RESRAST).spatialReference
-        except:
+        except Exception:
             return
     try:
         mxd = arcpy.mapping.MapDocument("current")
         df = arcpy.mapping.ListDataFrames(mxd)[0]
         df.spatialReference = sr
-    except:
+    except Exception:
         pass
 
 def create_dir(lmfolder):
@@ -1650,7 +1650,7 @@ def move_old_results():
         newFolder = cfg.MESSAGEDIR
         move_results_folder(oldFolder, newFolder)
 
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -1658,7 +1658,7 @@ def move_results_folder(oldFolder, newFolder):
     try:
         if (os.path.exists(oldFolder) and not os.path.exists(newFolder)):
             os.rename(oldFolder, newFolder)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -1667,7 +1667,7 @@ def delete_file(file):
         if os.path.isfile(file):
             os.remove(file)
             gc.collect()
-    except:
+    except Exception:
         pass
     return
 
@@ -1677,13 +1677,13 @@ def delete_dir(dir):
         if gp.Exists(dir):
             shutil.rmtree(dir)
         return
-    except:
+    except Exception:
         snooze(5)
         try: #Try again following cleanup attempt
             gp.RefreshCatalog(dir)
             gc.collect()
             shutil.rmtree(dir)
-        except:
+        except Exception:
             pass
         return
 
@@ -1707,7 +1707,7 @@ def clean_out_workspace(ws):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 # def clean_out_workspace(ws):
@@ -1721,7 +1721,7 @@ def clean_out_workspace(ws):
                 # fcPath = os.path.join(ws,fc)
                 # try:
                     # gp.delete_management(fcPath)
-                # except:
+                # except Exception:
                     # pass
 
             # rasters = gp.ListRasters()
@@ -1729,22 +1729,22 @@ def clean_out_workspace(ws):
                 # rasterPath = os.path.join(ws,raster)
                 # try:
                     # gp.delete_management(rasterPath)
-                # except: pass
+                # except Exception: pass
 
             # fileList = os.listdir(ws)
             # for item in fileList:
                 # try:
                     # os.remove(os.path.join(ws,item))
-                # except: # if directory
+                # except Exception: # if directory
                     # try:
                         # shutil.rmtree(os.path.join(ws,item))
-                    # except: pass
+                    # except Exception: pass
         # gc.collect()
         # gp.refreshcatalog(os.path.dirname(ws))
         # return
     # except arcgisscripting.ExecuteError:
         # exit_with_geoproc_error(_SCRIPT_NAME)
-    # except:
+    # except Exception:
         # exit_with_python_error(_SCRIPT_NAME)
 
 def delete_data(dataset):
@@ -1763,10 +1763,10 @@ def delete_data(dataset):
             for item in fileList:
                 try:
                     os.remove(item)
-                except:
+                except Exception:
                     pass
             gc.collect()
-    except:
+    except Exception:
         pass
 
 
@@ -1797,7 +1797,7 @@ def make_cwd_paths(max_core_no):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -1893,7 +1893,7 @@ def get_prev_step_link_table(step):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -1910,7 +1910,7 @@ def get_this_step_link_table(step):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -1938,7 +1938,7 @@ def clean_up_link_tables(step):
         delete_file(filename)
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -2015,7 +2015,7 @@ def copy_final_link_maps(step):
             if gp.exists(oldLinkFile):
                 try:
                     move_map(oldLinkFile, logLinkFile)
-                except:
+                except Exception:
                     pass
 
             # delete log file from pre 0.7.7 versions
@@ -2029,12 +2029,12 @@ def copy_final_link_maps(step):
             if gp.exists(oldLcpShapeFile):
                 try:
                     move_map(oldLcpShapeFile, logLcpShapeFile)
-                except:
+                except Exception:
                     pass
         return
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -2045,7 +2045,7 @@ def move_map(oldMap, newMap):
         try:
             gp.CopyFeatures_management(oldMap, newMap)
             delete_data(oldMap)
-        except:
+        except Exception:
             pass
     return
 
@@ -2118,7 +2118,7 @@ def rename_fields(FC):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 ############################################################################
@@ -2128,7 +2128,7 @@ def copy_log_file():
     try:
         delete_file(cfg.errorFilePath)
         shutil.copyfile(cfg.logFilePath,cfg.logFileCopyPath)
-    except:
+    except Exception:
         pass
 def print_arcgis_failures(statement, failures):
     """ Reports ArcGIS call that's failing and decides whether to restart
@@ -2195,7 +2195,7 @@ def check_steps():
             msg = ("Error: You can start or stop at different steps, but you "
                    "can't SKIP any except for step 4.\n")
             raise_error(msg)
-        except:
+        except Exception:
             exit_with_python_error(_SCRIPT_NAME)
     return
 
@@ -2208,7 +2208,7 @@ def check_cores(FC,FN):
                 adjList = npy.loadtxt(cfg.EUCADJFILE, dtype='string',
                                          comments = "x", delimiter=',')
                 prevCoreFN =adjList[0,1]
-            except: # If file not found
+            except Exception: # If file not found
                 prevCoreFN = cfg.COREFN
             if prevCoreFN != cfg.COREFN:
                 msg = ('\nError: Core field name must be the same as used in '
@@ -2258,7 +2258,7 @@ def check_cores(FC,FN):
 
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -2300,7 +2300,7 @@ def retry_arc_error(count, statement):
             snooze(sleepTime)
 
             return count, False
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -2540,7 +2540,7 @@ def writeCircuitscapeConfigFile(configFile, options):
     for option in sections:
         try:
             config.add_section(sections[option])
-        except:
+        except Exception:
             pass
     for option in sections:
         config.set(sections[option], option, options[option])
@@ -2554,7 +2554,7 @@ def warn(string):
     try:
         if cfg.LOGMESSAGES:
             write_log(string)
-    except:
+    except Exception:
         pass
 
 
