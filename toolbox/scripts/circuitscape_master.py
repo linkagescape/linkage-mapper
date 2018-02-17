@@ -35,7 +35,6 @@ def circuitscape_master(argv=None):
 
     """
     gprint = lu.gprint
-    # gwarn = arcpy.AddWarning
 
     if argv is None:
         argv = sys.argv

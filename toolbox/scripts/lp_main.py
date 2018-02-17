@@ -128,7 +128,7 @@ def arc_wksp_setup():
 def config_lm():
     """Configure Linkage Mapper."""
     # get log file for last LM run
-    folder = os.path.join(lp_env.PROJDIR, "run_history", "log") # lm_env.LOGDIR
+    folder = os.path.join(lp_env.PROJDIR, "run_history", "log")
     if not os.path.exists(folder):
         raise Exception("ERROR: Log file for last Linkage Mapper run not found. Please ensure Linkage Mapper is run " +
                         "for this project before running Linkage Priority.")
@@ -780,37 +780,4 @@ def run_analysis():
 
 
 if __name__ == "__main__":
-    # execution starts here
-    # use parameters passed from ArcGIS
     main()
-    # # hard code parameters for debugging (0th is the working folder, which is not explicit in the ArcGIS tool dialog)
-    # args = [r"C:\GIS\LandAdvisor\LinkageMapper\LinkageMapper1_0_9_3\toolbox\scripts",
-    #         r"C:\GIS\LandAdvisor\LinkageMapper\LinkageMapper1_0_9_3\MojaveTest\rg2d",
-    #         r"C:\GIS\LandAdvisor\LinkageMapper\LinkageMapper1_0_9_3\MojaveTest\core_areas\singlecores_dissolved.shp",
-    #         "CID",
-    #         r"C:\GIS\LandAdvisor\LinkageMapper\LinkageMapper1_0_9_3\MojaveTest\anthro\human_mod.tif",
-    #         "#",
-    #         "0.33",
-    #         "0.33",
-    #         "0.34",
-    #         "0.0",
-    #         "0.0",
-    #         "0.0",
-    #         "#",
-    #         "#",
-    #         "#",
-    #         "#",
-    #         "#",
-    #         "#",
-    #         "false",
-    #         "0.33",
-    #         "0.33",
-    #         "0.34",
-    #         "0.0",
-    #         "0.0",
-    #         "0.008",
-    #         "0.5",
-    #         "0.5",
-    #         "#",
-    #         "#"]
-    # main(args)

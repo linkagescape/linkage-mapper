@@ -57,10 +57,6 @@ def lm_master(argv=None):
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
         lu.create_dir(cfg.DATAPASSDIR)
-        # Create fresh scratch directory if not restarting in midst of step 3
-        # if cfg.S2EUCDISTFILE != None:
-            # if cfg.S2EUCDISTFILE.lower() == "restart": pass
-        # else:
         if cfg.TOOL != cfg.TOOL_CC:
             lu.delete_dir(cfg.SCRATCHDIR)
             lu.create_dir(cfg.SCRATCHDIR)
@@ -79,7 +75,6 @@ def lm_master(argv=None):
             pass
 
         if cfg.CONNECTFRAGS:
-            # gwarn = gp.AddWarning
             lu.dashline(1)
             lu.warn('Custom mode: will run steps 1-2 ONLY to cluster core polygons within ')
             lu.warn('the maximum Euclidean corridor distance from one another ')
@@ -133,7 +128,6 @@ def lm_master(argv=None):
         gp.Extent = gp.Describe(cfg.RESRAST_IN).Extent
         gp.SnapRaster = cfg.RESRAST_IN
         gp.cellSize = gp.Describe(cfg.RESRAST_IN).MeanCellHeight
-        # import pdb; pdb.set_trace()
         try:
             gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
         except Exception:
@@ -147,8 +141,6 @@ def lm_master(argv=None):
             lu.delete_data(cfg.CORERAS)
             gp.FeatureToRaster_conversion(cfg.COREFC, cfg.COREFN,
                           cfg.CORERAS, gp.Describe(cfg.RESRAST).MeanCellHeight)
-         # #   gp.RasterToPolygon_conversion(cfg.CORERAS, cfg.COREFC,
-                                              # "NO_SIMPLIFY")
 
         def delete_final_gdb(finalgdb):
             """Deletes final geodatabase"""

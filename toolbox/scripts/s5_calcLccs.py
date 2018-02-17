@@ -17,14 +17,6 @@ import lm_util as lu
 
 _SCRIPT_NAME = "s5_calcLccs.py"
 
-# try:
-    # import arcpy
-    # gp = arcpy.gp
-    # from arcpy.sa import *
-    # arcgisscripting = arcpy
-    # arcpy.CheckOutExtension("spatial")
-    # arcObj = arcpy
-# except Exception:
 try:
     import arcpy # want to know if arcpy is available
     from arcpy.sa import *
@@ -147,9 +139,6 @@ def calc_lccs(normalize):
                                        path.basename(cfg.LCCBASEDIR))
         gp.CreateFolder_management(cfg.LCCBASEDIR, cfg.LCCNLCDIR_NM)
         clccdir = path.join(cfg.LCCBASEDIR, cfg.LCCNLCDIR_NM)
-        # mosaicGDB = path.join(cfg.LCCBASEDIR, "mosaic.gdb")
-        # gp.createfilegdb(cfg.LCCBASEDIR, "mosaic.gdb")
-        #mosaicRaster = mosaicGDB + '\\' + "nlcc_mos" # Full path
         gprint("")
         if normalize:
             gprint('Normalized least-cost corridors will be written '
@@ -195,10 +184,6 @@ def calc_lccs(normalize):
                 arcpy.env.Extent = "MINOF"
             else:
                 gp.Extent = "MINOF"
-
-            # FIXME: need to check for this?:
-            # if exists already, don't re-create
-            #if not gp.Exists(lccRaster):
 
             link = lu.get_links_from_core_pairs(linkTable, corex, corey)
 
@@ -282,8 +267,6 @@ def calc_lccs(normalize):
                             'rasterString,mosaicDir,mosFN, "", '
                             '"32_BIT_FLOAT", gp.cellSize, "1", "MINIMUM", '
                             '"MATCH")')
-                # statement = ('arcpy.Mosaic_management(lccNormRaster, '
-                                 # 'mosaicRaster, "MINIMUM", "MATCH")')
 
                 count = 0
                 while True:

@@ -55,8 +55,6 @@ def STEP6_calc_barriers():
         else:
             sumSuffix = ''
 
-        # Delete contents of final ouptut geodatabase
-        # lu.clean_out_workspace(cfg.BARRIERGDB) #xxx try not doing this to allow multiple radii to be analyzed in separate runs
         if not arcpy.Exists(cfg.BARRIERGDB):
             # Create output geodatabase
             arcpy.CreateFileGDB_management(cfg.OUTPUTDIR,
@@ -409,7 +407,6 @@ def STEP6_calc_barriers():
                                 lu.clean_out_workspace(lastMosaicDirPct)
                                 lu.delete_dir(lastMosaicDirPct)
 
-                            # lu.delete_data(lastMosaicRasterPct)
                             lastMosaicRasterPct = tempMosaicRasterPct
 
                         if not cfg.SAVEBARRIERRASTERS:
@@ -448,11 +445,6 @@ def STEP6_calc_barriers():
                 mosaicRaster = path.join(cfg.BARRIERGDB, mosaicFN)
                 arcpy.env.extent = cfg.RESRAST
 
-                # if setCoresToNull:
-                    # outCon = arcpy.sa.Con(Raster(tempMosaicRaster) < 0, 0,
-                                   # tempMosaicRaster) #xxx
-                    # outCon.save(mosaicRaster) #xxx
-                # else:
                 outSetNull = arcpy.sa.SetNull(tempMosaicRaster, tempMosaicRaster,
                                               "VALUE < 0") #xxx orig
                 outSetNull.save(mosaicRaster)

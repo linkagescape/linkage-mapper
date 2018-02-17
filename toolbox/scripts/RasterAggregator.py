@@ -161,9 +161,7 @@ def raise_geoproc_error(filename):
     for msg in range(0, gp.MessageCount):
         if gp.GetSeverity(msg) == 2:
             gp.AddReturnMessage(msg)
-        # dashline(2)
         print gp.AddReturnMessage(msg)
-        # dashline(2)
     exit(0)
 
 
@@ -180,7 +178,6 @@ def raise_python_error(filename):
 
     gp.AddError("Python error on **" + line + "** of " + filename)
     gp.AddError(err)
-    # dashline(2)
     exit(0)
 
 

@@ -54,7 +54,6 @@ def write_cores_to_map(x, coresToMap):
     # Return any PYTHON or system specific errors
     except Exception:
         lu.dashline(1)
-        # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -77,13 +76,6 @@ def STEP3_calc_cwds():
         if cfg.S2EUCDISTFILE != None:
             if cfg.S2EUCDISTFILE.lower() == "restart":
                 rerun = True
-
-        # if cfg.TMAXCWDIST is None:
-           	# gprint('NOT using a maximum cost-weighted distance.')
-        # else:
-            # gprint('Max cost-weighted distance for CWD calcs set '
-                              # 'to ' + str(cfg.TMAXCWDIST) + '\n')
-
 
         if (cfg.BUFFERDIST) is not None:
             gprint('Bounding circles plus a buffer of ' +
@@ -175,7 +167,6 @@ def STEP3_calc_cwds():
         if (cfg.BUFFERDIST) is not None:
             # create bounding boxes around cores
             start_time = time.clock()
-            # lu.dashline(1)
             gprint('Calculating bounding boxes for core areas.')
             extentBoxList = npy.zeros((0,5), dtype='float32')
             for x in range(len(coresToMap)):
@@ -184,7 +175,6 @@ def STEP3_calc_cwds():
                 extentBoxList = npy.append(extentBoxList, boxCoords, axis=0)
             gprint('\nDone calculating bounding boxes.')
             start_time = lu.elapsed_time(start_time)
-            # lu.dashline()
 
         # Bounding circle code
         if cfg.BUFFERDIST is not None:
@@ -285,7 +275,6 @@ def STEP3_calc_cwds():
 
         # ---------------------------------------------------------------------
         # Rasterize core areas to speed cost distance calcs
-        # lu.dashline(1)
         gprint("Creating core area raster.")
 
         gp.SelectLayerByAttribute(cfg.FCORES, "CLEAR_SELECTION")
@@ -452,9 +441,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
         # get core areas to be connected to focal core
         targetCores = lu.get_core_targets(sourceCore, linkTableTemp)
-        # gprint( str(sourceCore))
-        # gprint(str(linkTableTemp.astype('int32')))
-        # gprint('targets'+str(targetCores))
         del linkTableTemp
 
         if len(targetCores)==0:
@@ -477,8 +463,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             start_time = time.clock()
             # loop through targets and get bounding circles that
             # contain focal core and target cores
-            # gprint("\nAdding up bounding circles for source"
-                              # " core " + str(sourceCore))
             gp.SelectLayerByAttribute("fGlobalBoundingFeat",
                                           "CLEAR_SELECTION")
             for i in range(len(targetCores)):
@@ -636,7 +620,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                             linkTable[link,cfg.LTB_LINKTYPE] = cfg.LT_TSLC
             tableRow = tableRows.next()
         del tableRow, tableRows
-        #start_time = lu.elapsed_time(start_time)
 
         # ---------------------------------------------------------
         # Check for intermediate cores AND map LCP lines
@@ -787,7 +770,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                         coreDir, lcpRas, corePairRas)
 
                     if coreDetected:
-                        # lu.dashline()
                         gprint(
                             "Found an intermediate core in the "
                             "least-cost path between cores " +
@@ -810,20 +792,16 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # Made it through, so reset failure count and return.
         failures = 0
         lu.delete_dir(coreDir)
-        # if cfg.TOOL == cfg.TOOL_CC:
-            # lu.delete_data(back_rast)
         return linkTable, failures, lcpLoop
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
-        # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except Exception:
         lu.dashline(1)
-        # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
 
@@ -862,13 +840,11 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
-        # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
     except Exception:
         lu.dashline(1)
-        # gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
 def delay_restart(failures):

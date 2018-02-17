@@ -136,8 +136,8 @@ def cwadjacency():
         if cfg.BUFFERDIST is not None:
             # Clip resistance raster using bounding circle
             start_time = time.clock()
-            gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight#xxx
-            gp.extent = gp.Describe(cfg.RESRAST).Extent#xxx
+            gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
+            gp.extent = gp.Describe(cfg.RESRAST).Extent
             bResistance = path.join(cfg.SCRATCHDIR, "bResistance")
             gp.ExtractByMask_sa(cfg.RESRAST, cfg.BNDCIR,
                                     bResistance)
@@ -150,7 +150,6 @@ def cwadjacency():
         start_time = time.clock()
         gprint('Starting cost-weighted distance allocation...')
 
-        # core_rastmp = 'core_rastmp'
         if cfg.TMAXCWDIST is not None:
             gprint('Maximum cost-weighted distance set to ' +
                               str(cfg.TMAXCWDIST))

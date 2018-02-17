@@ -25,9 +25,7 @@ arcpy.CheckOutExtension("spatial")
 
 SETCORESTONULL = True
 gprint = lu.gprint
-# gwarn = arcpy.AddWarning
 tif = ".tif"
-#tif = ""
 
 
 @retry(2)
@@ -117,7 +115,6 @@ def STEP8_calc_pinchpoints():
         lu.dashline(0)
         coreList = linkTable[:,cfg.LTB_CORE1:cfg.LTB_CORE2+1]
         coreList = npy.sort(coreList)
-        #gprint('There are ' + str(len(npy.unique(coreList))) ' core areas.')
 
         INCIRCUITDIR = cfg.CIRCUITBASEDIR
         OUTCIRCUITDIR = path.join(cfg.CIRCUITBASEDIR,
@@ -213,7 +210,6 @@ def STEP8_calc_pinchpoints():
                                                           resNpyFile)
 
                 totMem, availMem = lu.get_mem()
-                # gprint('Total memory: str(totMem))
                 if numResistanceNodes / availMem > 2000000:
                     lu.dashline(1)
                     lu.warn('Warning:')
@@ -244,9 +240,6 @@ def STEP8_calc_pinchpoints():
                 if cfg.WRITE_VOLT_MAPS == True:
                     options['write_volt_maps']=True
                 options['habitat_file'] = resNpyFile
-
-                # if int(linkId) > 2:
-                    # options['habitat_file'] = 'c:\\test.dummy'
 
                 options['point_file'] = coreNpyFile
                 options['set_focal_node_currents_to_zero']=True
@@ -417,11 +410,6 @@ def STEP8_calc_pinchpoints():
                                          s8CoreRasPath, arcpy.env.cellSize)
         binaryCoreRaster = path.join(cfg.SCRATCHDIR,"core_ras_bin")
 
-        # The following commands cause file lock problems on save.  using gp
-        # instead.
-        # outCon = arcpy.sa.Con(S8CORE_RAS, 1, "#", "VALUE > 0")
-        # outCon.save(binaryCoreRaster)
-        # gp.Con_sa(s8CoreRasPath, 1, binaryCoreRaster, "#", "VALUE > 0")
         outCon = arcpy.sa.Con(Raster(s8CoreRasPath) > 0, 1)
         outCon.save(binaryCoreRaster)
         s5corridorRas = path.join(cfg.OUTPUTGDB,cfg.PREFIX + "_corridors")
@@ -453,7 +441,6 @@ def STEP8_calc_pinchpoints():
         numElements, numResistanceNodes = export_ras_to_npy(resRasClipPath,resNpyFile)
 
         totMem, availMem = lu.get_mem()
-        # gprint('Total memory: str(totMem))
         if numResistanceNodes / availMem > 2000000:
             lu.dashline(1)
             lu.warn('Warning:')
@@ -557,19 +544,15 @@ def export_ras_to_npy(raster,npyFile):
 
     pnt=arcpy.Point(extent.XMin,extent.YMin)
     outData = arcpy.RasterToNumPyArray(raster,"#","#","#",-9999)
-    #outData = npy.where(outData==noDataVal,-9999,outData)
     if npy.array_equiv(outData, outData.astype('int32')):
         outData = outData.astype('int32')
     npy.save(npyFile, outData)
     write_header(raster,outData,npyFile)
 
     numElements = (outData.shape[0] * outData.shape[1])
-    #rows,cols = npy.where(outData != -9999)
     numNodes = (npy.where(outData != -9999, 1, 0)).sum()
-    #numZeros = (npy.where(outData != -9999, 1, 0)).sum()
-    #del rows
-
     del outData
+
     return numElements, numNodes
 
 @retry(10)
@@ -587,17 +570,6 @@ def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     newRaster.save(outRasterPath)
     return
 
-    # # Return GEOPROCESSING specific errors
-    # except arcpy.ExecuteError:
-        # lu.dashline(1)
-        # gprint('****Failed in step 8. Details follow.****')
-        # lu.exit_with_geoproc_error(_SCRIPT_NAME)
-
-    # # Return any PYTHON or system specific errors
-    # except Exception:
-        # lu.dashline(1)
-        # gprint('****Failed in step 8. Details follow.****')
-        # lu.exit_with_python_error(_SCRIPT_NAME)
 
 @retry(10)
 def write_header(raster,numpyArray,numpyFile):

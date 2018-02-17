@@ -70,7 +70,6 @@ def STEP7_calc_centrality():
         if "CF_Central" in field_names:
             exists = True
         if not exists:
-            # arcpy.AddField_management(coreCopy, "CF_Central", "DOUBLE", "10", "2")
             arcpy.AddField_management(coreCopy, "CF_Central", "DOUBLE")
 
         inLinkTableFile = lu.get_prev_step_link_table(step=7)
@@ -104,7 +103,6 @@ def STEP7_calc_centrality():
 
         coreList = linkTable[:,cfg.LTB_CORE1:cfg.LTB_CORE2+1]
         coreList = npy.sort(coreList)
-        #gprint('There are ' + str(len(npy.unique(coreList))) ' core areas.')
 
         # set up directory for centrality
         INCENTRALITYDIR = cfg.CENTRALITYBASEDIR

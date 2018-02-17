@@ -28,7 +28,6 @@ def bar_master(argv=None):
     """
     if argv is None:
         argv = sys.argv
-    # cfg.configure(argv)
     cfg.configure(cfg.TOOL_BM, argv) #xxx was sys.argv
     gprint = lu.gprint
 

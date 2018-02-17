@@ -58,12 +58,6 @@ def get_link_type_desc(linktypecode):
         activelink = '0'
         if linktypecode == -1:
             linktypedesc = '"Not_nearest_neighbors"'
-#        elif linktypecode == -2:
-#            linktypedesc = '"Not_2nd_nearest_neighbors"'
-#        elif linktypecode == -3:
-#            linkTypeCodes='"Not_3rd_nearest_neighbors"'
-#        elif linktypecode == -4:
-#            linkTypeCodes='"Not_4th_nearest_neighbors"'
         elif linktypecode == -11:
             linktypedesc = '"Too_long_Euclidean_distance"'
         elif linktypecode == -12:
@@ -84,14 +78,6 @@ def get_link_type_desc(linktypecode):
             linktypedesc = '"Connects_cores"'
         elif linktypecode == 10:
             linktypedesc = '"Connects_ nearest_neighbors"'
-       # elif linktypecode == 11:
-           # linktypedesc = '"1st_nearest_neighbors"'
-       # elif linktypecode == 12:
-           # linktypedesc = '"2nd_nearest_neighbors"'
-       # elif linktypecode == 13:
-           # linktypedesc = '"3rd_nearest_neighbors"'
-       # elif linktypecode == 14:
-           # linktypedesc = '"4th_nearest_neighbors"'
         elif linktypecode == 20:
             linktypedesc = '"Connects_constellations"'
         elif linktypecode == 100:
@@ -261,10 +247,8 @@ def get_core_list(coreFC, coreFN):
 
         # Get the number of core shapes
         gp.Extent = gp.Describe(coreFC).Extent
-        # shapeCount = int(gp.GetCount_management(coreFC).GetOutput(0))
 
         # Get core data into numpy array
-#        coreList = npy.zeros((shapeCount, 2))
         coreList = npy.zeros((1, 2))
         cur = gp.SearchCursor(coreFC)
         row = cur.Next()
@@ -432,26 +416,14 @@ def get_adj_using_shift_method(alloc):
 
     alloc_r = "alloc_r"
     adjTable_r = get_allocs_from_shift(gp.workspace, alloc, alloc_r)
-    # start_time = elapsed_time(start_time)
-
-    # gprint('Calculating adjacencies crossing upper-left diagonal '
-                      # 'allocation boundaries...')
     gp.Shift_management(alloc, "alloc_ul", negShift, posShift)
 
     alloc_ul = "alloc_ul"
     adjTable_ul = get_allocs_from_shift(gp.workspace, alloc, alloc_ul)
-    # start_time = elapsed_time(start_time)
-
-    # gprint('Calculating adjacencies crossing upper-right diagonal '
-                      # 'allocation boundaries...')
     gp.Shift_management(alloc, "alloc_ur", posShift, posShift)
 
     alloc_ur = "alloc_ur"
     adjTable_ur = get_allocs_from_shift(gp.workspace, alloc, alloc_ur)
-    # start_time = elapsed_time(start_time)
-
-    # gprint('Calculating adjacencies crossing vertical allocation '
-                      # 'boundaries...')
     gp.Shift_management(alloc, "alloc_u", "0", posShift)
 
     alloc_u = "alloc_u"
@@ -511,9 +483,7 @@ def get_allocs_from_shift(workspace, alloc, alloc_sh):
         combine_ras = os.path.join(gp.workspace, "combine")
         count = 0
         statement = ('gp.SingleOutputMapAlgebra_sa("combine(" + alloc + '
-                     '", " + alloc_sh + ")", combine_ras)')#, alloc, alloc_sh)') #xxx
-        # statement = ('gp.SingleOutputMapAlgebra_sa("combine(" + alloc + '
-                     # '", " + alloc_sh + ")", combine_ras, alloc, alloc_sh)')
+                     '", " + alloc_sh + ")", combine_ras)')
         while True:
             try:
                 exec statement
@@ -580,8 +550,6 @@ def new_extent(fc, field, value):
     try:
         shapeFieldName = gp.describe(fc).shapefieldname
 
-        # searchRows = gp.searchcursor(fc, " "'"core_ID"'" = " +
-        #                                  str(currentID))
         searchRows = gp.searchcursor(fc, field + ' = ' + str(value))
         searchRow = searchRows.next()
         # get the 1st features extent
@@ -609,11 +577,6 @@ def new_extent(fc, field, value):
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
-    # return [xMin,yMin,xMax,yMax]
-    # "%s %s %s %s" % tuple(lstExt)
-    # strExtent = (str(xMin) + ' ' + str(yMin) + ' ' + str(xMax) + ' ' +
-    #              str(yMax))
-    # strExtent
     return  str(xMin), str(yMin), str(xMax), str(yMax)
 
 
@@ -740,7 +703,6 @@ def make_points(workspace, pointArray, outFC):
         gp.workspace = workspace
         delete_data(outFC)
         gp.CreateFeatureclass_management(workspace, outFC, "POINT")
-        #for field in fieldArray:
         if pointArray.shape[1] > 3:
             gp.AddField_management(outFC, "corex", "LONG")
             gp.AddField_management(outFC, "corey", "LONG")
@@ -961,7 +923,6 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
 
         if thisStep > 5:
             linkTableTemp = linktable
-            #linkTableTemp[:, cfg.LTB_CURRENT] = linkTableTemp[:, cfg.LTB_LCPLEN]
         else:
             extraCols = npy.zeros((numLinks, 3), dtype="float64")
             linkTableTemp = npy.append(linktable, extraCols, axis=1)
@@ -1278,7 +1239,6 @@ def close_log_file():
     timeNow = time.ctime()
     try:
         write_log('\nStop time:\t\t%s \n\n' % (timeNow))
-        # cfg.logFile.close() # DMK - Log closed after each write
     except Exception:
         pass
 
@@ -1424,8 +1384,6 @@ def write_link_maps(linkTableFile, step):
         gp.RefreshCatalog(cfg.OUTPUTDIR)
         linktable = load_link_table(linkTableFile)
 
-        #linktable = npy.loadtxt(linkTableFile, dtype ='Float64', comments='#',
-        #                    delimiter=',')
         numLinks = linktable.shape[0]
         gp.toolbox = "management"
 
@@ -1436,8 +1394,6 @@ def write_link_maps(linkTableFile, step):
 
         make_points(gp.workspace, pointArray, coresForLinework)
         numLinks = linktable.shape[0]
-        # rows,cols = npy.where(
-        #   linktable[:, cfg.LTB_LINKTYPE:cfg.LTB_LINKTYPE + 1] == cfg.LT_CORR)
 
         coreLinks = linktable
 
@@ -1710,42 +1666,6 @@ def clean_out_workspace(ws):
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
-# def clean_out_workspace(ws):
-    # try:
-        # if gp.exists(ws):
-            # gp.workspace = ws
-            # gp.OverwriteOutput = True
-            # # gprint('\nDeleting contents of '+str(ws))
-            # fcs = gp.ListFeatureClasses()
-            # for fc in fcs:
-                # fcPath = os.path.join(ws,fc)
-                # try:
-                    # gp.delete_management(fcPath)
-                # except Exception:
-                    # pass
-
-            # rasters = gp.ListRasters()
-            # for raster in rasters:
-                # rasterPath = os.path.join(ws,raster)
-                # try:
-                    # gp.delete_management(rasterPath)
-                # except Exception: pass
-
-            # fileList = os.listdir(ws)
-            # for item in fileList:
-                # try:
-                    # os.remove(os.path.join(ws,item))
-                # except Exception: # if directory
-                    # try:
-                        # shutil.rmtree(os.path.join(ws,item))
-                    # except Exception: pass
-        # gc.collect()
-        # gp.refreshcatalog(os.path.dirname(ws))
-        # return
-    # except arcgisscripting.ExecuteError:
-        # exit_with_geoproc_error(_SCRIPT_NAME)
-    # except Exception:
-        # exit_with_python_error(_SCRIPT_NAME)
 
 def delete_data(dataset):
     try:
@@ -1792,7 +1712,6 @@ def make_cwd_paths(max_core_no):
             gprint('...etc.')
         for dir_no in range(1, no_dirs + 1):
             ccwdir = cfg.CWDSUBDIR_NM + str(dir_no)
-            # gprint('...' + ccwdir)
             gp.CreateFolder_management(cfg.CWDBASEDIR, ccwdir)
 
     except arcgisscripting.ExecuteError:
@@ -2318,10 +2237,6 @@ def print_warnings():
         gp.AddWarning(msg)
         write_log(msg)
         gp.AddWarning(gp.GetMessages(2))
-        # for msg in range(0, gp.MessageCount):
-            # if gp.GetSeverity(msg) == 2:
-                # gp.AddReturnMessage(msg)
-                # write_log(msg)
         write_log(gp.GetMessages(2))
         print_drive_warning()
 
@@ -2358,10 +2273,6 @@ def exit_with_geoproc_error(filename):
     msg=gp.GetMessages(2)
     gp.AddError(gp.GetMessages(2))
     write_log(msg)
-    # for msg in range(0, gp.MessageCount):
-        # if gp.GetSeverity(msg) == 2:
-            # gp.AddReturnMessage(msg)
-            # #write_log(msg) #xxx
     dashline()
     print_drive_warning()
     close_log_file()

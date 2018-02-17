@@ -33,9 +33,6 @@ def STEP2_build_network():
         gprint('Running script ' + _SCRIPT_NAME)
         outlinkTableFile = lu.get_this_step_link_table(step=2)
 
-        # Warning flag for missing distances in conefor file
-        # dropFlag = False
-
         # ------------------------------------------------------------------
         # adjacency file created from s1_getAdjacencies.py
         if cfg.S2ADJMETH_EU and not path.exists(cfg.EUCADJFILE):
@@ -49,8 +46,8 @@ def STEP2_build_network():
             msg = ('\nERROR: Cost-weighted adjacency file required from'
                               'Step 1: ' + cfg.CWDADJFILE)
             lu.raise_error(msg)
-        #----------------------------------------------------------------------
 
+        # --------------------------------------------------------------------
         # Load eucDists matrix from file and npy.sort
         if cfg.S2EUCDISTFILE is None:
             eucdist_file = generate_distance_file()
@@ -131,8 +128,6 @@ def STEP2_build_network():
                 maxEucAdjCoreID = max(eucAdjTable[:, 1])
                 del eucAdjTable
 
-        # maxCoreId = max(maxEucAdjCoreID, maxCwdAdjCoreID, maxEucDistID)
-
         del eucDists
 
         gprint('Creating link table')
@@ -176,14 +171,6 @@ def STEP2_build_network():
 
         else:  # For Climate Corridor tool
             gprint("\nIgnoring adjacency and keeping all links\n")
-
-        # if dropFlag:
-            # lu.dashline(1)
-            # gprint('NOTE: At least one adjacent link was dropped '
-                          # 'because there was no Euclidean ')
-            # gprint('distance value in the input distance file from '
-                          # 'Conefor extension.')
-            # lu.dashline(2)
 
         linkTable[:, cfg.LTB_CLUST1] = -1  # No clusters until later steps
         linkTable[:, cfg.LTB_CLUST2] = -1
@@ -250,9 +237,6 @@ def STEP2_build_network():
                 lu.write_link_maps(outlinkTableFile, step=2)
             gprint('Linework shapefiles written.')
 
-            # if dropFlag:
-                # print_conefor_warning()
-
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         lu.dashline(1)
@@ -301,7 +285,6 @@ def generate_distance_file():
 
     """
     try:
-        #gp.Extent = gp.Describe(cfg.COREFC).Extent
         gp.CellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
         S2COREFC = cfg.COREFC
         if cfg.SIMPLIFY_CORES:
@@ -339,17 +322,8 @@ def generate_distance_file():
 
 
         adjList = get_full_adj_list()
-        # sourceCores = npy.unique(adjList[:, 0])
-
         gprint('\nFinding distances between cores using Generate Near Table.')
-#        gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
         near_tbl = path.join(cfg.SCRATCHDIR, "neartbl.dbf")
-        # gprint('old method')
-        # start_time = time.clock()
-        # gp.generateneartable(S2COREFC, S2COREFC, near_tbl, "#",
-                           # "NO_LOCATION", "NO_ANGLE", "ALL", "0")
-        # start_time = lu.elapsed_time(start_time)
-
         gprint('There are ' + str(len(adjList)) + ' adjacent core pairs to '
                'process.')
         pctDone = 0
@@ -484,8 +458,6 @@ def connect_clusters(linkTable):
     try:
         clusterFC = path.join(cfg.SCRATCHDIR,"Cores_Grouped_dist"+str(int(cfg.MAXEUCDIST))+".shp")
         gp.CopyFeatures_management(cfg.COREFC,clusterFC)
-#        coreFC_orig = cfg.COREFC
-#        clusterFC = tempShapefile
 
         gprint('Running custom fragment connecting code.')
         numLinks = linkTable.shape[0]
@@ -513,7 +485,6 @@ def connect_clusters(linkTable):
 
         #if frags less than cutoff set cluster_ID equal.
         for x in range(0,numLinks):
-            # if linkTable[x, cfg.LTB_LINKTYPE] == cfg.LT_CORR:
                 gprint("link #"+str(x+1))
                 # Set newfragmentID of 2nd fragment to that of frag 1
                 frag1ID = linkTable[x, cfg.LTB_CLUST1]
@@ -522,19 +493,8 @@ def connect_clusters(linkTable):
                     continue
                 eucDist = linkTable[x, cfg.LTB_EUCDIST]
 
-                # cur = gp.SearchCursor(clusterFC)
-                # row = cur.Next()
-                # while row:
-                    # if row.GetValue(cluster_ID) == frag1ID:
-                        # frag1CoreID =  row.GetValue(cluster_ID)
-                    # elif row.GetValue(cluster_ID) == frag2ID:
-                        # frag2CoreID =  row.GetValue(cluster_ID)
-                    # row = cur.Next()
-                    # i = i + 1
-                # del cur, row
 
                 if eucDist < cfg.MAXEUCDIST:
-#                    gprint("Joining fragments "+str(frag1ID)+" and "+str(frag2ID)+" in Core #"+str(frag2CoreID)+" separated by distance "+str(eucDist))
                     gprint("Joining fragments "+str(frag1ID)+" and "+str(frag2ID)+" separated by distance "+str(eucDist))
                     # update linktable to new fragment ID in cluster field
                     rows = npy.where(linkTable[:,cfg.LTB_CLUST1] == frag2ID)
@@ -552,16 +512,11 @@ def connect_clusters(linkTable):
                         rows.UpdateRow(row)
                         row = rows.Next()
                     del row, rows
-                # else:
-                    # gprint("Adjacent fragments not close enough ("+str(frag1CoreID)+" and "+str(frag2CoreID)+")")
 
         gprint('Done Joining.  Creating output shapefiles.')
 
         coreBaseName = path.splitext(path.basename(cfg.COREFC))[0]
 
-        # outputFN = coreBaseName + "Cluster_Dist"+ str(int(cfg.MAXEUCDIST)) + ".shp"
-        # outputShapefile = path.join(cfg.PROJECTDIR, outputFN)
-        # gp.CopyFeatures_management(clusterFC,outputShapefile)
         outputFN = coreBaseName + "_Cluster"+str(int(cfg.MAXEUCDIST))+"_dissolve.shp"
         outputShapefile = path.join(cfg.SCRATCHDIR,outputFN)
         gp.Dissolve_management(clusterFC, outputShapefile, cluster_ID)

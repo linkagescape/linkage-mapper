@@ -6,7 +6,6 @@ import time
 import arcgisscripting
 import lm_util as lu
 gp = arcgisscripting.create(9.3)
-# gwarn = gp.addwarning
 gprint = gp.addmessage
 
 class retry(object):
@@ -43,9 +42,7 @@ class retry(object):
                     msg = ("The following error is being reported "
                            "on " + line + " of " + filename + ":")
                     lu.warn(msg)
-                    # lu.write_log(msg)
                     lu.warn(str(e))
-                    # lu.write_log(str(e))
                     lu.print_drive_warning()
 
                     delaytime = self.delay*10*(_ + 1)
