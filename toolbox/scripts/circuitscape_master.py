@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python2
 # Author: Brad McRae
 
 """Master script for circuitscape analysis in linkage mapper.

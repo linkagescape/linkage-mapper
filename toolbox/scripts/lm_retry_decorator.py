@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.5
 # Code written by Peter Hoffmann.  Modified by Brad McRae for Linkage Mapper.
 
 import sys

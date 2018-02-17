@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.6
 # Authors: Darren Kavanagh and Brad McRae
 
 """Climate Linkage Mapper configuration module.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python2
 
 """Aggregates resistance rasters to coarser cell size using average resistance.
     Written by Brad McRae

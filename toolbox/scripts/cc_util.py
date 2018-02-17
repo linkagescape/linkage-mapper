@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.6
 # Author: Darren Kavanagh
 
 """Climate Linkage Mapper utility module"""

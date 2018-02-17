@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python2
 
 """Script to iteratively run linkage mapper and barrier mapper tools restoring for max ROI"""
 

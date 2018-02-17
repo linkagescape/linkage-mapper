@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.6
 # Author: Brad McRae
 
 """Detects influential barriers given CWD calculations from

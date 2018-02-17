@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.5
 # Author: Brad McRae
 
 """Maps pinch points using Circuitscape given CWD calculations from
