@@ -249,25 +249,3 @@ def load_graph(filename,graphType,datatype):
     return graphObject
 
 
-def make_graph_from_list(graphList):
-    try:
-        nodes = lu.delete_col(graphList,2)
-        nodeNames = (npy.unique(npy.asarray(nodes))).astype('int32')
-        nodes[npy.where(nodes >= 0)] = (
-            lu.relabel(nodes[npy.where(nodes >= 0)], 0))
-        node1 = (nodes[:,0]).astype('int32')
-        node2 = (nodes[:,1]).astype('int32')
-        data = graphList[:,2]
-        numnodes = nodeNames.shape[0]
-        #FIXME!!! CHECK GRAPH ORDER!!!!
-        g_graph = npy.zeros((numnodes,numnodes),dtype = 'float64')
-        g_graph[node1,node2] = data
-        g_graph = g_graph + g_graph.T
-
-        return g_graph, nodeNames
-
-        # Return any PYTHON or system specific errors
-    except Exception:
-        lu.dashline(1)
-        gprint('****Failed in step 7. Details follow.****')
-        lu.exit_with_python_error(_SCRIPT_NAME)

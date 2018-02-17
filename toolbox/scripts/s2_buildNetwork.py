@@ -385,19 +385,6 @@ def generate_distance_file():
         lu.exit_with_python_error(_SCRIPT_NAME)
 
 
-def print_conefor_warning():
-    """Warns that some links have no euclidean distances in conefor file."""
-    gprint('\nWARNING:')
-    gprint('At least one potential link was dropped because\n'
-        'there was no Euclidean distance value in the input Euclidean\n'
-        'distance file from Conefor extension.\n'
-        '   This may just mean that there were core areas that were adjacent\n'
-        'but were farther apart than the optional maximum distance used\n'
-        'when running Conefor.  But it can also mean that distances  were\n'
-        'calculated using a different core area shapefile or the wrong field\n'
-        'in the same core area shapefile.\n')
-
-
 def get_full_adj_list():
     try:
         if not cfg.S2ADJMETH_CW and not cfg.S2ADJMETH_EU:  # Keep ALL links
