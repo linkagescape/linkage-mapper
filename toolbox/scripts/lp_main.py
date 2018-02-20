@@ -207,24 +207,33 @@ def normalize_field(in_table, in_field, out_field, normalization_method, invert=
     min_val = arcpy.SearchCursor(in_table, "", "", "", in_field + " A").next().getValue(in_field)
     max_val = arcpy.SearchCursor(in_table, "", "", "", in_field + " D").next().getValue(in_field)
     if max_val > 0:
-        if normalization_method == 0:
-            # 0 to 1 score range normalization
-            if invert:
-                arcpy.CalculateField_management(in_table, out_field,
-                                                "(" + str(max_val) + " - !" + in_field + "!) / " + str(max_val - min_val),
-                                                "PYTHON_9.3")
+        try:
+            if normalization_method == 0:
+                # 0 to 1 score range normalization
+                if invert:
+                    arcpy.CalculateField_management(in_table, out_field,
+                                                    "(" + str(max_val) + " - !" + in_field + "!) / " + str(max_val - min_val),
+                                                    "PYTHON_9.3")
+                else:
+                    arcpy.CalculateField_management(in_table, out_field,
+                                                    "(!" + in_field  + "! - " + str(min_val) + ") / " + str(max_val - min_val),
+                                                    "PYTHON_9.3")
             else:
-                arcpy.CalculateField_management(in_table, out_field,
-                                                "(!" + in_field  + "! - " + str(min_val) + ") / " + str(max_val - min_val),
-                                                "PYTHON_9.3")
-        else:
-            # max_val score normalization
-            if invert:
-                arcpy.CalculateField_management(in_table, out_field,
-                                                "(" + str(max_val + min_val) + " - !" + in_field + "!) / " +
-                                                str(max_val), "PYTHON_9.3")
-            else:
-                arcpy.CalculateField_management(in_table, out_field, "!" + in_field + "! / " + str(max_val), "PYTHON_9.3")
+                # max_val score normalization
+                if invert:
+                    arcpy.CalculateField_management(in_table, out_field,
+                                                    "(" + str(max_val + min_val) + " - !" + in_field + "!) / " +
+                                                    str(max_val), "PYTHON_9.3")
+                else:
+                    arcpy.CalculateField_management(in_table, out_field, "!" + in_field + "! / " + str(max_val), "PYTHON_9.3")
+        except Exception:
+            # other exception - assume it was caused by situation described in exception message
+            exc_value, exc_traceback = sys.exc_info()[1:]
+            arcpy.AddError(exc_value)
+            lm_util.gprint("Traceback (most recent call last):\n" + "".join(traceback.format_tb(exc_traceback)))
+            raise Exception("ERROR! MOST LIKELY CAUSE: One or more core areas are smaller than a pixel in the Resistance " +
+                            "layer and/or Raster Analysis Cell Size environment setting. Try enlarging small core areas, " +
+                            "resampling the Resistance layer or adjusting the Cell Size environment setting.")
     else:
         # set all 0s
         arcpy.CalculateField_management(in_table, out_field, "0", "PYTHON_9.3")
