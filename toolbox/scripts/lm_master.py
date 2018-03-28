@@ -35,7 +35,7 @@ def lm_master(argv=None):
 
     """
     # Setup global variables
-    if not cfg.lm_configured: # Causing problems with iterative scripting
+    if not cfg.lm_configured:
         if argv is None:
             argv = sys.argv
         cfg.configure(cfg.TOOL_LM, argv)
