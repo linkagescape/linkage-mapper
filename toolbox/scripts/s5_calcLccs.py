@@ -218,7 +218,6 @@ def calc_lccs(normalize):
             while True:
                 try:
                     exec statement
-                    randomerror()
                 except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain:
@@ -274,7 +273,6 @@ def calc_lccs(normalize):
                         lu.write_log('Executing mosaic for link #'+str(linkId))
                         exec statement
                         lu.write_log('Done with mosaic.')
-                        randomerror()
                     except Exception:
                         count,tryAgain = lu.retry_arc_error(count,statement)
                         lu.delete_data(mosaicRaster)
@@ -379,7 +377,6 @@ def calc_lccs(normalize):
         while True:
             try:
                 exec statement
-                randomerror()
             except Exception:
                 count,tryAgain = lu.retry_arc_error(count,statement)
                 if not tryAgain: exec statement
@@ -415,7 +412,6 @@ def calc_lccs(normalize):
             while True:
                 try:
                     exec statement
-                    randomerror()
                 except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain: exec statement
@@ -516,25 +512,4 @@ def calc_lccs(normalize):
         gprint('****Failed in step 5. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
-    return
-
-
-def randomerror():
-    """ Used to test error recovery.
-
-    """
-    generateError = False # Set to True to create random errors
-    if generateError:
-        gprint('\n***Rolling dice for random error***')
-        import random
-        test = random.randrange(1, 8)
-        if test == 2:
-            gprint('Creating artificial ArcGIS error')
-            gp.MosaicToNewRaster_management(
-                            "rasterString","mosaicDir","mosFN", "",
-                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM",
-                            "MATCH")
-        elif test == 3:
-            gprint('Creating artificial python error')
-            artificialPythonError
     return

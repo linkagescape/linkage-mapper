@@ -262,7 +262,6 @@ def STEP3_calc_cwds():
             while True:
                 try:
                     exec statement
-                    randomerror()
                 except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain: exec statement
@@ -497,7 +496,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 'gp.ExtractByMask_sa(cfg.BOUNDRESIS, cfg.BNDFC, bResistance)')
             try:
                 exec statement
-                randomerror()
             except Exception:
                 failures = lu.print_arcgis_failures(statement, failures)
                 if failures < 20:
@@ -534,7 +532,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
             try:
                 exec statement
-                randomerror()
             except Exception:
                 failures = lu.print_arcgis_failures(statement, failures)
                 if failures < 20:
@@ -558,7 +555,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                              'outDistanceRaster, cfg.TMAXCWDIST, back_rast)')
             try:
                 exec statement
-                randomerror()
             except Exception:
                 failures = lu.print_arcgis_failures(statement, failures)
                 if failures < 20:
@@ -584,7 +580,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
         try:
             exec statement
-            randomerror()
         except Exception:
             failures = lu.print_arcgis_failures(statement, failures)
             if failures < 20:
@@ -659,7 +654,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         statement = ('gp.SingleOutputMapAlgebra_sa(expression,'
                                      ' TARGETRASTER)')
                     exec statement
-                    randomerror()
                 except Exception:
                     failures = lu.print_arcgis_failures(statement, failures)
                     if failures < 20:
@@ -696,7 +690,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                  'lcpRas, "BEST_SINGLE", "")')
                 try:
                     exec statement
-                    randomerror()
                 except Exception:
                     failures = lu.print_arcgis_failures(statement, failures)
                     if failures < 20:
@@ -745,7 +738,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                 'cfg.COREFN, corePairRas, gp.cellSize)')
                     try:
                         exec statement
-                        randomerror()
                     except Exception:
                         failures = lu.print_arcgis_failures(statement,
                                                             failures)
@@ -758,7 +750,6 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     try:
                         coreDetected = test_for_intermediate_core(coreDir,
                                                 lcpRas, corePairRas)
-                        randomerror()
                     except Exception:
                         statement = 'test_for_intermediate_core'
                         failures = lu.print_arcgis_failures(statement,
@@ -825,7 +816,6 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
         while True:
             try:
                 exec statement
-                randomerror()
             except Exception:
                 count,tryAgain = lu.retry_arc_error(count,statement)
                 if not tryAgain: exec statement
@@ -872,25 +862,3 @@ def test_for_intermediate_core_old_method(workspace,lcpRas,corePairRas):
         return True
     else:
         return False
-
-
-def randomerror():
-    """ Used to test error recovery.
-
-    """
-    generateError = False # Set to True to create random errors
-    if generateError:
-        gprint('\n***Rolling dice for random error***')
-        import random
-        test = random.randrange(1, 30)
-        if test == 2:
-            gprint('Creating artificial ArcGIS error')
-            gp.MosaicToNewRaster_management(
-                            "rasterString","mosaicDir","mosFN", "",
-                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM",
-                            "MATCH")
-        elif test == 3:
-            gprint('Creating artificial python error')
-            artificialPythonError
-    return
-

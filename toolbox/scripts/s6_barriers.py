@@ -164,7 +164,6 @@ def STEP6_calc_barriers():
             def doRadiusLoop():
                 linkTable = linkTableTemp.copy()
                 startTime = time.clock()
-                randomerror()
                 linkLoop = 0
                 pctDone = 0
                 gprint('\nMapping barriers at a radius of ' + str(radius) +
@@ -229,7 +228,6 @@ def STEP6_calc_barriers():
 
                         @retry(10)
                         def execFocal():
-                            randomerror()
                             # Execute FocalStatistics
                             if not path.exists(focalRaster1):
                                 arcpy.env.extent = cwdRaster1
@@ -292,7 +290,6 @@ def STEP6_calc_barriers():
                             #Calculate potential benefit per map unit restored
                             @retry(10)
                             def calcBen():
-                                randomerror()
                                 outRas = ((lcDist - Raster(focalRaster1)
                                       - Raster(focalRaster2) - dia) / dia)
                                 outRas.save(barrierRaster)
@@ -306,7 +303,6 @@ def STEP6_calc_barriers():
                                                     str(corey)+'_pct.tif')
                             @retry(10)
                             def calcBenPct():
-                                randomerror()
                                 outras = (100 * (Raster(barrierRaster) / lcDist))
                                 outras.save(barrierRasterPct)
                             calcBenPct()
@@ -344,7 +340,6 @@ def STEP6_calc_barriers():
                                                 lastMosaicRaster+'"')
                                 @retry(10)
                                 def mosaicToNew():
-                                    randomerror()
                                     arcpy.MosaicToNewRaster_management(
                                         rasterString,mosaicDir,mosFN, "",
                                         "32_BIT_FLOAT", arcpy.env.cellSize, "1",
@@ -383,7 +378,6 @@ def STEP6_calc_barriers():
                                 if cfg.SUM_BARRIERS:
                                     @retry(10)
                                     def sumBarriers():
-                                        randomerror()
                                         outCon = arcpy.sa.Con(Raster(barrierRasterPct) < 0,
                                             lastMosaicRasterPct, Raster(barrierRasterPct) + Raster(
                                             lastMosaicRasterPct))
@@ -394,7 +388,6 @@ def STEP6_calc_barriers():
                                                     lastMosaicRasterPct + '"')
                                     @retry(10)
                                     def maxBarriers():
-                                        randomerror()
                                         arcpy.MosaicToNewRaster_management(
                                             rasterString,mosaicDirPct,mosPctFN, "",
                                             "32_BIT_FLOAT", arcpy.env.cellSize, "1",
@@ -522,7 +515,6 @@ def STEP6_calc_barriers():
 
                     outRasterPath= path.join(cfg.BARRIERGDB, outRasterFN)
                     arcpy.CopyRaster_management(outRaster2, outRasterFN)
-                randomerror()
                 startTime=lu.elapsed_time(startTime)
 
             # Call the above function
@@ -683,25 +675,4 @@ def STEP6_calc_barriers():
         gprint('****Failed in step 6. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
-    return
-
-def randomerror():
-    """ Used to test error recovery and retry code.
-
-    """
-    generateError = False # Set to True to create random errors
-    gprint=lu.gprint
-    if generateError:
-        gprint('\n***Rolling dice for random error***')
-        import random
-        test = random.randrange(2, 8)
-        if test == 2:
-            gprint('Creating artificial ArcGIS error')
-            arcpy.MosaicToNewRaster_management(
-                            "rasterString","mosaicDir","mosFN", "",
-                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM",
-                            "MATCH")
-        elif test == 3:
-            gprint('Creating artificial python error')
-            artificialPythonError
     return
