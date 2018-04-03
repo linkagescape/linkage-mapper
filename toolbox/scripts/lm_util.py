@@ -13,7 +13,7 @@ import gc
 import glob
 import ctypes
 import locale
-from lm_retry_decorator import retry
+from lm_retry_decorator import Retry
 
 
 import numpy as npy
@@ -2241,7 +2241,7 @@ def dashline(lspace=0):
 ############################################################################
 ## Circuitscape Functions ##################################################
 ############################################################################
-@retry(5)
+@Retry(5)
 def setCircuitscapeOptions():
     """Sets default options for calling Circuitscape.
 

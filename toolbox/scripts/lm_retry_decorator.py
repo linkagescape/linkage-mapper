@@ -8,7 +8,7 @@ import lm_util as lu
 gp = arcgisscripting.create(9.3)
 gprint = gp.addmessage
 
-class retry(object):
+class Retry(object):
     default_exceptions = (Exception,)
     def __init__(self, tries, exceptions=None, delay=1):
         """

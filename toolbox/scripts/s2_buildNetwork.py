@@ -15,7 +15,7 @@ import time
 
 from lm_config import tool_env as cfg
 import lm_util as lu
-from lm_retry_decorator import retry
+
 
 _SCRIPT_NAME = "s2_buildNetwork.py"
 
@@ -545,9 +545,6 @@ def connect_clusters(linkTable):
         gprint('Writing ' + outlinkTableFile)
         lu.write_link_table(linkTable, outlinkTableFile)
 
-
-
-
         ##########################################################
 
     except arcgisscripting.ExecuteError:
@@ -560,4 +557,3 @@ def connect_clusters(linkTable):
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
-

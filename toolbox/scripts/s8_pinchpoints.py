@@ -12,7 +12,7 @@ import os.path as path
 import time
 
 import numpy as npy
-from lm_retry_decorator import retry
+from lm_retry_decorator import Retry
 import arcpy
 from arcpy.sa import *
 
@@ -28,7 +28,7 @@ gprint = lu.gprint
 tif = ".tif"
 
 
-@retry(2)
+@Retry(2)
 def STEP8_calc_pinchpoints():
     """ Maps pinch points in Linkage Mapper corridors using Circuitscape
         given CWD calculations from s3_calcCwds.py.
@@ -304,13 +304,13 @@ def STEP8_calc_pinchpoints():
                 arcpy.env.extent = "MAXOF"
                 if linkLoop == 1:
                     lu.delete_data(mosaicRaster)
-                    @retry(10)
+                    @Retry(10)
                     def copyRas2():
                         arcpy.CopyRaster_management(currentRaster,
                                                     mosaicRaster)
                     copyRas2()
                 else:
-                    @retry(10)
+                    @Retry(10)
                     def mosaicRas():
                         arcpy.Mosaic_management(currentRaster,
                                          mosaicRaster, "MAXIMUM", "MATCH")
@@ -353,7 +353,7 @@ def STEP8_calc_pinchpoints():
                                      "_current_adjacentPairs_" + cutoffText)
             lu.delete_data(outputRaster)
 
-            @retry(10)
+            @Retry(10)
             def copyRas():
                 arcpy.CopyRaster_management(mosaicRaster, outputRaster)
             copyRas()
@@ -535,7 +535,7 @@ def STEP8_calc_pinchpoints():
         lu.exit_with_python_error(_SCRIPT_NAME)
 
 
-@retry(10)
+@Retry(10)
 def export_ras_to_npy(raster,npyFile):
     descData=arcpy.Describe(raster)
     cellSize=descData.meanCellHeight
@@ -555,7 +555,7 @@ def export_ras_to_npy(raster,npyFile):
 
     return numElements, numNodes
 
-@retry(10)
+@Retry(10)
 def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     npyArray = npy.load(npyFile, mmap_mode=None)
     npyArray=npyArray.astype('float32')
@@ -571,7 +571,7 @@ def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     return
 
 
-@retry(10)
+@Retry(10)
 def write_header(raster,numpyArray,numpyFile):
     ncols=numpyArray.shape[1]
     nrows=numpyArray.shape[0]

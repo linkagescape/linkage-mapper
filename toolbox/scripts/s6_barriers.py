@@ -13,7 +13,7 @@ import os.path as path
 import arcpy
 from arcpy.sa import *
 import numpy as npy
-from lm_retry_decorator import retry
+from lm_retry_decorator import Retry
 
 from lm_config import tool_env as cfg
 import lm_util as lu
@@ -159,7 +159,7 @@ def STEP6_calc_barriers():
         for radius in range (startRadius, endRadius + 1, radiusStep):
             radId = radId + 1
             linkTableTemp = linkTable.copy()
-            @retry(10)
+            @Retry(10)
             #can't pass vars in and modify them.
             def doRadiusLoop():
                 linkTable = linkTableTemp.copy()
@@ -226,7 +226,7 @@ def STEP6_calc_barriers():
                         InNeighborhood = ("ANNULUS " + str(innerRadius) + " " +
                                          str(outerRadius) + " MAP")
 
-                        @retry(10)
+                        @Retry(10)
                         def execFocal():
                             # Execute FocalStatistics
                             if not path.exists(focalRaster1):
@@ -288,7 +288,7 @@ def STEP6_calc_barriers():
 
                         else:
                             #Calculate potential benefit per map unit restored
-                            @retry(10)
+                            @Retry(10)
                             def calcBen():
                                 outRas = ((lcDist - Raster(focalRaster1)
                                       - Raster(focalRaster2) - dia) / dia)
@@ -301,7 +301,7 @@ def STEP6_calc_barriers():
                                                     str(radius)
                                                     + "_" + str(corex) + "_" +
                                                     str(corey)+'_pct.tif')
-                            @retry(10)
+                            @Retry(10)
                             def calcBenPct():
                                 outras = (100 * (Raster(barrierRaster) / lcDist))
                                 outras.save(barrierRasterPct)
@@ -338,7 +338,7 @@ def STEP6_calc_barriers():
                             else:
                                 rasterString = ('"'+barrierRaster+";" +
                                                 lastMosaicRaster+'"')
-                                @retry(10)
+                                @Retry(10)
                                 def mosaicToNew():
                                     arcpy.MosaicToNewRaster_management(
                                         rasterString,mosaicDir,mosFN, "",
@@ -376,7 +376,7 @@ def STEP6_calc_barriers():
 
                             else:
                                 if cfg.SUM_BARRIERS:
-                                    @retry(10)
+                                    @Retry(10)
                                     def sumBarriers():
                                         outCon = arcpy.sa.Con(Raster(barrierRasterPct) < 0,
                                             lastMosaicRasterPct, Raster(barrierRasterPct) + Raster(
@@ -386,7 +386,7 @@ def STEP6_calc_barriers():
                                 else:
                                     rasterString = ('"' + barrierRasterPct + ";" +
                                                     lastMosaicRasterPct + '"')
-                                    @retry(10)
+                                    @Retry(10)
                                     def maxBarriers():
                                         arcpy.MosaicToNewRaster_management(
                                             rasterString,mosaicDirPct,mosPctFN, "",
