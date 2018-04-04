@@ -4,12 +4,12 @@
 
 Reguired Software:
 ArcGIS 10.x with Spatial Analyst extension
-Python 2.6
+Python >= 2.6.5
 Numpy
 
 """
 
-import os.path as path
+
 import sys
 
 import arcpy
@@ -21,14 +21,12 @@ import s6_barriers as s6
 
 _SCRIPT_NAME = "barrier_master.py"
 
-def bar_master(argv=None):
-    """ Experimental code to detect barriers using cost-weighted distance
-    outputs from Linkage Mapper tool.
 
-    """
+def bar_master(argv=None):
+    """Detect barriers using CWD outputs from Linkage Mapper tool."""
     if argv is None:
         argv = sys.argv
-    cfg.configure(cfg.TOOL_BM, argv) #xxx was sys.argv
+    cfg.configure(cfg.TOOL_BM, argv)
     gprint = lu.gprint
 
     try:
@@ -58,9 +56,9 @@ def bar_master(argv=None):
             cfg.RESRAST_IN = arcpy.Describe(cfg.RESRAST_IN).catalogPath
         try:
             arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
-        except Exception:
-            msg = ('ERROR: Could not make a copy of your resistance raster. ' +
-                    'Try re-starting ArcMap to release the file lock.')
+        except arcpy.ExecuteError:
+            msg = ('ERROR: Could not make a copy of your resistance raster. '
+                   'Try re-starting ArcMap to release the file lock.')
             lu.raise_error(msg)
 
         arcpy.env.snapRaster = cfg.RESRAST
@@ -68,17 +66,18 @@ def bar_master(argv=None):
         if cfg.BARRIER_METH_MAX:
             cfg.SUM_BARRIERS = False
             lu.dashline(1)
-            gprint('Calculating MAXIMUM barrier effects across core area pairs')
-            s6.STEP6_calc_barriers()
+            gprint('Calculating MAXIMUM barrier effects across core area '
+                   'pairs')
+            s6.step6_calc_barriers()
 
         if cfg.BARRIER_METH_SUM:
             cfg.SUM_BARRIERS = True
             gprint('')
             lu.dashline()
             gprint('Calculating SUM of barrier effects across core area pairs')
-            s6.STEP6_calc_barriers()
+            s6.step6_calc_barriers()
 
-        #clean up
+        # Clean up
         lu.delete_dir(cfg.SCRATCHDIR)
         if not cfg.SAVEBARRIERDIR:
             lu.delete_dir(cfg.BARRIERBASEDIR)
@@ -92,6 +91,6 @@ def bar_master(argv=None):
     except Exception:
         lu.exit_with_python_error(_SCRIPT_NAME)
 
+
 if __name__ == "__main__":
     bar_master()
-
