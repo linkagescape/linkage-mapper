@@ -1,16 +1,20 @@
 #!/usr/bin/env python2
 # Authors: Darren Kavanagh and Brad McRae
 
-"""Climate Linkage Mapper
+"""Create linkages between core areas that fall along a climatic gradient.
+
+This tool is designed to create linkages between designated core areas that
+fall along a climatic gradient (e.g. temperature).
+
+When using ArcGIS Desktop this module is called from the Climate Linkage
+Mapper tool within the Linkage Mapper Toolkit. See Climate Linkage Mapper
+User Guide for more details.
 
 Reguired Software:
 ArcGIS 10.x with Spatial Analyst extension
-Python 2.6
-Numpy 1.3
+Python >= 2.6.5
 
 """
-
-# $Revision$
 
 import os
 import sys
@@ -38,9 +42,8 @@ TO_COL = "To_Core"
 
 
 def main(argv=None):
-    """Main function for Climate Linkage Mapper tool"""
+    """Run Climate Linkage Mapper tool."""
     start_time = datetime.now()
-    # print "Start time: %s" % start_time.strftime(TFORMAT)
 
     if argv is None:
         argv = sys.argv
@@ -74,15 +77,15 @@ def main(argv=None):
 
 
 def check_out_sa_license():
-    """Check out the ArcGIS Spatial Analyst extension license"""
+    """Check out the ArcGIS Spatial Analyst extension license."""
     if arcpy.CheckExtension("Spatial") == "Available":
         arcpy.CheckOutExtension("Spatial")
     else:
-        raise
+        raise Exception("Spatial Analyst license is unavailable")
 
 
 def arc_wksp_setup():
-    """Setup ArcPy workspace"""
+    """Define ArcPy workspace."""
     arcpy.env.overwriteOutput = True
     arcpy.env.cellSize = "MAXOF"  # Setting to default. For batch runs.
     cc_util.arc_delete(cc_env.scratch_dir)
@@ -93,7 +96,7 @@ def arc_wksp_setup():
 
 
 def config_lm():
-    """Configure Linkage Mapper"""
+    """Configure Linkage Mapper."""
     lm_arg = [_SCRIPT_NAME, cc_env.proj_dir, cc_env.prj_core_fc,
               cc_env.core_fld, cc_env.prj_resist_rast, "false", "false", "#",
               "#", "true", "false", cc_env.prune_network, cc_env.max_nn,
@@ -108,7 +111,7 @@ def config_lm():
 
 
 def log_setup():
-    """Set up Linkage Mapper logging"""
+    """Set up Linkage Mapper logging."""
     lm_util.create_dir(lm_env.LOGDIR)
     lm_util.create_dir(lm_env.MESSAGEDIR)
     lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR,
@@ -117,7 +120,7 @@ def log_setup():
 
 
 def run_analysis():
-    """Run Climate Linkage Mapper analysis"""
+    """Run Climate Linkage Mapper analysis."""
     import cc_grass_cwd  # Cannot import until configured
 
     cc_copy_inputs()  # Clip inputs and create project area raster
@@ -134,13 +137,13 @@ def run_analysis():
     # Generate link table, calculate CWD and run Linkage Mapper
     if int(arcpy.GetCount_management(core_pairings).getOutput(0)) == 0:
         lm_util.warn("\nNo core pairs within climate threshold. "
-                         "Program will end")
+                     "Program will end")
     else:
         # Process pairings and generate link table
         grass_cores = process_pairings(core_pairings)
         if not grass_cores:
             lm_util.warn("\nNo core pairs within Euclidean distances. "
-                             "Progam will end")
+                         "Progam will end")
         else:
             # Create CWD using Grass
             cc_grass_cwd.grass_cwd(grass_cores)
@@ -151,7 +154,7 @@ def run_analysis():
 
 
 def cc_copy_inputs():
-    """Clip Climate Linkage Mapper inputs to smallest extent"""
+    """Clip Climate Linkage Mapper inputs to smallest extent."""
     lm_util.gprint("\nCOPYING LAYERS AND, IF NECESSARY, REDUCING EXTENT")
     ext_poly = "ext_poly"  # Extent polygon
     climate_extent = arcpy.Raster(cc_env.climate_rast).extent
@@ -215,7 +218,7 @@ def cc_copy_inputs():
 
 
 def create_pair_tbl(climate_stats):
-    """Create core pair table and limit to climate threshold """
+    """Create core pair table and limit to climate threshold."""
     cpair_tbl = pair_cores("corepairs")
     if int(arcpy.GetCount_management(cpair_tbl).getOutput(0)) > 0:
         limit_cores(cpair_tbl, climate_stats)
@@ -223,7 +226,7 @@ def create_pair_tbl(climate_stats):
 
 
 def pair_cores(cpair_tbl):
-    """Create table with all possible core to core combinations"""
+    """Create table with all possible core to core combinations."""
     srows, outputrow, irows = None, None, None
 
     try:
@@ -265,7 +268,7 @@ def pair_cores(cpair_tbl):
 
 
 def limit_cores(pair_tbl, stats_tbl):
-    """Limit core pairs based upon climate threshold"""
+    """Limit core pairs based upon climate threshold."""
     pair_vw = "dist_tbvw"
     stats_vw = "stats_tbvw"
     core_id = cc_env.core_fld.upper()
@@ -304,7 +307,7 @@ def limit_cores(pair_tbl, stats_tbl):
 
 
 def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
-    """Add zonal and calculated statistics to stick table"""
+    """Add zonal and calculated statistics to stick table."""
     tmp_mea = fld_pre + "_tmp_mea"
     tmp_std = fld_pre + "_tmp_std"
     umin2std = fld_pre + "umin2std"
@@ -368,7 +371,7 @@ def process_pairings(pairings):
 
 
 def pairs_from_list(pairings):
-    """Get list of core pairings and 'from cores'"""
+    """Get list of core pairings and 'from cores'."""
     frm_cores = set()
     core_pairs = []
     srows = arcpy.SearchCursor(pairings, "", "", FR_COL + "; " + TO_COL)
@@ -485,7 +488,7 @@ def simplify_corefc():
 
 
 def print_runtime(stime):
-    """Print process time when running from script"""
+    """Print process time when running from script."""
     etime = datetime.now()
     rtime = etime - stime
     hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),

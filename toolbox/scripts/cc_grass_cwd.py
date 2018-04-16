@@ -1,8 +1,6 @@
 # Authors: Darren Kavanagh and Brad McRae
 
-"""Climate Linkage Mapper grass module.
-
-"""
+"""Create CWD and Back rasters using GRASS GIS r.walk function."""
 
 import os
 
@@ -17,7 +15,7 @@ import lm_util
 
 
 def grass_cwd(core_list):
-    """Creating CWD and Back rasters using GRASS r.walk function"""
+    """Create CWD and Back rasters using GRASS."""
     out_fldr = cc_env.scratch_dir
 
     gisdbase = os.path.join(out_fldr, "cc_grass")
@@ -68,7 +66,7 @@ def grass_cwd(core_list):
 
 
 def write_grassrc(ccr_grassrc, gisdbase):
-    """"Write GRASS resource file to project folder"""
+    """Write GRASS resource file to project folder."""
     with open(ccr_grassrc, 'w') as rc_file:
         rc_file.write("GISDBASE: %s\n" % gisdbase)
         rc_file.write("LOCATION_NAME: <UNKNOWN>\n")
@@ -76,7 +74,7 @@ def write_grassrc(ccr_grassrc, gisdbase):
 
 
 def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
-    """Setup GRASS workspace"""
+    """Configure GRASS workspace."""
     lm_util.gprint("Creating GRASS workspace")
     gisbase = cc_env.gisbase
     location = "gcwd"
@@ -88,7 +86,7 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
 
     try:
         grass.create_location(gisdbase, location, filename=geo_file)
-    except Exception:
+    except grass.ScriptError:
         warn_msg = ("Cannot create GRASS workspace.\n"
                     "Try rebooting and restarting ArcGIS. If that doesn't\n"
                     "work you can try using the 'cc_demo.py' python script\n"
@@ -103,7 +101,7 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
 
 
 def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
-    """"Generate CWD and back rasters using r.walk in GRASS"""
+    """Generate CWD and back rasters using r.walk in GRASS."""
     slope_factor = "1"
     walk_coeff_flat = "1"
     walk_coeff_uphill = str(cc_env.climate_cost)
@@ -157,8 +155,7 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
             cwd_path = lm_util.get_cwd_path(core_no)
 
             def create_arcgrid(rtype, grass_grid):
-                """Export GRASS raster to ASCII grid and then to ARCINFO grid
-                """
+                """Export GRASS raster to ASCII and then to ARCINFO grid."""
                 ascii_grid = os.path.join(cc_env.scratch_dir,
                                           rtype + core_no_txt + ".asc")
                 arc_grid = cwd_path.replace("cwd_", rtype)
@@ -175,7 +172,7 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
 
 
 def start_grass_cmd(*args, **kwargs):
-    """Calls the grass module's start_command to run the inputed GRASS command.
+    """Call the grass module's start_command to run the inputed GRASS command.
 
     Returns Popen object
     """
@@ -185,19 +182,19 @@ def start_grass_cmd(*args, **kwargs):
 
 
 def chk_stderr(stderr):
-    """Check process for error and raises exception if one is found"""
+    """Check process for error and raises exception if one is found."""
     if 'ERROR:' in stderr:
         raise Exception("GRASSS ERROR: %s" % stderr[7:])
 
 
 def run_grass_cmd(*args, **kwargs):
-    """Run inputed GRASS command"""
+    """Run inputed GRASS command."""
     return_ps = start_grass_cmd(*args, **kwargs)
     chk_stderr(return_ps.communicate()[1])
 
 
 def write_grass_cmd(*args, **kwargs):
-    """Feeds stdin string to process stdin and runs inputed GRASS command"""
+    """Feed stdin string to process stdin and runs inputed GRASS command."""
     stdin = kwargs['stdin']
     kwargs['stdin'] = grass.PIPE
     return_ps = start_grass_cmd(*args, **kwargs)
