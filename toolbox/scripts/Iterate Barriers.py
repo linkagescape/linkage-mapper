@@ -168,9 +168,10 @@ def main():
             arcpy.env.scratchWorkspace = outputGDB
             arcpy.env.workspace = outputGDB
 
-            argv = ('lm_master.py', projDir, coreFCPath, coreFN, resRast, doStep1, doStep2, 
-                    'Cost-Weighted & Euclidean', distFile, 'true', 'true', 'false', 
-                    '4', 'Cost-Weighted', 'true', doStep5, '10000', '#', '#')    
+            argv = ('lm_master.py', projDir, coreFCPath, coreFN, resRast,
+                    doStep1, doStep2, 'Cost-Weighted & Euclidean', distFile,
+                    'true', 'true', 'false', '4', 'Cost-Weighted', 'true',
+                    doStep5, 'true', '200000', '10000', '#', '#', '#', '#') 
             gprint('Running ' + str(argv))
             import lm_master #xxx
             lm_master.lm_master(argv)    #xxx
