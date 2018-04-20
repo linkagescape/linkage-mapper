@@ -10,7 +10,8 @@ Numpy
 
 """
 
-import os.path as path
+import os
+from os import path
 import shutil
 import sys
 
@@ -37,36 +38,22 @@ def circuitscape_master(argv=None):
     # gwarn = arcpy.AddWarning
 
     if argv is None:
-        argv = sys.argv    
+        argv = sys.argv
+
+    argv.append(get_cs_path())  # Add Circuitscape path
     
     cfg.configure(cfg.TOOL_CS, argv)
     gp = cfg.gp
-
-    
+       
     try:
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
-        cfg.logFilePath=lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
-                                           cfg.PARAMS) 
+        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
+                                           cfg.PARAMS)
 
-        CSPATH = lu.get_cs_path()
-        if CSPATH == None:
-            msg = ('Cannot find an installation of Circuitscape 3.5.5'
-                    '\nor greater in your Program Files directory.')
-            arcpy.AddError(msg)
-            lu.write_log(msg)
-            exit(1)
-            
-        try:
-            csDir, fn = path.split(CSPATH)
-            if 'flush' not in open(path.join(csDir,'cs_compute.py')).read():
-                lu.warn('\n---------------------------------------------')
-                lu.warn('Your version of Circuitscape is out of date. ')
-                lu.warn('---------------------------------------------\n')
-                lu.warn('Please get the latest from www.circuitscape.org.')
-                lu.warn('The new version interacts more smoothly with ArcMap.')
-                gprint('Proceeding...\n')
-        except: pass
+        if cfg.CSPATH is None:
+            lu.raise_error("Cannot find an installation of Circuitscape"
+                           "\nin your Program Files directory.")  
         
         lu.print_drive_warning()
         # Check core ID field.
@@ -175,8 +162,18 @@ def circuitscape_master(argv=None):
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.exit_with_python_error(_SCRIPT_NAME)
+
+
+def get_cs_path():
+    """Return path to Circuitscape installation."""
+    env_list = ["ProgramW6432", "ProgramFiles", "ProgramFiles(x86)"]
+
+    for i in env_list:
+        cs_app_path = path.join(os.environ[i], "Circuitscape\\cs_run.exe")
+        if path.exists(cs_app_path):
+            return cs_app_path
 
 
 if __name__ == "__main__":

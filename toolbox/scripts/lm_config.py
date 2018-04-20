@@ -302,10 +302,11 @@ def config_lp(config, arg):
 
 def config_circuitscape(config, arg):
     """Configure global variables for Circuitscape."""
+    config.CSPATH = arg[-1]  # Path to Circuitscape
     config.COREFC = arg[2]
     config.COREFN = arg[3]
 
-    if len(arg) == 4:
+    if len(arg) == 5:
         config.DOCENTRALITY = True
         config.DOPINCH = False
         config.CWDCUTOFF = 0
