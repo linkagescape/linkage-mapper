@@ -5,6 +5,7 @@
 
 import os
 import sys
+import subprocess
 import time
 import traceback
 import ConfigParser
@@ -2050,24 +2051,45 @@ def move_map(oldMap, newMap):
     return
 
 
-def get_cs_path():
-    """Returns path to Circuitscape installation """
-    envList = ["ProgramW6432", "ProgramFiles", "ProgramFiles(x86)"]
-    for x in range (0,len(envList)):
-        try:
-            pfPath = os.environ[envList[x]]
-            csPath = os.path.join(pfPath,'Circuitscape\\cs_run.exe')
-            if os.path.exists(csPath): return csPath
-        except: pass
-    # If can't find Circuitscape, code below executes
-    gprint('\nLooking for Circuitscape in the following locations:')
-    for x in range (0,len(envList)):
-        pfPath = os.environ[envList[x]]
-        csPath = os.path.join(pfPath,'Circuitscape\\cs_run.exe')
-        gprint(csPath)
-    msg = ("Error: Cannot find Circuitscape installed in any of the usual "
-                   "places listed above.\n")
-    raise_error(msg)
+@retry(10)
+def call_circuitscape(cspath, outConfigFile):
+    """Call Circuitscape."""
+    mem_flag = False
+    fail_flag = False
+    gprint('     Calling Circuitscape:')
+    proc = subprocess.Popen([cspath, outConfigFile],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            shell=True)
+    while proc.poll() is None:
+        output = proc.stdout.readline()
+
+        if 'Traceback' in output:
+            gprint("\nCircuitscape failed.")
+            fail_flag = True
+            if 'memory' in output:
+                mem_flag = True
+        if ('Processing' not in output and 'laplacian' not in output
+                and 'node_map' not in output
+                and (('--' in output) or ('sec' in output)
+                     or (fail_flag is True))):
+            gprint("      " + output.replace("\r\n", ""))
+
+    # Catch any output lost if process closes too quickly
+    output = proc.communicate()[0]
+    for line in output.split('\r\n'):
+        if 'Traceback' in line:
+            gprint("\nCircuitscape failed.")
+            if 'valid sources' in output.lower():
+                gprint('Corridors may be too narrow. Try upping your CWD '
+                       'cutoff distance.')
+            if 'memory' in line:
+                mem_flag = True
+        if ('Processing' not in line and 'laplacian' not in line
+                and 'node_map' not in line
+                and (('--' in line) or ('sec' in line)
+                     or (fail_flag is True))):
+            gprint("      " + str(line))
+    return mem_flag
 
 
 def rename_fields(FC):
