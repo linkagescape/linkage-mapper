@@ -61,10 +61,11 @@ def lm_master(argv=None):
         # if cfg.S2EUCDISTFILE != None:
             # if cfg.S2EUCDISTFILE.lower() == "restart": pass
         # else:
-        lu.delete_dir(cfg.SCRATCHDIR)
-        lu.create_dir(cfg.SCRATCHDIR)
+        if cfg.TOOL != cfg.TOOL_CC:
+            lu.delete_dir(cfg.SCRATCHDIR)
+            lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
-        if cfg.TOOL == 'Linkage Mapper':
+        if cfg.TOOL == cfg.TOOL_LM:
             cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
                                              cfg.PARAMS)
         lu.print_drive_warning()        
