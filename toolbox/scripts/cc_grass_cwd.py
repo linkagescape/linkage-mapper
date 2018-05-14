@@ -19,12 +19,14 @@ import lm_util
 
 def grass_cwd(core_list):
     """Creating CWD and Back rasters using GRASS r.walk function"""
-    gisdbase = os.path.join(cc_env.proj_dir, "gwksp")
+    out_fldr = cc_env.scratch_dir
 
-    ccr_grassrc = os.path.join(cc_env.proj_dir, "ccr_grassrc")
-    climate_asc = os.path.join(cc_env.out_dir, "cc_climate.asc")
-    resist_asc = os.path.join(cc_env.out_dir, "cc_resist.asc")
-    core_asc = os.path.join(cc_env.out_dir, "cc_cores.asc")
+    gisdbase = os.path.join(out_fldr, "cc_grass")
+
+    ccr_grassrc = os.path.join(out_fldr, "cc_grassrc")
+    climate_asc = os.path.join(out_fldr, "cc_gclimate.asc")
+    resist_asc = os.path.join(out_fldr, "cc_gresist.asc")
+    core_asc = os.path.join(out_fldr, "cc_gcores.asc")
     climate_lyr = "climate"
     resist_lyr = "resist"
     core_lyr = "cores"
@@ -33,6 +35,8 @@ def grass_cwd(core_list):
         lm_util.gprint("\nRUNNING GRASS TO CREATE COST-WEIGHTED DISTANCE "
                        "RASTERS")
 
+        start_path = os.environ["PATH"]
+
         # Convert input GRID rasters to ASCII
         lm_util.gprint("Converting ARCINFO GRID rasters to ASCII")
         arcpy.RasterToASCII_conversion(cc_env.prj_climate_rast, climate_asc)
@@ -40,7 +44,6 @@ def grass_cwd(core_list):
         arcpy.RasterToASCII_conversion(cc_env.prj_core_rast, core_asc)
 
         # Create resource file and setup workspace
-        start_path = os.environ["PATH"]
         os.environ["PATH"] = cc_env.gpath
         write_grassrc(ccr_grassrc, gisdbase)
         setup_wrkspace(gisdbase, ccr_grassrc, climate_asc)
@@ -61,11 +64,8 @@ def grass_cwd(core_list):
         raise
     finally:
         os.environ["PATH"] = start_path
-        if not cc_util.remove_grass_wkspc(gisdbase):
-            lm_util.warn("Unable to delete temporary GRASS folder. "
-                             "Program will contine.")
-        cc_util.delete_features(
-            [climate_asc, resist_asc, core_asc, ccr_grassrc])
+        cc_util.arc_delete(gisdbase, ccr_grassrc,
+                           climate_asc, resist_asc, core_asc)
 
 
 def write_grassrc(ccr_grassrc, gisdbase):
@@ -90,13 +90,14 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     try:
         grass.create_location(gisdbase, location, filename=geo_file)
     except:
-        lm_util.warn("GRASS ERROR. Try rebooting and restarting ArcGIS.")
-        lm_util.warn("If that doesn't work you can try using ")
-        lm_util.warn("the 'cc_demo.py' python script in the ")
-        lm_util.warn("demo/demo_scripts/ directory where the Linkage Mapper toolbox")
-        lm_util.warn("is installed instead of ArcGIS to call the tool")
-        lm_util.warn("(see user guide).")
-        raise Exception("GRASS ERROR: Cannot create workspace.")
+        warn_msg = ("Cannot create GRASS workspace.\n"
+                    "Try rebooting and restarting ArcGIS. If that doesn't\n"
+                    "work you can try using the 'cc_demo.py' python script\n"
+                    "in the demo/demo_scripts/ directory where the Linkage\n"
+                    "Mapper toolbox is installed instead of ArcGIS to call\n"
+                    "the tool (see user guide).")
+        raise Exception(warn_msg)
+
     gsetup.init(gisbase, gisdbase, location, mapset)
     run_grass_cmd("g.gisenv", set="OVERWRITE=1")
     os.environ['GRASS_VERBOSE'] = "0"  # Only errors and warnings are printed
@@ -159,14 +160,14 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
             def create_arcgrid(rtype, grass_grid):
                 """Export GRASS raster to ASCII grid and then to ARCINFO grid
                 """
-                ascii_grid = os.path.join(cc_env.out_dir,
+                ascii_grid = os.path.join(cc_env.scratch_dir,
                                           rtype + core_no_txt + ".asc")
                 arc_grid = cwd_path.replace("cwd_", rtype)
                 run_grass_cmd("r.out.gdal", input=grass_grid,
                               output=ascii_grid, format="AAIGrid")
                 arcpy.CopyRaster_management(ascii_grid, arc_grid)
                 arcpy.DefineProjection_management(arc_grid, spatial_ref)
-                os.remove(ascii_grid)
+                cc_util.arc_delete(ascii_grid)
 
             create_arcgrid("cwd_", gcwd)  # Export CWD raster
             create_arcgrid("back_", gbackrc)  # Export reclassified back raster
