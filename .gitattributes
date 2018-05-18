@@ -1,0 +1,39 @@
+# Source files
+# ============
+*.py		text eol=lf
+*.xsl		text eol=crlf
+*.bat		text eol=crlf
+
+#  Files not normalized
+# =====================
+# Word
+*.doc		binary
+*.docx		binary
+
+# ArcGIS
+*.mxd		binary
+*.tbx		binary
+*.style		binary
+
+# Spatial data
+*.gdb/*		binary
+
+*.img		binary
+*.img.xml	-text
+
+*.adf		binary
+*.aux		binary
+*.aux.xml	-text
+
+*.cpg		-text
+*.dbf		binary
+*.prj		-text
+*.sbn		binary
+*.sbx		binary
+*.shp		binary
+*.shp.xml	-text
+*.shx		binary
+
+# Graphics
+*.png 		binary
+*.xcf		binary
