@@ -19,6 +19,7 @@ import itertools
 import traceback
 from datetime import datetime
 
+import arcinfo  # Import arcinfo license. Needed before arcpy import.
 import arcpy
 import arcpy.sa as sa
 
@@ -49,7 +50,6 @@ def main(argv=None):
         cc_util.check_cc_project_dir()
 
         grass_dir_setup()
-        cc_util.gdal_fail_check()  # Make sure no dll conflict
 
         check_out_sa_license()
         arc_wksp_setup()
@@ -88,12 +88,9 @@ def grass_dir_setup():
                          "\nPlease choose a new project directory.")
         raise Exception("Cannot delete GRASS workspace: " + gisdbase)
 
-    cc_util.add_grass_path(cc_env.gisbase)
-
 
 def check_out_sa_license():
     """Check out the ArcGIS Spatial Analyst extension license"""
-    os.environ['ESRI_SOFTWARE_CLASS'] = 'Professional'
     if arcpy.CheckExtension("Spatial") == "Available":
         arcpy.CheckOutExtension("Spatial")
     else:
@@ -187,6 +184,7 @@ def cc_copy_inputs():
 
             # Set to minimum extent if resistance raster was given
             arcpy.env.extent = arcpy.Extent(xmin, ymin, xmax, ymax)
+
             # Want climate and resistance rasters in same spatial ref
             # with same nodata cells
             proj_resist_rast = sa.Con(
@@ -198,7 +196,7 @@ def cc_copy_inputs():
             ymin = climate_extent.YMin
             xmax = climate_extent.XMax
             ymax = climate_extent.YMax
-            # Copying to gdb avoids gdal conflict later with ascii conversion
+
             ones_resist_rast = sa.Con(
                 sa.IsNull(cc_env.climate_rast),
                 sa.Int(cc_env.climate_rast), 1)
@@ -314,7 +312,7 @@ def limit_cores(pair_tbl, stats_tbl):
                                   "", "", "NULLABLE")
         arcpy.CalculateField_management(pair_vw, diffu_2std,
                                         "abs(!frumin2std! - !toumin2std!)",
-                                        "PYTHON")
+                                        "PYTHON_9.3")
 
         # Filter distance table based on inputed threshold and delete rows
         lm_util.gprint("Filtering table based on threshold")
@@ -366,12 +364,12 @@ def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
     std_fld = "!" + tbl_name + "." + tmp_std + "!"
 
     arcpy.CalculateField_management(table_vw, tmp_mea, mean_value,
-                                    "PYTHON")
+                                    "PYTHON_9.3")
     arcpy.CalculateField_management(table_vw, tmp_std, std_value,
-                                    "PYTHON")
+                                    "PYTHON_9.3")
     expression = mea_fld + " - " + std_fld + " - " + std_fld
     arcpy.CalculateField_management(table_vw, umin2std, expression,
-                                    "PYTHON")
+                                    "PYTHON_9.3")
 
     # Remove join
     arcpy.RemoveJoin_management(table_vw, stats_tbl_nm)
@@ -406,7 +404,7 @@ def pairs_from_list(pairings):
         to_core = str(srow.getValue(TO_COL))
         frm_cores.add(from_core)
         core_pairs.append([str(from_core), to_core])
-    frm_cores = map(str, sorted(frm_cores))
+    frm_cores = [str(x) for x in frm_cores]
     return core_pairs, frm_cores
 
 
@@ -443,10 +441,10 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
             to_cores = ', '.join(to_cores_lst)
             expression = coreid_fld + " in (" + to_cores + ")"
             arcpy.MakeFeatureLayer_management(corefc, tcore_vw, expression)
-            lm_util.gprint("Calculating Euclidean distance/s from Core "
-                           + frm_core + " to " + str(len(to_cores_lst))
-                           + " other cores" + " (" + str(core_no + 1) + "/"
-                           + no_cores + ")")
+            lm_util.gprint("Calculating Euclidean distance/s from Core " +
+                           frm_core + " to " + str(len(to_cores_lst)) +
+                           " other cores" + " (" + str(core_no + 1) + "/" +
+                           no_cores + ")")
 
             # Generate near table for these core pairings
             arcpy.GenerateNearTable_analysis(
