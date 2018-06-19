@@ -111,7 +111,9 @@ def config_lm():
     lm_arg = [_SCRIPT_NAME, cc_env.proj_dir, cc_env.prj_core_fc,
               cc_env.core_fld, cc_env.prj_resist_rast, "false", "false", "#",
               "#", "true", "false", cc_env.prune_network, cc_env.max_nn,
-              cc_env.nn_unit, cc_env.keep_constelations, "true", "#", "#", "#", cc_env.OUTPUTFORMODELBUILDER, cc_env.WRITETRUNCRASTER, cc_env.CWDTHRESH, cc_env.LMCUSTSETTINGS]
+              cc_env.nn_unit, cc_env.keep_constelations, "true",
+              cc_env.WRITETRUNCRASTER, cc_env.CWDTHRESH, "#", "#", "#",
+              cc_env.OUTPUTFORMODELBUILDER, cc_env.LMCUSTSETTINGS]
     lm_env.configure(lm_env.TOOL_CC, lm_arg)
     lm_util.create_dir(lm_env.DATAPASSDIR)
     lm_util.gprint('\nClimate Linkage Mapper Version ' + lm_env.releaseNum)
