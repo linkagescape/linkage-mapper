@@ -92,8 +92,8 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
     except:
         lm_util.warn("GRASS ERROR. Try rebooting and restarting ArcGIS.")
         lm_util.warn("If that doesn't work you can try using ")
-        lm_util.warn("the 'CC Run Script.py' python script in the ")
-        lm_util.warn("demo directory where the Linkage Mapper toolbox")
+        lm_util.warn("the 'cc_demo.py' python script in the ")
+        lm_util.warn("demo/demo_scripts/ directory where the Linkage Mapper toolbox")
         lm_util.warn("is installed instead of ArcGIS to call the tool")
         lm_util.warn("(see user guide).")
         raise Exception("GRASS ERROR: Cannot create workspace.")
