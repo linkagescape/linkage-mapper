@@ -62,16 +62,19 @@ class ClimateConfig(object):
 
         # Setup model global variables
         self.code_dir = os.path.dirname(os.path.abspath(__file__))
-        self.out_dir = os.path.join(self.proj_dir, "clm_cor")  # CC directory
-        self.tmp_dir = os.path.join(self.proj_dir, "tmp")
-        self.inputs_gdb = os.path.join(self.out_dir, "LM_inputs.gdb")
+        self.scratch_dir = os.path.join(self.proj_dir, "scratch")
+        self.cc_gdb = os.path.join(self.scratch_dir, "cc.gdb")
 
         # Define project area files
-        self.prj_core_fc = (os.path.join(self.inputs_gdb, "cc_cores"))
-        self.prj_climate_rast = os.path.join(self.inputs_gdb, "climate")
-        self.prj_core_rast = os.path.join(self.inputs_gdb, "cores")
-        self.prj_resist_rast = os.path.join(self.inputs_gdb, "cc_resist")
+        self.prj_core_fc = os.path.join(self.cc_gdb, "cc_cores")
+        self.prj_resist_rast = os.path.join(self.cc_gdb, "cc_resist")
+        self.prj_climate_rast = "climate"
+        self.prj_core_rast = "cores"
         self.simplify_cores = True
-        self.core_simp = os.path.join(cc_env.out_dir, "coresim.shp")
+        self.WRITETRUNCRASTER = "true"
+        self.CWDTHRESH = "200000"
+        self.OUTPUTFORMODELBUILDER = "#"
+        self.LMCUSTSETTINGS = "#"
+
 
 cc_env = ClimateConfig()

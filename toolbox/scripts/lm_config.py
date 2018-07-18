@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.
+#!/usr/bin/env python2
 # Authors: Brad McRae and Darren Kavanagh
 
 """Linkage Mapper configuration module.
@@ -7,6 +7,7 @@ Assigns input parameters from ToolBox to variables, and sets constants.
 
 """
 
+import imp
 import os.path as path
 
 import arcgisscripting
@@ -14,38 +15,24 @@ import arcgisscripting
 import lm_version as ver
 import lm_settings
 
+
 GP_NULL = '#'
 
 
 def str2bool(pstr):
-    """Convert ESRI boolean string to Python boolean type"""
+    """Convert ESRI boolean string to Python boolean type."""
     return pstr == 'true'
 
 
 def setadjmeth(inparam):
-    """Return boolean variables for adjacency methods"""
-    if "cost" in inparam.lower():
-        meth_cw = True
-        #meth_eu = False
-    else:
-        meth_cw = False
-        
-    if "euclid" in inparam.lower():
-        #meth_cw = False
-        meth_eu = True
-    else:
-        meth_eu = False
-    # elif inparam == "Cost-Weighted & Euclidean":
-        # meth_cw = True
-        # meth_eu = True
-    # else:
-        # meth_cw = False
-        # meth_eu = False
+    """Return boolean variables for adjacency methods."""
+    meth_cw = "cost" in inparam.lower()
+    meth_eu = "euclid" in inparam.lower()
     return meth_cw, meth_eu
 
 
 def nullfloat(innum):
-    """Convert ESRI float or null to Python float"""
+    """Convert ESRI float or null to Python float."""
     if innum == GP_NULL:
         nfloat = None
     else:
@@ -56,14 +43,14 @@ def nullfloat(innum):
 
 
 def nullstring(arg_string):
-    """Convert ESRI nullstring to Python null"""
+    """Convert ESRI nullstring to Python null."""
     if arg_string == GP_NULL:
         arg_string = None
     return arg_string
 
 
 def config_global(config, arg):
-    """Configure global variables for all tools"""
+    """Configure global variables for all tools."""
     config.PARAMS = str(arg)  # Convert to string in case '\' exists
     config.releaseNum = ver.releaseNum
     config.LOGMESSAGES = True
@@ -81,7 +68,7 @@ def config_global(config, arg):
     config.LOGDIR_OLD = path.join(proj_dir, "logFiles")
     config.logFile = None
     config.logFilePath = None
-    config.logFileCopyPath = path.join(proj_dir,'last_run_log.txt')
+    config.logFileCopyPath = path.join(proj_dir, 'last_run_log.txt')
     config.MESSAGEDIR = path.join(config.LOGDIR, "log")
     config.MESSAGEDIR_OLD = path.join(config.LOGDIR, "Messages")
     config.ADJACENCYDIR = path.join(config.DATAPASSDIR, "adj")
@@ -108,10 +95,10 @@ def config_global(config, arg):
 
     # Save individual current maps from Circuitscape
     config.SAVECURRENTMAPS = False
-        
+
     config.SAVECIRCUITDIR = False
     config.SAVE_TEMP_CIRCUIT_FILES = False
-    
+
     # Write voltage maps from pinchpoint analysis
     config.WRITE_VOLT_MAPS = False
 
@@ -168,31 +155,21 @@ def config_global(config, arg):
     # TEMP NN corridor links (s4), may be able to get rid of this
     config.LT_NNCT = 30
 
-    # 1 corridor
-    # 10 NN corridor
-    # 11 1st nn (future)
-    # 12 2nd nn etc (future)
-    # 20 constel
-    # 21 1st nn constel (future)
-    # 22 2nd nn constel etc (future)
-    # 30 temp saved nnconstel.  maybe able to get rid of this
-
-    #Temporary resistance raster copy to be created in master scripts
+    # Temporary resistance raster copy to be created in master scripts
     config.RESRAST = path.join(config.SCRATCHDIR, 'resrast')
 
 
-def config_lm(config, arg, scratch_dir):
-    """ Configure global variables for Linkage Mapper"""
+def config_lm(config, arg):
+    """Configure global variables for Linkage Mapper."""
     config.CONNECTFRAGS = False
     config.COREFC = arg[2]  # Core area feature class
+    splits = config.COREFC.split("\\")
+    config.CORENAME = splits[len(splits) - 1].split(".")[0]
     config.COREFN = arg[3]  # Core area field name
     config.RESRAST_IN = arg[4]  # Resistance raster
 
     # Processing steps inputs
     config.STEP1 = str2bool(arg[5])
-
-    ### SETTING BOTH ADJ METHODS TO TRUE FOR S1 IN FUTURE RELEASES ###
-    # config.S1ADJMETH_CW, config.S1ADJMETH_EU = setadjmeth(arg[6])
 
     config.S1ADJMETH_CW = True
     config.S1ADJMETH_EU = True
@@ -205,73 +182,80 @@ def config_lm(config, arg, scratch_dir):
     # Drop LCC's passing through intermediate cores
     config.S3DROPLCCS = str2bool(arg[10])
     config.STEP4 = str2bool(arg[11])
-    config.S4MAXNN = int(arg[12])  # No of connected nearest neighbors
+    if arg[12] == "Unlimited":
+        config.S4MAXNN = 99
+        config.IGNORES4MAXNN = True
+    else:
+        config.S4MAXNN = int(arg[12])  # No of connected nearest neighbors
+        config.IGNORES4MAXNN = False
     # NN Unit
     config.S4DISTTYPE_CW, config.S4DISTTYPE_EU = setadjmeth(arg[13])
     config.S4CONNECT = str2bool(arg[14])
     config.STEP5 = str2bool(arg[15])
 
     # Optional input parameters
-    config.BUFFERDIST = nullfloat(arg[16])
-    config.MAXCOSTDIST = nullfloat(arg[17])
+    config.BUFFERDIST = nullfloat(arg[18])
+    config.MAXCOSTDIST = nullfloat(arg[19])
 
-    if config.S2EUCDISTFILE != None:
-        if config.S2EUCDISTFILE.lower() == 'cluster': 
+    if config.S2EUCDISTFILE is not None:
+        if config.S2EUCDISTFILE.lower() == 'cluster':
             # Custom code to consolidate nearby cores will be called
             config.S2EUCDISTFILE = None
             config.CONNECTFRAGS = True
             config.MAXCOSTDIST = None
             config.S1ADJMETH_CW = False
             config.S2ADJMETH_CW = False
-        
-    config.MAXEUCDIST = nullfloat(arg[18])
-    
-    # config.USELMSETTINGS = str2bool(arg[19])  #In progress.  Will need to change 9.3 toolbox too.
-    
-    # if config.MAXEUCDIST == 0: Now done in nullfloat
-        # config.MAXEUCDIST = None
 
-    #Default values for lm_settings (used when box is not checked)
-        ### USER SETTABLE VARIABLES
-    # CALCNONNORMLCCS = False  # Mosiac non-normalized LCCs in step 5 (Boolean- set to True or False)
-    # WRITETRUNCRASTER = True  # Truncate mosaic corridor raster at an upper limit, i.e., use width cutoff. (Boolean- set to True or False)
-    # CWDTHRESH = 200000  # CWD corridor width cutoff to use in truncated raster (Integer)
-    # MINCOSTDIST = None  # Minimum cost distance- any corridor shorter than this will not be mapped (Integer)
-    # MINEUCDIST = None  # Minimum euclidean distance- any core areas closer than this will not be connected (Integer)
-    # SAVENORMLCCS = False  # Save inidvidual normalized LCC grids, not just mosaic (Boolean- set to True or False)
-    # SIMPLIFY_CORES = True  # Simplify cores before calculating distances (Boolean- set to True or False)
-                           # # This speeds up distance calculations in step 2,
-                           # # but Euclidean distances will be less precise.
+    config.MAXEUCDIST = nullfloat(arg[20])
 
-    # if config.USELMSETTINGS: #In progress.  Will need to change 9.3 toolbox too.
-    for setting in dir(lm_settings):
-        if setting == setting.upper():
-            setting_value = getattr(lm_settings, setting)
-            setattr(config, setting, setting_value)
+    # Optional parameters that only apply to 2.0.0+ toolbox,
+    # for ArcGIS 10.x only
+    if "10." in config.gp.GetInstallInfo('desktop')['Version']:
+        config.WRITETRUNCRASTER = str2bool(arg[16])
+        config.CWDTHRESH = int(arg[17])
+        config.OUTPUTFORMODELBUILDER = nullstring(arg[21])
+        config.LMCUSTSETTINGS = nullstring(arg[22])
+    else:
+        config.OUTPUTFORMODELBUILDER = None
+
+        # These two settings are hardcoded based on the values
+        # used in lm_settings, before they were daylighted in
+        # the toolbox in LM 2.0.0+ for ArcGIS10.x
+        config.WRITETRUNCRASTER = True
+        config.CWDTHRESH = 200000
+
+        config.LMCUSTSETTINGS = None
+
+    if config.LMCUSTSETTINGS:
+        cust_settings = (imp.load_source(
+            config.LMCUSTSETTINGS.split(".")[0], config.LMCUSTSETTINGS))
+        for setting in dir(cust_settings):
+            if setting == setting.upper():
+                setting_value = getattr(cust_settings, setting)
+                setattr(config, setting, setting_value)
+    else:
+        for setting in dir(lm_settings):
+            if setting == setting.upper():
+                setting_value = getattr(lm_settings, setting)
+                setattr(config, setting, setting_value)
 
     if config.MAXCOSTDIST is None:
         config.TMAXCWDIST = None
     elif config.CWDTHRESH is not None:
-        config.TMAXCWDIST = None  # Max is disabled for now- see line below
-        # Will limit cw calc
-        # config.TMAXCWDIST = MAXCOSTDIST + CWDTHRESH
-
-    config.SCRATCHGDB = path.join(scratch_dir, "scratch.gdb")
-    # Permanent copy of core area FC made at step 1 and used in all steps
-    # config.COREDIR = path.join(config.DATAPASSDIR, "corecopy")
-    # config.COREFC = path.join(config.COREDIR, "core_copy.shp")
-    # config.COREFN = "GRIDCODE"
+        config.TMAXCWDIST = None
+    config.SCRATCHGDB = path.join(config.SCRATCHDIR, "scratch.gdb")
     config.CORERAS = path.join(config.SCRATCHDIR, "core_ras")
     return True
 
+
 def config_barrier(config, arg):
-    """Configure global variables for Barrier tool"""
+    """Configure global variables for Barrier tool."""
     config.RESRAST_IN = arg[2]
     config.STARTRADIUS = arg[3]
     config.ENDRADIUS = arg[4]
     config.RADIUSSTEP = arg[5]
     config.BARRIER_METH = arg[6]
-    config.SAVE_RADIUS_RASTERS = str2bool(arg[7])    
+    config.SAVE_RADIUS_RASTERS = str2bool(arg[7])
     config.WRITE_PCT_RASTERS = str2bool(arg[8])
     if len(arg) > 9:
         config.BARRIER_CWD_THRESH = arg[9]
@@ -279,23 +263,18 @@ def config_barrier(config, arg):
             config.BARRIER_CWD_THRESH = None
     else:
         config.BARRIER_CWD_THRESH = None
-            
-    if 'max' in config.BARRIER_METH.lower():
-        config.BARRIER_METH_MAX = True
-    else:
-        config.BARRIER_METH_MAX = False
-    if 'sum' in config.BARRIER_METH.lower():
-        config.BARRIER_METH_SUM = True
-    else:
-        config.BARRIER_METH_SUM = False           
-    
+
+    config.BARRIER_METH_MAX = 'max' in config.BARRIER_METH.lower()
+    config.BARRIER_METH_SUM = 'sum' in config.BARRIER_METH.lower()
+
     if config.RADIUSSTEP == GP_NULL or config.ENDRADIUS == config.STARTRADIUS:
         config.RADIUSSTEP = 0
-    if float(config.STARTRADIUS) + float(config.RADIUSSTEP) > float(config.ENDRADIUS):
+    if ((float(config.STARTRADIUS) + float(config.RADIUSSTEP))
+            > float(config.ENDRADIUS)):
         config.RADIUSSTEP = 0
     if config.RADIUSSTEP == 0:
         config.SAVE_RADIUS_RASTERS = True
-        
+
     # Save individual focal grids for barrier analysis
     config.SAVEFOCALRASTERS = False
 
@@ -305,21 +284,29 @@ def config_barrier(config, arg):
     # Calculate minimum of resistance and improvement score
     config.WRITE_TRIM_RASTERS = False
 
-    # Save individual barrier grids for each core area pair   
-    config.SAVEBARRIERRASTERS = False 
+    # Save individual barrier grids for each core area pair
+    config.SAVEBARRIERRASTERS = False
 
-    config.STEP1 = False    
+    config.STEP1 = False
+
 
 def config_climate(config, arg):
-    """Configure global variables for Climate Corridor tool"""
-    config.lm_configured = config_lm(config, arg, config.SCRATCHDIR)
+    """Configure global variables for Climate Corridor tool."""
+    config.lm_configured = config_lm(config, arg)
+
+
+def config_lp(config, arg):
+    """Configure global variables for Linkage Priority tool."""
+    config.lm_configured = config_lm(config, arg)
+
 
 def config_circuitscape(config, arg):
-    """Configure global variables for Circuitscape"""
+    """Configure global variables for Circuitscape."""
+    config.CSPATH = arg[-1]  # Path to Circuitscape
     config.COREFC = arg[2]
     config.COREFN = arg[3]
-    
-    if len(arg) == 4:
+
+    if len(arg) == 5:
         config.DOCENTRALITY = True
         config.DOPINCH = False
         config.CWDCUTOFF = 0
@@ -327,49 +314,53 @@ def config_circuitscape(config, arg):
     else:
         config.DOPINCH = True
         config.DOCENTRALITY = False
-        config.RESRAST_IN = arg[4]        
+        config.RESRAST_IN = arg[4]
         config.CWDCUTOFF = int(nullfloat(arg[5]))  # CDW cutoff distance
         config.SQUARERESISTANCES = str2bool(arg[6])  # Square resistance values
 
-        # Do adjacent pair corridor pinchpoint calculations using raster CWD maps
+        # Do adjacent pair corridor pinchpoint calculations
+        # using raster CWD maps
         config.DO_ADJACENTPAIRS = str2bool(arg[7])
         # Do all-pair current calculations using raster corridor map
         config.DO_ALLPAIRS = str2bool(arg[8])
         config.ALL_PAIR_CHOICE = arg[9]
-        if config.DO_ALLPAIRS == True:
+        if config.DO_ALLPAIRS:
             if "pairwise" in config.ALL_PAIR_CHOICE.lower():
                 config.ALL_PAIR_SCENARIO = 'pairwise'
             else:
                 config.ALL_PAIR_SCENARIO = 'all-to-one'
 
     config.STEP1 = False
-    
+
     config.SAVECENTRALITYDIR = False
 
+
 class Configure(object):
-    """Class container to hold global variables"""
+    """Class container to hold global variables."""
+
     TOOL_LM = 'Linkage Mapper'
     TOOL_CC = 'Linkage Mapper Climate'
+    TOOL_LP = 'Linkage Priority'
     TOOL_BM = 'Barrier mapper'
     TOOL_CS = 'Circuitscape'
 
-
     def __init__(self):
-        """Initialize class and create single geoprocessor object"""
+        """Initialize class and create single geoprocessor object."""
         self.gp = arcgisscripting.create(9.3)
         self.gp.CheckOutExtension("Spatial")
         self.gp.OverwriteOutput = True
         self.lm_configured = False
 
-
     def configure(self, tool, arg):
-        """Setup variables for Configure class"""
+        """Assign variables for Configure class."""
         config_global(self, arg)
 
         if tool == Configure.TOOL_LM:
-            self.lm_configured = config_lm(self, arg, self.SCRATCHDIR)
+            self.lm_configured = config_lm(self, arg)
         elif tool == Configure.TOOL_CC:
             config_climate(self, arg)
+        elif tool == Configure.TOOL_LP:
+            config_lp(self, arg)
         elif tool == Configure.TOOL_BM:
             config_barrier(self, arg)
         elif tool == Configure.TOOL_CS:
@@ -377,5 +368,6 @@ class Configure(object):
         else:
             raise RuntimeError('Undefined tool to configure')
         self.TOOL = tool
+
 
 tool_env = Configure()  # Class instance that is use by tool modules

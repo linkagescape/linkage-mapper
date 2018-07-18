@@ -11,7 +11,11 @@ import arcpy
 from arcpy.sa import *
 import numpy as npy
 
+import lm_master
+import barrier_master
+from lm_config import tool_env as cfg
 import lm_util as lu
+
 gprint = lu.gprint
 
 _SCRIPT_NAME = os.path.basename(__file__)
@@ -168,11 +172,12 @@ def main():
             arcpy.env.scratchWorkspace = outputGDB
             arcpy.env.workspace = outputGDB
 
-            argv = ('lm_master.py', projDir, coreFCPath, coreFN, resRast, doStep1, doStep2, 
-                    'Cost-Weighted & Euclidean', distFile, 'true', 'true', 'false', 
-                    '4', 'Cost-Weighted', 'true', doStep5, '10000', '#', '#')    
+            argv = ('lm_master.py', projDir, coreFCPath, coreFN, resRast,
+                    doStep1, doStep2, 'Cost-Weighted & Euclidean', distFile,
+                    'true', 'true', 'false', '4', 'Cost-Weighted', 'true',
+                    doStep5, 'true', '200000', '10000', '#', '#', '#', '#') 
             gprint('Running ' + str(argv))
-            import lm_master #xxx
+            cfg.lm_configured = False  # Insures lm_master uses current argv
             lm_master.lm_master(argv)    #xxx
             doStep1 = 'false' # Can skip for future iterations
             doStep2 = 'false' # Can skip for future iterations        
@@ -187,7 +192,6 @@ def main():
             argv = ('barrier_master.py', projDir, resRast, startRadius, endRadius, radiusStep, barrierCombineMethod,
                     saveRadiusRasters, writePctRasters, cwdThresh)
             gprint('Running ' + str(argv))
-            import barrier_master #xxx
             barrier_master.bar_master(argv) #xxx
 
             arcpy.env.cellSize = resRast # Some env settings get changed by linkage mapper and must be reset here

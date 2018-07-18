@@ -4,7 +4,6 @@
 """Climate Linkage Mapper utility module"""
 
 import os
-import shutil
 import arcpy
 
 from cc_config import cc_env
@@ -18,15 +17,15 @@ def mk_proj_dir(in_dir):
     return new_dir
 
 
-def delete_features(in_features):
-    """Delete temporary feature/s if it exists"""
-    for in_feature in in_features:
-        if arcpy.Exists(in_feature):
+def arc_delete(*items):
+    """Delete data from disk using Arcpy."""
+    for item in items:
+        if arcpy.Exists(item):
             try:
-                arcpy.Delete_management(in_feature)
+                arcpy.Delete_management(item)
             except arcpy.ExecuteError:
-                arcpy.AddWarning("Error deleting temporary %s. Program will "
-                                 "continue." % in_feature)
+                arcpy.AddWarning("Error deleting temporary object - %s. "
+                                 "Program will continue." % item)
 
 
 def check_cc_project_dir():
@@ -44,15 +43,5 @@ def check_cc_project_dir():
             "." in cc_env.proj_dir):
         msg = ('ERROR: Project directory cannot contain spaces, dashes, or '
                'special characters.')
-        raise Exception(msg)    
+        raise Exception(msg)
     return
-
-
-def remove_grass_wkspc(gisdbase):
-    """Remove GRASS workspace if it exists"""
-    if os.path.exists(gisdbase):
-        try:
-            shutil.rmtree(gisdbase, True)
-        except OSError:
-            return False
-    return True

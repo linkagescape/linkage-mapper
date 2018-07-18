@@ -5,6 +5,7 @@
 
 import os
 import sys
+import subprocess
 import time
 import traceback
 import ConfigParser
@@ -1217,7 +1218,10 @@ def load_link_table(linkTableFile):
 ## Output Functions ########################################################
 ############################################################################
 def gprint(string):
-    gp.addmessage(string)
+    if string[0:7] == "Warning":
+        gp.AddWarning(string)
+    else:
+        gp.AddMessage(string)
     try:
         if cfg.LOGMESSAGES:
             write_log(string)
@@ -1238,6 +1242,16 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
         logFile.write('Start time:\t%s \n' % (timeNow))
         logFile.write('Parameters:\t%s \n\n' % (inParameters))
+        if toolName == "Linkage Mapper":
+            if cfg.LMCUSTSETTINGS:
+                logFile.write('Linkage Mapper (LM) settings from' + cfg.LMCUSTSETTINGS + ':\n')
+            else:
+                logFile.write('Linkage Mapper (LM) settings from lm_settings.py:\n')
+            logFile.write('CALCNONNORMLCCS: %s \n' % (cfg.CALCNONNORMLCCS))
+            logFile.write('MINCOSTDIST: %s \n' % (cfg.MINCOSTDIST))
+            logFile.write('MINEUCDIST: %s \n' % (cfg.MINEUCDIST))
+            logFile.write('SAVENORMLCCS: %s \n' % (cfg.SAVENORMLCCS))
+            logFile.write('SIMPLIFY_CORES: %s \n' % (cfg.SIMPLIFY_CORES))
     logFile.close()
     dashline()
     gprint('A record of run settings and messages can be found in your '
@@ -1337,8 +1351,11 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
             outFile.write("\n# Drop Corridors that Intersect Core Areas: "
                            + str(cfg.S3DROPLCCS))
             outFile.write("\n# Step 4 - Refine Network: " + str(cfg.STEP4))
-            outFile.write("\n# Option A - Number of Connected Nearest Neighbors: "
-                           + str(cfg.S4MAXNN))
+            if cfg.IGNORES4MAXNN:
+                outFile.write("\n# Option A - Number of Connected Nearest Neighbors: Unlimimted")
+            else:
+                outFile.write("\n# Option A - Number of Connected Nearest Neighbors: "
+                               + str(cfg.S4MAXNN))
             outFile.write("\n# Option B - Nearest Neighbor Measurement Unit is "
                            "Cost-Weighted Distance: " + str(cfg.S4DISTTYPE_CW))
             outFile.write("\n# Option C - Connect Neighboring Constellations : "
@@ -2034,24 +2051,45 @@ def move_map(oldMap, newMap):
     return
 
 
-def get_cs_path():
-    """Returns path to Circuitscape installation """
-    envList = ["ProgramW6432", "ProgramFiles", "ProgramFiles(x86)"]
-    for x in range (0,len(envList)):
-        try:
-            pfPath = os.environ[envList[x]]
-            csPath = os.path.join(pfPath,'Circuitscape\\cs_run.exe')
-            if os.path.exists(csPath): return csPath
-        except: pass
-    # If can't find Circuitscape, code below executes
-    gprint('\nLooking for Circuitscape in the following locations:')
-    for x in range (0,len(envList)):
-        pfPath = os.environ[envList[x]]
-        csPath = os.path.join(pfPath,'Circuitscape\\cs_run.exe')
-        gprint(csPath)
-    msg = ("Error: Cannot find Circuitscape installed in any of the usual "
-                   "places listed above.\n")
-    raise_error(msg)
+@retry(10)
+def call_circuitscape(cspath, outConfigFile):
+    """Call Circuitscape."""
+    mem_flag = False
+    fail_flag = False
+    gprint('     Calling Circuitscape:')
+    proc = subprocess.Popen([cspath, outConfigFile],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            shell=True)
+    while proc.poll() is None:
+        output = proc.stdout.readline()
+
+        if 'Traceback' in output:
+            gprint("\nCircuitscape failed.")
+            fail_flag = True
+            if 'memory' in output:
+                mem_flag = True
+        if ('Processing' not in output and 'laplacian' not in output
+                and 'node_map' not in output
+                and (('--' in output) or ('sec' in output)
+                     or (fail_flag is True))):
+            gprint("      " + output.replace("\r\n", ""))
+
+    # Catch any output lost if process closes too quickly
+    output = proc.communicate()[0]
+    for line in output.split('\r\n'):
+        if 'Traceback' in line:
+            gprint("\nCircuitscape failed.")
+            if 'valid sources' in output.lower():
+                gprint('Corridors may be too narrow. Try upping your CWD '
+                       'cutoff distance.')
+            if 'memory' in line:
+                mem_flag = True
+        if ('Processing' not in line and 'laplacian' not in line
+                and 'node_map' not in line
+                and (('--' in line) or ('sec' in line)
+                     or (fail_flag is True))):
+            gprint("      " + str(line))
+    return mem_flag
 
 
 def rename_fields(FC):
