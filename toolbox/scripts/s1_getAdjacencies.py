@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.5
 # Authors: Brad McRae and Darren Kavanagh
 
 """ Step 1: Get adjacencies.
@@ -24,7 +23,7 @@ try:
     arcpy.CheckOutExtension("spatial")
     gp = arcpy.gp
     arcgisscripting = arcpy
-except:
+except Exception:
     arcpy = False
     import arcgisscripting
     gp = cfg.gp
@@ -54,16 +53,16 @@ def STEP1_get_adjacencies():
         lu.delete_dir(cfg.ADJACENCYDIR)
         lu.delete_data(cfg.CWDADJFILE)
         lu.delete_data(cfg.EUCADJFILE)
-        
-        if not cfg.S2ADJMETH_CW and not cfg.S2ADJMETH_EU:  
-            # Adjacency not needed      
-            return                                            
+
+        if not cfg.S2ADJMETH_CW and not cfg.S2ADJMETH_EU:
+            # Adjacency not needed
+            return
 
         lu.create_dir(cfg.ADJACENCYDIR)
-        
+
         gprint('Adjacency files will be written to ' +
-                          cfg.ADJACENCYDIR)          
-                          
+                          cfg.ADJACENCYDIR)
+
         # ------------------------------------------------------------------
         # Create bounding circles to limit cwd and allocation calculations
         if cfg.BUFFERDIST is not None:
@@ -107,7 +106,7 @@ def STEP1_get_adjacencies():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -123,7 +122,7 @@ def cwadjacency():
     try:
         ALLOC_RASFN = "CWD_alloc_ras"
 
-        
+
         gprint('\nCalculating cost-weighted distance adjacency')
         outcsvfile = cfg.CWDADJFILE
         outcsvLogfile = path.join(cfg.LOGDIR, "cwdAdj_STEP1.csv")
@@ -137,8 +136,8 @@ def cwadjacency():
         if cfg.BUFFERDIST is not None:
             # Clip resistance raster using bounding circle
             start_time = time.clock()
-            gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight#xxx
-            gp.extent = gp.Describe(cfg.RESRAST).Extent#xxx
+            gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
+            gp.extent = gp.Describe(cfg.RESRAST).Extent
             bResistance = path.join(cfg.SCRATCHDIR, "bResistance")
             gp.ExtractByMask_sa(cfg.RESRAST, cfg.BNDCIR,
                                     bResistance)
@@ -151,7 +150,6 @@ def cwadjacency():
         start_time = time.clock()
         gprint('Starting cost-weighted distance allocation...')
 
-        # core_rastmp = 'core_rastmp'
         if cfg.TMAXCWDIST is not None:
             gprint('Maximum cost-weighted distance set to ' +
                               str(cfg.TMAXCWDIST))
@@ -185,7 +183,7 @@ def cwadjacency():
         while True:
             try:
                 exec statement
-            except:
+            except Exception:
                 count, tryAgain = lu.retry_arc_error(count, statement)
                 if not tryAgain:
                     exec statement
@@ -205,7 +203,7 @@ def cwadjacency():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -249,7 +247,7 @@ def euadjacency():
         while True:
             try:
                 exec statement
-            except:
+            except Exception:
                 count, tryAgain = lu.retry_arc_error(count, statement)
                 if not tryAgain:
                     exec statement
@@ -273,7 +271,7 @@ def euadjacency():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
 

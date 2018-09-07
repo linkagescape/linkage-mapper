@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python2
 # Authors: Brad McRae and Darren Kavanagh
 
 """Master script for Linkage Lapper.
@@ -57,10 +57,6 @@ def lm_master(argv=None):
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
         lu.create_dir(cfg.DATAPASSDIR)
-        # Create fresh scratch directory if not restarting in midst of step 3
-        # if cfg.S2EUCDISTFILE != None:
-            # if cfg.S2EUCDISTFILE.lower() == "restart": pass
-        # else:
         if cfg.TOOL != cfg.TOOL_CC:
             lu.delete_dir(cfg.SCRATCHDIR)
             lu.create_dir(cfg.SCRATCHDIR)
@@ -68,18 +64,17 @@ def lm_master(argv=None):
         if cfg.TOOL == cfg.TOOL_LM:
             cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
                                              cfg.PARAMS)
-        lu.print_drive_warning()        
-        
+        lu.print_drive_warning()
+
         installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + cfg.releaseNum)
         try:
             gprint('on ArcGIS ' + installD['ProductName'] + ' ' +
                 installD['Version'] + ' Service Pack ' + installD['SPNumber'])
-        except:
+        except Exception:
             pass
 
         if cfg.CONNECTFRAGS:
-            # gwarn = gp.AddWarning
             lu.dashline(1)
             lu.warn('Custom mode: will run steps 1-2 ONLY to cluster core polygons within ')
             lu.warn('the maximum Euclidean corridor distance from one another ')
@@ -133,10 +128,9 @@ def lm_master(argv=None):
         gp.Extent = gp.Describe(cfg.RESRAST_IN).Extent
         gp.SnapRaster = cfg.RESRAST_IN
         gp.cellSize = gp.Describe(cfg.RESRAST_IN).MeanCellHeight
-        # import pdb; pdb.set_trace()
         try:
             gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
-        except:
+        except Exception:
             msg = ('ERROR: Could not make a copy of your resistance raster. ' +
                     'Try re-starting ArcMap to release the file lock.')
             lu.raise_error(msg)
@@ -147,15 +141,13 @@ def lm_master(argv=None):
             lu.delete_data(cfg.CORERAS)
             gp.FeatureToRaster_conversion(cfg.COREFC, cfg.COREFN,
                           cfg.CORERAS, gp.Describe(cfg.RESRAST).MeanCellHeight)
-         # #   gp.RasterToPolygon_conversion(cfg.CORERAS, cfg.COREFC,
-                                              # "NO_SIMPLIFY")
 
         def delete_final_gdb(finalgdb):
             """Deletes final geodatabase"""
             if gp.Exists(finalgdb) and cfg.STEP5:
                 try:
                     lu.clean_out_workspace(finalgdb)
-                except:
+                except Exception:
                     lu.dashline(1)
                     msg = ('ERROR: Could not remove contents of geodatabase ' +
                            finalgdb + '. \nIs it open in ArcMap? You may '
@@ -198,7 +190,7 @@ def lm_master(argv=None):
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.exit_with_python_error(_SCRIPT_NAME)
 
     finally:

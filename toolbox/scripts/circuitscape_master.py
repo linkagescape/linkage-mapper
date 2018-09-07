@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python2
 # Author: Brad McRae
 
 """Master script for circuitscape analysis in linkage mapper.
@@ -20,10 +20,10 @@ import arcpy
 
 from lm_config import tool_env as cfg
 import lm_util as lu
-        
+
 try:
     import s7_centrality as s7
-except:
+except Exception:
     pass
 import s8_pinchpoints as s8
 
@@ -35,47 +35,46 @@ def circuitscape_master(argv=None):
 
     """
     gprint = lu.gprint
-    # gwarn = arcpy.AddWarning
 
     if argv is None:
         argv = sys.argv
 
     argv.append(get_cs_path())  # Add Circuitscape path
-    
+
     cfg.configure(cfg.TOOL_CS, argv)
     gp = cfg.gp
-       
+
     try:
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
-        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, 
+        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
                                            cfg.PARAMS)
 
         if cfg.CSPATH is None:
             lu.raise_error("Cannot find an installation of Circuitscape"
-                           "\nin your Program Files directory.")  
-        
+                           "\nin your Program Files directory.")
+
         lu.print_drive_warning()
         # Check core ID field.
         lu.check_cores(cfg.COREFC, cfg.COREFN)
 
         gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
-        # Set data frame spatial reference to coordinate system of input data 
+        # Set data frame spatial reference to coordinate system of input data
         lu.set_dataframe_sr()
-        
+
         gp.pyramid = "NONE"
         gp.rasterstatistics = "NONE"
 
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
-    
+
         if cfg.CWDCUTOFF > 0:
             lu.delete_dir(cfg.SCRATCHDIR)
 
         # restart code- in progress
         if cfg.CWDCUTOFF < 0:
             cfg.CWDCUTOFF = cfg.CWDCUTOFF * -1
-            
+
         if not cfg.DOPINCH and not cfg.DOCENTRALITY:
             msg = ('ERROR: Please choose at least one option: pinch point or\n'
                     'network centrality analysis.')
@@ -99,7 +98,7 @@ def circuitscape_master(argv=None):
                 msg = ('ERROR: CWD cutoff distance is required for pinch point'
                         ' analyses.')
                 lu.raise_error(msg)
-            
+
             # Make a local grid copy of resistance raster-
             # will run faster than gdb.
             lu.delete_data(cfg.RESRAST)
@@ -116,7 +115,7 @@ def circuitscape_master(argv=None):
             gprint('\nMaking local copy of resistance raster.')
             try:
                 gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
-            except:
+            except Exception:
                 msg = ('ERROR: Could not make a copy of your resistance raster. ' +
                     'Try re-starting ArcMap to release the file lock.')
                 lu.raise_error(msg)
@@ -148,8 +147,8 @@ def circuitscape_master(argv=None):
                 gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
                                         cfg.CIRCUITCONFIGDIR_NM)
 
-            s8.STEP8_calc_pinchpoints()            
-            
+            s8.STEP8_calc_pinchpoints()
+
             if not cfg.SAVE_TEMP_CIRCUIT_FILES:
                 lu.delete_dir(cfg.SCRATCHDIR)
             if not cfg.SAVECIRCUITDIR:

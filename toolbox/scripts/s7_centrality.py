@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.5
 # Author: Brad McRae
 
 """Maps pinch points using Circuitscape given CWD calculations from
@@ -71,7 +70,6 @@ def STEP7_calc_centrality():
         if "CF_Central" in field_names:
             exists = True
         if not exists:
-            # arcpy.AddField_management(coreCopy, "CF_Central", "DOUBLE", "10", "2")
             arcpy.AddField_management(coreCopy, "CF_Central", "DOUBLE")
 
         inLinkTableFile = lu.get_prev_step_link_table(step=7)
@@ -105,7 +103,6 @@ def STEP7_calc_centrality():
 
         coreList = linkTable[:,cfg.LTB_CORE1:cfg.LTB_CORE2+1]
         coreList = npy.sort(coreList)
-        #gprint('There are ' + str(len(npy.unique(coreList))) ' core areas.')
 
         # set up directory for centrality
         INCENTRALITYDIR = cfg.CENTRALITYBASEDIR
@@ -140,9 +137,9 @@ def STEP7_calc_centrality():
 
         write_graph(options['habitat_file'] ,graphList)
         gprint('\nCalculating current flow centrality using Circuitscape...')
-        
-        memFlag = lu.call_circuitscape(cfg.CSPATH, outConfigFile)        
-        
+
+        memFlag = lu.call_circuitscape(cfg.CSPATH, outConfigFile)
+
         outputFN = 'Circuitscape_network_branch_currents_cum.txt'
         currentList = path.join(OUTCENTRALITYDIR, outputFN)
 
@@ -150,7 +147,7 @@ def STEP7_calc_centrality():
             write_graph(options['habitat_file'] ,graphList)
             gprint('\nCalculating current flow centrality using Circuitscape '
                    '(2nd try)...')
-            memFlag = lu.call_circuitscape(cfg.CSPATH, outConfigFile)                    
+            memFlag = lu.call_circuitscape(cfg.CSPATH, outConfigFile)
             if not arcpy.Exists(currentList):
                 lu.dashline(1)
                 msg = ('ERROR: No Circuitscape output found.\n'
@@ -159,7 +156,7 @@ def STEP7_calc_centrality():
                 lu.write_log(msg)
                 exit(1)
 
-                
+
         currents = load_graph(currentList,graphType='graph/network',
                               datatype='float64')
 
@@ -224,7 +221,7 @@ def STEP7_calc_centrality():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 7. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
@@ -242,35 +239,13 @@ def load_graph(filename,graphType,datatype):
     f = open(filename, 'r')
     try:
         graphObject = npy.loadtxt(filename, dtype = 'Float64', comments='#')
-    except:
+    except Exception:
         try:
             graphObject = npy.loadtxt(filename, dtype = 'Float64',
                                       comments='#', delimiter=',')
-        except:
+        except Exception:
             raise RuntimeError('Error reading',type,
                                'file.  Please check file format')
     return graphObject
 
 
-def make_graph_from_list(graphList):
-    try:
-        nodes = lu.delete_col(graphList,2)
-        nodeNames = (npy.unique(npy.asarray(nodes))).astype('int32')
-        nodes[npy.where(nodes >= 0)] = (
-            lu.relabel(nodes[npy.where(nodes >= 0)], 0))
-        node1 = (nodes[:,0]).astype('int32')
-        node2 = (nodes[:,1]).astype('int32')
-        data = graphList[:,2]
-        numnodes = nodeNames.shape[0]
-        #FIXME!!! CHECK GRAPH ORDER!!!!
-        g_graph = npy.zeros((numnodes,numnodes),dtype = 'float64')
-        g_graph[node1,node2] = data
-        g_graph = g_graph + g_graph.T
-
-        return g_graph, nodeNames
-
-        # Return any PYTHON or system specific errors
-    except:
-        lu.dashline(1)
-        gprint('****Failed in step 7. Details follow.****')
-        lu.exit_with_python_error(_SCRIPT_NAME)      

@@ -1,6 +1,6 @@
-"""Linkage Priority configuration module."""
 # Authors: John Gallo and Randal Greene 2017
 
+"""Linkage Priority configuration module."""
 
 import lp_settings
 import imp

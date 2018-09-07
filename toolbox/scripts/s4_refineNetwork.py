@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.5
 # Authors: Brad McRae and Darren Kavanagh
 
 """Step 4: Refine network.
@@ -56,9 +55,6 @@ def STEP4_refine_network():
 
         rows, cols = npy.where(
                      linkTable[:,cfg.LTB_LINKTYPE:cfg.LTB_LINKTYPE + 1] > 0)
-        # == cfg.LT_CORR
-            # or
-            # linkTable[:,cfg.LTB_LINKTYPE:cfg.LTB_LINKTYPE + 1] == cfg.LT_KEEP)
         corridorLinks = linkTable[rows,:]
         coresToProcess = npy.unique(
             corridorLinks[:, cfg.LTB_CORE1:cfg.LTB_CORE2 + 1])
@@ -204,7 +200,6 @@ def STEP4_refine_network():
 
         # Write linkTable to disk
         outlinkTableFile = lu.get_this_step_link_table(step=4)
-        # lu.dashline(1)
         gprint('\nWriting ' + outlinkTableFile)
         lu.write_link_table(linkTable, outlinkTableFile)
         linkTableLogFile = path.join(cfg.LOGDIR, "linkTable_s4.csv")
@@ -214,11 +209,10 @@ def STEP4_refine_network():
         lu.update_lcp_shapefile(linkTable, lastStep=3, thisStep=4)
         start_time = lu.elapsed_time(start_time)
 
-        # lu.dashline()
         gprint('Creating shapefiles with linework for links.')
         try:
             lu.write_link_maps(outlinkTableFile, step=4)
-        except:
+        except Exception:
             lu.write_link_maps(outlinkTableFile, step=4)
 
     # Return GEOPROCESSING specific errors
@@ -227,7 +221,7 @@ def STEP4_refine_network():
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         gprint('****Failed in step 4. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 

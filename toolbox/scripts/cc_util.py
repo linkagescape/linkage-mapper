@@ -1,16 +1,16 @@
-#!/usr/bin/env python2.6
 # Author: Darren Kavanagh
 
-"""Climate Linkage Mapper utility module"""
+"""Functions for Climate Linkage Mapper module."""
 
 import os
+
 import arcpy
 
 from cc_config import cc_env
 
 
 def mk_proj_dir(in_dir):
-    """Create directory off project folder if it does not already exist"""
+    """Create directory off project folder if it does not already exist."""
     new_dir = os.path.join(cc_env.proj_dir, in_dir)
     if not os.path.exists(new_dir):
         os.mkdir(new_dir)
@@ -29,7 +29,7 @@ def arc_delete(*items):
 
 
 def check_cc_project_dir():
-    """Checks to make sure path name is not too long.
+    """Check to make sure path name is not too long.
 
     Long path names can cause problems with ESRI grids.
     """

@@ -1,9 +1,9 @@
-#!/usr/bin/env python2.6
 # Authors: Darren Kavanagh and Brad McRae
 
-"""Climate Linkage Mapper configuration module.
+"""Create instance of config object to store input parameters and settings.
 
-Assigns input parameters from ToolBox to variables, and sets constants
+Classes:
+    ClimateConfig: Container to store tool settings.
 
 """
 
@@ -13,20 +13,21 @@ import sys
 
 
 def nullstring(arg_string):
-    """Convert ESRI nullstring to Python null"""
+    """Convert ESRI nullstring to Python null."""
     if arg_string == "#":
         arg_string = None
     return arg_string
 
 
 class ClimateConfig(object):
-    """Class container to hold Climate Tool global variables"""
+    """Class container to hold Climate Tool global variables."""
+
     def __init__(self):
-        """Init class (empty)"""
+        """Init class (empty)."""
         pass
 
     def configure(self, arg):
-        """Setup input parameters"""
+        """Assign input parameters and set constants."""
         # Input files
         self.proj_dir = arg[1]  # Project directory
         self.core_fc = arg[2]  # Core area feature class

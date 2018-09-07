@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.5
 # Authors: Brad McRae and Darren Kavanagh
 
 """Step 5: Calculate least cost corridors.
@@ -18,23 +17,15 @@ import lm_util as lu
 
 _SCRIPT_NAME = "s5_calcLccs.py"
 
-# try:
-    # import arcpy
-    # gp = arcpy.gp
-    # from arcpy.sa import *
-    # arcgisscripting = arcpy
-    # arcpy.CheckOutExtension("spatial")
-    # arcObj = arcpy
-# except:
 try:
     import arcpy # want to know if arcpy is available
     from arcpy.sa import *
     arcpyAvailable = True
-except:
+except Exception:
     arcpyAvailable = False
 
 # # Arcpy not working in some cases unless s3 executed in same run.
-# # For nso3 dataset, map algebra adding rasters results in empty rasters. 
+# # For nso3 dataset, map algebra adding rasters results in empty rasters.
 # # for now there seems to be no speed improvement with arcpy.
 
 cfg.useArcpy = False
@@ -62,14 +53,14 @@ def STEP5_calc_lccs():
             calc_lccs(normalize)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
 
 def calc_lccs(normalize):
-    try:  
+    try:
         if normalize:
             mosaicBaseName = "_corridors"
             writeTruncRaster = cfg.WRITETRUNCRASTER
@@ -87,12 +78,12 @@ def calc_lccs(normalize):
         if cfg.useArcpy:
             arcpy.env.workspace = cfg.SCRATCHDIR
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-            arcpy.env.overwriteOutput = True  
+            arcpy.env.overwriteOutput = True
             arcpy.env.compression = "NONE"
-        else:        
+        else:
             gp.workspace = cfg.SCRATCHDIR
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
-            gp.OverwriteOutput = True            
+            gp.OverwriteOutput = True
 
         if cfg.MAXEUCDIST is not None:
             gprint('Max Euclidean distance between cores')
@@ -113,7 +104,7 @@ def calc_lccs(normalize):
             arcpy.env.snapRaster = cfg.RESRAST
             arcpy.env.mask = cfg.RESRAST
         else:
-            gp.Extent = (gp.Describe(cfg.RESRAST)).Extent 
+            gp.Extent = (gp.Describe(cfg.RESRAST)).Extent
             gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
             gp.mask = cfg.RESRAST
             gp.snapraster = cfg.RESRAST
@@ -148,9 +139,6 @@ def calc_lccs(normalize):
                                        path.basename(cfg.LCCBASEDIR))
         gp.CreateFolder_management(cfg.LCCBASEDIR, cfg.LCCNLCDIR_NM)
         clccdir = path.join(cfg.LCCBASEDIR, cfg.LCCNLCDIR_NM)
-        # mosaicGDB = path.join(cfg.LCCBASEDIR, "mosaic.gdb")
-        # gp.createfilegdb(cfg.LCCBASEDIR, "mosaic.gdb")
-        #mosaicRaster = mosaicGDB + '\\' + "nlcc_mos" # Full path
         gprint("")
         if normalize:
             gprint('Normalized least-cost corridors will be written '
@@ -169,10 +157,10 @@ def calc_lccs(normalize):
             if (linkTable[x, cfg.LTB_LINKTYPE] < 1): # If not a valid link
                 x = x + 1
                 continue
-                
+
             linkCount = linkCount + 1
-            start_time = time.clock() 
-            
+            start_time = time.clock()
+
             linkId = str(int(linkTable[x, cfg.LTB_LINKID]))
 
             # source and target cores
@@ -184,26 +172,22 @@ def calc_lccs(normalize):
             cwdRaster2 = lu.get_cwd_path(corey)
 
             if not gp.Exists(cwdRaster1):
-                msg =('\nError: cannot find cwd raster:\n' + cwdRaster1) 
+                msg =('\nError: cannot find cwd raster:\n' + cwdRaster1)
             if not gp.Exists(cwdRaster2):
-                msg =('\nError: cannot find cwd raster:\n' + cwdRaster2) 
+                msg =('\nError: cannot find cwd raster:\n' + cwdRaster2)
                 lu.raise_error(msg)
 
-            
+
             lccNormRaster = path.join(clccdir, str(corex) + "_" +
                                       str(corey))# + ".tif")
-            if cfg.useArcpy: 
+            if cfg.useArcpy:
                 arcpy.env.Extent = "MINOF"
             else:
                 gp.Extent = "MINOF"
 
-            # FIXME: need to check for this?:
-            # if exists already, don't re-create
-            #if not gp.Exists(lccRaster):
-
             link = lu.get_links_from_core_pairs(linkTable, corex, corey)
 
-            offset = 10000 
+            offset = 10000
 
             # Normalized lcc rasters are created by adding cwd rasters and
             # subtracting the least cost distance between them.
@@ -211,42 +195,41 @@ def calc_lccs(normalize):
             if arcpyAvailable:
                 cfg.useArcpy = True # Fixes Canran Liu's bug with lcDist
             if cfg.useArcpy:
-                
-                lcDist = (float(linkTable[link,cfg.LTB_CWDIST]) - offset) 
-                
+
+                lcDist = (float(linkTable[link,cfg.LTB_CWDIST]) - offset)
+
                 if normalize:
                     statement = ('outras = Raster(cwdRaster1) + Raster('
-                        'cwdRaster2) - lcDist; outras.save(lccNormRaster)') 
-                                                
+                        'cwdRaster2) - lcDist; outras.save(lccNormRaster)')
+
                 else:
                     statement = ('outras =Raster(cwdRaster1) + Raster('
                                 'cwdRaster2); outras.save(lccNormRaster)')
             else:
                 if normalize:
-                    lcDist = str(linkTable[link,cfg.LTB_CWDIST] - offset)  
-                    expression = (cwdRaster1 + " + " + cwdRaster2 + " - " 
+                    lcDist = str(linkTable[link,cfg.LTB_CWDIST] - offset)
+                    expression = (cwdRaster1 + " + " + cwdRaster2 + " - "
                                   + lcDist)
                 else:
-                    expression = (cwdRaster1 + " + " + cwdRaster2) 
+                    expression = (cwdRaster1 + " + " + cwdRaster2)
                 statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
                      'lccNormRaster)')
             count = 0
             while True:
-                try: 
-                    exec statement                    
-                    randomerror()
-                except:
+                try:
+                    exec statement
+                except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
-                    if not tryAgain:    
+                    if not tryAgain:
                         exec statement
                 else: break
             cfg.useArcpy = False # End fix for Conran Liu's bug with lcDist
-            
-            if normalize and cfg.useArcpy: 
-                try: 
-                    minObject = gp.GetRasterProperties(lccNormRaster, "MINIMUM") 
+
+            if normalize and cfg.useArcpy:
+                try:
+                    minObject = gp.GetRasterProperties(lccNormRaster, "MINIMUM")
                     rasterMin = float(str(minObject.getoutput(0)))
-                except:
+                except Exception:
                     lu.warn('\n------------------------------------------------')
                     lu.warn('WARNING: Raster minimum check failed in step 5. \n'
                         'This may mean the output rasters are corrupted. Please \n'
@@ -254,7 +237,7 @@ def calc_lccs(normalize):
                     rasterMin = 0
                 if rasterMin < tolerance:
                     lu.dashline(1)
-                    msg = ('WARNING: Minimum value of a corridor #' + str(x+1) 
+                    msg = ('WARNING: Minimum value of a corridor #' + str(x+1)
                            + ' is much less than zero ('+str(rasterMin)+').'
                            '\nThis could mean that BOUNDING CIRCLE BUFFER DISTANCES '
                            'were too small and a corridor passed outside of a '
@@ -262,46 +245,43 @@ def calc_lccs(normalize):
                            'resistance map. \n')
                     lu.warn(msg)
 
-            
-            if cfg.useArcpy: 
+
+            if cfg.useArcpy:
                 arcpy.env.Extent = cfg.RESRAST
             else:
                 gp.Extent = (gp.Describe(cfg.RESRAST)).Extent
 
-            mosaicDir = path.join(cfg.LCCBASEDIR,'mos'+str(x+1))  
-            lu.create_dir(mosaicDir) 
+            mosaicDir = path.join(cfg.LCCBASEDIR,'mos'+str(x+1))
+            lu.create_dir(mosaicDir)
             mosFN = 'mos'#.tif' change and move
-            mosaicRaster = path.join(mosaicDir,mosFN) 
-                       
+            mosaicRaster = path.join(mosaicDir,mosFN)
+
             if numGridsWritten == 0 and dirCount == 0:
                 #If this is the first grid then copy rather than mosaic
-                arcObj.CopyRaster_management(lccNormRaster, mosaicRaster) 
+                arcObj.CopyRaster_management(lccNormRaster, mosaicRaster)
             else:
-                
+
                 rasterString = '"'+lccNormRaster+";"+lastMosaicRaster+'"'
                 statement = ('arcObj.MosaicToNewRaster_management('
                             'rasterString,mosaicDir,mosFN, "", '
                             '"32_BIT_FLOAT", gp.cellSize, "1", "MINIMUM", '
-                            '"MATCH")') 
-                # statement = ('arcpy.Mosaic_management(lccNormRaster, '
-                                 # 'mosaicRaster, "MINIMUM", "MATCH")') 
-                
+                            '"MATCH")')
+
                 count = 0
                 while True:
                     try:
                         lu.write_log('Executing mosaic for link #'+str(linkId))
                         exec statement
                         lu.write_log('Done with mosaic.')
-                        randomerror()
-                    except:
+                    except Exception:
                         count,tryAgain = lu.retry_arc_error(count,statement)
                         lu.delete_data(mosaicRaster)
                         lu.delete_dir(mosaicDir)
                         # Try a new directory
                         mosaicDir = path.join(cfg.LCCBASEDIR,'mos'+str(x+1)+ '_' + str(count))
                         lu.create_dir(mosaicDir)
-                        mosaicRaster = path.join(mosaicDir,mosFN)                        
-                        if not tryAgain:    
+                        mosaicRaster = path.join(mosaicDir,mosFN)
+                        if not tryAgain:
                             exec statement
                     else: break
             endTime = time.clock()
@@ -334,7 +314,7 @@ def calc_lccs(normalize):
             if not SAVENORMLCCS:
                 lu.delete_data(lccNormRaster)
                 lu.delete_dir(clccdir)
-                lu.create_dir(clccdir)  
+                lu.create_dir(clccdir)
             else:
                 if numGridsWritten == 100:
                     # We only write up to 100 grids to any one folder
@@ -347,13 +327,13 @@ def calc_lccs(normalize):
                     gp.CreateFolder_management(cfg.LCCBASEDIR,
                                                path.basename(clccdir))
 
-            if numGridsWritten > 1 or dirCount > 0:                                       
+            if numGridsWritten > 1 or dirCount > 0:
                 lu.delete_data(lastMosaicRaster)
                 lu.delete_dir(path.dirname(lastMosaicRaster))
 
             lastMosaicRaster = mosaicRaster
             x = x + 1
-            
+
         #rows that were temporarily disabled
         rows = npy.where(linkTable[:,cfg.LTB_LINKTYPE]>1000)
         linkTable[rows,cfg.LTB_LINKTYPE] = (
@@ -366,44 +346,43 @@ def calc_lccs(normalize):
 
         if cfg.useArcpy:
             arcpy.env.workspace = outputGDB
-        else:        
+        else:
             gp.workspace = outputGDB
 
         gp.pyramid = "NONE"
         gp.rasterstatistics = "NONE"
 
-        
+
         # Copy mosaic raster to output geodatabase
         saveFloatRaster = False
         if saveFloatRaster == True:
-            floatRaster = outputGDB + '\\' + PREFIX + mosaicBaseName + '_flt' # Full path 
+            floatRaster = outputGDB + '\\' + PREFIX + mosaicBaseName + '_flt' # Full path
             statement = 'arcObj.CopyRaster_management(mosaicRaster, floatRaster)'
             try:
                 exec statement
-            except:
+            except Exception:
                 pass
-                
+
 
         # ---------------------------------------------------------------------
         # convert mosaic raster to integer
         intRaster = path.join(outputGDB,PREFIX + mosaicBaseName)
         if cfg.useArcpy:
-            statement = ('outras = Int(Raster(mosaicRaster) - offset + 0.5); ' 
+            statement = ('outras = Int(Raster(mosaicRaster) - offset + 0.5); '
                         'outras.save(intRaster)')
         else:
             expression = "int(" + mosaicRaster + " - " + str(offset) + " + 0.5)"
             statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
         count = 0
         while True:
-            try: 
+            try:
                 exec statement
-                randomerror()
-            except:
+            except Exception:
                 count,tryAgain = lu.retry_arc_error(count,statement)
                 if not tryAgain: exec statement
             else: break
-        # ---------------------------------------------------------------------       
-        
+        # ---------------------------------------------------------------------
+
 
         if writeTruncRaster:
             # -----------------------------------------------------------------
@@ -412,11 +391,11 @@ def calc_lccs(normalize):
                 cfg.useArcpy = True # For Alissa Pump's error with 10.1
             cutoffText = str(cfg.CWDTHRESH)
             if cutoffText[-6:] == '000000':
-                cutoffText = cutoffText[0:-6]+'m' 
+                cutoffText = cutoffText[0:-6]+'m'
             elif cutoffText[-3:] == '000':
-                cutoffText = cutoffText[0:-3]+'k' 
-            
-            truncRaster = (outputGDB + '\\' + PREFIX + mosaicBaseName + 
+                cutoffText = cutoffText[0:-3]+'k'
+
+            truncRaster = (outputGDB + '\\' + PREFIX + mosaicBaseName +
                            '_truncated_at_' + cutoffText)
 
             count = 0
@@ -425,29 +404,28 @@ def calc_lccs(normalize):
                             '(Con(Raster(intRaster) <= cfg.CWDTHRESH,1)); '
                             'outRas.save(truncRaster)')
             else:
-                expression = ("(" + intRaster + " * (con(" + intRaster + "<= " 
+                expression = ("(" + intRaster + " * (con(" + intRaster + "<= "
                               + str(cfg.CWDTHRESH) + ",1)))")
                 statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
                                                           'truncRaster)')
             count = 0
             while True:
-                try: 
+                try:
                     exec statement
-                    randomerror()
-                except:
+                except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain: exec statement
                 else: break
-            cfg.useArcpy = False # End fix for Alissa Pump's error with 10.1                
+            cfg.useArcpy = False # End fix for Alissa Pump's error with 10.1
         # ---------------------------------------------------------------------
-        # Check for unreasonably low minimum NLCC values    
+        # Check for unreasonably low minimum NLCC values
         try:
-            mosaicGrid = path.join(cfg.LCCBASEDIR,'mos') 
+            mosaicGrid = path.join(cfg.LCCBASEDIR,'mos')
             # Copy to grid to test
             arcObj.CopyRaster_management(mosaicRaster, mosaicGrid)
-            minObject = gp.GetRasterProperties(mosaicGrid, "MINIMUM") 
+            minObject = gp.GetRasterProperties(mosaicGrid, "MINIMUM")
             rasterMin = float(str(minObject.getoutput(0)))
-        except:
+        except Exception:
             lu.warn('\n------------------------------------------------')
             lu.warn('WARNING: Raster minimum check failed in step 5. \n'
                 'This may mean the output rasters are corrupted. Please \n'
@@ -456,14 +434,14 @@ def calc_lccs(normalize):
         tolerance = (float(gp.cellSize) * -10)
         if rasterMin < tolerance:
             lu.dashline(1)
-            msg = ('WARNING: Minimum value of mosaicked corridor map is ' 
+            msg = ('WARNING: Minimum value of mosaicked corridor map is '
                    'much less than zero ('+str(rasterMin)+').'
                    '\nThis could mean that BOUNDING CIRCLE BUFFER DISTANCES '
                    'were too small and a corridor passed outside of a '
                    'bounding circle, or that a corridor passed outside of the '
                    'resistance map. \n')
-            lu.warn(msg) 
-                            
+            lu.warn(msg)
+
 
         gprint('\nWriting final LCP maps...')
         if cfg.STEP4:
@@ -499,7 +477,7 @@ def calc_lccs(normalize):
         gprint('Creating shapefiles with linework for links.')
         try:
             lu.write_link_maps(outlinkTableFile, step=5)
-        except:
+        except Exception:
             lu.write_link_maps(outlinkTableFile, step=5)
 
         # Create final linkmap files in output directory, and remove files from
@@ -518,7 +496,7 @@ def calc_lccs(normalize):
             gp.addmessage('Building output statistics '
                               'for truncated corridor raster')
             lu.build_stats(truncRaster)
-        
+
         if cfg.OUTPUTFORMODELBUILDER:
             arcpy.CopyFeatures_management(cfg.COREFC, cfg.OUTPUTFORMODELBUILDER)
 
@@ -529,30 +507,9 @@ def calc_lccs(normalize):
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
         lu.exit_with_python_error(_SCRIPT_NAME)
 
     return
-       
-    
-def randomerror():
-    """ Used to test error recovery.
-
-    """
-    generateError = False # Set to True to create random errors
-    if generateError:
-        gprint('\n***Rolling dice for random error***')
-        import random
-        test = random.randrange(1, 8)
-        if test == 2:
-            gprint('Creating artificial ArcGIS error')
-            gp.MosaicToNewRaster_management(
-                            "rasterString","mosaicDir","mosFN", "", 
-                            "32_BIT_FLOAT", "gp.cellSize", "1", "MINIMUM", 
-                            "MATCH")
-        elif test == 3:
-            gprint('Creating artificial python error')
-            artificialPythonError
-    return           

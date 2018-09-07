@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python2
 # Author: Brad McRae
 
 import os.path as path
@@ -13,7 +13,7 @@ try:
     gp = arcpy.gp
     arcgisscripting = arcpy
     arc10 = True
-except:
+except Exception:
     arc10 = False
     import arcgisscripting
     gp = arcgisscripting.create()
@@ -32,23 +32,23 @@ def clip_corridor():
         inRaster = sys.argv[1]
         cutoffVal = sys.argv[2]
         outputGDB = sys.argv[3]
-        
+
         cutoffText = str(cutoffVal)
         if cutoffText[-6:] == '000000':
-            cutoffText = cutoffText[0:-6]+'m' 
+            cutoffText = cutoffText[0:-6]+'m'
         elif cutoffText[-3:] == '000':
-            cutoffText = cutoffText[0:-3]+'k' 
-        
+            cutoffText = cutoffText[0:-3]+'k'
+
         inPath,FN = path.split(inRaster) # In case raster is in a group layer
-        outRasterFN = FN + '_truncated_' + cutoffText         
+        outRasterFN = FN + '_truncated_' + cutoffText
         outRaster = path.join(outputGDB,outRasterFN)
         delete_data(outRaster)
-        
+
         desc = gp.Describe(inRaster)
         if hasattr(desc, "catalogPath"):
             inRaster = gp.Describe(inRaster).catalogPath
         if arc10:
-            arcpy.env.overwriteOutput = True  
+            arcpy.env.overwriteOutput = True
             arcpy.env.workspace = outputGDB
             arcpy.env.scratchWorkspace = outputGDB
             arcpy.env.extent = inRaster
@@ -56,34 +56,34 @@ def clip_corridor():
             output = arcpy.sa.Con(Raster(inRaster) <= float(cutoffVal),inRaster)
             output.save(outRaster)
         else:
-            gp.OverwriteOutput = True  
+            gp.OverwriteOutput = True
             gp.extent = gp.Describe(inRaster).extent
             gp.cellSize = gp.Describe(inRaster).MeanCellHeight
             gp.workspace = outputGDB
             gp.scratchWorkspace = outputGDB
-            
-            expression = ("(" + inRaster + " * (con(" + inRaster + " <= " 
+
+            expression = ("(" + inRaster + " * (con(" + inRaster + " <= "
                               + str(cutoffVal) + ",1)))")
             gp.SingleOutputMapAlgebra_sa(expression, outRaster)
-        
+
         gprint('Building output statistics for truncated raster')
         build_stats(outRaster)
 
         gprint('\nThe new truncated corridor raster "'+ outRasterFN + '" can '
                 'be found in the corridor geodatabase:')
-        gprint(outputGDB)            
+        gprint(outputGDB)
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
-    except:
+    except Exception:
         exit_with_python_error(_SCRIPT_NAME)
 
     return
 
-def exit_with_geoproc_error(filename): 
+def exit_with_geoproc_error(filename):
     """Handle geoprocessor errors and provide details to user"""
     tb = sys.exc_info()[2]  # get the traceback object
     # tbinfo contains the error's line number and the code
@@ -97,8 +97,8 @@ def exit_with_geoproc_error(filename):
             gp.AddReturnMessage(msg)
         print gp.AddReturnMessage(msg)
     exit(0)
-    
-def exit_with_python_error(filename): 
+
+def exit_with_python_error(filename):
     """Handle python errors and provide details to user"""
     tb = sys.exc_info()[2]  # get the traceback object
     # tbinfo contains the error's line number and the code
@@ -113,25 +113,25 @@ def delete_data(dataset):
     try:
         if gp.Exists(dataset):
             gp.delete_management(dataset)
-    except:
+    except Exception:
         pass
 
-        
+
 def build_stats(raster):
     """Builds statistics and pyramids for output rasters"""
     try:
         gp.CalculateStatistics_management(raster, "1", "1", "#")
-    except:
+    except Exception:
         gprint('Statistics failed. They can still be calculated manually.')
     try:
         gp.BuildPyramids_management(raster)
-    except:
+    except Exception:
         gprint('Pyramids failed. They can still be built manually.')
     return
-        
-        
+
+
 if __name__ == "__main__":
     clip_corridor()
-    
-    
-    
+
+
+

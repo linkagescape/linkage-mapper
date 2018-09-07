@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # Authors: Brad McRae and Darren Kavanagh
 
 """Linkage Mapper configuration module.
