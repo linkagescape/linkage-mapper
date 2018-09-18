@@ -2,8 +2,10 @@
 
 """Linkage Priority configuration module."""
 
-import lp_settings
 import imp
+
+import lp_settings
+
 
 GP_NULL = "#"
 
@@ -31,14 +33,19 @@ def str2bool(pstr):
     return pstr == "true"
 
 
-class lp_config(object):
+class PriorityConfig(object):
     """Class container to hold Linkage Priority parameters and settings."""
+
     def __init__(self):
-        """Init class (empty)"""
+        """Init class (empty)."""
         pass
 
     def configure(self, arg):
-        """Assign parameters and settings from passed arguments and advanced settings"""
+        """Assign parameters and settings.
+
+        Assign parameters and settings from passed arguments and advanced
+        settings.
+        """
         self.PARAMS = str(arg)  # Convert to string in case '\' exists
 
         # Model Inputs
@@ -85,7 +92,8 @@ class lp_config(object):
 
         # add settings from settings file
         if self.LPCUSTSETTINGS_IN:
-            cust_settings = imp.load_source(self.LPCUSTSETTINGS_IN.split(".")[0], self.LPCUSTSETTINGS_IN)
+            cust_settings = imp.load_source(
+                self.LPCUSTSETTINGS_IN.split(".")[0], self.LPCUSTSETTINGS_IN)
             for setting in dir(cust_settings):
                 if setting == setting.upper():
                     setting_value = getattr(cust_settings, setting)
@@ -97,4 +105,4 @@ class lp_config(object):
                     setattr(self, setting, setting_value)
 
 
-lp_env = lp_config()
+lp_env = PriorityConfig()
