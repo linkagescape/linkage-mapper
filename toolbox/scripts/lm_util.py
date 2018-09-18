@@ -1914,7 +1914,7 @@ def move_map(oldMap, newMap):
     return
 
 
-@retry(10)
+@Retry(10)
 def call_circuitscape(cspath, outConfigFile):
     """Call Circuitscape."""
     mem_flag = False
