@@ -2,18 +2,18 @@
 # Authors: John Gallo and Randal Greene 2017
 
 
-RELPERMNORMETH = 0  # relative permeability normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-RELCLOSENORMETH = 0  # relative closeness value normalization method (use 0 for score range normalization; any other value for maximum value normalization)
+RELPERMNORMETH = "SCORE_RANGE"  # relative permeability normalization method
+RELCLOSENORMETH = "SCORE_RANGE"  # relative closeness value normalization method
 CALCLP = True  # calculate linkage priority
-NORMCORRNORMETH = 0  # normalized corridor normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-RESNORMETH = 1  # resistance normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-SIZENORMETH = 1  # size normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-APNORMETH = 1  # area/perimeter ratio normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-ECAVNORMETH = 1  # ecav normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-CFCNORMETH = 1  # cfc normalization method (use 0 for score range normalization; any other value for maximum value normalization)
+NORMCORRNORMETH = "SCORE_RANGE"  # normalized corridor normalization method
+RESNORMETH = "MAX_VALUE"  # resistance normalization method
+SIZENORMETH = "MAX_VALUE"  # size normalization method
+APNORMETH = "MAX_VALUE"  # area/perimeter ratio normalization method
+ECAVNORMETH = "MAX_VALUE"  # ecav normalization method
+CFCNORMETH = "MAX_VALUE"  # cfc normalization method
 MINCPV = 0  # minimum corridor priority value (use 0 to keep all)
 NORMALIZERCI = True  # normalize RCI
-TRUNCNORMETH = 0  # truncated raster normalization method (use 0 for score range normalization; any other value for maximum value normalization)
+TRUNCNORMETH = "SCORE_RANGE"  # truncated raster normalization method
 CALCBP = True  # calculate blended priority (requires CALCLP above to also be True)
 NORMALIZELP = True  # normalize Linkage Priority
 NORMALIZEBP = True  # normalize Blended Priority

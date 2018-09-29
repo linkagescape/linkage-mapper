@@ -19,6 +19,9 @@ import lm_util
 _SCRIPT_NAME = "lp_main.py"
 TFORMAT = "%m/%d/%y %H:%M:%S"
 
+NM_SCORE = "SCORE_RANGE"  # Score range normalization
+NM_MAX = "MAX_VALUE"  # Maximum value normalization
+
 
 def delete_datasets_in_workspace():
     """Delete all datasets in workspace."""
@@ -216,7 +219,7 @@ def check_add_field(feature_class, field_name, data_type):
 
 
 def normalize_field(in_table, in_field, out_field,
-                    normalization_method, invert=False):
+                    normalization_method=NM_MAX, invert=False):
     """Normalize values in in_field into out_field.
 
     Normalize values in in_field into out_field using score range or max
@@ -229,8 +232,7 @@ def normalize_field(in_table, in_field, out_field,
                                  in_field + " D").next().getValue(in_field)
     if max_val > 0:
         try:
-            if normalization_method == 0:
-                # 0 to 1 score range normalization
+            if normalization_method == NM_SCORE:
                 if invert:
                     arcpy.CalculateField_management(
                         in_table, out_field,
@@ -241,8 +243,7 @@ def normalize_field(in_table, in_field, out_field,
                         in_table, out_field,
                         "(!" + in_field + "! - " + str(min_val) + ") / " +
                         str(max_val - min_val), "PYTHON_9.3")
-            else:
-                # max_val score normalization
+            else:  # Max score normalization
                 if invert:
                     arcpy.CalculateField_management(
                         in_table, out_field,
@@ -266,11 +267,10 @@ def normalize_field(in_table, in_field, out_field,
                 "areas, resampling the Resistance layer or adjusting the Cell"
                 "Size environment setting.")
     else:
-        # set all 0s
         arcpy.CalculateField_management(in_table, out_field, "0", "PYTHON_9.3")
 
 
-def normalize_raster(in_raster, normalization_method, invert=False):
+def normalize_raster(in_raster, normalization_method=NM_MAX, invert=False):
     """Normalize values in in_raster.
 
     Normalize values in in_raster using score range or max score method,
@@ -282,18 +282,15 @@ def normalize_raster(in_raster, normalization_method, invert=False):
     result = arcpy.GetRasterProperties_management(in_raster, "MAXIMUM")
     max_val = float(result.getOutput(0))
     if max_val > 0:
-        if normalization_method == 0:
-            # 0-1 score range normalization
+        if normalization_method == NM_SCORE:
             if invert:
                 return (max_val - in_raster) / (max_val - min_val)
             return (in_raster - min_val) / (max_val - min_val)
-        else:
-            # max score normalization
+        else:  # Max score normalization
             if invert:
                 return (max_val + min_val - in_raster) / max_val
             return in_raster / max_val
     else:
-        # set all 0s
         return in_raster * 0
 
 
@@ -485,8 +482,8 @@ def cav():
         arcpy.CalculateField_management("core_lyr", lp_env.CORENAME + ".ocav",
                                         "[core_ocav_stats.MEAN]")
         arcpy.RemoveJoin_management("core_lyr")
-        # calc score range normalization on output
-        normalize_field("core_lyr", "ocav", "nocav", 0)
+        normalize_field("core_lyr", "ocav", "nocav", NM_SCORE)
+
         # calc CAV
         arcpy.CalculateField_management(
             "core_lyr", "cav",
@@ -505,8 +502,7 @@ def cav():
             ") + (!necav! * " + str(lp_env.ECAVWEIGHT) + ") + (!ncfc! * " +
             str(lp_env.CFCWEIGHT) + ")", "PYTHON_9.3")
 
-    # normalize CAV with score range normalization
-    normalize_field("core_lyr", "cav", "norm_cav", 0)
+    normalize_field("core_lyr", "cav", "norm_cav", NM_SCORE)
 
 
 def clim_env():
@@ -559,9 +555,8 @@ def eciv():
     if lp_env.COREPAIRSTABLE_IN and lp_env.ECIVFIELD:
         lm_util.gprint("Normalizing Expert Corridor Importance Value (ECIV) "
                        "for each corridor")
+    normalize_field(lp_env.COREPAIRSTABLE_IN, lp_env.ECIVFIELD, "neciv", NM_SCORE)
 
-        # calc score range normalization
-        normalize_field(lp_env.COREPAIRSTABLE_IN, lp_env.ECIVFIELD, "neciv", 0)
 
 
 def csp(sum_rasters, count_non_null_cells_rasters, max_rasters, lcp_lines):
@@ -788,8 +783,7 @@ def rci(cpv_raster, rci_raster):
     tmp_raster = arcpy.sa.ExtractByAttributes(
         cpv_raster, " VALUE >= " + str(lp_env.MINCPV))
     if lp_env.NORMALIZERCI:
-        # calc score range normalization
-        rci_raster_tmp = normalize_raster(tmp_raster, 0)
+        rci_raster_tmp = normalize_raster(tmp_raster, NM_SCORE)
     else:
         rci_raster_tmp = tmp_raster
     arcpy.CopyRaster_management(rci_raster_tmp, rci_raster, None, None, None,
@@ -803,8 +797,7 @@ def linkage_priority(rci_raster, trunc_raster, lp_raster):
     # (which is based on CWDTHRESH)
     tmp_raster2 = arcpy.sa.ExtractByMask(rci_raster, trunc_raster)
     if lp_env.NORMALIZELP:
-        # calc score range normalization
-        lp_raster_tmp = normalize_raster(tmp_raster2, 0)
+        lp_raster_tmp = normalize_raster(tmp_raster2, NM_SCORE)
     else:
         lp_raster_tmp = tmp_raster2
     arcpy.CopyRaster_management(lp_raster_tmp, lp_raster, None, None, None,
@@ -826,8 +819,7 @@ def blended_priority(norm_trunc_raster, lp_raster, bp_raster):
     tmp_raster3 = ((lp_env.TRUNCWEIGHT * arcpy.sa.Raster(norm_trunc_raster)) +
                    (lp_env.LPWEIGHT * arcpy.sa.Raster(lp_raster)))
     if lp_env.NORMALIZEBP:
-        # calc score range normalization
-        bp_raster_tmp = normalize_raster(tmp_raster3, 0)
+        bp_raster_tmp = normalize_raster(tmp_raster3, NM_SCORE)
     else:
         bp_raster_tmp = tmp_raster3
     arcpy.CopyRaster_management(bp_raster_tmp, bp_raster, None, None, None,
