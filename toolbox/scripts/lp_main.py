@@ -380,21 +380,11 @@ def cav():
                        "OCAVWEIGHT = 0")
 
     # check/add fields
-    check_add_field(lp_env.COREFC, "mean_res", "DOUBLE")
-    check_add_field(lp_env.COREFC, "norm_res", "DOUBLE")
-    check_add_field(lp_env.COREFC, "area", "DOUBLE")
-    check_add_field(lp_env.COREFC, "norm_size", "DOUBLE")
-    check_add_field(lp_env.COREFC, "perimeter", "DOUBLE")
-    check_add_field(lp_env.COREFC, "ap_ratio", "DOUBLE")
-    check_add_field(lp_env.COREFC, "norm_ratio", "DOUBLE")
-    check_add_field(lp_env.COREFC, "cav", "DOUBLE")
-    check_add_field(lp_env.COREFC, "norm_cav", "DOUBLE")
-    check_add_field(lp_env.COREFC, "clim_env", "DOUBLE")
-    check_add_field(lp_env.COREFC, "nclim_env", "DOUBLE")
-    check_add_field(lp_env.COREFC, "fut_clim", "DOUBLE")
-    check_add_field(lp_env.COREFC, "nfut_clim", "DOUBLE")
-    check_add_field(lp_env.COREFC, "ocav", "DOUBLE")
-    check_add_field(lp_env.COREFC, "nocav", "DOUBLE")
+    for field in ("mean_res", "norm_res", "area", "norm_size", "perimeter",
+                  "ap_ratio", "norm_ratio", "cav", "norm_cav", "cclim_env",
+                  "fclim_env", "ocav", "nocav"):
+        check_add_field(lp_env.COREFC, field, "DOUBLE")
+
     if not check_add_field(lp_env.COREFC, "ecav", "DOUBLE"):
         if lp_env.ECAVWEIGHT > 0:
             lm_util.gprint("Warning: ECAVWEIGHT > 0 but no ecav field in  "
