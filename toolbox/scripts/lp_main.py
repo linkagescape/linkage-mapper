@@ -219,6 +219,15 @@ def check_add_field(feature_class, field_name, data_type):
     return exists
 
 
+def value_range(layer, field):
+    """Get value range of field in layer."""
+    min_value = arcpy.SearchCursor(
+        layer, fields=field, sort_fields=field + " A").next().getValue(field)
+    max_value = arcpy.SearchCursor(
+        layer, fields=field, sort_fields=field + " D").next().getValue(field)
+    return min_value, max_value
+
+
 def normalize_field(in_table, in_field, out_field,
                     normalization_method=NM_MAX, invert=False):
     """Normalize values in in_field into out_field.
@@ -227,10 +236,8 @@ def normalize_field(in_table, in_field, out_field,
     score method, with optional inversion.
     """
     check_add_field(in_table, out_field, "DOUBLE")
-    min_val = arcpy.SearchCursor(in_table, "", "", "",
-                                 in_field + " A").next().getValue(in_field)
-    max_val = arcpy.SearchCursor(in_table, "", "", "",
-                                 in_field + " D").next().getValue(in_field)
+    min_val, max_val = value_range(in_table, in_field)
+
     if max_val > 0:
         try:
             if normalization_method == NM_SCORE:
@@ -414,9 +421,7 @@ def cav():
             arcpy.RemoveJoin_management("core_lyr")
         # ensure cores have at least one non-0 value for CFC (could have been
         # copied above or set earlier)
-        max_val = arcpy.SearchCursor(
-            lm_env.COREFC, "", "", "",
-            "CF_Central D").next().getValue("CF_Central")
+        max_val = value_range(lm_env.COREFC, "CF_Central")[1]
         if max_val is None or max_val == 0:
             msg = ("ERROR: A Current Flow Centrality Weight (CFCWEIGHT) was "
                    "provided but no Current Flow Centrality (CF_Central) "
