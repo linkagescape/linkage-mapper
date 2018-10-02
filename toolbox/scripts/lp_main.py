@@ -210,12 +210,12 @@ def log_setup():
 
 def check_add_field(feature_class, field_name, data_type):
     """Check if field exists, and if not then add."""
-    exists = False
     field_names = [field.name for field in arcpy.ListFields(feature_class)]
-    if field_name in field_names:
-        exists = True
-    if not exists:
+    if field_name not in field_names:
+        exists = False
         arcpy.AddField_management(feature_class, field_name, data_type)
+    else:
+        exists = True
     return exists
 
 
