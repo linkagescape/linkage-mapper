@@ -554,14 +554,8 @@ def eciv():
     normalize_field(lp_env.COREPAIRSTABLE_IN, lp_env.ECIVFIELD, "neciv", NM_SCORE)
 
 
-
-def csp(sum_rasters, count_non_null_cells_rasters, max_rasters, lcp_lines):
-    """Calculate Corridor Specific Priority (CSP) for each corridor."""
-    lm_util.gprint("Calculating Corridor Specific Priority (CSP) for each "
-                   "corridor")
-    prev_ws = arcpy.env.workspace
-
-    # check weights
+def chk_weights():
+    """Check weights."""
     if lp_env.CCERAST_IN:
         if (lp_env.CLOSEWEIGHT + lp_env.PERMWEIGHT + lp_env.CAVWEIGHT +
                 lp_env.ECIVWEIGHT + lp_env.CEDWEIGHT != 1.0):
@@ -586,6 +580,15 @@ def csp(sum_rasters, count_non_null_cells_rasters, max_rasters, lcp_lines):
             and lp_env.ECIVFIELD):
         lm_util.gprint("Warning: Expert Corridor Importance Value field "
                        "provided, but ECIVWEIGHT = 0")
+
+
+def csp(sum_rasters, count_non_null_cells_rasters, max_rasters, lcp_lines):
+    """Calculate Corridor Specific Priority (CSP) for each corridor."""
+    lm_util.gprint("Calculating Corridor Specific Priority (CSP) for each "
+                   "corridor")
+    prev_ws = arcpy.env.workspace
+
+    chk_weights()
 
     # could be multiple folders
     nlc_idx = 0
