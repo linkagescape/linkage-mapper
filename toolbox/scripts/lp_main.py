@@ -354,6 +354,22 @@ def inv_norm():
     arcpy.env.workspace = prev_ws
 
 
+def core_mean(in_rast, in_var):
+    """Calculate the mean values of a raster within each core area."""
+    tbl_name = "_".join(["core", in_var])
+    mean_fld = ".".join([lp_env.CORENAME, in_var])
+    mean_value = "".join(["[", tbl_name, ".MEAN]"])
+
+    mean_tbl = arcpy.sa.ZonalStatisticsAsTable(
+        lp_env.COREFC, lp_env.COREFN, in_rast,
+        os.path.join(lm_env.SCRATCHDIR, "scratch.gdb", tbl_name),
+        statistics_type="MEAN")
+    arcpy.AddJoin_management("core_lyr", lp_env.COREFN, mean_tbl,
+                             lp_env.COREFN)
+    arcpy.CalculateField_management("core_lyr", mean_fld, mean_value)
+    arcpy.RemoveJoin_management("core_lyr")
+
+
 def cav():
     """Calculate Core Area Value (CAV) and its components for each core."""
     lm_util.gprint("Calculating Core Area Value (CAV) and its components for "
@@ -421,15 +437,7 @@ def cav():
     check_add_field(lp_env.COREFC, "ncfc", "DOUBLE")
 
     # calc mean resistance
-    stats_table = arcpy.sa.ZonalStatisticsAsTable(
-        lp_env.COREFC, lp_env.COREFN, lp_env.RESRAST_IN,
-        os.path.join(lm_env.SCRATCHDIR, "scratch.gdb",
-                     "core_resistance_stats"))
-    arcpy.AddJoin_management("core_lyr", lp_env.COREFN, stats_table,
-                             lp_env.COREFN)
-    arcpy.CalculateField_management("core_lyr", lp_env.CORENAME + ".mean_res",
-                                    "[core_resistance_stats.MEAN]")
-    arcpy.RemoveJoin_management("core_lyr")
+    core_mean(lp_env.RESRAST_IN, "mean_res")
 
     # calc area, perimeter and ratio
     arcpy.CalculateField_management("core_lyr", "area", "!SHAPE.AREA!",
@@ -470,14 +478,7 @@ def cav():
         ocav_raster = ((arcpy.sa.Raster(lp_env.OCAVRAST_IN) - min_ocav)
                        / (max_ocav - min_ocav))
         # calc aerial mean ocav for each core
-        ocav_table = arcpy.sa.ZonalStatisticsAsTable(
-            lp_env.COREFC, lp_env.COREFN, ocav_raster,
-            os.path.join(lm_env.SCRATCHDIR, "scratch.gdb", "core_ocav_stats"))
-        arcpy.AddJoin_management("core_lyr", lp_env.COREFN, ocav_table,
-                                 lp_env.COREFN)
-        arcpy.CalculateField_management("core_lyr", lp_env.CORENAME + ".ocav",
-                                        "[core_ocav_stats.MEAN]")
-        arcpy.RemoveJoin_management("core_lyr")
+        core_mean(ocav_raster, "ocav")
         normalize_field("core_lyr", "ocav", "nocav", NM_SCORE)
 
         # calc CAV
@@ -510,14 +511,7 @@ def clim_env():
     cce_raster = normalize_raster(arcpy.sa.Raster(lp_env.CCERAST_IN), 0)
 
     # calc aerial mean climate envelope for each core
-    cce_table = arcpy.sa.ZonalStatisticsAsTable(
-        lp_env.COREFC, lp_env.COREFN, cce_raster,
-        os.path.join(lm_env.SCRATCHDIR, "scratch.gdb", "core_clim_env_stats"))
-    arcpy.AddJoin_management("core_lyr", lp_env.COREFN, cce_table,
-                             lp_env.COREFN)
-    arcpy.CalculateField_management("core_lyr", lp_env.CORENAME + ".clim_env",
-                                    "[core_clim_env_stats.MEAN]")
-    arcpy.RemoveJoin_management("core_lyr")
+    core_mean(cce_raster, "clim_env")
 
     # score range normalize resulting values
     normalize_field("core_lyr", "clim_env", "nclim_env", 0)
@@ -531,16 +525,7 @@ def clim_env():
         fce_raster = normalize_raster(arcpy.sa.Raster(lp_env.FCERAST_IN), 0)
 
         # calc aerial mean climate envelope for each core
-        fce_table = arcpy.sa.ZonalStatisticsAsTable(
-            lp_env.COREFC, lp_env.COREFN, fce_raster,
-            os.path.join(lm_env.SCRATCHDIR, "scratch.gdb",
-                         "core_fclim_env_stats"))
-        arcpy.AddJoin_management("core_lyr", lp_env.COREFN, fce_table,
-                                 lp_env.COREFN)
-        arcpy.CalculateField_management(
-            "core_lyr", lp_env.CORENAME + ".fut_clim",
-            "[core_fclim_env_stats.MEAN]")
-        arcpy.RemoveJoin_management("core_lyr")
+        core_mean(fce_raster, "fut_clim")
 
         # score range normalize resulting values
         normalize_field("core_lyr", "fut_clim", "nfut_clim", 0)
