@@ -16,11 +16,16 @@ RESNORMETH = "MAX_VALUE"  # resistance normalization method
 SIZENORMETH = "MAX_VALUE"  # size normalization method
 APNORMETH = "MAX_VALUE"  # area/perimeter ratio normalization method
 ECAVNORMETH = "MAX_VALUE"  # ecav normalization method
+CANALOGNORMETH = "SCORE_RANGE"  # climate analog normalization method
+CPREFERNORMETH = "SCORE_RANGE" # climate preference normalization method
+CLPRIORITYNORMETH = "SCORE_RANGE"  # climate linkage priority normalization method
 CFCNORMETH = "MAX_VALUE"  # cfc normalization method
 TRUNCNORMETH = "SCORE_RANGE"  # truncated raster normalization method
 
 MINCPV = 0  # minimum corridor priority value (use 0 to keep all)
 MAXCSPWEIGHT = 0.5  # relative max CSP value weight in CPV calculation
 MEANCSPWEIGHT = 0.5  # relative mean CSP value weight in CPV calculation
+
+HIGHERCE_COOLER = False  # higher climate envelop values are cooler
 
 KEEPINTERMEDIATE = True  # keep intermediate outputs for troubleshooting purposes

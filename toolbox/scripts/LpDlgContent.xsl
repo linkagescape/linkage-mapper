@@ -144,12 +144,22 @@ function Window_onresize()
   {
     <xsl:for-each select="Properties/PropertyGroup">
       <xsl:for-each select="Property">  <xsl:value-of select="CtrlName"/>.width = window.document.body.clientWidth - 30;
-      <xsl:choose>
-        <xsl:when test="CtrlCLSID = 'C2BC7F14-19A1-480F-9B53-B21B1EBA8FA6'">
-          <xsl:value-of select="CtrlName"/>.height = window.document.body.clientHeight - 30;
-        </xsl:when>
-      </xsl:choose>
-    </xsl:for-each>
+        <!-- LM Addition -->
+        <xsl:choose>
+          <xsl:when test='PropertyName="Param13" or PropertyName="Param14" or PropertyName="Param15" or PropertyName="Param19" or PropertyName="Param18" or PropertyName="Param20" or PropertyName="Param21" or PropertyName="Param22" or PropertyName="Param23" or PropertyName="Param24" or PropertyName="Param25" or PropertyName="Param26" or PropertyName="Param27"'>
+            <xsl:value-of select="CtrlName"/>.width = window.document.body.clientWidth - 50;
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="CtrlName"/>.width = window.document.body.clientWidth - 30;
+          </xsl:otherwise>
+        </xsl:choose>
+        <!-- /LM Addition -->
+        <xsl:choose>
+          <xsl:when test="CtrlCLSID = 'C2BC7F14-19A1-480F-9B53-B21B1EBA8FA6'">
+            <xsl:value-of select="CtrlName"/>.height = window.document.body.clientHeight - 30;
+          </xsl:when>
+        </xsl:choose>
+      </xsl:for-each>
     </xsl:for-each><![CDATA[
   }
 }
@@ -472,7 +482,6 @@ function clicker(a,b)
                             <!-- LM Addition -->
                             <SPAN class="lmgrouping" STYLE="color:menutext;"><xsl:value-of select="PropertyGroupLabel"/></SPAN>
                             <!-- /LM Addition -->
-
                           </TH>
                         </xsl:otherwise>
                       </xsl:choose>
@@ -535,12 +544,12 @@ function clicker(a,b)
             Corridor Specific Priority (CSP) Options
           </TD>
         </xsl:when>
-        <xsl:when test='PropertyName="Param25"'>
+        <xsl:when test='PropertyName="Param34"'>
           <TD style="padding-bottom=5; padding-top=10">
             Blended Priority Options
           </TD>
         </xsl:when>
-        <xsl:when test='PropertyName="Param27"'>
+        <xsl:when test='PropertyName="Param36"'>
           <TD style="padding-bottom=5; padding-top=10">
             Additional Options
           </TD>
@@ -566,7 +575,7 @@ function clicker(a,b)
                       <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');" />
                     </TD>
                   </xsl:when>
-                  <xsl:when test='PropertyName="Param10" or PropertyName="Param14"'>
+                  <xsl:when test='PropertyName="Param17"'>
                     <TD class="lmsteppad">
                       <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');" />
                     </TD>
@@ -583,10 +592,20 @@ function clicker(a,b)
         </xsl:when>
 
         <xsl:otherwise>
-          <TD>
-            <OBJECT width="100%" style="z-index: -1" classid="CLSID:9FA602C6-85AF-40E2-A64A-E938C70C67B9" id="{CtrlLabel}" onfocus="ShowHelpTopic('{PropertyName}Topic');" />
-            <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');" />
-          </TD>
+          <xsl:choose>
+            <xsl:when test='PropertyName="Param13" or PropertyName="Param14" or PropertyName="Param15" or PropertyName="Param19" or PropertyName="Param18" or PropertyName="Param20" or PropertyName="Param21" or PropertyName="Param22" or PropertyName="Param23" or PropertyName="Param24" or PropertyName="Param25" or PropertyName="Param26" or PropertyName="Param27"'>
+              <TD class="lmsteppad">
+                <OBJECT width="100%" style="z-index: -1" classid="CLSID:9FA602C6-85AF-40E2-A64A-E938C70C67B9" id="{CtrlLabel}" onfocus="ShowHelpTopic('{PropertyName}Topic');"/>
+                <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');"/>
+              </TD>
+            </xsl:when>
+            <xsl:otherwise>
+              <TD>
+                <OBJECT width="100%" style="z-index: -1" classid="CLSID:9FA602C6-85AF-40E2-A64A-E938C70C67B9" id="{CtrlLabel}" onfocus="ShowHelpTopic('{PropertyName}Topic');" />
+                <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');" />
+              </TD>
+            </xsl:otherwise>
+          </xsl:choose>
         </xsl:otherwise>
       </xsl:choose>
 
