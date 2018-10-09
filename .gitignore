@@ -9,3 +9,6 @@
 
 # LM build
 *.pdf
+
+# LM testing
+/demo/demoOutputs
