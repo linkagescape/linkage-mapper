@@ -9,3 +9,6 @@
 
 # LM build
 *.pdf
+
+# demoOutputs Folder (added by some people in testing and facilitating the Multi-tool combinations)
+/demo/demoOutputs
