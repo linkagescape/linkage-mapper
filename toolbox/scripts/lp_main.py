@@ -615,7 +615,7 @@ def clim_ratios(lcp_lines, core_lyr):
         clim_start = clim_env_read(core_lyr, core_start, "cclim_env")
         clim_dest = clim_env_read(core_lyr, core_dest, "cclim_env")
 
-        if clim_start <= clim_dest and lp_env.HIGHERCE_COOLER:
+        if clim_start <= clim_dest and not lp_env.HIGHERCE_COOLER:
             core_start, core_dest = core_dest, core_start
             clim_start, clim_dest = clim_dest, clim_start
 
