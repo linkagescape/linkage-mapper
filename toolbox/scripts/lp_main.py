@@ -544,45 +544,45 @@ def clim_envelope(core_lyr):
         core_mean(lp_env.FCERAST_IN, core_lyr, "fclim_env")
 
 
-def slope(x1, y1, x2, y2):
+def slope(x1_coord, y1_coord, x2_coord, y2_coord):
     """Calculate slope of a straight line.
 
     Where (x1,y1) and (x2,y2) are points on the line.
     """
-    return (y2-y1)/(x2-x1)
+    return (y2_coord - y1_coord) / (x2_coord - x1_coord)
 
 
-def intercept(x, y, b):
+def intercept(x_coord, y_coord, slope_val):
     """Find the intercept of a straight line.
 
     Where (x,y) is a point on the line and b is the slope of the line.
     """
-    return y - (x * b)
+    return y_coord - (x_coord * slope_val)
 
 
-def sline_y_value(x, m, b):
+def sline_y_value(x_coord, intercept_val, slope_val):
     """For a x value on a straight line find its corresponding y value.
 
     The equation of a straight line is: y = mx + b
-    where m is the slope of the line and b is the intercept.
+    where b is the slope of the line and m is the intercept.
     """
-    return m * x + b
+    return (intercept_val * x_coord) + slope_val
 
 
 def clim_lnk_value(xlnk, xmin, ymin, xtarg, ytarg, xmax, ymax):
     """Calculate climate linkage value using equation of straight line."""
     if ytarg is None:
-        m = slope(xmin, ymin, xmax, ymax)
-        b = intercept(xmax, ymax, m)
+        line_slope = slope(xmin, ymin, xmax, ymax)
+        line_intercept = intercept(xmax, ymax, line_slope)
     elif xlnk < ytarg:
-        m = slope(xmin, ymin, xtarg, ytarg)
-        b = intercept(xtarg, ytarg, m)
+        line_slope = slope(xmin, ymin, xtarg, ytarg)
+        line_intercept = intercept(xtarg, ytarg, line_slope)
     elif xlnk > ytarg:
-        m = slope(xtarg, ytarg, xmax, ymax)
-        b = intercept(xmax, ymax, m)
+        line_slope = slope(xtarg, ytarg, xmax, ymax)
+        line_intercept = intercept(xmax, ymax, line_slope)
     else:
-        m = b = 1
-    return sline_y_value(xlnk, m, b)
+        line_intercept = line_slope = 1
+    return sline_y_value(xlnk, line_intercept, line_slope)
 
 
 def clim_env_read(core_lyr, core, field):
