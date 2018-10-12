@@ -560,13 +560,13 @@ def intercept(x_coord, y_coord, slope_val):
     return y_coord - (x_coord * slope_val)
 
 
-def sline_y_value(x_coord, intercept_val, slope_val):
+def sline_y_value(x_coord, slope_val, intercept_val):
     """For a x value on a straight line find its corresponding y value.
 
     The equation of a straight line is: y = mx + b
-    where b is the slope of the line and m is the intercept.
+    where m is the slope of the line and b is the intercept.
     """
-    return (intercept_val * x_coord) + slope_val
+    return (slope_val * x_coord) + intercept_val
 
 
 def clim_lnk_value(xlnk, xmin, ymin, xtarg, ytarg, xmax, ymax):
@@ -581,8 +581,8 @@ def clim_lnk_value(xlnk, xmin, ymin, xtarg, ytarg, xmax, ymax):
         line_slope = slope(xtarg, ytarg, xmax, ymax)
         line_intercept = intercept(xmax, ymax, line_slope)
     else:
-        line_intercept = line_slope = 1
-    return sline_y_value(xlnk, line_intercept, line_slope)
+        line_slope = line_intercept = 1
+    return sline_y_value(xlnk, line_slope, line_intercept)
 
 
 def clim_env_read(core_lyr, core, field):
