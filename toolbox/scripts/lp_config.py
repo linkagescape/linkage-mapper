@@ -2,8 +2,10 @@
 
 """Linkage Priority configuration module."""
 
-import lp_settings
 import imp
+
+import lp_settings
+
 
 GP_NULL = "#"
 
@@ -31,23 +33,30 @@ def str2bool(pstr):
     return pstr == "true"
 
 
-class lp_config(object):
+class PriorityConfig(object):
     """Class container to hold Linkage Priority parameters and settings."""
+
     def __init__(self):
-        """Init class (empty)"""
+        """Init class (empty)."""
         pass
 
     def configure(self, arg):
-        """Assign parameters and settings from passed arguments and advanced settings"""
+        """Assign parameters and settings.
+
+        Assign parameters and settings from passed arguments and advanced
+        settings.
+        """
         self.PARAMS = str(arg)  # Convert to string in case '\' exists
 
         # Model Inputs
+        # ------------
         self.PROJDIR = arg[1]
         self.COREFC = arg[2]
         self.COREFN = arg[3]
         self.RESRAST_IN = arg[4]
 
         # Core Area Value (CAV) Options
+        # -----------------------------
         self.OCAVRAST_IN = nullstring(arg[5])
         self.RESWEIGHT = float(arg[6])
         self.SIZEWEIGHT = float(arg[7])
@@ -57,27 +66,45 @@ class lp_config(object):
         self.OCAVWEIGHT = float(arg[11])
 
         # Corridor Specific Priority (CSP) Options
+        # ----------------------------------------
+        #  Expert Corridor Importance Vale
         self.COREPAIRSTABLE_IN = nullstring(arg[12])
         self.FROMCOREFIELD = nullstring(arg[13])
         self.TOCOREFIELD = nullstring(arg[14])
         self.ECIVFIELD = nullstring(arg[15])
+
+        # Climate Linkage Priority Value
         self.CCERAST_IN = nullstring(arg[16])
-        self.FCERAST_IN = nullstring(arg[17])
-        self.HIGHERCE_COOLER = str2bool(arg[18])
-        self.CLOSEWEIGHT = float(arg[19])
-        self.PERMWEIGHT = float(arg[20])
-        self.CAVWEIGHT = float(arg[21])
-        self.ECIVWEIGHT = float(arg[22])
-        self.CEDWEIGHT = float(arg[23])
-        self.PROPCSPKEEP = float(arg[24])
+        self.FCERAST_IN = nullstring(arg[18])
+        self.CANALOG_MIN = float(arg[19])
+        self.CANALOG_MAX = float(arg[20])
+        self.CANALOG_TARGET = float(arg[21])
+        self.CANALOG_PIORITY = float(arg[22])
+        self.CANALOG_WEIGHT = float(arg[23])
+        self.CPREF_VALUE = float(arg[24])
+        self.CPREF_MIN = float(arg[25])
+        self.CPREF_MAX = float(arg[26])
+        self.CPREF_WEIGHT = float(arg[27])
+
+        # CSP Weights
+        self.CLOSEWEIGHT = float(arg[28])
+        self.PERMWEIGHT = float(arg[29])
+        self.CAVWEIGHT = float(arg[30])
+        self.ECIVWEIGHT = float(arg[31])
+        self.CEDWEIGHT = float(arg[32])
+        self.PROPCSPKEEP = float(arg[33])
 
         # Blended Priority Options
-        self.TRUNCWEIGHT = float(arg[25])
-        self.LPWEIGHT = float(arg[26])
+        # ------------------------
+        self.TRUNCWEIGHT = float(arg[34])
+        self.LPWEIGHT = float(arg[35])
 
         # Additional Options
-        self.OUTPUTFORMODELBUILDER = nullstring(arg[27])
-        self.LPCUSTSETTINGS_IN = nullstring(arg[28])
+        # ------------------
+        self.OUTPUTFORMODELBUILDER = nullstring(arg[36])
+        self.LPCUSTSETTINGS_IN = nullstring(arg[37])
+
+        # - - - - - - - - - - - - - - - - - -
 
         # core corename from feature class name
         splits = self.COREFC.split("\\")
@@ -85,7 +112,8 @@ class lp_config(object):
 
         # add settings from settings file
         if self.LPCUSTSETTINGS_IN:
-            cust_settings = imp.load_source(self.LPCUSTSETTINGS_IN.split(".")[0], self.LPCUSTSETTINGS_IN)
+            cust_settings = imp.load_source(
+                self.LPCUSTSETTINGS_IN.split(".")[0], self.LPCUSTSETTINGS_IN)
             for setting in dir(cust_settings):
                 if setting == setting.upper():
                     setting_value = getattr(cust_settings, setting)
@@ -97,4 +125,4 @@ class lp_config(object):
                     setattr(self, setting, setting_value)
 
 
-lp_env = lp_config()
+lp_env = PriorityConfig()

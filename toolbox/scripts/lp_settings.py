@@ -2,21 +2,30 @@
 # Authors: John Gallo and Randal Greene 2017
 
 
-RELPERMNORMETH = 0  # relative permeability normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-RELCLOSENORMETH = 0  # relative closeness value normalization method (use 0 for score range normalization; any other value for maximum value normalization)
 CALCLP = True  # calculate linkage priority
-NORMCORRNORMETH = 0  # normalized corridor normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-RESNORMETH = 1  # resistance normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-SIZENORMETH = 1  # size normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-APNORMETH = 1  # area/perimeter ratio normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-ECAVNORMETH = 1  # ecav normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-CFCNORMETH = 1  # cfc normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-MINCPV = 0  # minimum corridor priority value (use 0 to keep all)
+CALCBP = True  # calculate blended priority (requires CALCLP to also be True)
+
 NORMALIZERCI = True  # normalize RCI
-TRUNCNORMETH = 0  # truncated raster normalization method (use 0 for score range normalization; any other value for maximum value normalization)
-CALCBP = True  # calculate blended priority (requires CALCLP above to also be True)
 NORMALIZELP = True  # normalize Linkage Priority
 NORMALIZEBP = True  # normalize Blended Priority
-KEEPINTERMEDIATE = True # keep intermediate outputs for troubleshooting purposes
-MAXCSPWEIGHT = 0.5 # relative max CSP value weight in CPV calculation
-MEANCSPWEIGHT = 0.5 # relative mean CSP value weight in CPV calculation
+
+RELPERMNORMETH = "SCORE_RANGE"  # relative permeability normalization method
+RELCLOSENORMETH = "SCORE_RANGE"  # relative closeness value normalization method
+NORMCORRNORMETH = "SCORE_RANGE"  # normalized corridor normalization method
+RESNORMETH = "MAX_VALUE"  # resistance normalization method
+SIZENORMETH = "MAX_VALUE"  # size normalization method
+APNORMETH = "MAX_VALUE"  # area/perimeter ratio normalization method
+ECAVNORMETH = "MAX_VALUE"  # ecav normalization method
+CANALOGNORMETH = "SCORE_RANGE"  # climate analog normalization method
+CPREFERNORMETH = "SCORE_RANGE"  # climate preference normalization method
+CLPRIORITYNORMETH = "SCORE_RANGE"  # climate linkage priority normalization method
+CFCNORMETH = "MAX_VALUE"  # cfc normalization method
+TRUNCNORMETH = "SCORE_RANGE"  # truncated raster normalization method
+
+MINCPV = 0  # minimum corridor priority value (use 0 to keep all)
+MAXCSPWEIGHT = 0.5  # relative max CSP value weight in CPV calculation
+MEANCSPWEIGHT = 0.5  # relative mean CSP value weight in CPV calculation
+
+HIGHERCE_COOLER = False  # higher climate envelop values are cooler
+
+KEEPINTERMEDIATE = True  # keep intermediate outputs for troubleshooting purposes
