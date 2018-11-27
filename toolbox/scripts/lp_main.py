@@ -894,6 +894,16 @@ def cpv(sum_rasters, cnt_non_null_cells_rast, max_rasters, cpv_raster):
         arcpy.env.workspace = prev_ws
 
 
+def cwd_threash_str():
+    """Convert CDW threashold to text and abbreviate if possible."""
+    cutoff_text = str(lm_env.CWDTHRESH)
+    if cutoff_text[-6:] == "000000":
+        cutoff_text = cutoff_text[0:-6] + "m"
+    elif cutoff_text[-3:] == "000":
+        cutoff_text = cutoff_text[0:-3] + "k"
+    return cutoff_text
+
+
 def rci(cpv_raster, rci_raster):
     """Clip CPV to the MINCPV and renormalize.
 
@@ -947,6 +957,12 @@ def blended_priority(norm_trunc_raster, lp_raster, bp_raster):
                                 None, None, "32_BIT_FLOAT")
 
 
+def add_output_path(in_str):
+    """Append LinkMap GDB path to inputted value."""
+    return os.path.join(lm_env.OUTPUTGDB,
+                        '_'.join([lm_env.PREFIX, in_str]))
+
+
 def run_analysis():
     """Run main Linkage Priority analysis."""
     lm_util.gprint("Checking inputs")
@@ -974,25 +990,8 @@ def run_analysis():
             arcpy.CreateFileGDB_management(lm_env.SCRATCHDIR,
                                            "intermediate.gdb")
 
-    # set key dataset locations
-    lcp_lines = os.path.join(lm_env.LINKMAPGDB, lm_env.PREFIX + "_LCPs")
-    cpv_raster = os.path.join(lm_env.OUTPUTGDB, lm_env.PREFIX + "_CPV")
-    rci_raster = os.path.join(lm_env.OUTPUTGDB, lm_env.PREFIX + "_RCI")
-    cutoff_text = str(lm_env.CWDTHRESH)
-    if cutoff_text[-6:] == "000000":
-        cutoff_text = cutoff_text[0:-6] + "m"
-    elif cutoff_text[-3:] == "000":
-        cutoff_text = cutoff_text[0:-3] + "k"
-    trunc_raster = (lm_env.OUTPUTGDB + "\\" + lm_env.PREFIX +
-                    "_corridors_truncated_at_" + cutoff_text)
-    norm_trunc_raster = os.path.join(lm_env.OUTPUTGDB,
-                                     lm_env.PREFIX + "_NORMTRUNC")
-    lp_raster = os.path.join(lm_env.OUTPUTGDB,
-                             lm_env.PREFIX + "_linkage_priority")
-    bp_raster = os.path.join(lm_env.OUTPUTGDB,
-                             lm_env.PREFIX + "_blended_priority")
-
     # calc permeability
+    lcp_lines = os.path.join(lm_env.LINKMAPGDB, lm_env.PREFIX + "_LCPs")
     calc_permeability(lcp_lines)
 
     # calc relative closeness
@@ -1013,27 +1012,36 @@ def run_analysis():
     csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines, core_lyr)
 
     # calc Corridor Priority Value (CPV)
+    cpv_raster = add_output_path("CPV")
     cpv(sum_rasters, cnt_non_null_cells_rast, max_rasters, cpv_raster)
     arcpy.env.workspace = prev_ws
 
     # calc Relative Corridor Importance (RCI)
+    rci_raster = add_output_path("RCI")
     rci(cpv_raster, rci_raster)
 
-    # calc Linkage Priority (LP)
-    if lp_env.CALCLP:
-        linkage_priority(rci_raster, trunc_raster, lp_raster)
+    if lp_env.CALCLP or lp_env.CALCBP:
+        trunc_raster = add_output_path(
+            '_'.join(["corridors_truncated_at", cwd_threash_str()]))
+        lp_raster = add_output_path("linkage_priority")
 
-    # calc Blended Priority (BP)
-    if lp_env.CALCBP:
-        if not lm_env.WRITETRUNCRASTER:
-            msg = ("When CALCBP = True, set WRITETRUNCRASTER = True in "
-                   "Linkage Mapper")
-            lm_util.raise_error(msg)
-        if not lp_env.CALCLP:
-            msg = "When CALCBP = True, set CALCLP = True"
-            lm_util.raise_error(msg)
-        norm_trunc(trunc_raster, norm_trunc_raster)
-        blended_priority(norm_trunc_raster, lp_raster, bp_raster)
+        # calc Linkage Priority (LP)
+        if lp_env.CALCLP:
+            linkage_priority(rci_raster, trunc_raster, lp_raster)
+
+        # calc Blended Priority (BP)
+        if lp_env.CALCBP:
+            norm_trunc_raster = add_output_path("NORMTRUNC")
+            bp_raster = add_output_path("blended_priority")
+            if not lm_env.WRITETRUNCRASTER:
+                msg = ("When CALCBP = True, set WRITETRUNCRASTER = True in "
+                       "Linkage Mapper")
+                lm_util.raise_error(msg)
+            if not lp_env.CALCLP:
+                msg = "When CALCBP = True, set CALCLP = True"
+                lm_util.raise_error(msg)
+            norm_trunc(trunc_raster, norm_trunc_raster)
+            blended_priority(norm_trunc_raster, lp_raster, bp_raster)
 
     # save a copy of Cores as the "Output for ModelBuilder Precondition"
     if lp_env.OUTPUTFORMODELBUILDER:
