@@ -716,6 +716,16 @@ def clim_linkage_priority(lcp_lines, core_lyr):
     clim_priority_combine(lcp_lines)
 
 
+def save_interm_rast(cp_rast, save_rast):
+    """Save intermediate raster."""
+    if lp_env.KEEPINTERMEDIATE:
+        arcpy.CopyRaster_management(
+            cp_rast,
+            os.path.join(lm_env.SCRATCHDIR, "intermediate.gdb",
+                         '_'.join([lm_env.PREFIX, save_rast])),
+            None, None, None, None, None, "32_BIT_FLOAT")
+
+
 def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
         core_lyr):
     """Calculate Corridor Specific Priority (CSP) for each corridor."""
@@ -756,9 +766,7 @@ def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
                                " value <> 1.0")
 
             # get cores from raster name
-            name_parts = in_rast.partition("_")
-            from_core = name_parts[0]
-            to_core = name_parts[2]
+            from_core, to_core = in_rast.split("_")
 
             # check for corresponding link
             links = arcpy.SearchCursor(
@@ -806,14 +814,7 @@ def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
                     output_raster += (link.getValue("Clim_Lnk_Priority") *
                                       lp_env.CEDWEIGHT)
 
-                if lp_env.KEEPINTERMEDIATE:
-                    # also save a copy for debugging purposes
-                    arcpy.CopyRaster_management(
-                        output_raster,
-                        os.path.join(lm_env.SCRATCHDIR, "intermediate.gdb",
-                                     lm_env.PREFIX + "_CSP_" + from_core +
-                                     "_" + to_core),
-                        None, None, None, None, None, "32_BIT_FLOAT")
+                save_interm_rast(output_raster, '_'.join(["CSP", in_rast]))
 
                 # get max and min
                 lm_util.build_stats(output_raster)
@@ -835,14 +836,9 @@ def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
                 count_raster = arcpy.sa.EqualTo(is_null_raster, 0)
                 count_rasters.append(count_raster)
                 csp_rasters.append(con_raster)
-                if lp_env.KEEPINTERMEDIATE:
-                    # also save a copy for debugging purposes
-                    arcpy.CopyRaster_management(
-                        con_raster,
-                        os.path.join(lm_env.SCRATCHDIR, "intermediate.gdb",
-                                     lm_env.PREFIX + "_CSP_TOP_" + from_core +
-                                     "_" + to_core),
-                        None, None, None, None, None, "32_BIT_FLOAT")
+
+                save_interm_rast(con_raster, '_'.join(["CSP_TOP", in_rast]))
+
             del link, links
 
         # perform intermediate calculations on CSPs leading toward CPV
