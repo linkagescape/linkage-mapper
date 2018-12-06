@@ -733,6 +733,9 @@ def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
                    "corridor")
     chk_weights()
 
+    # invert and normalize each corridor
+    inv_norm()
+
     # normalize Expert Corridor Importance Value (ECIV)
     if lp_env.COREPAIRSTABLE_IN:
         eciv()
@@ -992,9 +995,6 @@ def run_analysis():
 
     # calc relative closeness
     calc_closeness(lcp_lines)
-
-    # invert and normalize each corridor
-    inv_norm()
 
     # calc Core Area Value (CAV) and its components for each core
     core_lyr = arcpy.MakeFeatureLayer_management(lp_env.COREFC, "core_lyr")
