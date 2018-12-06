@@ -554,8 +554,8 @@ def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
             break
         arcpy.env.workspace = (os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" +
                                             nlc_str, "inv_norm"))
-        csp_rasters = []
-        count_rasters = []
+
+        csp_rasters, count_rasters = [], []
         # process each corridor raster in folder
         for in_rast in arcpy.ListRasters():
             # check for max 1
@@ -861,9 +861,7 @@ def run_analysis():
 
     # calc Corridor Specific Priority (CSP)
     prev_ws = arcpy.env.workspace
-    sum_rasters = []
-    cnt_non_null_cells_rast = []
-    max_rasters = []
+    sum_rasters, cnt_non_null_cells_rast, max_rasters = [], [], []
     csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines, core_lyr)
 
     # calc Corridor Priority Value (CPV)
