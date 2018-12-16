@@ -643,13 +643,11 @@ def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
 
         # perform intermediate calculations on CSPs leading toward CPV
         arcpy.env.scratchWorkspace = lm_env.SCRATCHGDB
-        sum_raster = arcpy.sa.CellStatistics(csp_rasters, "SUM", "DATA")
-        sum_rasters.append(sum_raster)
-        count_non_null_cells = (
+        sum_rasters.append(arcpy.sa.CellStatistics(csp_rasters, "SUM", "DATA"))
+        cnt_non_null_cells_rast.append(
             arcpy.sa.CellStatistics(count_rasters, "SUM", "DATA"))
-        cnt_non_null_cells_rast.append(count_non_null_cells)
-        max_raster = arcpy.sa.CellStatistics(csp_rasters, "MAXIMUM", "DATA")
-        max_rasters.append(max_raster)
+        max_rasters.append(
+            arcpy.sa.CellStatistics(csp_rasters, "MAXIMUM", "DATA"))
         nlc_idx += 1
 
     arcpy.env.workspace = prev_ws
