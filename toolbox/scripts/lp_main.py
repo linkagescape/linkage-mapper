@@ -968,11 +968,6 @@ def config_lm():
     lm_util.gprint("\nLinkage Priority Version " + lm_env.releaseNum)
 
 
-def arc_wksp_setup():
-    """Define ArcPy workspace."""
-    arcpy.env.overwriteOutput = True
-
-
 def check_out_sa_license():
     """Check out the ArcGIS Spatial Analyst extension license."""
     if arcpy.CheckExtension("Spatial") == "Available":
@@ -994,7 +989,7 @@ def main(argv=None):
         # preparation steps
         lp_env.configure(argv)
         check_out_sa_license()
-        arc_wksp_setup()
+        arcpy.env.overwriteOutput = True
         config_lm()
         lm_util.check_project_dir()
         log_setup()
