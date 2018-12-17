@@ -948,7 +948,7 @@ def config_lm():
     with open(last_lm_log) as log_file:
         for line in log_file:
             if line[0:13] == "Parameters:\t[":
-                parms = line[13:len(line) - 3]
+                parms = line[13:len(line) - 3].replace("\\\\", "\\")
                 break
     lm_arg = tuple(parms.replace("'", "").split(", "))
     if parms == "":
@@ -982,24 +982,6 @@ def check_out_sa_license():
         raise Exception(msg)
 
 
-def check_lp_project_dir():
-    """Check to make sure path name is not too long.
-
-    Long path names can cause problems with ESRI grids.
-    """
-    if len(lp_env.PROJDIR) > 140:
-        msg = ('ERROR: Project directory "' + lp_env.PROJDIR +
-               '" is too deep.  Please choose a shallow directory' +
-               r'(something like "C:\PUMA").')
-        raise Exception(msg)
-
-    if ("-" in lp_env.PROJDIR or " " in lp_env.PROJDIR or
-            "." in lp_env.PROJDIR):
-        msg = ("ERROR: Project directory cannot contain spaces, dashes, or "
-               "special characters.")
-        raise Exception(msg)
-
-
 def main(argv=None):
     """Run Linkage Priority tool."""
     start_time = dt.now()
@@ -1011,10 +993,10 @@ def main(argv=None):
     try:
         # preparation steps
         lp_env.configure(argv)
-        check_lp_project_dir()
         check_out_sa_license()
         arc_wksp_setup()
         config_lm()
+        lm_util.check_project_dir()
         log_setup()
         # primary analysis
         run_analysis()
