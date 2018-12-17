@@ -835,9 +835,9 @@ def run_analysis():
     # check/create gdb for scratch
     if not os.path.isdir(lm_env.SCRATCHDIR):
         os.makedirs(lm_env.SCRATCHDIR)
-    if not arcpy.Exists(os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")):
-        arcpy.CreateFileGDB_management(lm_env.SCRATCHDIR, "scratch.gdb")
     arcpy.env.scratchWorkspace = os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")
+    if not arcpy.Exists(arcpy.env.scratchWorkspace):
+        arcpy.CreateFileGDB_management(lm_env.SCRATCHDIR, "scratch.gdb")
 
     # check/create gdb for intermediate
     if lp_env.KEEPINTERMEDIATE:
