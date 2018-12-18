@@ -57,7 +57,6 @@ class ClimateConfig(object):
         self.keep_constelations = arg[14]
 
         # Setup model global variables
-        self.code_dir = os.path.dirname(os.path.abspath(__file__))
         self.scratch_dir = os.path.join(self.proj_dir, "scratch")
         self.cc_gdb = os.path.join(self.scratch_dir, "cc.gdb")
 
