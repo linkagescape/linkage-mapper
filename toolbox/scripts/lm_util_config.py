@@ -1,6 +1,6 @@
 """Utility functions for configuration modules."""
 
-import os.path as path
+from os import path
 import imp
 
 

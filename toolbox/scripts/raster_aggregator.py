@@ -12,9 +12,8 @@ Python 2.5
 __filename__ = "raster_aggregator.py"
 __version__ = "2013_0610"
 
-import os.path as path
+from os import path
 import arcgisscripting
-import os.path as path
 import sys
 import traceback
 

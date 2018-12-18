@@ -8,7 +8,7 @@ Python 2.6
 Numpy
 """
 
-import os.path as path
+from os import path
 import time
 
 import numpy as npy

@@ -2,7 +2,7 @@
 
 """Linkage Priority configuration module."""
 
-import os.path as path
+from os import path
 
 import lm_util_config as util
 

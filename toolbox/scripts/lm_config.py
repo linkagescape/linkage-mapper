@@ -6,7 +6,7 @@ Assigns input parameters from ToolBox to variables, and sets constants.
 
 """
 
-import os.path as path
+from os import path
 
 import arcgisscripting
 

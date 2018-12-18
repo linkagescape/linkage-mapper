@@ -7,7 +7,7 @@ adjacencies of core areas
 
 """
 
-import os.path as path
+from os import path
 
 import arcgisscripting
 import numpy as npy

@@ -7,7 +7,7 @@ pairs specified in linkTable and cwd layers
 
 """
 
-import os.path as path
+from os import path
 import time
 
 import numpy as npy
