@@ -17,15 +17,16 @@ import arcgisscripting
 import os.path as path
 import sys
 import traceback
+
+import lm_util_config as util
+
+
 gp = arcgisscripting.create(9.3)
 gp.CheckOutExtension("Spatial")
 gp.OverwriteOutput = True
 
 gprint = gp.addmessage
 
-def str2bool(pstr):
-    """Convert ESRI boolean string to Python boolean type"""
-    return pstr == 'true'
 
 def raster_aggregator():
     """Main function
@@ -39,7 +40,7 @@ def raster_aggregator():
         OUTPUTDIR = sys.argv[1]  # Output directory
         AG_FACTOR =  int(sys.argv[2])
         METHOD = sys.argv[3]
-        SMOOTH = str2bool(sys.argv[4])
+        SMOOTH = util.str2bool(sys.argv[4])
         RESRAS = {}#list of resistance rasters
         RESRAS[1] = sys.argv[5]
         RESRAS[2] = sys.argv[6]

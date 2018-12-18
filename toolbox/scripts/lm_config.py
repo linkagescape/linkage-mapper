@@ -6,21 +6,12 @@ Assigns input parameters from ToolBox to variables, and sets constants.
 
 """
 
-import imp
 import os.path as path
 
 import arcgisscripting
 
 import lm_version as ver
-import lm_settings
-
-
-GP_NULL = '#'
-
-
-def str2bool(pstr):
-    """Convert ESRI boolean string to Python boolean type."""
-    return pstr == 'true'
+import lm_util_config as util
 
 
 def setadjmeth(inparam):
@@ -32,20 +23,13 @@ def setadjmeth(inparam):
 
 def nullfloat(innum):
     """Convert ESRI float or null to Python float."""
-    if innum == GP_NULL:
+    if innum == util.GP_NULL:
         nfloat = None
     else:
         nfloat = float(innum)
         if nfloat == 0:
             nfloat = None
     return nfloat
-
-
-def nullstring(arg_string):
-    """Convert ESRI nullstring to Python null."""
-    if arg_string == GP_NULL:
-        arg_string = None
-    return arg_string
 
 
 def config_global(config, arg):
@@ -168,19 +152,19 @@ def config_lm(config, arg):
     config.RESRAST_IN = arg[4]  # Resistance raster
 
     # Processing steps inputs
-    config.STEP1 = str2bool(arg[5])
+    config.STEP1 = util.str2bool(arg[5])
 
     config.S1ADJMETH_CW = True
     config.S1ADJMETH_EU = True
 
-    config.STEP2 = str2bool(arg[6])
+    config.STEP2 = util.str2bool(arg[6])
     config.S2ADJMETH_CW, config.S2ADJMETH_EU = setadjmeth(arg[7])
-    config.S2EUCDISTFILE = nullstring(arg[8])
+    config.S2EUCDISTFILE = util.nullstring(arg[8])
 
-    config.STEP3 = str2bool(arg[9])
+    config.STEP3 = util.str2bool(arg[9])
     # Drop LCC's passing through intermediate cores
-    config.S3DROPLCCS = str2bool(arg[10])
-    config.STEP4 = str2bool(arg[11])
+    config.S3DROPLCCS = util.str2bool(arg[10])
+    config.STEP4 = util.str2bool(arg[11])
     if arg[12] == "Unlimited":
         config.S4MAXNN = 99
         config.IGNORES4MAXNN = True
@@ -189,10 +173,10 @@ def config_lm(config, arg):
         config.IGNORES4MAXNN = False
     # NN Unit
     config.S4DISTTYPE_CW, config.S4DISTTYPE_EU = setadjmeth(arg[13])
-    config.S4CONNECT = str2bool(arg[14])
+    config.S4CONNECT = util.str2bool(arg[14])
 
-    config.STEP5 = str2bool(arg[15])
-    config.WRITETRUNCRASTER = str2bool(arg[16])
+    config.STEP5 = util.str2bool(arg[15])
+    config.WRITETRUNCRASTER = util.str2bool(arg[16])
     config.CWDTHRESH = int(arg[17])
 
     # Optional input parameters
@@ -210,9 +194,9 @@ def config_lm(config, arg):
 
     config.MAXEUCDIST = nullfloat(arg[20])
 
-    config.OUTPUTFORMODELBUILDER = nullstring(arg[21])
+    config.OUTPUTFORMODELBUILDER = util.nullstring(arg[21])
 
-    if arg[22] == GP_NULL:
+    if arg[22] == util.GP_NULL:
         config.LMCUSTSETTINGS = (
             path.join(path.dirname(path.realpath(__file__)),
                       'lm_settings.py'))
@@ -248,8 +232,8 @@ def config_barrier(config, arg):
     config.ENDRADIUS = arg[4]
     config.RADIUSSTEP = arg[5]
     config.BARRIER_METH = arg[6]
-    config.SAVE_RADIUS_RASTERS = str2bool(arg[7])
-    config.WRITE_PCT_RASTERS = str2bool(arg[8])
+    config.SAVE_RADIUS_RASTERS = util.str2bool(arg[7])
+    config.WRITE_PCT_RASTERS = util.str2bool(arg[8])
     if len(arg) > 9:
         config.BARRIER_CWD_THRESH = arg[9]
         if arg[9] == "#" or arg[9] == "" or arg[9] == 0 or arg[9] == "0":
@@ -260,7 +244,8 @@ def config_barrier(config, arg):
     config.BARRIER_METH_MAX = 'max' in config.BARRIER_METH.lower()
     config.BARRIER_METH_SUM = 'sum' in config.BARRIER_METH.lower()
 
-    if config.RADIUSSTEP == GP_NULL or config.ENDRADIUS == config.STARTRADIUS:
+    if (config.RADIUSSTEP == util.GP_NULL
+            or config.ENDRADIUS == config.STARTRADIUS):
         config.RADIUSSTEP = 0
     if ((float(config.STARTRADIUS) + float(config.RADIUSSTEP))
             > float(config.ENDRADIUS)):
@@ -308,14 +293,17 @@ def config_circuitscape(config, arg):
         config.DOPINCH = True
         config.DOCENTRALITY = False
         config.RESRAST_IN = arg[4]
-        config.CWDCUTOFF = int(nullfloat(arg[5]))  # CDW cutoff distance
-        config.SQUARERESISTANCES = str2bool(arg[6])  # Square resistance values
+
+        # CDW cutoff distance
+        config.CWDCUTOFF = int(nullfloat(arg[5]))
+        # Square resistance values
+        config.SQUARERESISTANCES = util.str2bool(arg[6])
 
         # Do adjacent pair corridor pinchpoint calculations
         # using raster CWD maps
-        config.DO_ADJACENTPAIRS = str2bool(arg[7])
+        config.DO_ADJACENTPAIRS = util.str2bool(arg[7])
         # Do all-pair current calculations using raster corridor map
-        config.DO_ALLPAIRS = str2bool(arg[8])
+        config.DO_ALLPAIRS = util.str2bool(arg[8])
         config.ALL_PAIR_CHOICE = arg[9]
         if config.DO_ALLPAIRS:
             if "pairwise" in config.ALL_PAIR_CHOICE.lower():

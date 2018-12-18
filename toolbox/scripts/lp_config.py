@@ -2,35 +2,7 @@
 
 """Linkage Priority configuration module."""
 
-import imp
-
-import lp_settings
-
-
-GP_NULL = "#"
-
-
-def nullfloat(innum):
-    """Convert ESRI float or null to Python float."""
-    if innum == GP_NULL:
-        nfloat = None
-    else:
-        nfloat = float(innum)
-        if nfloat == 0:
-            nfloat = None
-    return nfloat
-
-
-def nullstring(arg_string):
-    """Convert ESRI nullstring to Python null."""
-    if arg_string == GP_NULL:
-        arg_string = None
-    return arg_string
-
-
-def str2bool(pstr):
-    """Convert ESRI boolean string to Python boolean type."""
-    return pstr == "true"
+import lm_util_config as util
 
 
 class PriorityConfig(object):
@@ -57,7 +29,7 @@ class PriorityConfig(object):
 
         # Core Area Value (CAV) Options
         # -----------------------------
-        self.OCAVRAST_IN = nullstring(arg[5])
+        self.OCAVRAST_IN = util.nullstring(arg[5])
         self.RESWEIGHT = float(arg[6])
         self.SIZEWEIGHT = float(arg[7])
         self.APWEIGHT = float(arg[8])
@@ -68,14 +40,14 @@ class PriorityConfig(object):
         # Corridor Specific Priority (CSP) Options
         # ----------------------------------------
         #  Expert Corridor Importance Vale
-        self.COREPAIRSTABLE_IN = nullstring(arg[12])
-        self.FROMCOREFIELD = nullstring(arg[13])
-        self.TOCOREFIELD = nullstring(arg[14])
-        self.ECIVFIELD = nullstring(arg[15])
+        self.COREPAIRSTABLE_IN = util.nullstring(arg[12])
+        self.FROMCOREFIELD = util.nullstring(arg[13])
+        self.TOCOREFIELD = util.nullstring(arg[14])
+        self.ECIVFIELD = util.nullstring(arg[15])
 
         # Climate Linkage Priority Value
-        self.CCERAST_IN = nullstring(arg[16])
-        self.FCERAST_IN = nullstring(arg[18])
+        self.CCERAST_IN = util.nullstring(arg[16])
+        self.FCERAST_IN = util.nullstring(arg[18])
         self.CANALOG_MIN = float(arg[19])
         self.CANALOG_MAX = float(arg[20])
         self.CANALOG_TARGET = float(arg[21])
@@ -101,8 +73,8 @@ class PriorityConfig(object):
 
         # Additional Options
         # ------------------
-        self.OUTPUTFORMODELBUILDER = nullstring(arg[36])
-        self.LPCUSTSETTINGS_IN = nullstring(arg[37])
+        self.OUTPUTFORMODELBUILDER = util.nullstring(arg[36])
+        self.LPCUSTSETTINGS_IN = util.nullstring(arg[37])
 
         # - - - - - - - - - - - - - - - - - -
 
