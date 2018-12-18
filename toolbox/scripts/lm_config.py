@@ -197,24 +197,12 @@ def config_lm(config, arg):
     config.OUTPUTFORMODELBUILDER = util.nullstring(arg[21])
 
     if arg[22] == util.GP_NULL:
-        config.LMCUSTSETTINGS = (
-            path.join(path.dirname(path.realpath(__file__)),
-                      'lm_settings.py'))
+        config.LMCUSTSETTINGS = path.join(util.get_code_path(),
+                                          'lm_settings.py')
     else:
         config.LMCUSTSETTINGS = arg[22]
 
-    if config.LMCUSTSETTINGS:
-        cust_settings = (imp.load_source(
-            config.LMCUSTSETTINGS.split(".")[0], config.LMCUSTSETTINGS))
-        for setting in dir(cust_settings):
-            if setting == setting.upper():
-                setting_value = getattr(cust_settings, setting)
-                setattr(config, setting, setting_value)
-    else:
-        for setting in dir(lm_settings):
-            if setting == setting.upper():
-                setting_value = getattr(lm_settings, setting)
-                setattr(config, setting, setting_value)
+    util.set_custom(config.LMCUSTSETTINGS, config)
 
     if config.MAXCOSTDIST is None:
         config.TMAXCWDIST = None

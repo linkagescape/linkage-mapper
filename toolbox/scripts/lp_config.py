@@ -2,6 +2,8 @@
 
 """Linkage Priority configuration module."""
 
+import os.path as path
+
 import lm_util_config as util
 
 
@@ -74,7 +76,11 @@ class PriorityConfig(object):
         # Additional Options
         # ------------------
         self.OUTPUTFORMODELBUILDER = util.nullstring(arg[36])
-        self.LPCUSTSETTINGS_IN = util.nullstring(arg[37])
+        if arg[37] == util.GP_NULL:
+            self.LPCUSTSETTINGS_IN = path.join(util.get_code_path(),
+                                               'lp_settings.py')
+        else:
+            self.LPCUSTSETTINGS_IN = arg[37]
 
         # - - - - - - - - - - - - - - - - - -
 
@@ -82,19 +88,7 @@ class PriorityConfig(object):
         splits = self.COREFC.split("\\")
         self.CORENAME = splits[len(splits) - 1].split(".")[0]
 
-        # add settings from settings file
-        if self.LPCUSTSETTINGS_IN:
-            cust_settings = imp.load_source(
-                self.LPCUSTSETTINGS_IN.split(".")[0], self.LPCUSTSETTINGS_IN)
-            for setting in dir(cust_settings):
-                if setting == setting.upper():
-                    setting_value = getattr(cust_settings, setting)
-                    setattr(self, setting, setting_value)
-        else:
-            for setting in dir(lp_settings):
-                if setting == setting.upper():
-                    setting_value = getattr(lp_settings, setting)
-                    setattr(self, setting, setting_value)
+        util.set_custom(self.LPCUSTSETTINGS_IN, self)
 
 
 lp_env = PriorityConfig()
