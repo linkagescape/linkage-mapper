@@ -904,31 +904,7 @@ def log_setup():
     """Set up Linkage Mapper logging."""
     lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR,
                                                  lm_env.TOOL, lp_env.PARAMS)
-    if lp_env.LPCUSTSETTINGS_IN:
-        lm_util.write_log("Linkage Priority (LP) settings from " +
-                          lp_env.LPCUSTSETTINGS_IN + ":")
-    else:
-        lm_util.write_log("Linkage Priority (LP) settings from "
-                          "lp_settings.py:")
-    lm_util.write_log("RELPERMNORMETH: %s" % lp_env.RELPERMNORMETH)
-    lm_util.write_log("RELCLOSENORMETH: %s" % lp_env.RELCLOSENORMETH)
-    lm_util.write_log("CALCLP: %s" % lp_env.CALCLP)
-    lm_util.write_log("NORMCORRNORMETH: %s" % lp_env.NORMCORRNORMETH)
-    lm_util.write_log("RESNORMETH: %s" % lp_env.RESNORMETH)
-    lm_util.write_log("SIZENORMETH: %s" % lp_env.SIZENORMETH)
-    lm_util.write_log("APNORMETH: %s" % lp_env.APNORMETH)
-    lm_util.write_log("ECAVNORMETH: %s" % lp_env.ECAVNORMETH)
-    lm_util.write_log("MINCPV: %s" % lp_env.MINCPV)
-    lm_util.write_log("NORMALIZERCI: %s" % lp_env.NORMALIZERCI)
-    lm_util.write_log("TRUNCNORMETH: %s" % lp_env.TRUNCNORMETH)
-    lm_util.write_log("CALCBP: %s" % lp_env.CALCBP)
-    lm_util.write_log("NORMALIZELP: %s" % lp_env.NORMALIZELP)
-    lm_util.write_log("NORMALIZEBP: %s" % lp_env.NORMALIZEBP)
-    lm_util.write_log("KEEPINTERMEDIATE: %s" % lp_env.KEEPINTERMEDIATE)
-    lm_util.write_log("MAXCSPWEIGHT: %s" % lp_env.MAXCSPWEIGHT)
-    lm_util.write_log("MEANCSPWEIGHT: %s" % lp_env.MEANCSPWEIGHT)
-    lm_util.write_log("HIGHERCE_COOLER: %s" % lp_env.HIGHERCE_COOLER)
-    lm_util.write_log("")
+    lm_util.write_custom_to_log(lp_env.LPCUSTSETTINGS_IN)
 
 
 def config_lm():

@@ -1147,16 +1147,6 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
         logFile.write('Start time:\t%s \n' % (timeNow))
         logFile.write('Parameters:\t%s \n\n' % (inParameters))
-        if toolName == "Linkage Mapper":
-            if cfg.LMCUSTSETTINGS:
-                logFile.write('Linkage Mapper (LM) settings from' + cfg.LMCUSTSETTINGS + ':\n')
-            else:
-                logFile.write('Linkage Mapper (LM) settings from lm_settings.py:\n')
-            logFile.write('CALCNONNORMLCCS: %s \n' % (cfg.CALCNONNORMLCCS))
-            logFile.write('MINCOSTDIST: %s \n' % (cfg.MINCOSTDIST))
-            logFile.write('MINEUCDIST: %s \n' % (cfg.MINEUCDIST))
-            logFile.write('SAVENORMLCCS: %s \n' % (cfg.SAVENORMLCCS))
-            logFile.write('SIMPLIFY_CORES: %s \n' % (cfg.SIMPLIFY_CORES))
     logFile.close()
     dashline()
     gprint('A record of run settings and messages can be found in your '
@@ -1178,6 +1168,16 @@ def write_log(string):
         pass
     finally:
         logFile.close()
+
+
+def write_custom_to_log(settings_file):
+    """Write custom settings to log file."""
+    write_log("Custom settings from {}:".format(settings_file))
+    with open(settings_file) as custfile:
+        for line in custfile.readlines():
+            if not line.startswith('#') and "=" in line:
+                write_log(line[:line.find("#")].replace(' =', ':'))
+    write_log("")
 
 
 def close_log_file():
