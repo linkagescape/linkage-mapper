@@ -190,7 +190,10 @@ def config_lm(config, arg):
     # NN Unit
     config.S4DISTTYPE_CW, config.S4DISTTYPE_EU = setadjmeth(arg[13])
     config.S4CONNECT = str2bool(arg[14])
+
     config.STEP5 = str2bool(arg[15])
+    config.WRITETRUNCRASTER = str2bool(arg[16])
+    config.CWDTHRESH = int(arg[17])
 
     # Optional input parameters
     config.BUFFERDIST = nullfloat(arg[18])
@@ -207,23 +210,14 @@ def config_lm(config, arg):
 
     config.MAXEUCDIST = nullfloat(arg[20])
 
-    # Optional parameters that only apply to 2.0.0+ toolbox,
-    # for ArcGIS 10.x only
-    if "10." in config.gp.GetInstallInfo('desktop')['Version']:
-        config.WRITETRUNCRASTER = str2bool(arg[16])
-        config.CWDTHRESH = int(arg[17])
-        config.OUTPUTFORMODELBUILDER = nullstring(arg[21])
-        config.LMCUSTSETTINGS = nullstring(arg[22])
+    config.OUTPUTFORMODELBUILDER = nullstring(arg[21])
+
+    if arg[22] == GP_NULL:
+        config.LMCUSTSETTINGS = (
+            path.join(path.dirname(path.realpath(__file__)),
+                      'lm_settings.py'))
     else:
-        config.OUTPUTFORMODELBUILDER = None
-
-        # These two settings are hardcoded based on the values
-        # used in lm_settings, before they were daylighted in
-        # the toolbox in LM 2.0.0+ for ArcGIS10.x
-        config.WRITETRUNCRASTER = True
-        config.CWDTHRESH = 200000
-
-        config.LMCUSTSETTINGS = None
+        config.LMCUSTSETTINGS = arg[22]
 
     if config.LMCUSTSETTINGS:
         cust_settings = (imp.load_source(
