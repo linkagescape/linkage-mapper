@@ -720,11 +720,11 @@ def cav(core_lyr):
         # copied above or set earlier)
         max_val = value_range(lm_env.COREFC, "CF_Central")[1]
         if max_val is None or max_val == 0:
-            msg = ("ERROR: A Current Flow Centrality Weight (CFCWEIGHT) was "
-                   "provided but no Current Flow Centrality (CF_Central) "
-                   "values are available. Please run Centrality Mapper on "
-                   "this project, then run Linkage Priority.")
-            raise Exception(msg)
+            raise Exception(
+                "ERROR: A Current Flow Centrality Weight (CFCWEIGHT) was "
+                "provided but no Current Flow Centrality (CF_Central) "
+                "values are available. Please run Centrality Mapper on "
+                "this project, then run Linkage Priority.")
     check_add_field(lp_env.COREFC, "ncfc", "DOUBLE")
 
     # calc mean resistance
@@ -828,9 +828,8 @@ def run_analysis():
                                         "linkTable_s3.csv"))
             or not os.path.exists(os.path.join(lm_env.DATAPASSDIR,
                                                "linkTable_s5.csv"))):
-        msg = ("ERROR: Project directory must contain a successful Linkage "
-               "Mapper run with Steps 3 and 5.")
-        raise Exception(msg)
+        raise Exception("ERROR: Project directory must contain a successful "
+                        "Linkage Mapper run with Steps 3 and 5.")
 
     # check/create gdb for scratch
     if not os.path.isdir(lm_env.SCRATCHDIR):
@@ -885,12 +884,13 @@ def run_analysis():
             norm_trunc_raster = add_output_path("NORMTRUNC")
             bp_raster = add_output_path("blended_priority")
             if not lm_env.WRITETRUNCRASTER:
-                msg = ("When CALCBP = True, set WRITETRUNCRASTER = True in "
-                       "Linkage Mapper")
-                lm_util.raise_error(msg)
+                lm_util.raise_error(
+                    "When CALCBP = True, set WRITETRUNCRASTER = True in "
+                    "Linkage Mapper")
             if not lp_env.CALCLP:
-                msg = "When CALCBP = True, set CALCLP = True"
-                lm_util.raise_error(msg)
+                lm_util.raise_error(
+                    "When CALCBP = True, set WRITETRUNCRASTER = True in "
+                    "Linkage Mapper")
             norm_trunc(trunc_raster, norm_trunc_raster)
             blended_priority(norm_trunc_raster, lp_raster, bp_raster)
 
@@ -949,8 +949,7 @@ def check_out_sa_license():
     if arcpy.CheckExtension("Spatial") == "Available":
         arcpy.CheckOutExtension("Spatial")
     else:
-        msg = ("ERROR: Spatial Analyst extension not available.")
-        raise Exception(msg)
+        raise Exception("ERROR: Spatial Analyst extension not available.")
 
 
 def main(argv=None):
