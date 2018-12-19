@@ -7,11 +7,26 @@ Assigns input parameters from ToolBox to variables, and sets constants.
 """
 
 from os import path
+import imp
 
 import arcgisscripting
 
 import lm_version as ver
 import lm_util_config as util
+
+
+def get_code_path():
+    """Get full path to tool scripts folder."""
+    return path.dirname(path.realpath(__file__))
+
+
+def set_custom(settings, config_obj):
+    """Add attributes for custom file to configuration object."""
+    cust_settings = imp.load_source("set_mod", settings)
+    for setting in dir(cust_settings):
+        if setting == setting.upper():
+            setting_value = getattr(cust_settings, setting)
+            setattr(config_obj, setting, setting_value)
 
 
 def setadjmeth(inparam):
@@ -197,12 +212,12 @@ def config_lm(config, arg):
     config.OUTPUTFORMODELBUILDER = util.nullstring(arg[21])
 
     if arg[22] == util.GP_NULL:
-        config.LMCUSTSETTINGS = path.join(util.get_code_path(),
+        config.LMCUSTSETTINGS = path.join(get_code_path(),
                                           'lm_settings.py')
     else:
         config.LMCUSTSETTINGS = arg[22]
 
-    util.set_custom(config.LMCUSTSETTINGS, config)
+    set_custom(config.LMCUSTSETTINGS, config)
 
     if config.MAXCOSTDIST is None:
         config.TMAXCWDIST = None
@@ -263,7 +278,76 @@ def config_climate(config, arg):
 
 def config_lp(config, arg):
     """Configure global variables for Linkage Priority tool."""
-    config.lm_configured = config_lm(config, arg)
+    # Model Inputs
+    # ------------
+    config.COREFC = arg[2]
+    config.COREFN = arg[3]
+    config.RESRAST_IN = arg[4]
+
+    # Core Area Value (CAV) Options
+    # -----------------------------
+    config.OCAVRAST_IN = util.nullstring(arg[5])
+    config.RESWEIGHT = float(arg[6])
+    config.SIZEWEIGHT = float(arg[7])
+    config.APWEIGHT = float(arg[8])
+    config.ECAVWEIGHT = float(arg[9])
+    config.CFCWEIGHT = float(arg[10])
+    config.OCAVWEIGHT = float(arg[11])
+
+    # Corridor Specific Priority (CSP) Options
+    # ----------------------------------------
+    #  Expert Corridor Importance Vale
+    config.COREPAIRSTABLE_IN = util.nullstring(arg[12])
+    config.FROMCOREFIELD = util.nullstring(arg[13])
+    config.TOCOREFIELD = util.nullstring(arg[14])
+    config.ECIVFIELD = util.nullstring(arg[15])
+
+    # Climate Linkage Priority Value
+    config.CCERAST_IN = util.nullstring(arg[16])
+    config.FCERAST_IN = util.nullstring(arg[18])
+    config.CANALOG_MIN = float(arg[19])
+    config.CANALOG_MAX = float(arg[20])
+    config.CANALOG_TARGET = float(arg[21])
+    config.CANALOG_PIORITY = float(arg[22])
+    config.CANALOG_WEIGHT = float(arg[23])
+    config.CPREF_VALUE = float(arg[24])
+    config.CPREF_MIN = float(arg[25])
+    config.CPREF_MAX = float(arg[26])
+    config.CPREF_WEIGHT = float(arg[27])
+
+    # CSP Weights
+    config.CLOSEWEIGHT = float(arg[28])
+    config.PERMWEIGHT = float(arg[29])
+    config.CAVWEIGHT = float(arg[30])
+    config.ECIVWEIGHT = float(arg[31])
+    config.CEDWEIGHT = float(arg[32])
+    config.PROPCSPKEEP = float(arg[33])
+
+    # Blended Priority Options
+    # ------------------------
+    config.TRUNCWEIGHT = float(arg[34])
+    config.LPWEIGHT = float(arg[35])
+
+    # Additional Options
+    # ------------------
+    config.OUTPUTFORMODELBUILDER = util.nullstring(arg[36])
+    if arg[37] == util.GP_NULL:
+        config.LPCUSTSETTINGS_IN = path.join(get_code_path(),
+                                             'lp_settings.py')
+    else:
+        config.LPCUSTSETTINGS_IN = arg[37]
+
+    # Settings from Linkage Pathways
+    # ------------------------------
+    config.CWDTHRESH = int(arg[38])
+
+    # - - - - - - - - - - - - - - - - - -
+
+    # core corename from feature class name
+    splits = config.COREFC.split("\\")
+    config.CORENAME = splits[len(splits) - 1].split(".")[0]
+
+    set_custom(config.LPCUSTSETTINGS_IN, config)
 
 
 def config_circuitscape(config, arg):
