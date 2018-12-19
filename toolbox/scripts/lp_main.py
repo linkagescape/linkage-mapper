@@ -964,7 +964,6 @@ def main(argv=None):
         # preparation steps
         lp_env.configure(argv)
         check_out_sa_license()
-        arcpy.env.overwriteOutput = True
         config_lm()
         lm_util.check_project_dir()
         log_setup()

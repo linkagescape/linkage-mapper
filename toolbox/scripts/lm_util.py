@@ -893,7 +893,6 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
     """Updates lcp shapefiles with new link information/status"""
 
     try:
-        gp.OverwriteOutput = True
         lcpShapefile = os.path.join(cfg.DATAPASSDIR, "lcpLines_s" +
                                     str(thisStep) + ".shp")
 
@@ -1324,7 +1323,6 @@ def write_link_maps(linkTableFile, step):
 
     """
     try:
-        gp.OverwriteOutput = True
         gp.workspace = cfg.OUTPUTDIR
         gp.RefreshCatalog(cfg.OUTPUTDIR)
         linktable = load_link_table(linkTableFile)
@@ -1593,7 +1591,6 @@ def clean_out_workspace(ws):
     try:
         if gp.exists(ws):
             gp.workspace = ws
-            gp.OverwriteOutput = True
             fcs = gp.ListFeatureClasses()
             for fc in fcs:
                 fcPath = os.path.join(ws,fc)

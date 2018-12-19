@@ -78,12 +78,10 @@ def calc_lccs(normalize):
         if cfg.useArcpy:
             arcpy.env.workspace = cfg.SCRATCHDIR
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-            arcpy.env.overwriteOutput = True
             arcpy.env.compression = "NONE"
         else:
             gp.workspace = cfg.SCRATCHDIR
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
-            gp.OverwriteOutput = True
 
         if cfg.MAXEUCDIST is not None:
             gprint('Max Euclidean distance between cores')

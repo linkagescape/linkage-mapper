@@ -46,7 +46,6 @@ def lm_master(argv=None):
         gprint = lu.gprint
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
-        gp.OverwriteOutput = True
         gp.pyramid = "NONE"
         gp.rasterstatistics = "NONE"
 

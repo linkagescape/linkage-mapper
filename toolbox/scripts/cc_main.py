@@ -86,7 +86,6 @@ def check_out_sa_license():
 
 def arc_wksp_setup():
     """Define ArcPy workspace."""
-    arcpy.env.overwriteOutput = True
     arcpy.env.cellSize = "MAXOF"  # Setting to default. For batch runs.
     cc_util.arc_delete(cc_env.scratch_dir)
     cc_util.mk_proj_dir(cc_env.scratch_dir)

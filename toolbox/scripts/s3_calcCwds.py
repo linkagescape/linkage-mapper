@@ -97,11 +97,9 @@ def STEP3_calc_cwds():
             gp.Extent = "MINOF"
         gp.mask = cfg.RESRAST
         if arcpy:
-            arcpy.env.overwriteOutput = True
             arcpy.env.workspace = cfg.SCRATCHDIR
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         else:
-            gp.OverwriteOutput = True
             gp.workspace = cfg.SCRATCHDIR
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
 
@@ -419,13 +417,11 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             gp = arcpy.gp
             arcpy.env.workspace = coreDir
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-            arcpy.env.overwriteOutput = True
             arcpy.env.extent = "MINOF"
         else:
             gp = cfg.gp
             gp.workspace = coreDir
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
-            gp.OverwriteOutput = True
             gp.Extent = "MINOF"
 
         write_cores_to_map(x, coresToMap)
@@ -803,8 +799,7 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
 
     """
     try:
-        gp.workspace = workspace
-        gp.OverwriteOutput = True
+        gp.workspace = workspace 
         if gp.exists("addRas"): #Can't use tif for getrasterproperties
             gp.delete_management("addRas")
         count = 0

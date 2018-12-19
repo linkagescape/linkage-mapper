@@ -45,7 +45,6 @@ def STEP8_calc_pinchpoints():
 
         outputGDB = path.join(cfg.OUTPUTDIR, path.basename(cfg.PINCHGDB))
 
-        arcpy.OverWriteOutput = True
         arcpy.env.workspace = cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         arcpy.env.pyramid = "NONE"

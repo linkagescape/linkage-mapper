@@ -76,7 +76,6 @@ def step6_calc_barriers():
 
         # set the analysis extent and cell size to that of the resistance
         # surface
-        arcpy.OverWriteOutput = True
         arcpy.env.extent = cfg.RESRAST
         arcpy.env.cellSize = cfg.RESRAST
         arcpy.env.snapRaster = cfg.RESRAST
