@@ -817,19 +817,8 @@ def add_output_path(in_str):
                         '_'.join([lm_env.PREFIX, in_str]))
 
 
-def run_analysis():
-    """Run main Linkage Priority analysis."""
-    lm_util.gprint("Checking inputs")
-
-    # check that LM finished with steps 3 and 5
-    if (not os.path.exists(os.path.join(lm_env.DATAPASSDIR,
-                                        "linkTable_s3.csv"))
-            or not os.path.exists(os.path.join(lm_env.DATAPASSDIR,
-                                               "linkTable_s5.csv"))):
-        raise Exception("ERROR: Project directory must contain a successful "
-                        "Linkage Mapper run with Steps 3 and 5.")
-
-    # check/create gdb for scratch
+def create_run_gdbs():
+    """Create scratch and if necessary intermediate GDB."""
     if not os.path.isdir(lm_env.SCRATCHDIR):
         os.makedirs(lm_env.SCRATCHDIR)
     arcpy.env.scratchWorkspace = os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")
@@ -841,6 +830,24 @@ def run_analysis():
                                          "intermediate.gdb")):
             arcpy.CreateFileGDB_management(lm_env.SCRATCHDIR,
                                            "intermediate.gdb")
+
+
+def chk_lnk_tbls():
+    """Check that LM finished with steps 3 and 5."""
+    if (not os.path.isfile(os.path.join(lm_env.DATAPASSDIR,
+                                        "linkTable_s3.csv"))
+            or not os.path.isfile(os.path.join(lm_env.DATAPASSDIR,
+                                               "linkTable_s5.csv"))):
+        raise Exception("ERROR: Project directory must contain a successful "
+                        "Linkage Mapper run with Steps 3 and 5.")
+
+
+def run_analysis():
+    """Run main Linkage Priority analysis."""
+    lm_util.gprint("Checking inputs")
+
+    chk_lnk_tbls()
+    create_run_gdbs()
 
     # calc permeability
     lcp_lines = os.path.join(lm_env.LINKMAPGDB, lm_env.PREFIX + "_LCPs")
