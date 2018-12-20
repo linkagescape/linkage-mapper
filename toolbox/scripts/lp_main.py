@@ -53,16 +53,15 @@ def delete_datasets_in_workspace():
 
 def delete_arcpy_temp_datasets():
     """Delete datasets left behind by arcpy."""
-    if arcpy.Exists(os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")):
+    if arcpy.Exists(lm_env.SCRATCHGDB):
         # datasets in scratch gdb (including core_resistance_stats and old
         # hangovers)
-        arcpy.env.workspace = os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")
+        arcpy.env.workspace = lm_env.SCRATCHGDB
         delete_datasets_in_workspace()
     # datasets in intermediate gdb (including old hangovers)
     if not lm_env.KEEPINTERMEDIATE:
-        if arcpy.Exists(os.path.join(lm_env.SCRATCHDIR, "intermediate.gdb")):
-            arcpy.env.workspace = os.path.join(lm_env.SCRATCHDIR,
-                                               "intermediate.gdb")
+        if arcpy.Exists(lm_env.INTERGDB):
+            arcpy.env.workspace = lm_env.INTERGDB
             delete_datasets_in_workspace()
     # datasets in current OS directory
     arcpy.env.workspace = os.getcwd()
@@ -184,7 +183,7 @@ def save_interm_rast(cp_rast, save_rast):
     if lm_env.KEEPINTERMEDIATE:
         arcpy.CopyRaster_management(
             cp_rast,
-            os.path.join(lm_env.SCRATCHDIR, "intermediate.gdb",
+            os.path.join(lm_env.INTERGDB,
                          '_'.join([lm_env.PREFIX, save_rast])),
             None, None, None, None, None, "32_BIT_FLOAT")
 
@@ -426,7 +425,7 @@ def core_mean(in_rast, core_lyr, in_var):
 
     mean_tbl = arcpy.sa.ZonalStatisticsAsTable(
         lm_env.COREFC, lm_env.COREFN, in_rast,
-        os.path.join(lm_env.SCRATCHDIR, "scratch.gdb", tbl_name),
+        os.path.join(lm_env.SCRATCHGDB, tbl_name),
         statistics_type="MEAN")
     arcpy.AddJoin_management(core_lyr, lm_env.COREFN, mean_tbl,
                              lm_env.COREFN)
@@ -638,8 +637,6 @@ def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
             del link, links
 
         # perform intermediate calculations on CSPs leading toward CPV
-        arcpy.env.scratchWorkspace = os.path.join(lm_env.SCRATCHDIR,
-                                                  "scratch.gdb")
         sum_rasters.append(arcpy.sa.CellStatistics(csp_rasters, "SUM", "DATA"))
         cnt_non_null_cells_rast.append(
             arcpy.sa.CellStatistics(count_rasters, "SUM", "DATA"))
@@ -821,15 +818,16 @@ def create_run_gdbs():
     """Create scratch and if necessary intermediate GDB."""
     if not os.path.isdir(lm_env.SCRATCHDIR):
         os.makedirs(lm_env.SCRATCHDIR)
-    arcpy.env.scratchWorkspace = os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")
-    if not arcpy.Exists(arcpy.env.scratchWorkspace):
-        arcpy.CreateFileGDB_management(lm_env.SCRATCHDIR, "scratch.gdb")
+
+    if not arcpy.Exists(lm_env.SCRATCHGDB):
+        arcpy.CreateFileGDB_management(
+            lm_env.SCRATCHDIR, os.path.basename(lm_env.SCRATCHGDB))
+    arcpy.env.scratchWorkspace = lm_env.SCRATCHGDB
 
     if lm_env.KEEPINTERMEDIATE:
-        if not arcpy.Exists(os.path.join(lm_env.SCRATCHDIR,
-                                         "intermediate.gdb")):
-            arcpy.CreateFileGDB_management(lm_env.SCRATCHDIR,
-                                           "intermediate.gdb")
+        if not arcpy.Exists(lm_env.INTERGDB):
+            arcpy.CreateFileGDB_management(
+                lm_env.SCRATCHDIR, os.path.basename(lm_env.SCRATCHDIR))
 
 
 def chk_lnk_tbls():
