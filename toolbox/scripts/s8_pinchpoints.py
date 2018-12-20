@@ -121,11 +121,7 @@ def STEP8_calc_pinchpoints():
         CONFIGDIR = path.join(INCIRCUITDIR, cfg.CIRCUITCONFIGDIR_NM)
 
         # Cutoff value text to append to filenames
-        cutoffText = str(cfg.CWDCUTOFF)
-        if cutoffText[-6:] == '000000':
-            cutoffText = cutoffText[0:-6]+'m'
-        elif cutoffText[-3:] == '000':
-            cutoffText = cutoffText[0:-3]+'k'
+        cutoffText = lu.cwd_cutoff_str(cfg.CWDCUTOFF)
 
         if cfg.SQUARERESISTANCES:
             # Square resistance values

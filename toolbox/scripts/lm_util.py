@@ -31,6 +31,16 @@ _SCRIPT_NAME = "lm_util.py"
 gp = cfg.gp
 
 
+def cwd_cutoff_str(cutoff):
+    """Convert CDW cutoff to text and abbreviate if possible."""
+    cutoff_text = str(cutoff)
+    if cutoff_text[-6:] == "000000":
+        cutoff_text = cutoff_text[0:-6] + "m"
+    elif cutoff_text[-3:] == "000":
+        cutoff_text = cutoff_text[0:-3] + "k"
+    return cutoff_text
+
+
 def get_linktable_row(linkid, linktable):
     """Returns the linkTable row index for a given link ID"""
     try:
