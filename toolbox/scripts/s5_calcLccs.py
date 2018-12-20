@@ -387,14 +387,9 @@ def calc_lccs(normalize):
             # Set anything beyond cfg.CWDTHRESH to NODATA.
             if arcpyAvailable:
                 cfg.useArcpy = True # For Alissa Pump's error with 10.1
-            cutoffText = str(cfg.CWDTHRESH)
-            if cutoffText[-6:] == '000000':
-                cutoffText = cutoffText[0:-6]+'m'
-            elif cutoffText[-3:] == '000':
-                cutoffText = cutoffText[0:-3]+'k'
 
             truncRaster = (outputGDB + '\\' + PREFIX + mosaicBaseName +
-                           '_truncated_at_' + cutoffText)
+                           '_truncated_at_' + lu.cwd_threash_str())
 
             count = 0
             if cfg.useArcpy:

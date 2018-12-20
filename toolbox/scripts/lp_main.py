@@ -647,16 +647,6 @@ def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
     arcpy.env.workspace = prev_ws
 
 
-def cwd_threash_str():
-    """Convert CDW threashold to text and abbreviate if possible."""
-    cutoff_text = str(lm_env.CWDTHRESH)
-    if cutoff_text[-6:] == "000000":
-        cutoff_text = cutoff_text[0:-6] + "m"
-    elif cutoff_text[-3:] == "000":
-        cutoff_text = cutoff_text[0:-3] + "k"
-    return cutoff_text
-
-
 def cav(core_lyr):
     """Calculate Core Area Value (CAV) and its components for each core."""
     lm_util.gprint("Calculating Core Area Value (CAV) and its components for "
@@ -874,7 +864,7 @@ def run_analysis():
 
     if lm_env.CALCLP:
         trunc_raster = add_output_path(
-            '_'.join(["corridors_truncated_at", cwd_threash_str()]))
+            '_'.join(["corridors_truncated_at", lm_util.cwd_threash_str()]))
         if not arcpy.Exists(trunc_raster):
             lm_util.raise_error(
                 "Truncated corridors raster not found.\n"
