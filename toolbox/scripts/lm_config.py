@@ -161,8 +161,7 @@ def config_lm(config, arg):
     """Configure global variables for Linkage Mapper."""
     config.CONNECTFRAGS = False
     config.COREFC = arg[2]  # Core area feature class
-    splits = config.COREFC.split("\\")
-    config.CORENAME = splits[len(splits) - 1].split(".")[0]
+    config.CORENAME = path.splitext(path.basename(config.COREFC))[0]
     config.COREFN = arg[3]  # Core area field name
     config.RESRAST_IN = arg[4]  # Resistance raster
 
@@ -344,8 +343,7 @@ def config_lp(config, arg):
     # - - - - - - - - - - - - - - - - - -
 
     # core corename from feature class name
-    splits = config.COREFC.split("\\")
-    config.CORENAME = splits[len(splits) - 1].split(".")[0]
+    config.CORENAME = path.splitext(path.basename(config.COREFC))[0]
 
     config.SCRATCHGDB = path.join(config.SCRATCHDIR, "scratch.gdb")
     config.INTERGDB = path.join(config.SCRATCHDIR, "intermediate.gdb")
