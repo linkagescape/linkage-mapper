@@ -804,6 +804,26 @@ def add_output_path(in_str):
                         '_'.join([lm_env.PREFIX, in_str]))
 
 
+def make_core_lyr():
+    """Create feature layer from cores feature class.
+
+    Raise error if core feature class is not found.
+    """
+    if not arcpy.Exists(lm_env.COREFC):
+        lm_util.raise_error("Cores feature class not found. Please rerun "
+                            "Linkage Pathways tool")
+    return arcpy.MakeFeatureLayer_management(lm_env.COREFC, "core_lyr")
+
+
+def get_lcp_fc():
+    """Get LCP feature class. Raise error if not found."""
+    lcp_lines = os.path.join(lm_env.LINKMAPGDB, lm_env.PREFIX + "_LCPs")
+    if not arcpy.Exists(lcp_lines):
+        lm_util.raise_error("LCP feature class not found. Please rerun "
+                            "Linkage Pathways tool")
+    return lcp_lines
+
+
 def create_run_gdbs():
     """Create scratch and if necessary intermediate GDB."""
     if not os.path.isdir(lm_env.SCRATCHDIR):
@@ -832,20 +852,20 @@ def chk_lnk_tbls():
 
 def run_analysis():
     """Run main Linkage Priority analysis."""
-    lm_util.gprint("Checking inputs")
+    lm_util.gprint("Retreiving outputs from Linkage Pathways model run""")
+    lcp_lines = get_lcp_fc()
+    core_lyr = make_core_lyr()
 
     chk_lnk_tbls()
     create_run_gdbs()
 
     # calc permeability
-    lcp_lines = os.path.join(lm_env.LINKMAPGDB, lm_env.PREFIX + "_LCPs")
     calc_permeability(lcp_lines)
 
     # calc relative closeness
     calc_closeness(lcp_lines)
 
     # calc Core Area Value (CAV) and its components for each core
-    core_lyr = arcpy.MakeFeatureLayer_management(lm_env.COREFC, "core_lyr")
     cav(core_lyr)
 
     # calc Corridor Specific Priority (CSP)
