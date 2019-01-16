@@ -84,7 +84,7 @@ def check_out_sa_license():
 def arc_wksp_setup():
     """Define ArcPy workspace."""
     arcpy.env.cellSize = "MAXOF"  # Setting to default. For batch runs.
-    cc_util.arc_delete(cc_env.scratch_dir)
+    lm_util.delete_data(cc_env.scratch_dir)
     cc_util.mk_proj_dir(cc_env.scratch_dir)
     arcpy.CreateFileGDB_management(os.path.dirname(cc_env.cc_gdb),
                                    os.path.basename(cc_env.cc_gdb))
@@ -460,7 +460,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
     except Exception:
         raise
     finally:
-        cc_util.arc_delete(near_tbl)
+        lm_util.delete_data(near_tbl)
         if link_tbl:
             link_tbl.close()
         if srow:
