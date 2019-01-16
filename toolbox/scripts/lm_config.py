@@ -320,7 +320,9 @@ def config_lp(config, arg):
     config.CAVWEIGHT = float(arg[30])
     config.ECIVWEIGHT = float(arg[31])
     config.CEDWEIGHT = float(arg[32])
-    config.PROPCSPKEEP = float(arg[33])
+
+    # CPS Trim Value
+    config.CPSNORM_CUTOFF = nullfloat(arg[33])
 
     # Blended Priority Options
     # ------------------------
@@ -344,9 +346,10 @@ def config_lp(config, arg):
 
     # core corename from feature class name
     config.CORENAME = path.splitext(path.basename(config.COREFC))[0]
+    config.CALC_CSP = 1  # Calculate Corridor Specific Priority (CSP)
+    config.CALC_CSPBP = 2  # Calculate CSP and Blended Priority
 
     config.SCRATCHGDB = path.join(config.SCRATCHDIR, "scratch.gdb")
-    config.INTERGDB = path.join(config.SCRATCHDIR, "intermediate.gdb")
 
     set_custom(config.LPCUSTSETTINGS_IN, config)
 
