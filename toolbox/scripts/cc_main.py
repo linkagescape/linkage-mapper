@@ -301,7 +301,6 @@ def limit_cores(pair_tbl, stats_tbl):
     lm_util.gprint(str(rows_del) + " rows deleted")
 
 
-
 def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
     """Add zonal and calculated statistics to stick table."""
     tmp_mea = fld_pre + "_tmp_mea"
@@ -381,7 +380,7 @@ def pairs_from_list(pairings):
 
 
 def create_lnk_tbl(corefc, core_pairs, frm_cores):
-    """Create link table file and limit based on near table results"""
+    """Create link table file and limit based on near table results."""
     # Temporary query layers
     fcore_vw = "fcore_vw"
     tcore_vw = "tcore_vw"
