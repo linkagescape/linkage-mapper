@@ -23,6 +23,12 @@ NM_MAX = "MAX_VALUE"  # Maximum value normalization
 CoordPoint = namedtuple('Point', 'x y')
 
 
+class AppError(Exception):
+    """Custom error class."""
+
+    pass
+
+
 def delete_temp_datasets():
     """Delete temporary datasets."""
     if arcpy.Exists(lm_env.SCRATCHGDB):
@@ -217,19 +223,14 @@ def normalize_field(in_table, in_field, out_field,
                     arcpy.CalculateField_management(
                         in_table, out_field,
                         "!" + in_field + "! / " + str(max_val), "PYTHON_9.3")
-        except Exception:
-            # other exception - assume it was caused by situation described in
-            # exception message
-            exc_value, exc_traceback = sys.exc_info()[1:]
-            arcpy.AddError(exc_value)
-            lm_util.gprint("Traceback (most recent call last):\n" +
-                           "".join(traceback.format_tb(exc_traceback)))
-            raise Exception(
+        except arcpy.ExecuteError:
+            lm_util.gprint(
                 "ERROR! MOST LIKELY CAUSE: One or more core areas are smaller "
                 "than a pixel in the Resistance layer and/or Raster Analysis "
                 "Cell Size environment setting. Try enlarging small core "
                 "areas, resampling the Resistance layer or adjusting the Cell"
                 "Size environment setting.")
+            raise
     else:
         arcpy.CalculateField_management(in_table, out_field, "0", "PYTHON_9.3")
 
@@ -670,7 +671,7 @@ def cav(core_lyr):
         # copied above or set earlier)
         max_val = value_range(lm_env.COREFC, "CF_Central")[1]
         if max_val is None or max_val == 0:
-            raise Exception(
+            raise AppError(
                 "ERROR: A Current Flow Centrality Weight (CFCWEIGHT) was "
                 "provided but no Current Flow Centrality (CF_Central) "
                 "values are available. Please run Centrality Mapper on "
@@ -776,8 +777,8 @@ def make_core_lyr():
     Raise error if core feature class is not found.
     """
     if not arcpy.Exists(lm_env.COREFC):
-        lm_util.raise_error("Cores feature class not found. Please rerun "
-                            "Linkage Pathways tool")
+        raise AppError("Cores feature class not found. Please rerun "
+                       "Linkage Pathways tool")
     return arcpy.MakeFeatureLayer_management(lm_env.COREFC, "core_lyr")
 
 
@@ -785,8 +786,10 @@ def get_lcp_fc():
     """Get LCP feature class. Raise error if not found."""
     lcp_lines = os.path.join(lm_env.LINKMAPGDB, lm_env.PREFIX + "_LCPs")
     if not arcpy.Exists(lcp_lines):
-        lm_util.raise_error("LCP feature class not found. Please rerun "
-                            "Linkage Pathways tool")
+        raise AppError("LCP feature class not found. Please rerun "
+                       "Linkage Pathways tool")
+    if arcpy.GetCount_management(lcp_lines) == 0:
+        raise AppError("LCP feature class contains no records")
     return lcp_lines
 
 
@@ -812,8 +815,8 @@ def chk_lnk_tbls():
                                         "linkTable_s3.csv"))
             or not os.path.isfile(os.path.join(lm_env.DATAPASSDIR,
                                                "linkTable_s5.csv"))):
-        raise Exception("ERROR: Project directory must contain a successful "
-                        "Linkage Mapper run with Steps 3 and 5.")
+        raise AppError("ERROR: Project directory must contain a successful "
+                       "Linkage Mapper run with Steps 3 and 5.")
 
 
 def run_analysis():
@@ -885,9 +888,9 @@ def read_lm_params(proj_dir):
     entries = sorted(glob.glob(spath), key=os.path.getctime, reverse=True)
     last_lm_log = next(iter(entries or []), None)
     if not last_lm_log:
-        raise Exception("ERROR: Log file for last Linkage Mapper run not "
-                        "found. Please ensure Linkage Mapper is run "
-                        "for this project before running Linkage Priority.")
+        raise AppError("ERROR: Log file for last Linkage Mapper run not "
+                       "found. Please ensure Linkage Mapper is run "
+                       "for this project before running Linkage Priority.")
 
     # read parameters section from file and turn into tuple for passing
     parms = ""
@@ -897,8 +900,8 @@ def read_lm_params(proj_dir):
                 parms = line[13:len(line) - 3].replace("\\\\", "\\")
                 break
     if parms == "":
-        raise Exception("ERROR: Log file for last Linkage Mapper run does not "
-                        "contain a Parameters line")
+        raise AppError("ERROR: Log file for last Linkage Mapper run does not "
+                       "contain a Parameters line")
 
     return tuple(parms.replace("'", "").split(", "))
 
@@ -932,8 +935,10 @@ def main(argv=None):
         log_setup()
         # primary analysis
         run_analysis()
+    except AppError as err:
+        lm_util.gprint(err.message)
+        lm_util.write_log(err.message)
     except arcpy.ExecuteError:
-        # arcpy error
         msg = arcpy.GetMessages(2)
         arcpy.AddError(msg)
         lm_util.write_log(msg)
@@ -942,7 +947,6 @@ def main(argv=None):
             "Traceback (most recent call last):\n" +
             "".join(traceback.format_tb(exc_traceback)[:-1]))
     except Exception:
-        # other exceptions
         exc_value, exc_traceback = sys.exc_info()[1:]
         arcpy.AddError(exc_value)
         lm_util.gprint(
