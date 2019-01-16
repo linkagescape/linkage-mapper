@@ -5,6 +5,7 @@
 import os
 import sys
 import subprocess
+from datetime import datetime as dt
 import time
 import traceback
 import ConfigParser
@@ -298,28 +299,43 @@ def get_core_targets(core, linktable):
     return targetList
 
 
+def start_time():
+    """Print and return start time."""
+    start_time = dt.now()
+    print "Start time: {}".format(start_time.strftime("%m/%d/%y %H:%M:%S"))
+    return start_time
+
+
+def s2hhmmss(s):
+    """Convert seconds to hours, minutes and seconds."""
+    m, s = divmod(int(s), 60)
+    h, m = divmod(m, 60)
+    return h, m, s
+
+
+def run_time(stime):
+    """Print program execution time when running from script."""
+    etime = dt.now()
+    hours, minutes, seconds = s2hhmmss((etime - stime).total_seconds())
+    print "End time: {}".format(etime.strftime("%m/%d/%y %H:%M:%S"))
+    print "Execution time: {} hrs {} mins {} seconds".format(
+        hours, minutes, seconds)
+
+
 def elapsed_time(start_time):
-    """Returns elapsed time given a start time"""
-    try:
-        now = time.clock()
-        elapsed = now - start_time
-        secs = int(elapsed)
-        mins = int(elapsed / 60)
-        hours = int(mins / 60)
-        mins = mins - hours * 60
-        secs = secs - mins * 60 - hours * 3600
-        if mins == 0:
-            gprint('That took ' + str(secs) + ' seconds.\n')
-        elif hours == 0:
-            gprint('That took ' + str(mins) + ' minutes and ' +
-                              str(secs) + ' seconds.\n')
-        else:
-            gprint('That took ' + str(hours) + ' hours ' +
-                              str(mins) + ' minutes and ' + str(secs) +
-                              ' seconds.\n')
-        return now
-    except Exception:
-        exit_with_python_error(_SCRIPT_NAME)
+    """Print elapsed time given a start time and return a new start time."""
+    now = time.clock()
+    hours, minutes, seconds = s2hhmmss(now - start_time)
+    msg = "Task took:"
+    if minutes == 0:
+        gprint("{} {} seconds.\n".format(msg, seconds))
+    elif hours == 0:
+        gprint("{} {} minutes and {} seconds.\n".format(
+            msg, minutes, seconds))
+    else:
+        gprint("{} {} hours and {} minutes and {} seconds.\n".format(
+            msg, hours, minutes, seconds))
+    return now
 
 
 def report_pct_done(current, goal, last):

@@ -21,7 +21,6 @@ import sys
 import csv
 import itertools
 import traceback
-from datetime import datetime as dt
 
 import arcinfo  # Import arcinfo license. Needed before arcpy import.
 import arcpy
@@ -35,15 +34,13 @@ import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
 
-TFORMAT = "%m/%d/%y %H:%M:%S"
-
 FR_COL = "From_Core"
 TO_COL = "To_Core"
 
 
 def main(argv=None):
     """Run Climate Linkage Mapper tool."""
-    start_time = dt.now()
+    stime = lm_util.start_time()
 
     if argv is None:
         argv = sys.argv
@@ -73,7 +70,7 @@ def main(argv=None):
                        "".join(traceback.format_tb(exc_traceback)))
     finally:
         arcpy.CheckInExtension("Spatial")
-        print_runtime(start_time)
+        lm_util.run_time(stime)
 
 
 def check_out_sa_license():
@@ -485,16 +482,6 @@ def simplify_corefc():
         cc_env.prj_core_fc, corefc_simp,
         "POINT_REMOVE", tolerance, "#", "NO_CHECK", "NO_KEEP")
     return corefc_simp
-
-
-def print_runtime(stime):
-    """Print process time when running from script."""
-    etime = dt.now()
-    rtime = etime - stime
-    hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
-                      (rtime.seconds // 60) % 60)
-    print "End time: %s" % etime.strftime(TFORMAT)
-    print "Elapsed time: %s hrs %s mins" % (hours, minutes)
 
 
 if __name__ == "__main__":
