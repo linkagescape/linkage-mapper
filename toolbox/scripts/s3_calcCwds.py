@@ -149,8 +149,10 @@ def STEP3_calc_cwds():
         # If picking up a failed run, use old folders
         if not rerun:
             startIndex = 0
-            if cfg.TOOL <> cfg.TOOL_CC:
-                lu.make_cwd_paths(max(coresToMap)) # Set up cwd directories
+            if cfg.TOOL != cfg.TOOL_CC:
+                # Set up cwd directories
+                lu.make_raster_paths(int(max(coresToMap)), cfg.CWDBASEDIR,
+                                     cfg.CWDSUBDIR_NM)
 
         # make a feature layer for input cores to select from
         gp.MakeFeatureLayer(cfg.COREFC, cfg.FCORES)

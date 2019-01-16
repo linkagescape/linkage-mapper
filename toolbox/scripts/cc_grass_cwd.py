@@ -10,6 +10,7 @@ import grass.script as grass
 import grass.script.setup as gsetup
 
 from cc_config import cc_env
+from lm_config import tool_env as lm_env
 import cc_util
 import lm_util
 
@@ -45,8 +46,9 @@ def grass_cwd(core_list):
         write_grassrc(ccr_grassrc, gisdbase)
         setup_wrkspace(gisdbase, ccr_grassrc, climate_asc)
 
-        # Make cwd folder for Linkage Mapper
-        lm_util.make_cwd_paths(max(core_list))
+        # Make cwd folder/s for Linkage Mapper
+        lm_util.make_raster_paths(max(core_list), lm_env.CWDBASEDIR,
+                                  lm_env.CWDSUBDIR_NM)
 
         # Import files into GRASS
         lm_util.gprint("Importing raster files into GRASS")
