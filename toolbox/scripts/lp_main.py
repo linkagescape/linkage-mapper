@@ -614,11 +614,8 @@ def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
     arcpy.env.workspace = prev_ws
 
 
-def cav(core_lyr):
-    """Calculate Core Area Value (CAV) and its components for each core."""
-    lm_util.gprint("Calculating Core Area Value (CAV) and its components for "
-                   "each core")
-    # check weights and warn if issues
+def chk_cav_wts():
+    """Check weights used in CAV calculation."""
     if lm_env.OCAVRAST_IN:
         if (lm_env.RESWEIGHT + lm_env.SIZEWEIGHT + lm_env.APWEIGHT +
                 lm_env.ECAVWEIGHT + lm_env.CFCWEIGHT + lm_env.OCAVWEIGHT
@@ -636,6 +633,13 @@ def cav(core_lyr):
     if lm_env.OCAVWEIGHT == 0 and lm_env.OCAVRAST_IN:
         lm_util.gprint("Warning: OCAV raster input provided, but "
                        "OCAVWEIGHT = 0")
+
+
+def cav(core_lyr):
+    """Calculate Core Area Value (CAV) and its components for each core."""
+    lm_util.gprint("Calculating Core Area Value (CAV) and its components for "
+                   "each core")
+    chk_cav_wts()
 
     # check/add fields
     for field in ("mean_res", "norm_res", "area", "norm_size", "perimeter",
