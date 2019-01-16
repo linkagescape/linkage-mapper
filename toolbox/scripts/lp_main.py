@@ -7,7 +7,6 @@ import os
 import sys
 import glob
 import traceback
-from datetime import datetime as dt
 from collections import namedtuple
 
 import arcpy
@@ -17,22 +16,11 @@ import lm_util
 
 
 _SCRIPT_NAME = "lp_main.py"
-TFORMAT = "%m/%d/%y %H:%M:%S"
 
 NM_SCORE = "SCORE_RANGE"  # Score range normalization
 NM_MAX = "MAX_VALUE"  # Maximum value normalization
 
 CoordPoint = namedtuple('Point', 'x y')
-
-
-def print_runtime(stime):
-    """Print process time when running from script."""
-    etime = dt.now()
-    rtime = etime - stime
-    hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
-                      (rtime.seconds // 60) % 60)
-    print "End time: %s" % etime.strftime(TFORMAT)
-    print "Elapsed time: %s hrs %s mins" % (hours, minutes)
 
 
 def delete_dataset(dataset):
@@ -952,8 +940,7 @@ def log_setup():
 
 def main(argv=None):
     """Run Linkage Priority tool."""
-    start_time = dt.now()
-    print "Start time: %s" % start_time.strftime(TFORMAT)
+    stime = lm_util.start_time()
 
     if argv is None:
         # get parameters passed from tool dialog, if any
@@ -986,7 +973,7 @@ def main(argv=None):
     finally:
         delete_arcpy_temp_datasets()
         arcpy.CheckInExtension("Spatial")
-        print_runtime(start_time)
+        lm_util.run_time(stime)
         lm_util.close_log_file()
 
 
