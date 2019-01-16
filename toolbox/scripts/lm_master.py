@@ -41,9 +41,9 @@ def lm_master(argv=None):
         cfg.configure(cfg.TOOL_LM, argv)
 
     gp = cfg.gp
+    gprint = lu.gprint
 
     try:
-        gprint = lu.gprint
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
         gp.pyramid = "NONE"
