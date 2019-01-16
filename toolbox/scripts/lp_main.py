@@ -63,100 +63,102 @@ def normalize_raster(in_raster, normalization_method=NM_MAX, invert=False):
         return in_raster * 0
 
 
-def blended_priority(norm_trunc_raster, lp_raster, bp_raster):
+def save_interm_rast(rast_list, base_name):
+    """Save intermediate rasters if user chooses."""
+    if lm_env.KEEPINTERMEDIATE:
+        gdb_name = ".".join([base_name, "gdb"])
+        arcpy.CreateFileGDB_management(lm_env.SCRATCHDIR, gdb_name)
+        for rast_name, rast in rast_list:
+            rast.save(os.path.join(lm_env.SCRATCHDIR, gdb_name, rast_name))
+
+
+def blended_priority(rast_list, lcp_lines):
     """Calculate overall Blended Priority."""
     lm_util.gprint("Calculating overall Blended Priority")
-    tmp_raster3 = ((lm_env.TRUNCWEIGHT * arcpy.sa.Raster(norm_trunc_raster)) +
-                   (lm_env.LPWEIGHT * arcpy.sa.Raster(lp_raster)))
-    if lm_env.NORMALIZEBP:
-        bp_raster_tmp = normalize_raster(tmp_raster3, NM_SCORE)
-    else:
-        bp_raster_tmp = tmp_raster3
-    arcpy.CopyRaster_management(bp_raster_tmp, bp_raster, None, None, None,
-                                None, None, "32_BIT_FLOAT")
+
+    blend_rast = []
+    for fname, rast in rast_list:
+        from_core, to_core = fname.split('_')[1:]
+        csp_norm = arcpy.SearchCursor(
+            lcp_lines,
+            where_clause="from_core={0} AND to_core={1}".format(
+                from_core, to_core),
+            fields="CSP_Norm").next().getValue("CSP_Norm")
+
+        blend_rast.append([fname, (lm_env.TRUNCWEIGHT * rast) +
+                           (lm_env.LPWEIGHT * csp_norm)])
+
+    save_interm_rast(blend_rast, "bp_step4")
+    overall_bp = arcpy.sa.CellStatistics(
+        [rast[1] for rast in blend_rast],
+        statistics_type="MAXIMUM", ignore_nodata="DATA")
+    overall_bp.save(os.path.join(lm_env.OUTPUTGDB, "blended_priority"))
 
 
-def norm_trunc(trunc_raster, norm_trunc_raster):
-    """Invert and normalize truncated raster (NORMTRUNC)."""
-    lm_util.gprint("Inverting and normalizing truncated raster (NORMTRUNC)")
-    norm_trunc_raster_tmp = normalize_raster(arcpy.sa.Raster(trunc_raster),
-                                             lm_env.TRUNCNORMETH, True)
-    arcpy.CopyRaster_management(norm_trunc_raster_tmp, norm_trunc_raster, None,
-                                None, None, None, None, "32_BIT_FLOAT")
+def inv_norm(rast_list):
+    """Invert and normalize each corridor."""
+    lm_util.gprint("Inverting and normalizing each corridor")
+    norm_rast_list = []
+
+    for fname, rast in rast_list:
+        norm_rast = normalize_raster(rast, lm_env.NORMCORRNORMETH, True)
+        norm_rast_list.append([fname, norm_rast])
+
+    save_interm_rast(norm_rast_list, "bp_step3")
+    return norm_rast_list
 
 
-def linkage_priority(rci_raster, trunc_raster, lp_raster):
-    """Clip RCI to extent of truncated raster (LP)."""
-    lm_util.gprint("Calculating overall Linkage Priority")
-    # mask RCI based on extent of truncated raster
-    # (which is based on CWDTHRESH)
-    lp_raster_tmp = arcpy.sa.ExtractByMask(rci_raster, trunc_raster)
-    if lm_env.NORMALIZELP:
-        lp_raster_tmp = normalize_raster(lp_raster_tmp, NM_SCORE)
-    arcpy.CopyRaster_management(lp_raster_tmp, lp_raster, None, None, None,
-                                None, None, "32_BIT_FLOAT")
+def clip_nlcc_to_threashold(lcp_lines):
+    """Clip NLCC_A_B rasters to CWD threshold.
 
-
-def rci(cpv_raster, rci_raster):
-    """Clip CPV to the MINCPV and renormalize.
-
-    Creates relative corridor "importance (RCI).
-
+    Clip the normalized least cost corridors using the specified CWD
+    Threshold.
     """
-    lm_util.gprint("Calculating overall Relative Corridor Importance (RCI)")
-    tmp_raster = arcpy.sa.ExtractByAttributes(
-        cpv_raster, " VALUE >= " + str(lm_env.MINCPV))
-    if lm_env.NORMALIZERCI:
-        rci_raster_tmp = normalize_raster(tmp_raster, NM_SCORE)
+    if lm_env.CPSNORM_CUTOFF is not None:
+        cursor_filter = "CSP_Norm_Trim=1"
     else:
-        rci_raster_tmp = tmp_raster
-    arcpy.CopyRaster_management(rci_raster_tmp, rci_raster, None, None, None,
-                                None, None, "32_BIT_FLOAT")
+        cursor_filter = None
+    lcp_rows = arcpy.SearchCursor(
+        lcp_lines,
+        where_clause=cursor_filter,
+        fields="From_Core; To_Core")
+    lcps_trim = []
+    for lcp_row in lcp_rows:
+        lcps_trim.append("{}_{}".format(
+            lcp_row.getValue("From_Core"),
+            lcp_row.getValue("To_Core")))
+
+    prev_workspace = arcpy.env.workspace
+    nlcc_top_list = []
+
+    for dirpath, _, filenames in arcpy.da.Walk(
+            lm_env.LCCBASEDIR, topdown=True, datatype="RasterDataset"):
+        arcpy.env.workspace = dirpath
+        for filename in filenames:
+            if lm_env.LCCNLCDIR_NM in dirpath and filename in lcps_trim:
+                rast = arcpy.sa.ExtractByAttributes(
+                    filename,
+                    "VALUE > {}".format(lm_env.CWDTHRESH))
+
+                nfilename = '_'.join(["nlc", filename])
+                nlcc_top_list.append([nfilename, rast])
+
+    if not nlcc_top_list:
+        raise AppError("No normalized least cost corridor rasters found")
+
+    arcpy.env.workspace = prev_workspace
+    save_interm_rast(nlcc_top_list, "bp_step1")
+
+    return nlcc_top_list
 
 
-def cpv(sum_rasters, cnt_non_null_cells_rast, max_rasters, cpv_raster):
-    """Combine CSPs using Max and Mean to create overall CPV.
+def calc_blended_priority(core_lyr, lcp_lines):
+    """Generate Blended Priority raster from NLCC rasters."""
+    lm_util.gprint("Calculating Blended Priority (BP):")
+    nlcc_rast = clip_nlcc_to_threashold(lcp_lines)
+    nlcc_rast = inv_norm(nlcc_rast)
 
-    CPV - Corridor Priority Value
-    """
-    lm_util.gprint("Combining CSPs using Max and Mean to create overall "
-                   "Corridor Priority Value (CPV)")
-    sum_all_raster = arcpy.sa.CellStatistics(sum_rasters, "SUM", "DATA")
-    cnt_nonnull_rast = (
-        arcpy.sa.CellStatistics(cnt_non_null_cells_rast, "SUM", "DATA"))
-    max_all_raster = arcpy.sa.CellStatistics(max_rasters, "MAXIMUM", "DATA")
-    cpv_raster_tmp = ((max_all_raster * lm_env.MAXCSPWEIGHT) +
-                      ((sum_all_raster / cnt_nonnull_rast)
-                       * lm_env.MEANCSPWEIGHT))
-    cpv_raster_tmp.save(cpv_raster)
-    if not lm_env.KEEPINTERMEDIATE:
-        # clean-up CSP input rasters
-        # could be multiple nlc folders
-        nlc_idx = 0
-        prev_ws = arcpy.env.workspace
-        while True:
-            nlc_str = ""
-            if nlc_idx > 0:
-                nlc_str = str(nlc_idx)
-            if not os.path.exists(os.path.join(lm_env.DATAPASSDIR, "nlcc",
-                                               "nlc" + nlc_str)):
-                break
-            arcpy.env.workspace = os.path.join(lm_env.DATAPASSDIR, "nlcc",
-                                               "nlc" + nlc_str, "inv_norm")
-            for in_rast in arcpy.ListRasters():
-                lm_util.delete_data(in_rast)
-            nlc_idx += 1
-        arcpy.env.workspace = prev_ws
-
-
-def save_interm_rast(cp_rast, save_rast):
-    """Save intermediate raster."""
-    if lm_env.KEEPINTERMEDIATE:
-        arcpy.CopyRaster_management(
-            cp_rast,
-            os.path.join(lm_env.INTERGDB,
-                         '_'.join([lm_env.PREFIX, save_rast])),
-            None, None, None, None, None, "32_BIT_FLOAT")
+    blended_priority(nlcc_rast, lcp_lines)
 
 
 def check_add_field(feature_class, field_name, data_type):
@@ -425,40 +427,8 @@ def eciv():
                     NM_SCORE)
 
 
-def inv_norm():
-    """Invert and normalize each corridor."""
-    lm_util.gprint("Inverting and normalizing each corridor")
-    prev_ws = arcpy.env.workspace
-    # could be multiple nlc folders
-    nlc_idx = 0
-    while True:
-        nlc_str = ""
-        if nlc_idx > 0:
-            nlc_str = str(nlc_idx)
-        if not os.path.exists(
-                os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str)):
-            break
-        arcpy.env.workspace = os.path.join(lm_env.DATAPASSDIR, "nlcc",
-                                           "nlc" + nlc_str)
-        # process each corridor raster in folder
-        for input_raster in arcpy.ListRasters():
-            # max score normalization with inversion
-            inv_norm_raster = normalize_raster(arcpy.sa.Raster(input_raster),
-                                               lm_env.NORMCORRNORMETH, True)
-            if not os.path.exists(os.path.join(
-                    lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str, "inv_norm")):
-                arcpy.CreateFolder_management(
-                    os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str),
-                    "inv_norm")
-            inv_norm_raster.save(
-                os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str,
-                             "inv_norm", input_raster))
-        nlc_idx += 1
-    arcpy.env.workspace = prev_ws
-
-
-def chk_weights():
-    """Check weights."""
+def chk_csp_wts():
+    """Check weights used in CSP calculation."""
     if lm_env.CCERAST_IN:
         if (lm_env.CLOSEWEIGHT + lm_env.PERMWEIGHT + lm_env.CAVWEIGHT +
                 lm_env.ECIVWEIGHT + lm_env.CEDWEIGHT != 1.0):
@@ -485,15 +455,11 @@ def chk_weights():
                        "provided, but ECIVWEIGHT = 0")
 
 
-def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
-        core_lyr):
-    """Calculate Corridor Specific Priority (CSP) for each corridor."""
+def calc_csp(lcp_lines, core_lyr):
+    """Calculate Corridor Specific Priority (CSP) for each linkage."""
     lm_util.gprint("Calculating Corridor Specific Priority (CSP) for each "
-                   "corridor")
-    chk_weights()
-
-    # invert and normalize each corridor
-    inv_norm()
+                   "linkage")
+    chk_csp_wts()
 
     # normalize Expert Corridor Importance Value (ECIV)
     if lm_env.COREPAIRSTABLE_IN:
@@ -503,115 +469,73 @@ def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
     if lm_env.CCERAST_IN:
         clim_linkage_priority(lcp_lines, core_lyr)
 
-    prev_ws = arcpy.env.workspace
+    check_add_field(lcp_lines, "CSP", "float")
 
-    # could be multiple folders
-    nlc_idx = 0
-    while True:
-        nlc_str = ""
-        if nlc_idx > 0:
-            nlc_str = str(nlc_idx)
-        if not os.path.exists(os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" +
-                                           nlc_str, "inv_norm")):
-            break
-        arcpy.env.workspace = (os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" +
-                                            nlc_str, "inv_norm"))
+    lnk_rows = arcpy.UpdateCursor(
+        lcp_lines,
+        fields="From_Core; To_Core; Rel_Close; Rel_Perm; "
+               "clim_lnk_priority; CSP")
 
-        csp_rasters, count_rasters = [], []
-        # process each corridor raster in folder
-        for in_rast in arcpy.ListRasters():
-            # check for max 1
-            result = arcpy.GetRasterProperties_management(in_rast, "MAXIMUM")
-            max_in = float(result.getOutput(0))
-            if max_in != 1.0:
-                lm_util.gprint("Warning: maximum " + in_rast +
-                               " value <> 1.0")
+    for lnk_row in lnk_rows:
+        from_core = lnk_row.getValue("From_Core")
+        to_core = lnk_row.getValue("To_Core")
 
-            # get cores from raster name
-            from_core, to_core = in_rast.split("_")
+        # get and avg CAVs for the core pair
+        x_cav = arcpy.SearchCursor(
+            core_lyr,
+            where_clause="{} = {}".format(lm_env.COREFN, from_core),
+            fields="norm_cav").next().getValue("norm_cav")
+        y_cav = arcpy.SearchCursor(
+            core_lyr,
+            where_clause="{} = {}".format(lm_env.COREFN, to_core),
+            fields="norm_cav").next().getValue("norm_cav")
 
-            # check for corresponding link
-            links = arcpy.SearchCursor(
-                lcp_lines,
-                where_clause="(From_Core = " + from_core + " AND To_Core = "
-                + to_core + ") OR (From_Core = " + to_core +
-                " AND To_Core = " + from_core + ")",
-                fields="Rel_Close; Rel_Perm; clim_lnk_priority")
+        avg_cav = (x_cav + y_cav) / 2
 
-            if links:
-                link = links.next()
+        # calc weighted sum
+        csp = (
+            (lm_env.CLOSEWEIGHT * lnk_row.getValue("Rel_Close")) +
+            (lm_env.PERMWEIGHT * lnk_row.getValue("Rel_Perm")) +
+            (lm_env.CAVWEIGHT * avg_cav))
 
-                # get and avg CAVs for the core pair
-                x_cav = arcpy.SearchCursor(
-                    core_lyr,
-                    where_clause=lm_env.COREFN + " = " + from_core,
-                    fields="norm_cav").next().getValue("norm_cav")
-                y_cav = arcpy.SearchCursor(
-                    core_lyr,
-                    where_clause=lm_env.COREFN + " = " + to_core,
-                    fields="norm_cav").next().getValue("norm_cav")
+        # get ECIV for the core pair
+        if lm_env.COREPAIRSTABLE_IN and lm_env.ECIVFIELD:
+            neciv = arcpy.SearchCursor(
+                lm_env.COREPAIRSTABLE_IN,
+                where_clause="({0}={2} AND {1}={3}) "
+                "OR ({1}={2} AND {0}={3})".format(
+                    lm_env.FROMCOREFIELD, lm_env.TOCOREFIELD,
+                    from_core, to_core),
+                fields="neciv").next().getValue("neciv")
+            csp += lm_env.ECIVWEIGHT * neciv
 
-                avg_cav = (x_cav + y_cav) / 2
+        # Increment weighted sum with Climate Gradient
+        if lm_env.CCERAST_IN:
+            csp += (lnk_row.getValue("Clim_Lnk_Priority") *
+                    lm_env.CEDWEIGHT)
+        lnk_row.setValue("CSP", csp)
+        lnk_rows.updateRow(lnk_row)
+    del lnk_rows
 
-                # calc weighted sum
-                output_raster = (
-                    (lm_env.CLOSEWEIGHT * link.getValue("Rel_Close")) +
-                    (lm_env.PERMWEIGHT * link.getValue("Rel_Perm")) +
-                    (0.0001 * arcpy.sa.Raster(in_rast)) +
-                    (lm_env.CAVWEIGHT * avg_cav))
+    # Normalize CSP values
+    cps_norm_fld = "CSP_Norm"
+    normalize_field(lcp_lines, "CSP", cps_norm_fld)
 
-                # get ECIV for the core pair
-                if lm_env.COREPAIRSTABLE_IN and lm_env.ECIVFIELD:
-                    neciv = arcpy.SearchCursor(
-                        lm_env.COREPAIRSTABLE_IN,
-                        where_clause="(" + lm_env.FROMCOREFIELD + " = " +
-                        from_core + " AND " + lm_env.TOCOREFIELD + " = " +
-                        to_core + ") OR" + "(" + lm_env.TOCOREFIELD + " = " +
-                        from_core + " AND " + lm_env.FROMCOREFIELD + " = " +
-                        to_core + ")").next().getValue("neciv")
-                    output_raster += lm_env.ECIVWEIGHT * neciv
+    # If user requests, flag low quality corridors not to use
+    if lm_env.CPSNORM_CUTOFF:
+        csp_trim_fld = "CSP_Norm_Trim"
+        expression = "set_bool(!{}!, {})".format(cps_norm_fld,
+                                                 lm_env.CPSNORM_CUTOFF)
+        codeblock = (
+            """def set_bool(cps_norm, cps_cutoff):
+                   if cps_norm <= cps_cutoff:
+                       return 0
+                   else:
+                       return 1""")
 
-                # Increment weighted sum with Climate Gradient
-                if lm_env.CCERAST_IN:
-                    output_raster += (link.getValue("Clim_Lnk_Priority") *
-                                      lm_env.CEDWEIGHT)
-
-                save_interm_rast(output_raster, '_'.join(["CSP", in_rast]))
-
-                # get max and min
-                lm_util.build_stats(output_raster)
-                result = arcpy.GetRasterProperties_management(output_raster,
-                                                              "MAXIMUM")
-                max_csp = float(result.getOutput(0))
-                result = arcpy.GetRasterProperties_management(output_raster,
-                                                              "MINIMUM")
-                min_csp = float(result.getOutput(0))
-
-                # determine threshold value
-                diff_csp = max_csp - min_csp
-                thres_csp = max_csp - (diff_csp * lm_env.PROPCSPKEEP)
-
-                # apply threshold
-                con_raster = arcpy.sa.Con(output_raster, output_raster, "#",
-                                          "VALUE > " + str(thres_csp))
-                is_null_raster = arcpy.sa.IsNull(con_raster)
-                count_raster = arcpy.sa.EqualTo(is_null_raster, 0)
-                count_rasters.append(count_raster)
-                csp_rasters.append(con_raster)
-
-                save_interm_rast(con_raster, '_'.join(["CSP_TOP", in_rast]))
-
-            del link, links
-
-        # perform intermediate calculations on CSPs leading toward CPV
-        sum_rasters.append(arcpy.sa.CellStatistics(csp_rasters, "SUM", "DATA"))
-        cnt_non_null_cells_rast.append(
-            arcpy.sa.CellStatistics(count_rasters, "SUM", "DATA"))
-        max_rasters.append(
-            arcpy.sa.CellStatistics(csp_rasters, "MAXIMUM", "DATA"))
-        nlc_idx += 1
-
-    arcpy.env.workspace = prev_ws
+        check_add_field(lcp_lines, csp_trim_fld, "SHORT")
+        arcpy.CalculateField_management(lcp_lines, csp_trim_fld, expression,
+                                        "PYTHON_9.3", codeblock)
 
 
 def chk_cav_wts():
@@ -794,12 +718,6 @@ def create_run_gdbs():
     if not arcpy.Exists(lm_env.SCRATCHGDB):
         arcpy.CreateFileGDB_management(
             lm_env.SCRATCHDIR, os.path.basename(lm_env.SCRATCHGDB))
-    arcpy.env.scratchWorkspace = lm_env.SCRATCHGDB
-
-    if lm_env.KEEPINTERMEDIATE:
-        if not arcpy.Exists(lm_env.INTERGDB):
-            arcpy.CreateFileGDB_management(
-                lm_env.SCRATCHDIR, os.path.basename(lm_env.SCRATCHDIR))
 
 
 def chk_lnk_tbls():
@@ -825,42 +743,11 @@ def run_analysis():
     calc_closeness(lcp_lines)
     cav(core_lyr)
 
-    # calc Corridor Specific Priority (CSP)
-    prev_ws = arcpy.env.workspace
-    sum_rasters, cnt_non_null_cells_rast, max_rasters = [], [], []
-    csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines, core_lyr)
-
-    # calc Corridor Priority Value (CPV)
-    cpv_raster = add_output_path("CPV")
-    cpv(sum_rasters, cnt_non_null_cells_rast, max_rasters, cpv_raster)
-    arcpy.env.workspace = prev_ws
-
-    # calc Relative Corridor Importance (RCI)
-    rci_raster = add_output_path("RCI")
-    rci(cpv_raster, rci_raster)
-
-    if lm_env.CALCLP:
-        trunc_raster = add_output_path(
-            '_'.join(["corridors_truncated_at", lm_util.cwd_threash_str()]))
-        if not arcpy.Exists(trunc_raster):
-            lm_util.raise_error(
-                "Truncated corridors raster not found.\n"
-                "When CALCLP = True, set WRITETRUNCRASTER = True in "
-                "Linkage Mapper")
-
-        # calc Linkage Priority (LP)
-        lp_raster = add_output_path("linkage_priority")
-        linkage_priority(rci_raster, trunc_raster, lp_raster)
-
-        # calc Blended Priority (BP)
-        if lm_env.CALCBP:
-            norm_trunc_raster = add_output_path("NORMTRUNC")
-            bp_raster = add_output_path("blended_priority")
-            norm_trunc(trunc_raster, norm_trunc_raster)
-            blended_priority(norm_trunc_raster, lp_raster, bp_raster)
-    else:
-        if lm_env.CALCBP:
-            lm_util.raise_error("When CALCBP = True, set CALCLP = True")
+    # calculate Corridor Specific Value and Blended Priority raster
+    if lm_env.CALCCSPBP in ([lm_env.CALC_CSP, lm_env.CALC_CSPBP]):
+        calc_csp(lcp_lines, core_lyr)
+        if lm_env.CALCCSPBP == lm_env.CALC_CSPBP:
+            calc_blended_priority(core_lyr, lcp_lines)
 
     # save a copy of Cores as the "Output for ModelBuilder Precondition"
     if lm_env.OUTPUTFORMODELBUILDER:
