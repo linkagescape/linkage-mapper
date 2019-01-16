@@ -1642,45 +1642,38 @@ def delete_data(dataset):
         pass
 
 
-def make_cwd_paths(max_core_no):
-    """Set up cwd directories to insure < 100 grids in any one directory.
+def make_raster_paths(no_rast, base_dir, sub_dir):
+    r"""Set up raster directories to insure < 100 grids in any one directory.
 
-    Outputs are written to: cwd\cw for cores 1-99, cwd\cw1 for cores 100-199,
-    etc.
+    Outputs are written to: base\sub for rasters 1-99, base\sub1 for rasters
+    100-199, etc.
     """
+    delete_dir(base_dir)
     try:
-        delete_dir(cfg.CWDBASEDIR)
-
-        gprint("\nCreating cost-weighted distance output folders")
-        gprint('...' + cfg.CWDSUBDIR_NM)
-
-        gp.CreateFolder_management(os.path.dirname(cfg.CWDBASEDIR),
-                                       os.path.basename(cfg.CWDBASEDIR))
-        gp.CreateFolder_management(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
-
-        no_dirs = int(max_core_no / 100)
-        if no_dirs > 1:
-            gprint('...' + cfg.CWDSUBDIR_NM + '1')
-            gprint('...etc.')
-        for dir_no in range(1, no_dirs + 1):
-            ccwdir = cfg.CWDSUBDIR_NM + str(dir_no)
-            gp.CreateFolder_management(cfg.CWDBASEDIR, ccwdir)
-
-    except arcgisscripting.ExecuteError:
-        exit_with_geoproc_error(_SCRIPT_NAME)
-    except Exception:
+        os.makedirs(os.path.join(base_dir, sub_dir))
+        for dir_no in range(1, (no_rast / 100) + 1):
+            os.mkdir(os.path.join(base_dir,
+                                  ''.join([sub_dir, str(dir_no)])))
+    except OSError:
         exit_with_python_error(_SCRIPT_NAME)
 
 
-def get_cwd_path(core):
-    """Returns the path for the cwd raster corresponding to a core area """
-    dirCount = int(core / 100)
-    if dirCount > 0:
-        return os.path.join(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM + str(dirCount),
-                         "cwd_" + str(core))
+def rast_path(count, base_dir, sub_dir):
+    """Return the path for the raster corresponding to its count."""
+    dir_count = count / 100
+    if dir_count > 0:
+        rast_path = os.path.join(base_dir,
+                                 ''.join([sub_dir, str(dir_count)]))
     else:
-        return os.path.join(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM, "cwd_"
-                         + str(core))
+        rast_path = os.path.join(base_dir, sub_dir)
+    return rast_path
+
+
+def get_cwd_path(core):
+    """Return the path for the cwd raster corresponding to a core area."""
+    dir_path = rast_path(core, cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
+    fname = "cwd_{}".format(core)
+    return os.path.join(dir_path, fname)
 
 
 def get_focal_path(core,radius):
