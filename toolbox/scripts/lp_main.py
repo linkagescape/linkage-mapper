@@ -695,20 +695,11 @@ def cav(core_lyr):
                                     "!area! / !perimeter!", "PYTHON_9.3")
 
     # normalize CAV inputs
-    # resistance - invert
     normalize_field(core_lyr, "mean_res", "norm_res", lm_env.RESNORMETH,
                     True)
-
-    # size
     normalize_field(core_lyr, "area", "norm_size", lm_env.SIZENORMETH)
-
-    # area/perimeter ratio
     normalize_field(core_lyr, "ap_ratio", "norm_ratio", lm_env.APNORMETH)
-
-    # ecav
     normalize_field(core_lyr, "ecav", "necav", lm_env.ECAVNORMETH)
-
-    # cfc
     normalize_field(core_lyr, "CF_Central", "ncfc", lm_env.CFCNORMETH)
 
     # calc OCAV
@@ -758,13 +749,11 @@ def calc_closeness(lcp_lines):
 
 def calc_permeability(lcp_lines):
     """Calculate raw and relative permeability for each Least Cost Path."""
-    # raw
     lm_util.gprint("Calculating raw permeability for each LCP line")
     check_add_field(lcp_lines, "Raw_Perm", "DOUBLE")
     arcpy.CalculateField_management(lcp_lines, "Raw_Perm",
                                     "!LCP_Length! / !CW_Dist!", "PYTHON_9.3")
 
-    # relative
     lm_util.gprint("Calculating relative permeability for each LCP line")
     normalize_field(lcp_lines, "Raw_Perm", "Rel_Perm", lm_env.RELPERMNORMETH)
 
@@ -832,13 +821,8 @@ def run_analysis():
     chk_lnk_tbls()
     create_run_gdbs()
 
-    # calc permeability
     calc_permeability(lcp_lines)
-
-    # calc relative closeness
     calc_closeness(lcp_lines)
-
-    # calc Core Area Value (CAV) and its components for each core
     cav(core_lyr)
 
     # calc Corridor Specific Priority (CSP)
@@ -928,16 +912,13 @@ def main(argv=None):
     stime = lm_util.start_time()
 
     if argv is None:
-        # get parameters passed from tool dialog, if any
-        argv = sys.argv
+        argv = sys.argv  # get parameters from ArcGIS tool dialog
     try:
-        # preparation steps
         get_lm_params(argv)
         lm_env.configure(lm_env.TOOL_LP, argv)
         lm_util.gprint("\nLinkage Priority Version " + lm_env.releaseNum)
         lm_util.check_project_dir()
         log_setup()
-        # primary analysis
         run_analysis()
     except AppError as err:
         lm_util.gprint(err.message)
