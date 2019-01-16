@@ -407,7 +407,8 @@ def clim_envelope(core_lyr):
 
 
 def clim_linkage_priority(lcp_lines, core_lyr):
-    """Calculate Core Areas Climate Linkage Priority Value (O)."""
+    """Calculate Core Areas Climate Linkage Priority Value."""
+    lm_util.gprint("Calculating Core Areas Climate Linkage Priority Value")
     clim_envelope(core_lyr)
     clim_ratios(lcp_lines, core_lyr)
     clim_priority_values(lcp_lines)

@@ -295,7 +295,7 @@ def config_lp(config, arg):
 
     # Corridor Specific Priority (CSP) Options
     # ----------------------------------------
-    #  Expert Corridor Importance Vale
+    #  Expert Corridor Importance Value
     config.COREPAIRSTABLE_IN = util.nullstring(arg[12])
     config.FROMCOREFIELD = util.nullstring(arg[13])
     config.TOCOREFIELD = util.nullstring(arg[14])
