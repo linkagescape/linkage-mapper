@@ -11,7 +11,6 @@ import grass.script.setup as gsetup
 
 from cc_config import cc_env
 from lm_config import tool_env as lm_env
-import cc_util
 import lm_util
 
 
@@ -63,8 +62,9 @@ def grass_cwd(core_list):
         raise
     finally:
         os.environ["PATH"] = start_path
-        cc_util.arc_delete(gisdbase, ccr_grassrc,
-                           climate_asc, resist_asc, core_asc)
+        for data in ([gisdbase, ccr_grassrc, climate_asc, resist_asc,
+                      core_asc]):
+            lm_util.delete_data(data)
 
 
 def write_grassrc(ccr_grassrc, gisdbase):
@@ -165,7 +165,7 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
                               output=ascii_grid, format="AAIGrid")
                 arcpy.CopyRaster_management(ascii_grid, arc_grid)
                 arcpy.DefineProjection_management(arc_grid, spatial_ref)
-                cc_util.arc_delete(ascii_grid)
+                lm_util.delete_data(ascii_grid)
 
             create_arcgrid("cwd_", gcwd)  # Export CWD raster
             create_arcgrid("back_", gbackrc)  # Export reclassified back raster

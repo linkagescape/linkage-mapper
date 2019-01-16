@@ -11,7 +11,6 @@ import traceback
 import ConfigParser
 import shutil
 import gc
-import glob
 import ctypes
 import locale
 from lm_retry_decorator import Retry
@@ -20,6 +19,7 @@ from lm_retry_decorator import Retry
 import numpy as npy
 
 import arcgisscripting
+import arcpy
 
 from lm_config import tool_env as cfg
 try:
@@ -1587,75 +1587,37 @@ def move_results_folder(oldFolder, newFolder):
         exit_with_python_error(_SCRIPT_NAME)
 
 
-def delete_file(file):
+def delete_file(filename):
+    """Delete file from disk."""
     try:
-        if os.path.isfile(file):
-            os.remove(file)
-            gc.collect()
-    except Exception:
+        os.remove(filename)
+    except OSError:
         pass
-    return
 
 
-def delete_dir(dir):
+def delete_dir(dir_path):
+    """Delete directory from disk ignoring errors."""
+    if os.path.isdir(dir_path):
+        shutil.rmtree(dir_path, ignore_errors=True)
+
+
+def delete_data(item):
+    """Delete data from disk using ArcPy."""
     try:
-        if gp.Exists(dir):
-            shutil.rmtree(dir)
-        return
-    except Exception:
-        snooze(5)
-        try: #Try again following cleanup attempt
-            gp.RefreshCatalog(dir)
-            gc.collect()
-            shutil.rmtree(dir)
-        except Exception:
-            pass
-        return
+        arcpy.Delete_management(item)
+    except arcpy.ExecuteError:
+        pass
 
 
 def clean_out_workspace(ws):
-    try:
-        if gp.exists(ws):
-            gp.workspace = ws
-            fcs = gp.ListFeatureClasses()
-            for fc in fcs:
-                fcPath = os.path.join(ws,fc)
-                gp.delete_management(fcPath)
-
-            rasters = gp.ListRasters()
-            for raster in rasters:
-                rasterPath = os.path.join(ws,raster)
-                gp.delete_management(rasterPath)
-        gc.collect()
-        return
-
-    except arcgisscripting.ExecuteError:
-        exit_with_geoproc_error(_SCRIPT_NAME)
-    except Exception:
-        exit_with_python_error(_SCRIPT_NAME)
-
-
-def delete_data(dataset):
-    try:
-        if gp.Exists(dataset):
-            gp.delete_management(dataset)
-
-            # Users are reporting stray vat and other files.  Below is attempt
-            # to rid directory of them as they may be causing grid write
-            # problems.
-            dir = os.path.dirname(dataset)
-            base = os.path.basename(dataset)
-            baseName, extension = os.path.splitext(base)
-            basepath = os.path.join(dir,baseName)
-            fileList = glob.glob(basepath + '.*')
-            for item in fileList:
-                try:
-                    os.remove(item)
-                except Exception:
-                    pass
-            gc.collect()
-    except Exception:
-        pass
+    """Delete all datasets in an ArcPy workspace."""
+    if arcpy.Exists(ws):
+        cur_ws = arcpy.env.workspace
+        arcpy.env.workspace = ws
+        datasets = arcpy.ListDatasets()
+        for data in datasets:
+                delete_data(data)
+        arcpy.env.workspace = cur_ws
 
 
 def make_raster_paths(no_rast, base_dir, sub_dir):

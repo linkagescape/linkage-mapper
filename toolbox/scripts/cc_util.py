@@ -17,17 +17,6 @@ def mk_proj_dir(in_dir):
     return new_dir
 
 
-def arc_delete(*items):
-    """Delete data from disk using Arcpy."""
-    for item in items:
-        if arcpy.Exists(item):
-            try:
-                arcpy.Delete_management(item)
-            except arcpy.ExecuteError:
-                arcpy.AddWarning("Error deleting temporary object - %s. "
-                                 "Program will continue." % item)
-
-
 def check_cc_project_dir():
     """Check to make sure path name is not too long.
 
