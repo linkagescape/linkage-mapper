@@ -18,7 +18,6 @@ APNORMETH = "MAX_VALUE"  # area/perimeter ratio normalization method
 ECAVNORMETH = "MAX_VALUE"  # ecav normalization method
 CANALOGNORMETH = "SCORE_RANGE"  # climate analog normalization method
 CPREFERNORMETH = "SCORE_RANGE"  # climate preference normalization method
-CLPRIORITYNORMETH = "SCORE_RANGE"  # climate linkage priority normalization method
 CFCNORMETH = "MAX_VALUE"  # cfc normalization method
 TRUNCNORMETH = "SCORE_RANGE"  # truncated raster normalization method
 
