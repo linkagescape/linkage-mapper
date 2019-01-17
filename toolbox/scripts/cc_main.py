@@ -47,6 +47,7 @@ def main(argv=None):
     try:
         cc_env.configure(argv)
         cc_util.check_cc_project_dir()
+        lm_util.create_dir(cc_env.proj_dir)
 
         check_out_sa_license()
         arc_wksp_setup()
