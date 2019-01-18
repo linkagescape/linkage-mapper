@@ -342,16 +342,17 @@ def config_lp(config, arg):
     # ------------------------------
     config.CWDTHRESH = int(arg[38])
 
-    # - - - - - - - - - - - - - - - - - -
+    #  Custom settings
+    # ----------------
+    set_custom(config.LPCUSTSETTINGS_IN, config)
 
-    # core corename from feature class name
-    config.CORENAME = path.splitext(path.basename(config.COREFC))[0]
     config.CALC_CSP = 1  # Calculate Corridor Specific Priority (CSP)
     config.CALC_CSPBP = 2  # Calculate CSP and Blended Priority
 
+    # Misc
+    # ----
     config.SCRATCHGDB = path.join(config.SCRATCHDIR, "scratch.gdb")
-
-    set_custom(config.LPCUSTSETTINGS_IN, config)
+    config.CORENAME = path.splitext(path.basename(config.COREFC))[0]
 
 
 def config_circuitscape(config, arg):
