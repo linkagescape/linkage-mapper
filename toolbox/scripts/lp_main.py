@@ -29,16 +29,6 @@ class AppError(Exception):
     pass
 
 
-def delete_temp_datasets():
-    """Delete temporary datasets."""
-    if arcpy.Exists(lm_env.SCRATCHGDB):
-        lm_util.clean_out_workspace(lm_env.SCRATCHGDB)
-    if not lm_env.KEEPINTERMEDIATE:
-        if arcpy.Exists(lm_env.INTERGDB):
-            lm_util.clean_out_workspace(lm_env.INTERGDB)
-    lm_util.clean_out_workspace(os.getcwd())
-
-
 def normalize_raster(in_raster, normalization_method=NM_MAX, invert=False):
     """Normalize values in in_raster.
 
@@ -838,7 +828,8 @@ def main(argv=None):
             "Traceback (most recent call last):\n" +
             "".join(traceback.format_tb(exc_traceback)))
     finally:
-        delete_temp_datasets()
+        if not lm_env.KEEPINTERMEDIATE:
+            lm_util.delete_dir(lm_env.SCRATCHDIR)
         arcpy.CheckInExtension("Spatial")
         lm_util.run_time(stime)
         lm_util.close_log_file()
