@@ -392,6 +392,7 @@ def core_mean(in_rast, core_lyr, in_var):
                              lm_env.COREFN)
     arcpy.CalculateField_management(core_lyr, mean_fld, mean_value)
     arcpy.RemoveJoin_management(core_lyr)
+    lm_util.delete_data(mean_tbl)
 
 
 def clim_envelope(core_lyr):
