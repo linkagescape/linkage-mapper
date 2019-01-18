@@ -547,7 +547,7 @@ def chk_cav_wts():
                        "OCAVWEIGHT = 0")
 
 
-def cav(core_lyr):
+def calc_cav(core_lyr):
     """Calculate Core Area Value (CAV) and its components for each core."""
     lm_util.gprint("Calculating Core Area Value (CAV) and its components for "
                    "each core")
@@ -729,7 +729,7 @@ def run_analysis():
 
     calc_permeability(lcp_lines)
     calc_closeness(lcp_lines)
-    cav(core_lyr)
+    calc_cav(core_lyr)
 
     # calculate Corridor Specific Value and Blended Priority raster
     if lm_env.CALCCSPBP in ([lm_env.CALC_CSP, lm_env.CALC_CSPBP]):
