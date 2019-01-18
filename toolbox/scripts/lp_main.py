@@ -64,7 +64,7 @@ def save_interm_rast(rast_list, base_name):
 
 def blended_priority(rast_list, lcp_lines):
     """Calculate overall Blended Priority."""
-    lm_util.gprint("Calculating overall Blended Priority")
+    lm_util.gprint("-Calculating overall BP")
 
     blend_rast = []
     for fname, rast in rast_list:
@@ -87,7 +87,7 @@ def blended_priority(rast_list, lcp_lines):
 
 def inv_norm(rast_list):
     """Invert and normalize each corridor."""
-    lm_util.gprint("Inverting and normalizing each corridor")
+    lm_util.gprint("-Inverting and normalizing each corridor")
     norm_rast_list = []
 
     for fname, rast in rast_list:
@@ -104,7 +104,7 @@ def clip_nlcc_to_threashold(lcp_list):
     Clip the normalized least cost corridors using the specified CWD
     Threshold.
     """
-    lm_util.gprint("Clipping NLCC rasters to CWD threshold")
+    lm_util.gprint("-Clipping NLCC rasters to CWD threshold")
 
     prev_workspace = arcpy.env.workspace
     nlcc_top_list = []
@@ -177,7 +177,6 @@ def clim_priority_combine(lcp_lines):
     Combine climate priority values A & L in a weighted sum to yield Core
     Areas Climate Linkage Priority Value (O).
     """
-    lm_util.gprint("Calculating Core Areas Climate Linkage Priority Value")
     check_add_field(lcp_lines, "Clim_Lnk_Priority", "float")
     lnk_rows = arcpy.UpdateCursor(
         lcp_lines,
@@ -238,8 +237,6 @@ def normalize_field(in_table, in_field, out_field,
 
 def clim_priority_val_normal(lcp_lines):
     """Normalize climate priority values (A & L) for each core pair."""
-    lm_util.gprint("Normalizing Climate Analog and Preference Linkage "
-                   "Priority Values")
     normalize_field(lcp_lines, "CLPv_Analog", "NCLPv_Analog",
                     lm_env.CANALOGNORMETH)
     normalize_field(lcp_lines, "CLPv_Prefer", "NCLPv_Prefer",
@@ -303,8 +300,6 @@ def clim_priority_values(lcp_lines):
     Climate Preference Linkage Priority Value (L) for each core pair
     to LCP Layer.
     """
-    lm_util.gprint("Calculating Climate Analog and Preference Linkage "
-                   "Priority Values")
     check_add_field(lcp_lines, "CLPv_Analog", "float")
     check_add_field(lcp_lines, "CLPv_Prefer", "float")
 
@@ -353,7 +348,6 @@ def clim_ratios(lcp_lines, core_lyr):
     Calculate and save climate ratios to LCP layer and include start core and
     destination.
     """
-    lm_util.gprint("Calculating climate ratios for each core paring")
     check_add_field(lcp_lines, "Core_Start", "integer")
     check_add_field(lcp_lines, "Core_End", "integer")
     check_add_field(lcp_lines, "CAnalog_Ratio", "float")
@@ -402,7 +396,6 @@ def core_mean(in_rast, core_lyr, in_var):
 
 def clim_envelope(core_lyr):
     """Determine Climate Envelope for each core."""
-    lm_util.gprint("Calculating Climate Envelope for each core")
     core_mean(lm_env.CCERAST_IN, core_lyr, "cclim_env")
     if lm_env.FCERAST_IN:
         core_mean(lm_env.FCERAST_IN, core_lyr, "fclim_env")
@@ -410,7 +403,7 @@ def clim_envelope(core_lyr):
 
 def clim_linkage_priority(lcp_lines, core_lyr):
     """Calculate Core Areas Climate Linkage Priority Value."""
-    lm_util.gprint("Calculating Core Areas Climate Linkage Priority Value")
+    lm_util.gprint("-Calculating Core Areas Climate Linkage Priority Value")
     clim_envelope(core_lyr)
     clim_ratios(lcp_lines, core_lyr)
     clim_priority_values(lcp_lines)
@@ -420,7 +413,7 @@ def clim_linkage_priority(lcp_lines, core_lyr):
 
 def eciv():
     """Normalize Expert Corridor Importance Value (ECIV) for each corridor."""
-    lm_util.gprint("Normalizing Expert Corridor Importance Value (ECIV) "
+    lm_util.gprint("-Normalizing Expert Corridor Importance Value (ECIV) "
                    "for each corridor")
     normalize_field(lm_env.COREPAIRSTABLE_IN, lm_env.ECIVFIELD, "neciv",
                     NM_SCORE)
@@ -457,7 +450,7 @@ def chk_csp_wts():
 def calc_csp(lcp_lines, core_lyr):
     """Calculate Corridor Specific Priority (CSP) for each linkage."""
     lm_util.gprint("Calculating Corridor Specific Priority (CSP) for each "
-                   "linkage")
+                   "linkage:")
     chk_csp_wts()
 
     # normalize Expert Corridor Importance Value (ECIV)
@@ -676,12 +669,12 @@ def calc_closeness(lcp_lines):
 
 def calc_permeability(lcp_lines):
     """Calculate raw and relative permeability for each Least Cost Path."""
-    lm_util.gprint("Calculating raw permeability for each LCP line")
+    lm_util.gprint("Calculating permeability for each LCP line")
+
     check_add_field(lcp_lines, "Raw_Perm", "DOUBLE")
     arcpy.CalculateField_management(lcp_lines, "Raw_Perm",
                                     "!LCP_Length! / !CW_Dist!", "PYTHON_9.3")
 
-    lm_util.gprint("Calculating relative permeability for each LCP line")
     normalize_field(lcp_lines, "Raw_Perm", "Rel_Perm", lm_env.RELPERMNORMETH)
 
 
