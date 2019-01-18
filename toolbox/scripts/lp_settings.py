@@ -22,4 +22,4 @@ MEANCSPWEIGHT = 0.5  # relative mean CSP value weight in CPV calculation
 
 HIGHERCE_COOLER = False  # higher climate envelop values are cooler (Boolean)
 
-KEEPINTERMEDIATE = True  # keep intermediate outputs for troubleshooting purposes (Boolean)
+KEEPINTERMEDIATE = False  # keep intermediate outputs for troubleshooting purposes (Boolean)
