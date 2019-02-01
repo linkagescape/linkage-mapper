@@ -410,6 +410,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
         i = 1
 
         coreid_fld = arcpy.AddFieldDelimiters(corefc, cc_env.core_fld)
+        oid_fld = arcpy.Describe(corefc).oidFieldName
 
         for core_no, frm_core in enumerate(frm_cores):
             # From cores
@@ -434,9 +435,9 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
 
             # Join near table to core table
             arcpy.JoinField_management(near_tbl, "IN_FID", corefc,
-                                       "OBJECTID", cc_env.core_fld)
+                                       oid_fld, cc_env.core_fld)
             arcpy.JoinField_management(near_tbl, "NEAR_FID", corefc,
-                                       "OBJECTID", cc_env.core_fld)
+                                       oid_fld, cc_env.core_fld)
 
             # Limit pairings based on inputed Euclidean distances
             srow, srows = None, None
