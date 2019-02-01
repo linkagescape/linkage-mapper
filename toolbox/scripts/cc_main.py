@@ -21,7 +21,7 @@ import sys
 import csv
 import itertools
 import traceback
-from datetime import datetime
+from datetime import datetime as dt
 
 import arcinfo  # Import arcinfo license. Needed before arcpy import.
 import arcpy
@@ -43,7 +43,7 @@ TO_COL = "To_Core"
 
 def main(argv=None):
     """Run Climate Linkage Mapper tool."""
-    start_time = datetime.now()
+    start_time = dt.now()
 
     if argv is None:
         argv = sys.argv
@@ -489,7 +489,7 @@ def simplify_corefc():
 
 def print_runtime(stime):
     """Print process time when running from script."""
-    etime = datetime.now()
+    etime = dt.now()
     rtime = etime - stime
     hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
                       (rtime.seconds // 60) % 60)

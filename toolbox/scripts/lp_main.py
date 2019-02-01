@@ -7,7 +7,7 @@ import os
 import sys
 import glob
 import traceback
-from datetime import datetime
+from datetime import datetime as dt
 from collections import namedtuple
 
 import arcpy
@@ -63,7 +63,7 @@ def delete_arcpy_temp_datasets():
 
 def print_runtime(stime):
     """Print process time when running from script."""
-    etime = datetime.now()
+    etime = dt.now()
     rtime = etime - stime
     hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
                       (rtime.seconds // 60) % 60)
@@ -73,7 +73,7 @@ def print_runtime(stime):
 
 def main(argv=None):
     """Run Linkage Priority tool."""
-    start_time = datetime.now()
+    start_time = dt.now()
     print "Start time: %s" % start_time.strftime(TFORMAT)
 
     if argv is None:
