@@ -338,7 +338,7 @@ class Configure(object):
     """Class container to hold global variables."""
 
     TOOL_LM = 'Linkage Mapper'
-    TOOL_CC = 'Linkage Mapper Climate'
+    TOOL_CC = 'Climate Linkage Mapper'
     TOOL_LP = 'Linkage Priority'
     TOOL_BM = 'Barrier mapper'
     TOOL_CS = 'Circuitscape'
