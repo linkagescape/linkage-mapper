@@ -160,7 +160,7 @@ def clip_nlcc_to_threashold(lcp_lines):
             if lm_env.LCCNLCDIR_NM in dirpath and filename in lcps_trim:
                 rast = arcpy.sa.ExtractByAttributes(
                     filename,
-                    "VALUE > {}".format(lm_env.CWDTHRESH))
+                    "VALUE <= {}".format(lm_env.CWDTHRESH))
 
                 nfilename = '_'.join(["nlc", filename])
                 nlcc_top_list.append([nfilename, rast])
