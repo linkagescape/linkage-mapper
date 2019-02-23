@@ -62,23 +62,17 @@ def save_interm_rast(rast_list, base_name):
             rast.save(os.path.join(lm_env.SCRATCHDIR, gdb_name, rast_name))
 
 
-def blended_priority(rast_list, lcp_lines):
+def blended_priority(rast_list, lcp_ncsp):
     """Calculate overall Blended Priority."""
     lm_util.gprint("-Calculating overall BP")
 
     blend_rast = []
     for fname, rast in rast_list:
-        from_core, to_core = fname.split('_')[1:]
-        csp_norm = arcpy.SearchCursor(
-            lcp_lines,
-            where_clause="from_core={0} AND to_core={1}".format(
-                from_core, to_core),
-            fields="CSP_Norm").next().getValue("CSP_Norm")
-
         blend_rast.append([fname, (lm_env.TRUNCWEIGHT * rast) +
-                           (lm_env.LPWEIGHT * csp_norm)])
+                           (lm_env.LPWEIGHT * lcp_ncsp[fname])])
 
     save_interm_rast(blend_rast, "bp_step4")
+
     overall_bp = arcpy.sa.CellStatistics(
         [rast[1] for rast in blend_rast],
         statistics_type="MAXIMUM", ignore_nodata="DATA")
@@ -149,7 +143,9 @@ def clip_nlcc_to_threashold(lcp_list):
                     filename,
                     "VALUE <= {}".format(lm_env.CWDTHRESH))
 
+                # raster names cannot begin with a number in a GDB
                 nfilename = '_'.join(["nlc", filename])
+
                 nlcc_top_list.append([nfilename, rast])
 
     if not nlcc_top_list:
@@ -161,9 +157,16 @@ def clip_nlcc_to_threashold(lcp_list):
     return nlcc_top_list
 
 
-def lcps_to_blend(lcp_lines):
-    """Create a list of LCPs to use in creating Blended Priority raster."""
+def lcp_csp_for_bp(lcp_lines):
+    """Get list of LCPs and their normalized CSP values for BP raster creation.
+
+    Filter LCPs based on CPS cutoff if applicable. Return list with LCP
+    filenames and dictionary with LCP GDB filename as key and normalized CSP
+    as value.
+    """
     lcp_list = []
+    lcp_ncsp = {}
+
     if lm_env.CPSNORM_CUTOFF is not None:
         cursor_filter = "CSP_Norm_Trim=1"
     else:
@@ -171,25 +174,29 @@ def lcps_to_blend(lcp_lines):
     lcp_rows = arcpy.SearchCursor(
         lcp_lines,
         where_clause=cursor_filter,
-        fields="From_Core; To_Core")
+        fields="From_Core; To_Core; CSP_Norm")
 
     for lcp_row in lcp_rows:
-        lcp_list.append("{}_{}".format(
-            lcp_row.getValue("From_Core"),
-            lcp_row.getValue("To_Core")))
+        lcp_name = ("{}_{}".format(lcp_row.getValue("From_Core"),
+                                   lcp_row.getValue("To_Core")))
+        lcp_list.append(lcp_name)
 
-    return lcp_list
+        # use raster GDB name for key value
+        lcp_ncsp['_'.join(["nlc", lcp_name])] = lcp_row.getValue("CSP_Norm")
+
+    return lcp_list, lcp_ncsp
 
 
 def calc_blended_priority(core_lyr, lcp_lines):
     """Generate Blended Priority raster from NLCC rasters."""
     lm_util.gprint("Calculating Blended Priority (BP):")
 
-    nlcc_rast = clip_nlcc_to_threashold(lcps_to_blend(lcp_lines))
+    lcp_list, lcp_ncsp = lcp_csp_for_bp(lcp_lines)
+    nlcc_rast = clip_nlcc_to_threashold(lcp_list)
     nlcc_rast = clip_to_bound_geom(core_lyr, nlcc_rast)
     nlcc_rast = inv_norm(nlcc_rast)
 
-    blended_priority(nlcc_rast, lcp_lines)
+    blended_priority(nlcc_rast, lcp_ncsp)
 
 
 def check_add_field(feature_class, field_name, data_type):
