@@ -143,7 +143,7 @@ def clip_nlcc_to_threashold(lcp_list):
                     filename,
                     "VALUE <= {}".format(lm_env.CWDTHRESH))
 
-                # raster names cannot begin with a number in a GDB
+                # Raster names cannot begin with a number in a GDB
                 nfilename = '_'.join(["nlc", filename])
 
                 nlcc_top_list.append([nfilename, rast])
@@ -181,7 +181,7 @@ def lcp_csp_for_bp(lcp_lines):
                                    lcp_row.getValue("To_Core")))
         lcp_list.append(lcp_name)
 
-        # use raster GDB name for key value
+        # Use raster GDB name for key value
         lcp_ncsp['_'.join(["nlc", lcp_name])] = lcp_row.getValue("CSP_Norm")
 
     return lcp_list, lcp_ncsp
@@ -493,11 +493,11 @@ def calc_csp(lcp_lines, core_lyr):
                    "linkage:")
     chk_csp_wts()
 
-    # normalize Expert Corridor Importance Value (ECIV)
+    # Normalize Expert Corridor Importance Value (ECIV)
     if lm_env.COREPAIRSTABLE_IN:
         eciv()
 
-    # calc climate envelope and analog ratio
+    # Calc climate envelope and analog ratio
     if lm_env.CCERAST_IN:
         clim_linkage_priority(lcp_lines, core_lyr)
         lnk_fields = ("From_Core; To_Core; Rel_Close; Rel_Perm; "
@@ -516,7 +516,7 @@ def calc_csp(lcp_lines, core_lyr):
         from_core = lnk_row.getValue("From_Core")
         to_core = lnk_row.getValue("To_Core")
 
-        # get and avg CAVs for the core pair
+        # Get and avg CAVs for the core pair
         x_cav = arcpy.SearchCursor(
             core_lyr,
             where_clause="{} = {}".format(lm_env.COREFN, from_core),
@@ -528,13 +528,13 @@ def calc_csp(lcp_lines, core_lyr):
 
         avg_cav = (x_cav + y_cav) / 2
 
-        # calc weighted sum
+        # Calc weighted sum
         csp = (
             (lm_env.CLOSEWEIGHT * lnk_row.getValue("Rel_Close")) +
             (lm_env.PERMWEIGHT * lnk_row.getValue("Rel_Perm")) +
             (lm_env.CAVWEIGHT * avg_cav))
 
-        # get ECIV for the core pair
+        # Get ECIV for the core pair
         if lm_env.COREPAIRSTABLE_IN and lm_env.ECIVFIELD:
             neciv = arcpy.SearchCursor(
                 lm_env.COREPAIRSTABLE_IN,
@@ -601,7 +601,7 @@ def calc_cav(core_lyr):
                    "each core")
     chk_cav_wts()
 
-    # check/add fields
+    # Check/add fields
     for field in ("mean_res", "norm_res", "area", "norm_size", "perimeter",
                   "ap_ratio", "norm_ratio", "cav", "norm_cav", "cclim_env",
                   "fclim_env", "ocav", "nocav"):
@@ -614,13 +614,13 @@ def calc_cav(core_lyr):
         arcpy.CalculateField_management(lm_env.COREFC, "ecav", "0")
     check_add_field(lm_env.COREFC, "necav", "DOUBLE")
 
-    # current flow centrality (CFC, CF_Central) is copied from
+    # Current flow centrality (CFC, CF_Central) is copied from
     # Centrality Mapper
     if not check_add_field(lm_env.COREFC, "CF_Central", "DOUBLE"):
-        # default to 0s
+        # Default to 0s
         arcpy.CalculateField_management(lm_env.COREFC, "CF_Central", "0")
     if lm_env.CFCWEIGHT > 0:
-        # copy values from Centrality Mapper output
+        # Copy values from Centrality Mapper output
         # (core_centrality.gdb.project_Cores) if available
         centrality_cores = os.path.join(lm_env.CORECENTRALITYGDB,
                                         lm_env.PREFIX + "_Cores")
@@ -631,7 +631,7 @@ def calc_cav(core_lyr):
                 core_lyr, lm_env.CORENAME + ".CF_Central", "[" +
                 lm_env.PREFIX + "_Cores.CF_Central]")
             arcpy.RemoveJoin_management(core_lyr)
-        # ensure cores have at least one non-0 value for CFC (could have been
+        # Ensure cores have at least one non-0 value for CFC (could have been
         # copied above or set earlier)
         max_val = value_range(lm_env.COREFC, "CF_Central")[1]
         if max_val is None or max_val == 0:
@@ -643,10 +643,10 @@ def calc_cav(core_lyr):
 
     check_add_field(lm_env.COREFC, "ncfc", "DOUBLE")
 
-    # calc mean resistance
+    # Calc mean resistance
     core_mean(lm_env.RESRAST_IN, core_lyr, "mean_res")
 
-    # calc area, perimeter and ratio
+    # Calc area, perimeter and ratio
     arcpy.CalculateField_management(core_lyr, "area", "!SHAPE.AREA!",
                                     "PYTHON_9.3")
     arcpy.CalculateField_management(core_lyr, "perimeter", "!SHAPE.LENGTH!",
@@ -654,7 +654,7 @@ def calc_cav(core_lyr):
     arcpy.CalculateField_management(core_lyr, "ap_ratio",
                                     "!area! / !perimeter!", "PYTHON_9.3")
 
-    # normalize CAV inputs
+    # Normalize CAV inputs
     normalize_field(core_lyr, "mean_res", "norm_res", lm_env.RESNORMETH,
                     True)
     normalize_field(core_lyr, "area", "norm_size", lm_env.SIZENORMETH)
@@ -662,9 +662,9 @@ def calc_cav(core_lyr):
     normalize_field(core_lyr, "ecav", "necav", lm_env.ECAVNORMETH)
     normalize_field(core_lyr, "CF_Central", "ncfc", lm_env.CFCNORMETH)
 
-    # calc OCAV
+    # Calc OCAV
     if lm_env.OCAVRAST_IN:
-        # get max and min
+        # Get max and min
         lm_util.build_stats(lm_env.OCAVRAST_IN)
         result = arcpy.GetRasterProperties_management(lm_env.OCAVRAST_IN,
                                                       "MAXIMUM")
@@ -672,14 +672,14 @@ def calc_cav(core_lyr):
         result = arcpy.GetRasterProperties_management(lm_env.OCAVRAST_IN,
                                                       "MINIMUM")
         min_ocav = float(result.getOutput(0))
-        # calc score range normalization on input
+        # Calc score range normalization on input
         ocav_raster = ((arcpy.sa.Raster(lm_env.OCAVRAST_IN) - min_ocav)
                        / (max_ocav - min_ocav))
-        # calc aerial mean ocav for each core
+        # Calc aerial mean ocav for each core
         core_mean(ocav_raster, core_lyr, "ocav")
         normalize_field(core_lyr, "ocav", "nocav", NM_SCORE)
 
-        # calc CAV
+        # Calc CAV
         arcpy.CalculateField_management(
             core_lyr, "cav",
             "(!norm_res! * " + str(lm_env.RESWEIGHT) + ") + (!norm_size! * " +
@@ -689,7 +689,7 @@ def calc_cav(core_lyr):
             str(lm_env.OCAVWEIGHT) + ")", "PYTHON_9.3")
 
     else:
-        # calc CAV
+        # Calc CAV
         arcpy.CalculateField_management(
             core_lyr, "cav", "(!norm_res! * " + str(lm_env.RESWEIGHT) +
             ") + (!norm_size! * " + str(lm_env.SIZEWEIGHT) +
@@ -779,13 +779,13 @@ def run_analysis():
     calc_closeness(lcp_lines)
     calc_cav(core_lyr)
 
-    # calculate Corridor Specific Value and Blended Priority raster
+    # Calculate Corridor Specific Value and Blended Priority raster
     if lm_env.CALCCSPBP in ([lm_env.CALC_CSP, lm_env.CALC_CSPBP]):
         calc_csp(lcp_lines, core_lyr)
         if lm_env.CALCCSPBP == lm_env.CALC_CSPBP:
             calc_blended_priority(core_lyr, lcp_lines)
 
-    # save a copy of Cores as the "Output for ModelBuilder Precondition"
+    # Save a copy of Cores as the "Output for ModelBuilder Precondition"
     if lm_env.OUTPUTFORMODELBUILDER:
         arcpy.CopyFeatures_management(lm_env.COREFC,
                                       lm_env.OUTPUTFORMODELBUILDER)
@@ -793,7 +793,7 @@ def run_analysis():
 
 def read_lm_params(proj_dir):
     """Read Linkage Pathways input parameters from log file."""
-    # get log file for last LM run
+    # Get log file for last LM run
     spath = os.path.join(proj_dir, "run_history", "log",
                          "*_Linkage Mapper.txt")
     entries = sorted(glob.glob(spath), key=os.path.getctime, reverse=True)
@@ -803,7 +803,7 @@ def read_lm_params(proj_dir):
                        "found. Please ensure Linkage Mapper is run "
                        "for this project before running Linkage Priority.")
 
-    # read parameters section from file and turn into tuple for passing
+    # Read parameters section from file and turn into tuple for passing
     parms = ""
     with open(last_lm_log) as log_file:
         for line in log_file:
@@ -835,7 +835,7 @@ def main(argv=None):
     stime = lm_util.start_time()
 
     if argv is None:
-        argv = sys.argv  # get parameters from ArcGIS tool dialog
+        argv = sys.argv  # Get parameters from ArcGIS tool dialog
     try:
         get_lm_params(argv)
         lm_env.configure(lm_env.TOOL_LP, argv)
