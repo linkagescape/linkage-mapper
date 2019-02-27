@@ -9,7 +9,7 @@ Assigns input parameters from ToolBox to variables, and sets constants.
 from os import path
 import imp
 
-import arcgisscripting
+import arcpy
 
 import lm_version as ver
 import lm_util_config as util
@@ -403,10 +403,9 @@ class Configure(object):
     TOOL_CS = 'Circuitscape'
 
     def __init__(self):
-        """Initialize class and create single geoprocessor object."""
-        self.gp = arcgisscripting.create(9.3)
-        self.gp.CheckOutExtension("Spatial")
-        self.gp.OverwriteOutput = True
+        """Initialize class."""
+        arcpy.CheckOutExtension("Spatial")
+        arcpy.env.overwriteOutput = True
         self.lm_configured = False
 
     def configure(self, tool, arg):

@@ -11,8 +11,8 @@ Numpy
 from os import path
 import time
 
-import arcpy
 import numpy as npy
+import arcpy
 
 from lm_config import tool_env as cfg
 import lm_util as lu

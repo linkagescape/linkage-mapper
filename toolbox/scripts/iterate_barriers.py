@@ -11,8 +11,8 @@ import os
 import shutil
 import time
 
-import arcpy
 import numpy as npy
+import arcpy
 
 import lm_master
 import barrier_master

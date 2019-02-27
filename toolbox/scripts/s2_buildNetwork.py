@@ -8,10 +8,10 @@ adjacencies of core areas
 """
 
 from os import path
-
-import arcgisscripting
-import numpy as npy
 import time
+
+import numpy as npy
+import arcpy
 
 from lm_config import tool_env as cfg
 import lm_util as lu
@@ -19,7 +19,6 @@ import lm_util as lu
 
 _SCRIPT_NAME = "s2_buildNetwork.py"
 
-gp = cfg.gp
 gprint = lu.gprint
 
 
@@ -238,7 +237,7 @@ def STEP2_build_network():
             gprint('Linework shapefiles written.')
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
@@ -266,7 +265,7 @@ def get_adj_list(adjFile):
         outAdjList = npy.sort(outAdjList)  # sorts left-right
         return outAdjList
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
@@ -285,37 +284,24 @@ def generate_distance_file():
 
     """
     try:
-        gp.CellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
+        arcpy.env.cellSize = arcpy.Raster(cfg.RESRAST).meanCellHeight
         S2COREFC = cfg.COREFC
         if cfg.SIMPLIFY_CORES:
             try:
                 gprint('Simplifying polygons for core pair distance calculations')
                 COREFC_SIMP = path.join(cfg.SCRATCHDIR, "CoreFC_Simp.shp")
-                tolerance = float(gp.CellSize) / 3
-
-                try:
-                    import arcpy
-                    import arcpy.cartography as CA
-                except Exception:
-                    arcpy = False
-                if arcpy:
-                    CA.SimplifyPolygon(cfg.COREFC, COREFC_SIMP, "POINT_REMOVE",
-                                        tolerance, "#", "NO_CHECK")
-
-                else:
-                    gp.SimplifyPolygon(cfg.COREFC, COREFC_SIMP, "POINT_REMOVE",
-                                        tolerance, "#", "NO_CHECK")
-
+                tolerance = float(arcpy.env.cellSize) / 3
+                arcpy.cartography.SimplifyPolygon(cfg.COREFC, COREFC_SIMP,
+                    "POINT_REMOVE", tolerance, "#", "NO_CHECK")
                 S2COREFC = COREFC_SIMP
             except Exception:
                 pass # In case point geometry is entered for core area FC
 
-
-        gp.workspace = cfg.SCRATCHDIR
-        FS2COREFC = "fcores"
-        FS2COREFC2 = "fcores2"
-        gp.MakeFeatureLayer(S2COREFC, FS2COREFC)
-        gp.MakeFeatureLayer(S2COREFC, FS2COREFC2)
+        arcpy.env.workspace = cfg.SCRATCHDIR
+        FS2COREFC = "fscores"
+        FS2COREFC2 = "fscores2"
+        arcpy.MakeFeatureLayer_management(S2COREFC, FS2COREFC)
+        arcpy.MakeFeatureLayer_management(S2COREFC, FS2COREFC2)
 
         output = []
         csvseparator = "\t"
@@ -334,21 +320,23 @@ def generate_distance_file():
             sourceCore = adjList[x, 0]
             targetCore = adjList[x, 1]
             expression = cfg.COREFN + " = " + str(sourceCore)
-            gp.selectlayerbyattribute(FS2COREFC, "NEW_SELECTION", expression)
+            arcpy.SelectLayerByAttribute_management(
+                FS2COREFC, "NEW_SELECTION", expression)
             expression = cfg.COREFN + " = " + str(targetCore)
-            gp.selectlayerbyattribute(FS2COREFC2, "NEW_SELECTION", expression)
+            arcpy.SelectLayerByAttribute_management(
+                FS2COREFC2, "NEW_SELECTION", expression)
 
-            gp.generateneartable(FS2COREFC, FS2COREFC2, near_tbl, "#",
-                               "NO_LOCATION", "NO_ANGLE", "ALL", "0")
+            arcpy.GenerateNearTable_analysis(FS2COREFC, FS2COREFC2, near_tbl,
+                "#", "NO_LOCATION", "NO_ANGLE", "ALL", "0")
 
-            rows = gp.searchcursor(near_tbl)
-            row = rows.Next()
+            rows = arcpy.SearchCursor(near_tbl)
+            row = rows.next()
             minDist = 1e20
             if row:  # May be running on selected core areas in step 2
                 while row:
-                    dist = row.getvalue("NEAR_DIST")
+                    dist = row.getValue("NEAR_DIST")
                     if dist <= 0:  # In case simplified polygons abut one another
-                        dist = float(gp.CellSize)
+                        dist = float(arcpy.env.cellSize)
                     if dist < minDist:
                         minDist = dist
                         outputrow = []
@@ -356,7 +344,7 @@ def generate_distance_file():
                         outputrow.append(str(targetCore))
                         outputrow.append(str(dist))
                     del row
-                    row = rows.Next()
+                    row = rows.next()
             del rows
             output.append(csvseparator.join(outputrow))
 
@@ -373,7 +361,7 @@ def generate_distance_file():
 
         return dist_fname
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
@@ -429,7 +417,7 @@ def get_full_adj_list():
 
         return adjList
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
@@ -444,26 +432,26 @@ def connect_clusters(linkTable):
         # CUSTOM Fragment connecting code
     try:
         clusterFC = path.join(cfg.SCRATCHDIR,"Cores_Grouped_dist"+str(int(cfg.MAXEUCDIST))+".shp")
-        gp.CopyFeatures_management(cfg.COREFC,clusterFC)
+        arcpy.CopyFeatures_management(cfg.COREFC,clusterFC)
 
         gprint('Running custom fragment connecting code.')
         numLinks = linkTable.shape[0]
 
-        fieldList = gp.ListFields(clusterFC)
+        fieldList = arcpy.ListFields(clusterFC)
         cluster_ID = 'clus' + str(int(cfg.MAXEUCDIST))
         for field in fieldList:
-            if str(field.Name) == cluster_ID:
-                gp.DeleteField_management(clusterFC, cluster_ID)
-        gp.AddField_management(clusterFC, cluster_ID, "LONG")
+            if str(field.name) == cluster_ID:
+                arcpy.DeleteField_management(clusterFC, cluster_ID)
+        arcpy.AddField_management(clusterFC, cluster_ID, "LONG")
 
-        rows = gp.UpdateCursor(clusterFC)
-        row = rows.Next()
+        rows = arcpy.UpdateCursor(clusterFC)
+        row = rows.next()
         while row:
             # linkCoords indices
-            fragID = row.GetValue(cfg.COREFN)
-            row.SetValue(cluster_ID, fragID)
+            fragID = row.getValue(cfg.COREFN)
+            row.setValue(cluster_ID, fragID)
             rows.UpdateRow(row)
-            row = rows.Next()
+            row = rows.next()
         del row, rows
 
 
@@ -491,13 +479,13 @@ def connect_clusters(linkTable):
                     del rows
 
                     # update shapefile to new fragment ID in cluster_ID field
-                    rows = gp.UpdateCursor(clusterFC)
-                    row = rows.Next()
+                    rows = arcpy.UpdateCursor(clusterFC)
+                    row = rows.next()
                     while row:
-                        if row.GetValue(cluster_ID) == frag2ID:
-                            row.SetValue(cluster_ID, frag1ID)
+                        if row.getValue(cluster_ID) == frag2ID:
+                            row.setValue(cluster_ID, frag1ID)
                         rows.UpdateRow(row)
-                        row = rows.Next()
+                        row = rows.next()
                     del row, rows
 
         gprint('Done Joining.  Creating output shapefiles.')
@@ -506,37 +494,37 @@ def connect_clusters(linkTable):
 
         outputFN = coreBaseName + "_Cluster"+str(int(cfg.MAXEUCDIST))+"_dissolve.shp"
         outputShapefile = path.join(cfg.SCRATCHDIR,outputFN)
-        gp.Dissolve_management(clusterFC, outputShapefile, cluster_ID)
+        arcpy.Dissolve_management(clusterFC, outputShapefile, cluster_ID)
         outputFN = coreBaseName + "_Cluster"+str(int(cfg.MAXEUCDIST))+"_dissolve_area.shp"
         coreFCWithArea = path.join(cfg.SCRATCHDIR,outputFN)
-        gp.CalculateAreas_stats(outputShapefile, coreFCWithArea)
+        arcpy.CalculateAreas_stats(outputShapefile, coreFCWithArea)
 
         outputFN = coreBaseName + "_Cluster"+str(int(cfg.MAXEUCDIST))+".shp"
         clusterFCFinal = path.join(cfg.PROJECTDIR,outputFN)
-        gp.CopyFeatures_management(clusterFC,clusterFCFinal)
+        arcpy.CopyFeatures_management(clusterFC,clusterFCFinal)
 
         # Update final core featureclass with cluster ID and area
-        gp.AddField_management(clusterFCFinal, cluster_ID, "LONG")
-        gp.AddField_management(clusterFCFinal, "clust_area", "DOUBLE")
+        arcpy.AddField_management(clusterFCFinal, cluster_ID, "LONG")
+        arcpy.AddField_management(clusterFCFinal, "clust_area", "DOUBLE")
 
         #run through rows- get cluster id, then get area from coreFCwitharea using searchcursor
 
-        rows = gp.UpdateCursor(clusterFCFinal)
-        row = rows.Next()
+        rows = arcpy.UpdateCursor(clusterFCFinal)
+        row = rows.next()
         while row:
             # linkCoords indices
-            clustID = row.GetValue(cluster_ID)
-            rows2 = gp.searchcursor(coreFCWithArea)
-            row2 = rows2.Next()
+            clustID = row.getValue(cluster_ID)
+            rows2 = arcpy.SearchCursor(coreFCWithArea)
+            row2 = rows2.next()
             while row2:
-                if row2.GetValue(cluster_ID) == clustID:
+                if row2.getValue(cluster_ID) == clustID:
                     fArea = "F_AREA"
-                    clustArea = row2.GetValue(fArea)
+                    clustArea = row2.getValue(fArea)
                     break
-                row2 = rows2.Next()
-            row.SetValue("clust_area", clustArea)
+                row2 = rows2.next()
+            row.setValue("clust_area", clustArea)
             rows.UpdateRow(row)
-            row = rows.Next()
+            row = rows.next()
         del row, rows, row2, rows2
         gprint('Cores with cluster ID and cluster area written to: '
                 + clusterFCFinal)
@@ -547,7 +535,7 @@ def connect_clusters(linkTable):
 
         ##########################################################
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 2. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)

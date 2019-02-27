@@ -12,7 +12,7 @@ Numpy
 
 import sys
 
-import arcgisscripting
+import arcpy
 
 from lm_config import tool_env as cfg
 import lm_util as lu
@@ -40,18 +40,17 @@ def lm_master(argv=None):
             argv = sys.argv
         cfg.configure(cfg.TOOL_LM, argv)
 
-    gp = cfg.gp
     gprint = lu.gprint
 
     try:
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
-        gp.pyramid = "NONE"
-        gp.rasterstatistics = "NONE"
+        arcpy.env.pyramid = "NONE"
+        arcpy.env.rasterStatistics = "NONE"
 
         # Create output directories if they don't exist
-        if gp.Exists(cfg.OUTPUTDIR):
-            gp.RefreshCatalog(cfg.OUTPUTDIR)
+        if arcpy.Exists(cfg.OUTPUTDIR):
+            arcpy.RefreshCatalog(cfg.OUTPUTDIR)
         lu.create_dir(cfg.OUTPUTDIR)
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
@@ -66,7 +65,7 @@ def lm_master(argv=None):
             lu.write_custom_to_log(cfg.LMCUSTSETTINGS)
         lu.print_drive_warning()
 
-        installD = gp.GetInstallInfo("desktop")
+        installD = arcpy.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + cfg.releaseNum)
         try:
             gprint('on ArcGIS ' + installD['ProductName'] + ' ' +
@@ -124,12 +123,12 @@ def lm_master(argv=None):
         # Don't know if raster is in a gdb if entered from TOC
         lu.delete_data(cfg.RESRAST)
         gprint('\nMaking temporary copy of resistance raster for this run.')
-        gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
-        gp.Extent = gp.Describe(cfg.RESRAST_IN).Extent
-        gp.SnapRaster = cfg.RESRAST_IN
-        gp.cellSize = gp.Describe(cfg.RESRAST_IN).MeanCellHeight
+        arcpy.env.outputCoordinateSystem = arcpy.Describe(cfg.COREFC).SpatialReference
+        arcpy.env.extent = arcpy.Describe(cfg.RESRAST_IN).Extent
+        arcpy.env.snapRaster = cfg.RESRAST_IN
+        arcpy.env.cellSize = arcpy.Describe(cfg.RESRAST_IN).MeanCellHeight
         try:
-            gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
+            arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
         except Exception:
             msg = ('ERROR: Could not make a copy of your resistance raster. ' +
                     'Try re-starting ArcMap to release the file lock.')
@@ -139,12 +138,12 @@ def lm_master(argv=None):
             # Make core raster file
             gprint('\nMaking temporary raster of core file for this run.')
             lu.delete_data(cfg.CORERAS)
-            gp.FeatureToRaster_conversion(cfg.COREFC, cfg.COREFN,
-                          cfg.CORERAS, gp.Describe(cfg.RESRAST).MeanCellHeight)
+            arcpy.FeatureToRaster_conversion(cfg.COREFC, cfg.COREFN,
+                          cfg.CORERAS, arcpy.Describe(cfg.RESRAST).MeanCellHeight)
 
         def delete_final_gdb(finalgdb):
             """Deletes final geodatabase"""
-            if gp.Exists(finalgdb) and cfg.STEP5:
+            if arcpy.Exists(finalgdb) and cfg.STEP5:
                 try:
                     lu.clean_out_workspace(finalgdb)
                 except Exception:
@@ -179,14 +178,13 @@ def lm_master(argv=None):
             gprint(cfg.OUTPUTDIR)
 
         # Clean up
-        lu.delete_dir(cfg.SCRATCHDIR)
-        # lu.delete_data(cfg.FCORES)
+        lu.delete_dir(cfg.SCRATCHDIR) 
 
-        gp.addmessage('\nDone with linkage mapping.\n')
+        arcpy.AddMessage('\nDone with linkage mapping.\n')
 
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors

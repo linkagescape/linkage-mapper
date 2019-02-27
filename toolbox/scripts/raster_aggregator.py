@@ -13,18 +13,18 @@ __filename__ = "raster_aggregator.py"
 __version__ = "2013_0610"
 
 from os import path
-import arcgisscripting
 import sys
 import traceback
+
+import arcpy
 
 import lm_util_config as util
 
 
-gp = arcgisscripting.create(9.3)
-gp.CheckOutExtension("Spatial")
-gp.OverwriteOutput = True
+arcpy.CheckOutExtension("Spatial")
+arcpy.env.overwriteOutput = True
 
-gprint = gp.addmessage
+gprint = arcpy.AddMessage
 
 
 def raster_aggregator():
@@ -49,15 +49,15 @@ def raster_aggregator():
 
         if AG_FACTOR < 2 or AG_FACTOR > 99:
             msg = ('ERROR: Cell factor must be between 2 and 99.')
-            gp.AddError(msg)
+            arcpy.AddError(msg)
             exit(1)
 
-        gp.RefreshCatalog(OUTPUTDIR)
+        arcpy.RefreshCatalog(OUTPUTDIR)
 
         OUTPUTGDBNAME = 'agregated_rasters.gdb'
         OUTPUTGDB = path.join(OUTPUTDIR, path.basename(OUTPUTGDBNAME))
-        if not gp.exists(OUTPUTGDB):
-            gp.createfilegdb(OUTPUTDIR, path.basename(OUTPUTGDBNAME))
+        if not arcpy.Exists(OUTPUTGDB):
+            arcpy.CreateFileGDB_management(OUTPUTDIR, path.basename(OUTPUTGDBNAME))
 
         numRasters = 1
         if RESRAS[2] != '#':
@@ -74,72 +74,41 @@ def raster_aggregator():
         gprint('\nCell sizes will be multiplied by this amount')
         for rasterNum in range(1,numRasters+1):
             inputRaster = RESRAS[rasterNum]
-            gp.SnapRaster = inputRaster
-            oldCellSize = gp.Describe(inputRaster).MeanCellHeight
+            arcpy.env.snapRaster = inputRaster
+            oldCellSize = arcpy.Describe(inputRaster).MeanCellHeight
             dir,fileName = path.split(inputRaster)
 
             if SMOOTH == True and METHOD == "MEAN":
                 gprint('\nSmoothing cell values by taking mean of ' + str(AG_FACTOR) +'x' + str(AG_FACTOR) + ' neighborhood')
-                if len(fileName)>10:
-                    smoothRasterFN = fileName[0:10] + '_sm'
-                else:
-                    smoothRasterFN = fileName + '_sm'
-                smoothRasterFull = path.join(OUTPUTDIR,smoothRasterFN)
 
                 InNeighborhood = ("Rectangle " + str(AG_FACTOR) + " " +
                                      str(AG_FACTOR) + " CELL")
-
                 InNoDataOption = "NODATA"
 
                 # FocalStatistics
-                gp.FocalStatistics_sa(inputRaster, smoothRasterFull, InNeighborhood, "", InNoDataOption)
-
-                inputRaster = smoothRasterFull
-
-            if len(fileName)>10:
-                outRasterFN = fileName[0:10] + '_ag'
-            else:
-                outRasterFN = fileName + '_ag'
-            agRasterFull = path.join(OUTPUTDIR,outRasterFN)
-            if gp.exists(agRasterFull):
-                gp.delete_management(agRasterFull)
-
-            gp.workspace = OUTPUTDIR
+                inputRaster = arcpy.sa.FocalStatistics(
+                    inputRaster, InNeighborhood, "", InNoDataOption)
 
             gprint('\nAggregating raster "' + str(inputRaster) + '"')
             gprint('Old size was ' + str(oldCellSize))
             gprint('New cell size will be ' + str(oldCellSize * AG_FACTOR))
             gprint('Aggregation method: ' + METHOD)
-            gp.Aggregate_sa(inputRaster, outRasterFN, AG_FACTOR, METHOD,
-                            "TRUNCATE", "NODATA")
+            agg_rast = arcpy.sa.Aggregate(
+                inputRaster, AG_FACTOR, METHOD, "TRUNCATE", "NODATA")
 
             if SMOOTH == True and METHOD == 'MEAN':
                 finalRasterFN = fileName + '_CellFactor' + str(AG_FACTOR) + '_' + METHOD + '_sm'
             else:
                 finalRasterFN = fileName + '_CellFactor' + str(AG_FACTOR) + '_' + METHOD
 
-            gp.SnapRaster = agRasterFull
-
-            gp.workspace = OUTPUTGDB
             gprint("\nAggregated raster will be saved to: " + finalRasterFN)
             gprint("in geodatabase " + OUTPUTGDB)
-            gp.CopyRaster_management(agRasterFull, finalRasterFN)
-
-            #clean up
-            try:
-                gp.delete_management(agRasterFull)
-            except Exception:
-                pass
-            if SMOOTH == True:
-                try:
-                    gp.delete_management(smoothRasterFull)
-                except Exception:
-                    pass
+            agg_rast.save(path.join(OUTPUTGDB, finalRasterFN))
 
         gprint('Done.')
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         raise_geoproc_error(__filename__)
 
     # Return any PYTHON or system specific errors
@@ -155,13 +124,13 @@ def raise_geoproc_error(filename):
     tbinfo = traceback.format_tb(tb)[0]
     line = tbinfo.split(", ")[1]
 
-    gp.AddError("Geoprocessing error on **" + line + "** of " + filename +
+    arcpy.AddError("Geoprocessing error on **" + line + "** of " + filename +
                 " :")
     dashline(1)
-    for msg in range(0, gp.MessageCount):
-        if gp.GetSeverity(msg) == 2:
-            gp.AddReturnMessage(msg)
-        print gp.AddReturnMessage(msg)
+    for msg in range(0, arcpy.GetMessageCount() - 1):
+        if arcpy.GetSeverity(msg) == 2:
+            arcpy.AddReturnMessage(msg)
+        print arcpy.AddReturnMessage(msg)
     exit(0)
 
 
@@ -176,8 +145,8 @@ def raise_python_error(filename):
 
     err = traceback.format_exc().splitlines()[-1]
 
-    gp.AddError("Python error on **" + line + "** of " + filename)
-    gp.AddError(err)
+    arcpy.AddError("Python error on **" + line + "** of " + filename)
+    arcpy.AddError(err)
     exit(0)
 
 
@@ -190,10 +159,10 @@ def dashline(lspace=0):
 
     """
     if lspace == 1:
-        gp.addmessage('\n')
-    gp.addmessage('---------------------------------')
+        arcpy.AddMessage('\n')
+    arcpy.AddMessage('---------------------------------')
     if lspace == 2:
-        gp.addmessage('\n')
+        arcpy.AddMessage('\n')
 
 
 if __name__ == "__main__":

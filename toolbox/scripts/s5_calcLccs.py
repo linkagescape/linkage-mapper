@@ -11,28 +11,15 @@ from os import path
 import time
 
 import numpy as npy
+import arcpy
 
 from lm_config import tool_env as cfg
 import lm_util as lu
 
 _SCRIPT_NAME = "s5_calcLccs.py"
 
-try:
-    import arcpy # want to know if arcpy is available
-    from arcpy.sa import *
-    arcpyAvailable = True
-except Exception:
-    arcpyAvailable = False
-
-# # Arcpy not working in some cases unless s3 executed in same run.
-# # For nso3 dataset, map algebra adding rasters results in empty rasters.
-# # for now there seems to be no speed improvement with arcpy.
-
-cfg.useArcpy = False
-gp = cfg.gp
-import arcgisscripting
-arcObj = cfg.gp
 gprint = lu.gprint
+
 
 def STEP5_calc_lccs():
     """Creates and mosaics normalized least-cost corridors
@@ -75,13 +62,9 @@ def calc_lccs(normalize):
         lu.dashline(1)
         gprint('Running script ' + _SCRIPT_NAME)
         linkTableFile = lu.get_prev_step_link_table(step=5)
-        if cfg.useArcpy:
-            arcpy.env.workspace = cfg.SCRATCHDIR
-            arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-            arcpy.env.compression = "NONE"
-        else:
-            gp.workspace = cfg.SCRATCHDIR
-            gp.scratchWorkspace = cfg.ARCSCRATCHDIR
+        arcpy.env.workspace = cfg.SCRATCHDIR
+        arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
+        arcpy.env.compression = "NONE"
 
         if cfg.MAXEUCDIST is not None:
             gprint('Max Euclidean distance between cores')
@@ -96,16 +79,10 @@ def calc_lccs(normalize):
 
         # set the analysis extent and cell size to that of the resistance
         # surface
-        if cfg.useArcpy:
-            arcpy.env.Extent = cfg.RESRAST
-            arcpy.env.cellSize = cfg.RESRAST
-            arcpy.env.snapRaster = cfg.RESRAST
-            arcpy.env.mask = cfg.RESRAST
-        else:
-            gp.Extent = (gp.Describe(cfg.RESRAST)).Extent
-            gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
-            gp.mask = cfg.RESRAST
-            gp.snapraster = cfg.RESRAST
+        arcpy.env.extent = cfg.RESRAST
+        arcpy.env.cellSize = cfg.RESRAST
+        arcpy.env.snapRaster = cfg.RESRAST
+        arcpy.env.mask = cfg.RESRAST
 
         linkTable = lu.load_link_table(linkTableFile)
         numLinks = linkTable.shape[0]
@@ -126,16 +103,16 @@ def calc_lccs(normalize):
                 cfg.MINCOSTDIST, DISABLE_LEAST_COST_NO_VAL)
 
         # Added to try to speed up:
-        gp.pyramid = "NONE"
-        gp.rasterstatistics = "NONE"
+        arcpy.env.pyramid = "NONE"
+        arcpy.env.rasterStatistics = "NONE"
 
         # set up directories for normalized lcc and mosaic grids
         dirCount = 0
         gprint("Creating output folder: " + cfg.LCCBASEDIR)
         lu.delete_dir(cfg.LCCBASEDIR)
-        gp.CreateFolder_management(path.dirname(cfg.LCCBASEDIR),
+        arcpy.CreateFolder_management(path.dirname(cfg.LCCBASEDIR),
                                        path.basename(cfg.LCCBASEDIR))
-        gp.CreateFolder_management(cfg.LCCBASEDIR, cfg.LCCNLCDIR_NM)
+        arcpy.CreateFolder_management(cfg.LCCBASEDIR, cfg.LCCNLCDIR_NM)
         clccdir = path.join(cfg.LCCBASEDIR, cfg.LCCNLCDIR_NM)
         gprint("")
         if normalize:
@@ -169,49 +146,34 @@ def calc_lccs(normalize):
             cwdRaster1 = lu.get_cwd_path(corex)
             cwdRaster2 = lu.get_cwd_path(corey)
 
-            if not gp.Exists(cwdRaster1):
+            if not arcpy.Exists(cwdRaster1):
                 msg =('\nError: cannot find cwd raster:\n' + cwdRaster1)
-            if not gp.Exists(cwdRaster2):
+            if not arcpy.Exists(cwdRaster2):
                 msg =('\nError: cannot find cwd raster:\n' + cwdRaster2)
                 lu.raise_error(msg)
 
 
             lccNormRaster = path.join(clccdir, str(corex) + "_" +
                                       str(corey))# + ".tif")
-            if cfg.useArcpy:
-                arcpy.env.Extent = "MINOF"
-            else:
-                gp.Extent = "MINOF"
+            arcpy.env.extent = "MINOF"
 
             link = lu.get_links_from_core_pairs(linkTable, corex, corey)
 
             offset = 10000
 
             # Normalized lcc rasters are created by adding cwd rasters and
-            # subtracting the least cost distance between them.
-            count = 0
-            if arcpyAvailable:
-                cfg.useArcpy = True # Fixes Canran Liu's bug with lcDist
-            if cfg.useArcpy:
+            # subtracting the least cost distance between them. 
+            lcDist = (float(linkTable[link,cfg.LTB_CWDIST]) - offset)
 
-                lcDist = (float(linkTable[link,cfg.LTB_CWDIST]) - offset)
-
-                if normalize:
-                    statement = ('outras = Raster(cwdRaster1) + Raster('
-                        'cwdRaster2) - lcDist; outras.save(lccNormRaster)')
-
-                else:
-                    statement = ('outras =Raster(cwdRaster1) + Raster('
-                                'cwdRaster2); outras.save(lccNormRaster)')
+            if normalize:
+                statement = ('outras = arcpy.sa.Raster(cwdRaster1) '
+                             '+ arcpy.sa.Raster(cwdRaster2) - lcDist; '
+                             'outras.save(lccNormRaster)')
             else:
-                if normalize:
-                    lcDist = str(linkTable[link,cfg.LTB_CWDIST] - offset)
-                    expression = (cwdRaster1 + " + " + cwdRaster2 + " - "
-                                  + lcDist)
-                else:
-                    expression = (cwdRaster1 + " + " + cwdRaster2)
-                statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
-                     'lccNormRaster)')
+                statement = ('outras = arcpy.sa.Raster(cwdRaster1) '
+                             '+ arcpy.sa.Raster(cwdRaster2); '
+                             'outras.save(lccNormRaster)')
+
             count = 0
             while True:
                 try:
@@ -221,18 +183,18 @@ def calc_lccs(normalize):
                     if not tryAgain:
                         exec statement
                 else: break
-            cfg.useArcpy = False # End fix for Conran Liu's bug with lcDist
 
-            if normalize and cfg.useArcpy:
+            if normalize:
                 try:
-                    minObject = gp.GetRasterProperties(lccNormRaster, "MINIMUM")
-                    rasterMin = float(str(minObject.getoutput(0)))
+                    minObject = arcpy.GetRasterProperties_management(lccNormRaster, "MINIMUM")
+                    rasterMin = float(str(minObject.getOutput(0)))
                 except Exception:
                     lu.warn('\n------------------------------------------------')
                     lu.warn('WARNING: Raster minimum check failed in step 5. \n'
                         'This may mean the output rasters are corrupted. Please \n'
                         'be sure to check for valid rasters in '+ outputGDB)
                     rasterMin = 0
+                tolerance = (float(arcpy.env.cellSize) * -10)
                 if rasterMin < tolerance:
                     lu.dashline(1)
                     msg = ('WARNING: Minimum value of a corridor #' + str(x+1)
@@ -242,12 +204,8 @@ def calc_lccs(normalize):
                            'bounding circle, or that a corridor passed outside of the '
                            'resistance map. \n')
                     lu.warn(msg)
-
-
-            if cfg.useArcpy:
-                arcpy.env.Extent = cfg.RESRAST
-            else:
-                gp.Extent = (gp.Describe(cfg.RESRAST)).Extent
+            
+            arcpy.env.extent = cfg.RESRAST
 
             mosaicDir = path.join(cfg.LCCBASEDIR,'mos'+str(x+1))
             lu.create_dir(mosaicDir)
@@ -256,13 +214,13 @@ def calc_lccs(normalize):
 
             if numGridsWritten == 0 and dirCount == 0:
                 #If this is the first grid then copy rather than mosaic
-                arcObj.CopyRaster_management(lccNormRaster, mosaicRaster)
+                arcpy.CopyRaster_management(lccNormRaster, mosaicRaster)
             else:
 
                 rasterString = '"'+lccNormRaster+";"+lastMosaicRaster+'"'
-                statement = ('arcObj.MosaicToNewRaster_management('
+                statement = ('arcpy.MosaicToNewRaster_management('
                             'rasterString,mosaicDir,mosFN, "", '
-                            '"32_BIT_FLOAT", gp.cellSize, "1", "MINIMUM", '
+                            '"32_BIT_FLOAT", arcpy.env.cellSize, "1", "MINIMUM", '
                             '"MATCH")')
 
                 count = 0
@@ -322,7 +280,7 @@ def calc_lccs(normalize):
                     clccdir = path.join(cfg.LCCBASEDIR,
                                         cfg.LCCNLCDIR_NM + str(dirCount))
                     gprint("Creating output folder: " + clccdir)
-                    gp.CreateFolder_management(cfg.LCCBASEDIR,
+                    arcpy.CreateFolder_management(cfg.LCCBASEDIR,
                                                path.basename(clccdir))
 
             if numGridsWritten > 1 or dirCount > 0:
@@ -339,23 +297,20 @@ def calc_lccs(normalize):
         # ---------------------------------------------------------------------
 
         # Create output geodatabase
-        if not gp.exists(outputGDB):
-            gp.createfilegdb(cfg.OUTPUTDIR, path.basename(outputGDB))
+        if not arcpy.Exists(outputGDB):
+            arcpy.CreateFileGDB_management(cfg.OUTPUTDIR, path.basename(outputGDB))
 
-        if cfg.useArcpy:
-            arcpy.env.workspace = outputGDB
-        else:
-            gp.workspace = outputGDB
+        arcpy.env.workspace = outputGDB
 
-        gp.pyramid = "NONE"
-        gp.rasterstatistics = "NONE"
+        arcpy.env.pyramid = "NONE"
+        arcpy.env.rasterStatistics = "NONE"
 
 
         # Copy mosaic raster to output geodatabase
         saveFloatRaster = False
         if saveFloatRaster == True:
             floatRaster = outputGDB + '\\' + PREFIX + mosaicBaseName + '_flt' # Full path
-            statement = 'arcObj.CopyRaster_management(mosaicRaster, floatRaster)'
+            statement = 'arcpy.CopyRaster_management(mosaicRaster, floatRaster)'
             try:
                 exec statement
             except Exception:
@@ -365,12 +320,9 @@ def calc_lccs(normalize):
         # ---------------------------------------------------------------------
         # convert mosaic raster to integer
         intRaster = path.join(outputGDB,PREFIX + mosaicBaseName)
-        if cfg.useArcpy:
-            statement = ('outras = Int(Raster(mosaicRaster) - offset + 0.5); '
-                        'outras.save(intRaster)')
-        else:
-            expression = "int(" + mosaicRaster + " - " + str(offset) + " + 0.5)"
-            statement = 'gp.SingleOutputMapAlgebra_sa(expression, intRaster)'
+        statement = ('outras = arcpy.sa.Int(arcpy.sa.Raster(mosaicRaster) '
+                     '- offset + 0.5); '
+                     'outras.save(intRaster)')
         count = 0
         while True:
             try:
@@ -385,22 +337,14 @@ def calc_lccs(normalize):
         if writeTruncRaster:
             # -----------------------------------------------------------------
             # Set anything beyond cfg.CWDTHRESH to NODATA.
-            if arcpyAvailable:
-                cfg.useArcpy = True # For Alissa Pump's error with 10.1
-
             truncRaster = (outputGDB + '\\' + PREFIX + mosaicBaseName +
                            '_truncated_at_' + lu.cwd_cutoff_str(cfg.CWDTHRESH))
+            
+            statement = ('outRas = arcpy.sa.Raster(intRaster)'
+                         '* (arcpy.sa.Con(arcpy.sa.Raster(intRaster) '
+                         '<= cfg.CWDTHRESH, 1)); '
+                         'outRas.save(truncRaster)')
 
-            count = 0
-            if cfg.useArcpy:
-                statement = ('outRas = Raster(intRaster) * '
-                            '(Con(Raster(intRaster) <= cfg.CWDTHRESH,1)); '
-                            'outRas.save(truncRaster)')
-            else:
-                expression = ("(" + intRaster + " * (con(" + intRaster + "<= "
-                              + str(cfg.CWDTHRESH) + ",1)))")
-                statement = ('gp.SingleOutputMapAlgebra_sa(expression, '
-                                                          'truncRaster)')
             count = 0
             while True:
                 try:
@@ -409,22 +353,21 @@ def calc_lccs(normalize):
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain: exec statement
                 else: break
-            cfg.useArcpy = False # End fix for Alissa Pump's error with 10.1
         # ---------------------------------------------------------------------
         # Check for unreasonably low minimum NLCC values
         try:
             mosaicGrid = path.join(cfg.LCCBASEDIR,'mos')
             # Copy to grid to test
-            arcObj.CopyRaster_management(mosaicRaster, mosaicGrid)
-            minObject = gp.GetRasterProperties(mosaicGrid, "MINIMUM")
-            rasterMin = float(str(minObject.getoutput(0)))
+            arcpy.CopyRaster_management(mosaicRaster, mosaicGrid)
+            minObject = arcpy.GetRasterProperties_management(mosaicGrid, "MINIMUM")
+            rasterMin = float(str(minObject.getOutput(0)))
         except Exception:
             lu.warn('\n------------------------------------------------')
             lu.warn('WARNING: Raster minimum check failed in step 5. \n'
                 'This may mean the output rasters are corrupted. Please \n'
                 'be sure to check for valid rasters in '+ outputGDB)
             rasterMin = 0
-        tolerance = (float(gp.cellSize) * -10)
+        tolerance = (float(arcpy.env.cellSize) * -10)
         if rasterMin < tolerance:
             lu.dashline(1)
             msg = ('WARNING: Minimum value of mosaicked corridor map is '
@@ -481,12 +424,12 @@ def calc_lccs(normalize):
             lu.delete_dir(cfg.LCCBASEDIR)
 
         # Build statistics for corridor rasters
-        gp.addmessage('\nBuilding output statistics and pyramids '
+        arcpy.AddMessage('\nBuilding output statistics and pyramids '
                           'for corridor raster')
         lu.build_stats(intRaster)
 
         if writeTruncRaster:
-            gp.addmessage('Building output statistics '
+            arcpy.AddMessage('Building output statistics '
                               'for truncated corridor raster')
             lu.build_stats(truncRaster)
 
@@ -494,7 +437,7 @@ def calc_lccs(normalize):
             arcpy.CopyFeatures_management(cfg.COREFC, cfg.OUTPUTFORMODELBUILDER)
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 5. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)

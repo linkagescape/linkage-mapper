@@ -5,18 +5,8 @@ import os
 import sys
 import shutil
 
+import arcpy
 
-try:
-    import arcpy
-    gp = arcpy.gp
-    arcgisscripting = arcpy
-    arc10 = True
-except Exception:
-    arc10 = False
-    import arcgisscripting
-    gp = arcgisscripting.create()
-
-gprint = gp.addmessage
 
 _SCRIPT_NAME = "lm_delete_cwds"
 
@@ -29,19 +19,19 @@ def delete_cwd_dir():
     cwdBaseDir = os.path.join(projectDir, "datapass\\cwd")
     try:
         if os.path.exists(cwdBaseDir):
-            gp.delete_management(cwdBaseDir)
+            arcpy.Delete_management(cwdBaseDir)
     except Exception:
         try:
             if os.path.exists(cwdBaseDir):
                 shutil.rmtree(cwdBaseDir)
         except Exception:
-            gp.AddError("Unable to delete cwd directory.  One of the rasters "
+            arcpy.AddError("Unable to delete cwd directory.  One of the rasters "
                         "might have been open in ArcMap.\n You may "
                         'need to re-start ArcMap to release the file lock.')
-            for msg in range(0, gp.MessageCount):
-                if gp.GetSeverity(msg) == 2:
-                    gp.AddReturnMessage(msg)
-                print gp.AddReturnMessage(msg)
+            for msg in range(0, arcpy.GetMessageCount() - 1):
+                if arcpy.GetSeverity(msg) == 2:
+                    arcpy.AddReturnMessage(msg)
+                print arcpy.AddReturnMessage(msg)
             exit(0)
 
     return

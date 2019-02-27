@@ -15,7 +15,6 @@ from os import path
 import shutil
 import sys
 
-import arcgisscripting
 import arcpy
 
 from lm_config import tool_env as cfg
@@ -42,7 +41,6 @@ def circuitscape_master(argv=None):
     argv.append(get_cs_path())  # Add Circuitscape path
 
     cfg.configure(cfg.TOOL_CS, argv)
-    gp = cfg.gp
 
     try:
         lu.create_dir(cfg.LOGDIR)
@@ -58,12 +56,12 @@ def circuitscape_master(argv=None):
         # Check core ID field.
         lu.check_cores(cfg.COREFC, cfg.COREFN)
 
-        gp.OutputCoordinateSystem = gp.describe(cfg.COREFC).SpatialReference
+        arcpy.env.outputCoordinateSystem = arcpy.Describe(cfg.COREFC).SpatialReference
         # Set data frame spatial reference to coordinate system of input data
         lu.set_dataframe_sr()
 
-        gp.pyramid = "NONE"
-        gp.rasterstatistics = "NONE"
+        arcpy.env.pyramid = "NONE"
+        arcpy.env.rasterStatistics = "NONE"
 
         # Move adj and cwd results from earlier versions to datapass directory
         lu.move_old_results()
@@ -86,10 +84,10 @@ def circuitscape_master(argv=None):
         if cfg.DO_ALLPAIRS:
             #  Fixme: move raster path to config
             S5CORRIDORRAS = path.join(cfg.OUTPUTGDB,cfg.PREFIX + "_corridors")
-            if not gp.Exists(S5CORRIDORRAS):
+            if not arcpy.Exists(S5CORRIDORRAS):
                 S5CORRIDORRAS = path.join(cfg.OUTPUTGDB, cfg.PREFIX +
                                          "_lcc_mosaic_int")
-            if not gp.Exists(S5CORRIDORRAS):
+            if not arcpy.Exists(S5CORRIDORRAS):
                 msg = ('ERROR: Corridor raster created in step 5 is required'
                         '\nfor all-pair analyses, but was not found.')
                 lu.raise_error(msg)
@@ -102,7 +100,7 @@ def circuitscape_master(argv=None):
             # Make a local grid copy of resistance raster-
             # will run faster than gdb.
             lu.delete_data(cfg.RESRAST)
-            if not gp.Exists(cfg.RESRAST_IN):
+            if not arcpy.Exists(cfg.RESRAST_IN):
                 msg = ('ERROR: Resistance raster is required for pinch point'
                         ' analyses, but was not found.')
                 lu.raise_error(msg)
@@ -114,7 +112,7 @@ def circuitscape_master(argv=None):
 
             gprint('\nMaking local copy of resistance raster.')
             try:
-                gp.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
+                arcpy.CopyRaster_management(cfg.RESRAST_IN, cfg.RESRAST)
             except Exception:
                 msg = ('ERROR: Could not make a copy of your resistance raster. ' +
                     'Try re-starting ArcMap to release the file lock.')
@@ -127,9 +125,9 @@ def circuitscape_master(argv=None):
             if path.exists(cfg.CENTRALITYBASEDIR):
                 shutil.rmtree(cfg.CENTRALITYBASEDIR)
             lu.create_dir(cfg.CENTRALITYBASEDIR)
-            gp.CreateFolder_management(cfg.CENTRALITYBASEDIR,
+            arcpy.CreateFolder_management(cfg.CENTRALITYBASEDIR,
                                         cfg.CIRCUITOUTPUTDIR_NM)
-            gp.CreateFolder_management(cfg.CENTRALITYBASEDIR,
+            arcpy.CreateFolder_management(cfg.CENTRALITYBASEDIR,
                                         cfg.CIRCUITCONFIGDIR_NM)
             lu.clean_out_workspace(cfg.CORECENTRALITYGDB)
 
@@ -142,9 +140,9 @@ def circuitscape_master(argv=None):
                 gprint("Creating output folder: " + cfg.CIRCUITBASEDIR)
                 lu.delete_dir(cfg.CIRCUITBASEDIR)
                 lu.create_dir(cfg.CIRCUITBASEDIR)
-                gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
+                arcpy.CreateFolder_management(cfg.CIRCUITBASEDIR,
                                         cfg.CIRCUITOUTPUTDIR_NM)
-                gp.CreateFolder_management(cfg.CIRCUITBASEDIR,
+                arcpy.CreateFolder_management(cfg.CIRCUITBASEDIR,
                                         cfg.CIRCUITCONFIGDIR_NM)
 
             s8.STEP8_calc_pinchpoints()
@@ -157,7 +155,7 @@ def circuitscape_master(argv=None):
         gprint('\nDONE!\n')
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors

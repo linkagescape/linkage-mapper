@@ -24,7 +24,6 @@ import traceback
 
 import arcinfo  # Import arcinfo license. Needed before arcpy import.
 import arcpy
-import arcpy.sa as sa
 
 from cc_config import cc_env
 import cc_util
@@ -168,9 +167,9 @@ def cc_copy_inputs():
 
         # Want climate and resistance rasters in same spatial ref
         # with same nodata cells
-        proj_resist_rast = sa.Con(
-            sa.IsNull(cc_env.climate_rast),
-            sa.Int(cc_env.climate_rast), cc_env.resist_rast)
+        proj_resist_rast = arcpy.sa.Con(
+            arcpy.sa.IsNull(cc_env.climate_rast),
+            arcpy.sa.Int(cc_env.climate_rast), cc_env.resist_rast)
         proj_resist_rast.save(cc_env.prj_resist_rast)
     else:
         xmin = climate_extent.XMin
@@ -178,9 +177,9 @@ def cc_copy_inputs():
         xmax = climate_extent.XMax
         ymax = climate_extent.YMax
 
-        ones_resist_rast = sa.Con(
-            sa.IsNull(cc_env.climate_rast),
-            sa.Int(cc_env.climate_rast), 1)
+        ones_resist_rast = arcpy.sa.Con(
+            arcpy.sa.IsNull(cc_env.climate_rast),
+            arcpy.sa.Int(cc_env.climate_rast), 1)
         ones_resist_rast.save(cc_env.prj_resist_rast)
 
     arcpy.CopyRaster_management(cc_env.climate_rast,

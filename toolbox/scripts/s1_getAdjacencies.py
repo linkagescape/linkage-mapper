@@ -11,27 +11,14 @@ from os import path
 import time
 
 import numpy as npy
-
-import arcgisscripting
+import arcpy
 
 from lm_config import tool_env as cfg
 import lm_util as lu
 
-try:
-    import arcpy
-    from arcpy.sa import *
-    arcpy.CheckOutExtension("spatial")
-    gp = arcpy.gp
-    arcgisscripting = arcpy
-except Exception:
-    arcpy = False
-    import arcgisscripting
-    gp = cfg.gp
-
 
 _SCRIPT_NAME = "s1_getAdjacencies.py"
 
-gp = cfg.gp
 gprint = lu.gprint
 
 
@@ -46,8 +33,8 @@ def STEP1_get_adjacencies():
 
         # Default behavior is to use same cell size as resistance raster,
         # but this can be changed here.
-        gp.scratchWorkspace = cfg.ARCSCRATCHDIR
-        gp.workspace = cfg.PROJECTDIR
+        arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
+        arcpy.env.workspace = cfg.PROJECTDIR
 
         #remove adj directory and files from previous runs
         lu.delete_dir(cfg.ADJACENCYDIR)
@@ -70,7 +57,8 @@ def STEP1_get_adjacencies():
                               'plus buffer of ' +
                               str(float(cfg.BUFFERDIST)) + ' map units')
 
-            gp.MakeFeatureLayer(cfg.COREFC, cfg.FCORES)
+            # Used by lu.get_extent_box_coords()
+            arcpy.MakeFeatureLayer_management(cfg.COREFC, cfg.FCORES)
 
             extentBoxList = npy.zeros((0, 5), dtype='float32')
             boxCoords = lu.get_extent_box_coords()
@@ -86,13 +74,13 @@ def STEP1_get_adjacencies():
                            path.basename(cfg.BNDCIRCEN))
 
             lu.delete_data(cfg.BNDCIR)
-            gp.buffer_analysis(cfg.BNDCIRCEN, cfg.BNDCIR, "radius")
+            arcpy.Buffer_analysis(cfg.BNDCIRCEN, cfg.BNDCIR, "radius")
 
             del boundingCirclePointArray
 
-        gp.pyramid = "NONE"
-        gp.rasterstatistics = "NONE"
-        gp.workspace = cfg.SCRATCHDIR
+        arcpy.env.pyramid = "NONE"
+        arcpy.env.rasterStatistics = "NONE"
+        arcpy.env.workspace = cfg.SCRATCHDIR
 
         if cfg.S1ADJMETH_CW:
             cwadjacency()
@@ -100,7 +88,7 @@ def STEP1_get_adjacencies():
             euadjacency()
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
@@ -114,11 +102,7 @@ def STEP1_get_adjacencies():
 
 
 def cwadjacency():
-    """Calculate cost-weighted adjacency
-
-       Inputs: gp - geoprocessing object
-
-    """
+    """Calculate cost-weighted adjacency."""
     try:
         ALLOC_RASFN = "CWD_alloc_ras"
 
@@ -131,16 +115,14 @@ def cwadjacency():
         # May need to set extent prior to core poly to raster conversion...
         # ----------------------------------------------
         # Cost-weighted allocation code
-        gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
-        gp.extent = gp.Describe(cfg.RESRAST).extent
+        arcpy.env.cellSize = arcpy.Describe(cfg.RESRAST).MeanCellHeight
+        arcpy.env.extent = arcpy.Describe(cfg.RESRAST).extent
         if cfg.BUFFERDIST is not None:
             # Clip resistance raster using bounding circle
             start_time = time.clock()
-            gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
-            gp.extent = gp.Describe(cfg.RESRAST).Extent
-            bResistance = path.join(cfg.SCRATCHDIR, "bResistance")
-            gp.ExtractByMask_sa(cfg.RESRAST, cfg.BNDCIR,
-                                    bResistance)
+            arcpy.env.cellSize = arcpy.Describe(cfg.RESRAST).MeanCellHeight
+            arcpy.env.extent = arcpy.Describe(cfg.RESRAST).Extent
+            bResistance = arcpy.sa.ExtractByMask(cfg.RESRAST, cfg.BNDCIR)
             gprint('\nReduced resistance raster extracted using '
                               'bounding circle.')
             start_time = lu.elapsed_time(start_time)
@@ -153,33 +135,26 @@ def cwadjacency():
         if cfg.TMAXCWDIST is not None:
             gprint('Maximum cost-weighted distance set to ' +
                               str(cfg.TMAXCWDIST))
-        gp.CellSize = gp.Describe(bResistance).MeanCellHeight
-        gp.extent = "MAXOF"
-        gprint('Processing cell size: ' + gp.CellSize)
+        arcpy.env.cellSize = arcpy.Describe(bResistance).MeanCellHeight
+        arcpy.env.extent = "MAXOF"
+        gprint('Processing cell size: ' + arcpy.env.cellSize)
 
-        gp.workspace = cfg.ADJACENCYDIR
-        gp.scratchworkspace = cfg.ARCSCRATCHDIR
+        arcpy.env.workspace = cfg.ADJACENCYDIR
+        arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
 
         lu.delete_data(cfg.CWDGDB)
-        if not gp.exists(cfg.CWDGDB):
-            gp.createfilegdb(cfg.OUTPUTDIR, path.basename(cfg.CWDGDB))
+        if not arcpy.Exists(cfg.CWDGDB):
+            arcpy.CreateFileGDB_management(cfg.OUTPUTDIR, path.basename(cfg.CWDGDB))
         outDistanceRaster = path.join(cfg.CWDGDB, PREFIX + "_cwd")
         alloc_ras = path.join(cfg.ADJACENCYDIR, ALLOC_RASFN)
         lu.delete_data(alloc_ras)
         lu.delete_data(outDistanceRaster)
 
+        statement = ('costAllocOut = arcpy.sa.CostAllocation(cfg.CORERAS, '
+                     'bResistance, cfg.TMAXCWDIST, cfg.CORERAS,"VALUE", '
+                     'outDistanceRaster);'
+                     'costAllocOut.save(alloc_ras)')
         count = 0
-
-
-        if arcpy:
-            statement = ('costAllocOut = CostAllocation(cfg.CORERAS, '
-                        'bResistance, cfg.TMAXCWDIST, cfg.CORERAS,"VALUE", '
-                        'outDistanceRaster);'
-                        'costAllocOut.save(alloc_ras)')
-        else:
-            statement = ('gp.Costallocation_sa(cfg.CORERAS, bResistance, '
-                     'alloc_ras, cfg.TMAXCWDIST, cfg.CORERAS, "VALUE", '
-                     'outDistanceRaster, "")')
         while True:
             try:
                 exec statement
@@ -189,15 +164,16 @@ def cwadjacency():
                     exec statement
             else:
                 break
+
         gprint('\nBuilding output statistics and pyramids for CWD raster.')
         lu.build_stats(outDistanceRaster)
-        gp.scratchworkspace = cfg.ARCSCRATCHDIR
+        arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         gprint('Cost-weighted distance allocation done.')
         start_time = lu.elapsed_time(start_time)
         adjshiftwrite(alloc_ras, outcsvfile, outcsvLogfile)
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
@@ -210,11 +186,7 @@ def cwadjacency():
 
 
 def euadjacency():
-    """Calculate Euclidean adjacency
-
-       Inputs: gp - geoprocessing object
-
-    """
+    """Calculate Euclidean adjacency."""
     try:
         ALLOC_RASFN = "Euc_alloc_ras"
         lu.dashline()
@@ -224,26 +196,28 @@ def euadjacency():
 
         # ----------------------------------------------
         # Euclidean allocation code
-        gp.workspace = cfg.ADJACENCYDIR
+        arcpy.env.workspace = cfg.ADJACENCYDIR
         gprint('Starting Euclidean adjacency processing...')
         # Euclidean cell size
-        cellSizeEuclidean = gp.Describe(cfg.RESRAST).MeanCellHeight
+        cellSizeEuclidean = arcpy.Describe(cfg.RESRAST).MeanCellHeight
 
-        oldextent = gp.extent
+        oldextent = arcpy.env.extent
         if cfg.BUFFERDIST is not None:
-            gp.extent = gp.Describe(cfg.BNDCIR).extent
+            arcpy.env.extent = arcpy.Describe(cfg.BNDCIR).extent
 
         start_time = time.clock()
 
-        gp.scratchworkspace = cfg.ARCSCRATCHDIR
+        arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         outDistanceRaster = path.join(cfg.ADJACENCYDIR, "euc")
         alloc_ras = path.join(cfg.ADJACENCYDIR, ALLOC_RASFN)
         lu.delete_data(alloc_ras)
         lu.delete_data(outDistanceRaster)
 
         count = 0
-        statement = ('gp.EucAllocation_sa(cfg.CORERAS, alloc_ras, "","", '
-                     'cellSizeEuclidean, "", outDistanceRaster, "")')
+        statement = ('alloc_raster = arcpy.sa.EucAllocation('
+                     'cfg.CORERAS, "", "", '
+                     'cellSizeEuclidean, "", outDistanceRaster, ""); '
+                     'alloc_raster.save(alloc_ras)')
         while True:
             try:
                 exec statement
@@ -254,17 +228,17 @@ def euadjacency():
             else:
                 break
 
-        gp.scratchworkspace = cfg.ARCSCRATCHDIR
+        arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         gprint('\nEuclidean distance allocation done.')
         start_time = lu.elapsed_time(start_time)
-        gp.extent = oldextent
+        arcpy.env.extent = oldextent
         adjshiftwrite(alloc_ras, outcsvfile, outcsvLogfile)
 
         # Clean up
         lu.delete_data(outDistanceRaster)
 
      # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 1. Details follow.****')
 

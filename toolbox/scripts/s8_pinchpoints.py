@@ -12,10 +12,9 @@ from os import path
 import time
 
 import numpy as npy
-from lm_retry_decorator import Retry
 import arcpy
-from arcpy.sa import *
 
+from lm_retry_decorator import Retry
 from lm_config import tool_env as cfg
 import lm_util as lu
 
@@ -48,13 +47,13 @@ def STEP8_calc_pinchpoints():
         arcpy.env.workspace = cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         arcpy.env.pyramid = "NONE"
-        arcpy.env.rasterstatistics = "NONE"
+        arcpy.env.rasterStatistics = "NONE"
 
         # set the analysis extent and cell size to that of the resistance
         # surface
         arcpy.env.extent = cfg.RESRAST
         arcpy.env.cellSize = cfg.RESRAST
-        arcpy.snapraster = cfg.RESRAST
+        arcpy.snapRaster = cfg.RESRAST
 
         resRaster = cfg.RESRAST
         arcpy.env.extent = "MINOF"
@@ -173,14 +172,16 @@ def STEP8_calc_pinchpoints():
 
                 # Normalized lcc rasters are created by adding cwd rasters
                 # and subtracting the least cost distance between them.
-                outRas = Raster(cwdRaster1) + Raster(cwdRaster2) - lcDist
+                outRas = (arcpy.sa.Raster(cwdRaster1)
+                          + arcpy.sa.Raster(cwdRaster2) - lcDist)
                 outRas.save(lccNormRaster)
 
                 #create raster mask
                 resMaskRaster = path.join(linkDir, 'res_mask'+tif)
 
                 #create raster mask
-                outCon = arcpy.sa.Con(Raster(lccNormRaster) <= cfg.CWDCUTOFF, 1)
+                outCon = arcpy.sa.Con(arcpy.sa.Raster(lccNormRaster)
+                                      <= cfg.CWDCUTOFF, 1)
                 outCon.save(resMaskRaster)
 
                 # Convert to poly.  Use as mask to clip resistance raster.
@@ -219,8 +220,9 @@ def STEP8_calc_pinchpoints():
                 arcpy.env.extent = resClipRasterMasked
 
                 # Next result needs to be floating pt for numpy export
-                outCon = arcpy.sa.Con(Raster(cwdRaster1) == 0, corex,
-                            arcpy.sa.Con(Raster(cwdRaster2) == 0, corey + 0.0))
+                outCon = (arcpy.sa.Con(arcpy.sa.Raster(cwdRaster1) == 0, corex,
+                          arcpy.sa.Con(arcpy.sa.Raster(cwdRaster2) == 0, corey
+                          + 0.0)))
                 outCon.save(corePairRaster)
 
                 coreNpyFN = 'cores_link_' + linkId + '.npy'
@@ -292,8 +294,9 @@ def STEP8_calc_pinchpoints():
                 if SETCORESTONULL:
                     # Set core areas to NoData in current map for color ramping
                     currentRaster2 = currentRaster + '2' + tif
-                    outCon = arcpy.sa.Con(arcpy.sa.IsNull(Raster
-                                      (corePairRaster)), Raster(currentRaster))
+                    outCon = (arcpy.sa.Con(arcpy.sa.IsNull(
+                              arcpy.sa.Raster(corePairRaster)),
+                              arcpy.sa.Raster(currentRaster)))
                     outCon.save(currentRaster2)
                     currentRaster = currentRaster2
                 arcpy.env.extent = "MAXOF"
@@ -405,7 +408,7 @@ def STEP8_calc_pinchpoints():
                                          s8CoreRasPath, arcpy.env.cellSize)
         binaryCoreRaster = path.join(cfg.SCRATCHDIR,"core_ras_bin")
 
-        outCon = arcpy.sa.Con(Raster(s8CoreRasPath) > 0, 1)
+        outCon = arcpy.sa.Con(arcpy.sa.Raster(s8CoreRasPath) > 0, 1)
         outCon.save(binaryCoreRaster)
         s5corridorRas = path.join(cfg.OUTPUTGDB,cfg.PREFIX + "_corridors")
 
@@ -413,9 +416,10 @@ def STEP8_calc_pinchpoints():
             s5corridorRas = path.join(cfg.OUTPUTGDB,cfg.PREFIX +
                                       "_lcc_mosaic_int")
 
-        outCon = arcpy.sa.Con(Raster(s5corridorRas) <= cfg.CWDCUTOFF, Raster(
-                              resRaster), arcpy.sa.Con(Raster(
-                              binaryCoreRaster) > 0, Raster(resRaster)))
+        outCon = (arcpy.sa.Con(arcpy.sa.Raster(s5corridorRas) <= cfg.CWDCUTOFF,
+                  arcpy.sa.Raster(resRaster),
+                  arcpy.sa.Con(arcpy.sa.Raster(binaryCoreRaster) > 0,
+                  arcpy.sa.Raster(resRaster))))
 
         resRasClipPath = path.join(cfg.SCRATCHDIR,'res_ras_clip')
         outCon.save(resRasClipPath)
@@ -427,8 +431,8 @@ def STEP8_calc_pinchpoints():
         # Produce core raster with same extent as clipped resistance raster
         # added to ensure correct data type- nodata values were positive for
         # cores otherwise
-        outCon = arcpy.sa.Con(arcpy.sa.IsNull(Raster(s8CoreRasPath)),
-                              -9999, Raster(s8CoreRasPath))
+        outCon = arcpy.sa.Con(arcpy.sa.IsNull(arcpy.sa.Raster(s8CoreRasPath)),
+                              -9999, arcpy.sa.Raster(s8CoreRasPath))
         outCon.save(s8CoreRasClipped)
 
         resNpyFN = 'resistances.npy'
@@ -504,8 +508,8 @@ def STEP8_calc_pinchpoints():
         if SETCORESTONULL:
             # Set core areas to NoData in current map for color ramping
             outputRasterND = outputRaster + '_noDataCores'
-            outCon = arcpy.sa.SetNull(Raster(s8CoreRasClipped) > 0,
-                                      Raster(outputRaster))
+            outCon = arcpy.sa.SetNull(arcpy.sa.Raster(s8CoreRasClipped) > 0,
+                                      arcpy.sa.Raster(outputRaster))
             outCon.save(outputRasterND)
 
         gprint('\nBuilding output statistics and pyramids '

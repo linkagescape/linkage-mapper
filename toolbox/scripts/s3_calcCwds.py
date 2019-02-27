@@ -13,24 +13,14 @@ from os import path
 import time
 
 import numpy as npy
+import arcpy
 
 from lm_config import tool_env as cfg
 import lm_util as lu
 
 _SCRIPT_NAME = "s3_calcCwds.py"
 
-try:
-    import arcpy
-    from arcpy.sa import *
-    arcpy.CheckOutExtension("spatial")
-    gp = arcpy.gp
-    arcgisscripting = arcpy
-    tif = ''
-except Exception:
-    arcpy = False
-    import arcgisscripting
-    gp = cfg.gp
-    tif = ''
+tif = ''
 
 gprint = lu.gprint
 
@@ -89,19 +79,11 @@ def STEP3_calc_cwds():
 
         # set the analysis extent and cell size
         # So we don't extract rasters that go beyond extent of original raster
-        if arcpy:
-            arcpy.env.cellSize = cfg.RESRAST
-            arcpy.env.extent="MINOF"
-        else:
-            gp.cellSize = gp.Describe(cfg.RESRAST).MeanCellHeight
-            gp.Extent = "MINOF"
-        gp.mask = cfg.RESRAST
-        if arcpy:
-            arcpy.env.workspace = cfg.SCRATCHDIR
-            arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-        else:
-            gp.workspace = cfg.SCRATCHDIR
-            gp.scratchWorkspace = cfg.ARCSCRATCHDIR
+        arcpy.env.cellSize = cfg.RESRAST
+        arcpy.env.extent="MINOF"
+        arcpy.mask = cfg.RESRAST
+        arcpy.env.workspace = cfg.SCRATCHDIR
+        arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
 
         # Load linkTable (created in previous script)
         linkTableFile = lu.get_prev_step_link_table(step=3)
@@ -155,7 +137,7 @@ def STEP3_calc_cwds():
                                      cfg.CWDSUBDIR_NM)
 
         # make a feature layer for input cores to select from
-        gp.MakeFeatureLayer(cfg.COREFC, cfg.FCORES)
+        arcpy.MakeFeatureLayer_management(cfg.COREFC, cfg.FCORES)
 
         # Drop links that are too long
         gprint('\nChecking for corridors that are too long to map.')
@@ -227,8 +209,8 @@ def STEP3_calc_cwds():
             lu.make_points(cfg.SCRATCHDIR, boundingCirclePointArray,
                            BNDCIRCENS)
             lu.delete_data(cfg.BNDCIRS)
-            gp.buffer_analysis(cfg.BNDCIRCENS, cfg.BNDCIRS, "radius")
-            gp.deletefield (cfg.BNDCIRS, "BUFF_DIST")
+            arcpy.Buffer_analysis(cfg.BNDCIRCENS, cfg.BNDCIRS, "radius")
+            arcpy.DeleteField_management(cfg.BNDCIRS, "BUFF_DIST")
 
             gprint('Successfully created bounding circles around '
                               'potential corridors using \na buffer of ' +
@@ -252,14 +234,15 @@ def STEP3_calc_cwds():
             dir, BNDCIRCEN = path.split(cfg.BNDCIRCEN)
             lu.make_points(cfg.SCRATCHDIR, circlePointData, BNDCIRCEN)
             lu.delete_data(cfg.BNDCIR)
-            gp.buffer_analysis(cfg.BNDCIRCEN, cfg.BNDCIR, "radius")
+            arcpy.Buffer_analysis(cfg.BNDCIRCEN, cfg.BNDCIR, "radius")
 
             gprint('Extracting raster....')
             cfg.BOUNDRESIS = cfg.BOUNDRESIS + tif
             lu.delete_data(cfg.BOUNDRESIS)
             count = 0
-            statement = (
-                'gp.ExtractByMask_sa(cfg.RESRAST, cfg.BNDCIR, cfg.BOUNDRESIS)')
+            statement = ('bound_resis = '
+                'arcpy.sa.ExtractByMask(cfg.RESRAST, cfg.BNDCIR); '
+                'bound_resis.save(cfg.BOUNDRESIS)')
             while True:
                 try:
                     exec statement
@@ -277,15 +260,10 @@ def STEP3_calc_cwds():
         # Rasterize core areas to speed cost distance calcs
         gprint("Creating core area raster.")
 
-        gp.SelectLayerByAttribute(cfg.FCORES, "CLEAR_SELECTION")
+        arcpy.SelectLayerByAttribute_management(cfg.FCORES, "CLEAR_SELECTION")
 
-        if arcpy:
-            arcpy.env.cellSize = cfg.BOUNDRESIS
-            arcpy.env.extent = cfg.BOUNDRESIS
-        else:
-            gp.cellSize = gp.Describe(cfg.BOUNDRESIS).MeanCellHeight
-            gp.extent = gp.Describe(cfg.BOUNDRESIS).extent
-
+        arcpy.env.cellSize = cfg.BOUNDRESIS
+        arcpy.env.extent = cfg.BOUNDRESIS
         if rerun:
             # saved linktable replaces the one now in memory
             linkTable = lu.load_link_table(savedLinkTableFile)
@@ -297,10 +275,7 @@ def STEP3_calc_cwds():
                     + str(int(coresToMap[startIndex]))+ ' ******\n')
             lu.dashline(0)
 
-        if arcpy:
-            arcpy.env.extent = "MINOF"
-        else:
-            gp.extent = "MINOF"
+        arcpy.env.extent = "MINOF"
 
         #----------------------------------------------------------------------
         # Loop through cores, do cwd calcs for each
@@ -390,7 +365,7 @@ def STEP3_calc_cwds():
 
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         gprint('****Failed in step 3. Details follow.****')
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
@@ -415,16 +390,9 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         lu.delete_dir(coreDir)
         lu.create_dir(coreDir)
 
-        if arcpy:
-            gp = arcpy.gp
-            arcpy.env.workspace = coreDir
-            arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-            arcpy.env.extent = "MINOF"
-        else:
-            gp = cfg.gp
-            gp.workspace = coreDir
-            gp.scratchWorkspace = cfg.ARCSCRATCHDIR
-            gp.Extent = "MINOF"
+        arcpy.env.workspace = coreDir
+        arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
+        arcpy.env.extent = "MINOF"
 
         write_cores_to_map(x, coresToMap)
 
@@ -456,13 +424,14 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         # we'll be connecting each core area to.
         if cfg.BUFFERDIST is not None:
             # fixme: move outside of loop   # new circle
-            gp.MakeFeatureLayer(cfg.BNDCIRS,"fGlobalBoundingFeat")
+            arcpy.MakeFeatureLayer_management(
+                cfg.BNDCIRS, "fGlobalBoundingFeat")
 
             start_time = time.clock()
             # loop through targets and get bounding circles that
             # contain focal core and target cores
-            gp.SelectLayerByAttribute("fGlobalBoundingFeat",
-                                          "CLEAR_SELECTION")
+            arcpy.SelectLayerByAttribute_management(
+                "fGlobalBoundingFeat", "CLEAR_SELECTION")
             for i in range(len(targetCores)):
                 # run thru circleList, find link that core pair
                 # corresponds to.
@@ -476,14 +445,14 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 cores_x_y = str(int(corex))+'_'+str(int(corey))
                 field = "cores_x_y"
                 # fixme: need to check for case where link is not found
-                gp.SelectLayerByAttribute(
+                arcpy.SelectLayerByAttribute_management(
                     "fGlobalBoundingFeat", "ADD_TO_SELECTION", field +
                     " = '" + cores_x_y + "'")
 
             lu.delete_data(path.join(coreDir,cfg.BNDFC))
             # fixme: may not be needed- can we just clip raster
             # using selected?
-            gp.CopyFeatures_management("fGlobalBoundingFeat",
+            arcpy.CopyFeatures_management("fGlobalBoundingFeat",
                                            cfg.BNDFC)
 
             # Clip out bounded area of resistance raster for cwd
@@ -491,8 +460,9 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             bResistance = path.join(coreDir,"bResistance") # Can't be tif-
                                                            # need STA for CWD
             lu.delete_data(bResistance)
-            statement = (
-                'gp.ExtractByMask_sa(cfg.BOUNDRESIS, cfg.BNDFC, bResistance)')
+            statement = ('bnd_resis = '
+                'arcpy.sa.ExtractByMask(cfg.BOUNDRESIS, cfg.BNDFC); '
+                'bnd_resis.save(bResistance)')
             try:
                 exec statement
             except Exception:
@@ -518,17 +488,10 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             # Create raster that just has source core in it
             # Note: this seems faster than setnull with LI grid.
             SRCRASTER = 'source' + tif
-            lu.delete_data(path.join(coreDir,SRCRASTER))
-            if arcpy:
-                statement = ('conRaster = '
-                             'Con(Raster(cfg.CORERAS) == int(sourceCore), 1);'
-                             'conRaster.save(SRCRASTER)')
-            else:
-                expression = ("con(" + cfg.CORERAS + " == " +
-                               str(int(sourceCore)) + ", 1)")
-                statement = ('gp.SingleOutputMapAlgebra_sa'
-                            '(expression, SRCRASTER)')
-
+            lu.delete_data(path.join(coreDir, SRCRASTER))
+            statement = ('conRaster = '
+                'arcpy.sa.Con(arcpy.Raster(cfg.CORERAS) == int(sourceCore), 1);'
+                'conRaster.save(SRCRASTER)')
             try:
                 exec statement
             except Exception:
@@ -538,20 +501,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 else: exec statement
 
             # Cost distance raster creation
-            if arcpy:
-                arcpy.env.extent = "MINOF"
-            else:
-                gp.Extent = "MINOF"
+            arcpy.env.extent = "MINOF"
 
             lu.delete_data(path.join(coreDir,"BACK"))
 
-            if arcpy:
-                statement = ('outCostDist = CostDistance(SRCRASTER, '
-                             'bResistance, cfg.TMAXCWDIST, back_rast);'
-                             'outCostDist.save(outDistanceRaster)')
-            else:
-                statement = ('gp.CostDistance_sa(SRCRASTER, bResistance, '
-                             'outDistanceRaster, cfg.TMAXCWDIST, back_rast)')
+            statement = ('outCostDist = arcpy.sa.CostDistance(SRCRASTER, '
+                         'bResistance, cfg.TMAXCWDIST, back_rast);'
+                         'outCostDist.save(outDistanceRaster)')
             try:
                 exec statement
             except Exception:
@@ -570,13 +526,8 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         #Fixme: zonalstatistics is returning integer values for minimum. Why???
         #Extra zonalstatistics code implemented later in script to correct
         #values.
-        if arcpy:
-            statement = ('outZSaT = ZonalStatisticsAsTable(cfg.CORERAS, '
+        statement = ('outZSaT = arcpy.sa.ZonalStatisticsAsTable(cfg.CORERAS, '
                     '"VALUE", outDistanceRaster,ZNSTATS, "DATA", "MINIMUM")')
-        else:
-            statement = ('gp.zonalstatisticsastable_sa('
-                      'cfg.CORERAS, "VALUE", outDistanceRaster, ZNSTATS)')
-
         try:
             exec statement
         except Exception:
@@ -593,8 +544,8 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         'solves this one so please restart and try again.')
 
                 lu.raise_error(msg)
-        tableRows = gp.searchcursor(ZNSTATS)
-        tableRow = tableRows.Next()
+        tableRows = arcpy.SearchCursor(ZNSTATS)
+        tableRow = tableRows.next()
         while tableRow:
             if tableRow.Value > sourceCore:
                 link = lu.get_links_from_core_pairs(linkTable,
@@ -636,22 +587,15 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 TARGETRASTER = 'targ' + tif
                 lu.delete_data(path.join(coreDir,TARGETRASTER))
                 try:
-                    if arcpy:
-                        # For climate corridors, errors occur when core raster
-                        # overlaps null values in cwd rasters
-                        statement = ('conRaster = Con(IsNull(outDistanceRaster'
-                            '), Int(outDistanceRaster), Con(Raster'
-                            '(cfg.CORERAS) == int(targetCore), 1));'
-                            'conRaster.save(TARGETRASTER)')
-                        # statement = ('conRaster = Con(Raster('
-                                    # 'cfg.CORERAS) == int(targetCore), 1);'
-                                    # 'conRaster.save(TARGETRASTER)')
-
-                    else:
-                        expression = ("con(" + cfg.CORERAS + " == " +
-                        str(int(targetCore)) + ",1)")
-                        statement = ('gp.SingleOutputMapAlgebra_sa(expression,'
-                                     ' TARGETRASTER)')
+                    # For climate corridors, errors occur when core raster
+                    # overlaps null values in cwd rasters
+                    statement = (
+                        'conRaster = '
+                        'arcpy.sa.Con(arcpy.sa.IsNull(outDistanceRaster), '
+                        'arcpy.sa.Int(outDistanceRaster), '
+                        'arcpy.sa.Con(arcpy.sa.Raster(cfg.CORERAS) '
+                        '== int(targetCore), 1)); '
+                        'conRaster.save(TARGETRASTER)')
                     exec statement
                 except Exception:
                     failures = lu.print_arcgis_failures(statement, failures)
@@ -664,9 +608,9 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                 int(linkTable[link,cfg.LTB_CWDIST])):
                     try:
                         zonalRas = path.join(coreDir,'zonal')
-                        gp.ZonalStatistics_sa(TARGETRASTER, "VALUE",
+                        arcpy.sa.ZonalStatistics(TARGETRASTER, "VALUE",
                             outDistanceRaster, zonalRas, "MINIMUM", "DATA")
-                        minObject = gp.GetRasterProperties_management(zonalRas,
+                        minObject = arcpy.GetRasterProperties_management(zonalRas,
                                                                 "MINIMUM")
                         rasterMin = float(str(minObject.getOutput(0)))
                         linkTable[link,cfg.LTB_CWDIST] = rasterMin
@@ -678,15 +622,11 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 lcpRas = path.join(coreDir,"lcp" + tif)
                 lu.delete_data(lcpRas)
 
-                # Note: costpath (both gp and arcpy versions) uses GDAL.
-                if arcpy:
-                    statement = ('outCostPath = CostPath(TARGETRASTER,'
-                          'outDistanceRaster, back_rast, "BEST_SINGLE", ""); '
-                          'outCostPath.save(lcpRas)')
-                else:
-                    statement = ('gp.CostPath_sa(TARGETRASTER, '
-                                 'outDistanceRaster, back_rast, '
-                                 'lcpRas, "BEST_SINGLE", "")')
+                # Note: costpath uses GDAL.
+                statement = (
+                    'outCostPath = arcpy.sa.CostPath(TARGETRASTER,'
+                    'outDistanceRaster, back_rast, "BEST_SINGLE", ""); '
+                    'outCostPath.save(lcpRas)')
                 try:
                     exec statement
                 except Exception:
@@ -704,7 +644,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         exec statement
 
                 # fixme: may be fastest to not do selection, do
-                # EXTRACTBYMASK, getvaluelist, use code snippet at end
+                # EXTRACTBYMASK,.getValuelist, use code snippet at end
                 # of file to discard src and target values. Still this
                 # is fast- 13 sec for LI data...But I'm not very
                 # comfortable using failed coreMin as our test....
@@ -716,9 +656,9 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     # core area. Method below is faster than valuelist
                     # method because of soma in valuelist method.
                     # make a feature layer for input cores to select from
-                    gp.MakeFeatureLayer(cfg.COREFC, cfg.FCORES)
+                    arcpy.MakeFeatureLayer_management(cfg.COREFC, cfg.FCORES)
 
-                    gp.SelectLayerByAttribute(cfg.FCORES,
+                    arcpy.SelectLayerByAttribute_management(cfg.FCORES,
                                               "NEW_SELECTION",
                                               cfg.COREFN + ' <> ' +
                                               str(int(targetCore)) +
@@ -727,14 +667,10 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                                               str(int(sourceCore)))
 
                     corePairRas = path.join(coreDir,"s3corepair"+ tif)
-                    if arcpy:
-                        arcpy.env.extent = cfg.BOUNDRESIS
-                    else:
-                        gp.extent = gp.Describe(cfg.BOUNDRESIS).extent
+                    arcpy.env.extent = cfg.BOUNDRESIS
 
-
-                    statement = ('gp.FeatureToRaster_conversion(cfg.FCORES, '
-                                'cfg.COREFN, corePairRas, gp.cellSize)')
+                    statement = ('arcpy.FeatureToRaster_conversion(cfg.FCORES, '
+                                'cfg.COREFN, corePairRas, arcpy.env.cellSize)')
                     try:
                         exec statement
                     except Exception:
@@ -785,7 +721,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         return linkTable, failures, lcpLoop
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
@@ -801,16 +737,13 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
 
     """
     try:
-        gp.workspace = workspace 
-        if gp.exists("addRas"): #Can't use tif for getrasterproperties
-            gp.delete_management("addRas")
+        arcpy.env.workspace = workspace 
+        if arcpy.Exists("addRas"): #Can't use tif for getrasterproperties
+            arcpy.Delete_management("addRas")
         count = 0
-        if arcpy:
-            statement = ('outRas = Raster(lcpRas) + Raster(corePairRas); '
-                         'outRas.save("addRas")')
-        else:
-            expression = (lcpRas + " + " + corePairRas)
-            statement = ('gp.SingleOutputMapAlgebra_sa(expression, "addRas")')
+        statement = ('outRas = arcpy.sa.Raster(lcpRas) '
+                     '+ arcpy.sa.Raster(corePairRas); '
+                     'outRas.save("addRas")')
         while True:
             try:
                 exec statement
@@ -820,13 +753,14 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
             else: break
 
         # Test to see if raster has data
-        if gp.GetRasterProperties("addRas", "ALLNODATA").getOutput(0) == "0":
+        if (arcpy.GetRasterProperties_management("addRas", "ALLNODATA")
+                .getOutput(0) == "0"):
             return True  # Data present and therefore overlap
         else:
             return False  # Empty and therefore no overlap
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         lu.dashline(1)
         lu.exit_with_geoproc_error(_SCRIPT_NAME)
 
@@ -853,8 +787,8 @@ def test_for_intermediate_core_old_method(workspace,lcpRas,corePairRas):
     """
     ZNSTATS2 = path.join(cfg.SCRATCHDIR, "zonestats2.dbf")
     value = "VALUE"
-    gp.ZonalStatisticsAsTable_sa(corePairRas, value, lcpRas, ZNSTATS2,
-                                 "DATA", "MINIMUM")
+    arcpy.sa.ZonalStatisticsAsTable(corePairRas, value, lcpRas, ZNSTATS2,
+                                    "DATA", "MINIMUM")
     coreMin = lu.get_zonal_minimum(ZNSTATS2)
     if coreMin:
         return True

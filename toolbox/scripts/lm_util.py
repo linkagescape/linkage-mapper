@@ -17,8 +17,6 @@ from lm_retry_decorator import Retry
 
 
 import numpy as npy
-
-import arcgisscripting
 import arcpy
 
 from lm_config import tool_env as cfg
@@ -28,8 +26,6 @@ except Exception:
     cfg.releaseNum = 'unknown'
 
 _SCRIPT_NAME = "lm_util.py"
-
-gp = cfg.gp
 
 
 def cwd_cutoff_str(cutoff):
@@ -236,19 +232,19 @@ def get_core_list(coreFC, coreFN):
         # core id's.
 
         # Get the number of core shapes
-        gp.Extent = gp.Describe(coreFC).Extent
+        arcpy.env.extent = arcpy.Describe(coreFC).Extent
 
         # Get core data into numpy array
         coreList = npy.zeros((1, 2))
-        cur = gp.SearchCursor(coreFC)
-        row = cur.Next()
+        cur = arcpy.SearchCursor(coreFC)
+        row = cur.next()
         i = 0
         while row:
             if i > 0:
                 coreList = npy.append(coreList,  npy.zeros((1, 2)), axis=0)
-            coreList[i, 0] = row.GetValue(coreFN)
-            coreList[i, 1] = row.GetValue(coreFN)
-            row = cur.Next()
+            coreList[i, 0] = row.getValue(coreFN)
+            coreList[i, 1] = row.getValue(coreFN)
+            row = cur.next()
             i = i + 1
 
         del cur, row
@@ -263,10 +259,10 @@ def get_core_list(coreFC, coreFN):
                    '\nBailing because there is nothing to connect.')
             raise_error(msg)
 
-        gp.extent = "MAXOF"  # For downstream operations
+        arcpy.env.extent = "MAXOF"  # For downstream operations
         return coreList
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -292,7 +288,7 @@ def get_core_targets(core, linktable):
         rows, cols = npy.where(targetList == int(core))
         targetList = targetList[rows, 1 - cols]
         targetList = npy.unique(npy.asarray(targetList))
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -375,7 +371,7 @@ def report_links(linktable):
             gprint('\n***NOTE: There are NO corridors to map!')
             dashline(2)
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -385,11 +381,11 @@ def report_links(linktable):
 def build_stats(raster):
     """Builds statistics and pyramids for output rasters"""
     try:
-        gp.CalculateStatistics_management(raster, "1", "1", "#")
+        arcpy.CalculateStatistics_management(raster, "1", "1", "#")
     except Exception:
         gprint('Statistics failed. They can still be calculated manually.')
     try:
-        gp.BuildPyramids_management(raster)
+        arcpy.BuildPyramids_management(raster)
     except Exception:
         gprint('Pyramids failed. They can still be built manually.')
     return
@@ -407,32 +403,32 @@ def get_adj_using_shift_method(alloc):
     for pixels with different allocations across shifted grids.
 
     """
-    cellSize = gp.Describe(alloc).MeanCellHeight
-    gp.cellSize = cellSize
+    cellSize = arcpy.Describe(alloc).MeanCellHeight
+    arcpy.env.cellSize = cellSize
 
-    posShift = gp.cellSize
-    negShift = -1 * float(gp.cellSize)
+    posShift = arcpy.env.cellSize
+    negShift = -1 * float(arcpy.env.cellSize)
 
-    gp.workspace = cfg.SCRATCHDIR
+    arcpy.env.workspace = cfg.SCRATCHDIR
 
     gprint('Calculating adjacencies crossing allocation boundaries...')
     start_time = time.clock()
-    gp.Shift_management(alloc, "alloc_r", posShift, "0")
+    arcpy.Shift_management(alloc, "alloc_r", posShift, "0")
 
     alloc_r = "alloc_r"
-    adjTable_r = get_allocs_from_shift(gp.workspace, alloc, alloc_r)
-    gp.Shift_management(alloc, "alloc_ul", negShift, posShift)
+    adjTable_r = get_allocs_from_shift(arcpy.env.workspace, alloc, alloc_r)
+    arcpy.Shift_management(alloc, "alloc_ul", negShift, posShift)
 
     alloc_ul = "alloc_ul"
-    adjTable_ul = get_allocs_from_shift(gp.workspace, alloc, alloc_ul)
-    gp.Shift_management(alloc, "alloc_ur", posShift, posShift)
+    adjTable_ul = get_allocs_from_shift(arcpy.env.workspace, alloc, alloc_ul)
+    arcpy.Shift_management(alloc, "alloc_ur", posShift, posShift)
 
     alloc_ur = "alloc_ur"
-    adjTable_ur = get_allocs_from_shift(gp.workspace, alloc, alloc_ur)
-    gp.Shift_management(alloc, "alloc_u", "0", posShift)
+    adjTable_ur = get_allocs_from_shift(arcpy.env.workspace, alloc, alloc_ur)
+    arcpy.Shift_management(alloc, "alloc_u", "0", posShift)
 
     alloc_u = "alloc_u"
-    adjTable_u = get_allocs_from_shift(gp.workspace, alloc, alloc_u)
+    adjTable_u = get_allocs_from_shift(arcpy.env.workspace, alloc, alloc_u)
     start_time = elapsed_time(start_time)
 
     adjTable = combine_adjacency_tables(adjTable_r, adjTable_u, adjTable_ur,
@@ -474,7 +470,7 @@ def combine_adjacency_tables(adjTable_r, adjTable_u, adjTable_ur, adjTable_ul):
             del delRowsVector
 
         return adjTable
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -483,12 +479,12 @@ def combine_adjacency_tables(adjTable_r, adjTable_u, adjTable_ur, adjTable_ul):
 def get_allocs_from_shift(workspace, alloc, alloc_sh):
     """Returns a table of adjacent allocation zones using grid shift method"""
     try:
-        gp.scratchWorkspace = cfg.ARCSCRATCHDIR
-        gp.workspace = workspace
-        combine_ras = os.path.join(gp.workspace, "combine")
+        arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
+        arcpy.env.workspace = workspace
+        combine_ras = os.path.join(arcpy.env.workspace, "combine")
         count = 0
-        statement = ('gp.SingleOutputMapAlgebra_sa("combine(" + alloc + '
-                     '", " + alloc_sh + ")", combine_ras)')
+        statement = ('comb_ras = arcpy.sa.Combine([alloc, alloc_sh]); '
+                     'comb_ras.save(combine_ras)')
         while True:
             try:
                 exec statement
@@ -498,11 +494,13 @@ def get_allocs_from_shift(workspace, alloc, alloc_sh):
                     exec statement
             else:
                 break
-        allocLookupTable = get_alloc_lookup_table(gp.workspace,
+        allocLookupTable = get_alloc_lookup_table(arcpy.env.workspace,
                                                   combine_ras)
+        # Overwrite setting does not work for Combine, so delete raster
+        delete_data(combine_ras)
         return allocLookupTable[:, 1:3]
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -516,7 +514,7 @@ def get_alloc_lookup_table(workspace, combine_ras):
 
     """
     try:
-        fldlist = gp.listfields(combine_ras)
+        fldlist = arcpy.ListFields(combine_ras)
 
         valFld = fldlist[1].name
         allocFld = fldlist[3].name
@@ -525,13 +523,13 @@ def get_alloc_lookup_table(workspace, combine_ras):
         allocLookupTable = npy.zeros((0, 3), dtype="int32")
         appendRow = npy.zeros((1, 3), dtype="int32")
 
-        rows = gp.searchcursor(combine_ras)
+        rows = arcpy.SearchCursor(combine_ras)
         row = rows.next()
         while row:
-            alloc = row.getvalue(allocFld)
-            alloc_sh = row.getvalue(allocFld_sh)
+            alloc = row.getValue(allocFld)
+            alloc_sh = row.getValue(allocFld_sh)
             if alloc != alloc_sh:
-                appendRow[0, 0] = row.getvalue(valFld)
+                appendRow[0, 0] = row.getValue(valFld)
                 appendRow[0, 1] = alloc
                 appendRow[0, 2] = alloc_sh
                 allocLookupTable = npy.append(allocLookupTable, appendRow,
@@ -541,7 +539,7 @@ def get_alloc_lookup_table(workspace, combine_ras):
         del rows
 
         return allocLookupTable
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -553,31 +551,31 @@ def get_alloc_lookup_table(workspace, combine_ras):
 def new_extent(fc, field, value):
     """Returns the maximum area extent of features where field == value"""
     try:
-        shapeFieldName = gp.describe(fc).shapefieldname
+        shapeFieldName = arcpy.Describe(fc).shapeFieldName
 
-        searchRows = gp.searchcursor(fc, field + ' = ' + str(value))
+        searchRows = arcpy.SearchCursor(fc, field + ' = ' + str(value))
         searchRow = searchRows.next()
         # get the 1st features extent
-        extentObj = searchRow.getvalue(shapeFieldName).extent
-        xMin = extentObj.xmin
-        yMin = extentObj.ymin
-        xMax = extentObj.xmax
-        yMax = extentObj.yMax
+        extentObj = searchRow.getValue(shapeFieldName).extent
+        xMin = extentObj.XMin
+        yMin = extentObj.YMin
+        xMax = extentObj.XMax
+        yMax = extentObj.YMax
         searchRow = searchRows.next()  # now move on to the other features
         while searchRow:
-            extentObj = searchRow.getvalue(shapeFieldName).extent
-            if extentObj.xmin < xMin:
-                xMin = extentObj.xmin
-            if extentObj.ymin < yMin:
-                yMin = extentObj.ymin
-            if extentObj.xmax > xMax:
-                xMax = extentObj.xmax
-            if extentObj.ymax > yMax:
-                yMax = extentObj.ymax
+            extentObj = searchRow.getValue(shapeFieldName).extent
+            if extentObj.XMin < xMin:
+                xMin = extentObj.XMin
+            if extentObj.YMin < yMin:
+                yMin = extentObj.YMin
+            if extentObj.XMax > xMax:
+                xMax = extentObj.XMax
+            if extentObj.YMax > yMax:
+                yMax = extentObj.YMax
             searchRow = searchRows.next()
         del searchRow
         del searchRows
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -591,11 +589,11 @@ def get_centroids(shapefile, field):
         pointArray = npy.zeros((0, 3), dtype="float32")
         xyCumArray = npy.zeros((0, 3), dtype="float32")
         xyArray = npy.zeros((1, 3), dtype="float32")
-        rows = gp.SearchCursor(shapefile)
-        row = rows.Next()
+        rows = arcpy.SearchCursor(shapefile)
+        row = rows.next()
         while row:
             feat = row.shape
-            center = feat.Centroid
+            center = feat.centroid
             center = str(center)
             xy = center.split(" ")
             if "," in xy[0] or "," in xy[1]:
@@ -608,16 +606,16 @@ def get_centroids(shapefile, field):
                 raise_error(msg)
             xyArray[0, 0] = float(xy[0])
             xyArray[0, 1] = float(xy[1])
-            value = row.GetValue(field)
+            value = row.getValue(field)
             xyArray[0, 2] = int(value)
             xyCumArray = npy.append(xyCumArray, xyArray, axis=0)
-            row = rows.Next()
+            row = rows.next()
         del row, rows
         pointArray = npy.append(pointArray, xyCumArray, axis=0)
 
         return pointArray
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -657,7 +655,7 @@ def get_bounding_circle_data(extentBoxList, corex, corey, distbuff):
         if distbuff != 0:
             radius = radius + int(distbuff)
         circlePointData[0, :] = [centX, centY, corex, corey, radius]
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -671,14 +669,14 @@ def get_extent_box_coords(fieldValue=None):
         # get all features, not just npy.where cfg.COREFN = fieldValue
         if fieldValue is None:
             fieldValue = 1
-            desc = gp.Describe
+            desc = arcpy.Describe
             extent = desc(cfg.FCORES).extent
-            lr = extent.lowerright
-            ul = extent.upperleft
-            ulx = ul.x
-            uly = ul.y
-            lrx = lr.x
-            lry = lr.y
+            lr = extent.lowerRight
+            ul = extent.upperLeft
+            ulx = ul.X
+            uly = ul.Y
+            lrx = lr.X
+            lry = lr.Y
         else:
             ulx, lry, lrx, uly = new_extent(cfg.FCORES, cfg.COREFN, fieldValue)
 
@@ -688,7 +686,7 @@ def get_extent_box_coords(fieldValue=None):
         lry = float(lry)
         boxData = npy.zeros((1, 5), dtype='float32')
         boxData[0, :] = [fieldValue, ulx, lrx, uly, lry]
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -704,48 +702,48 @@ def make_points(workspace, pointArray, outFC):
 
     """
     try:
-        wkspbefore = gp.workspace
-        gp.workspace = workspace
+        wkspbefore = arcpy.env.workspace
+        arcpy.env.workspace = workspace
         delete_data(outFC)
-        gp.CreateFeatureclass_management(workspace, outFC, "POINT")
+        arcpy.CreateFeatureclass_management(workspace, outFC, "POINT")
         if pointArray.shape[1] > 3:
-            gp.AddField_management(outFC, "corex", "LONG")
-            gp.AddField_management(outFC, "corey", "LONG")
-            gp.AddField_management(outFC, "radius", "DOUBLE")
-            gp.AddField_management(outFC, "cores_x_y", "TEXT")
+            arcpy.AddField_management(outFC, "corex", "LONG")
+            arcpy.AddField_management(outFC, "corey", "LONG")
+            arcpy.AddField_management(outFC, "radius", "DOUBLE")
+            arcpy.AddField_management(outFC, "cores_x_y", "TEXT")
         else:
-            gp.AddField_management(outFC, "XCoord", "DOUBLE")
-            gp.AddField_management(outFC, "YCoord", "DOUBLE")
-            gp.AddField_management(outFC, cfg.COREFN, "LONG")
-        rows = gp.InsertCursor(outFC)
+            arcpy.AddField_management(outFC, "XCoord", "DOUBLE")
+            arcpy.AddField_management(outFC, "YCoord", "DOUBLE")
+            arcpy.AddField_management(outFC, cfg.COREFN, "LONG")
+        rows = arcpy.InsertCursor(outFC)
 
         numPoints = pointArray.shape[0]
         for i in range(numPoints):
-            point = gp.CreateObject("Point")
+            point = arcpy.Point()
             point.ID = i
             point.X = float(pointArray[i, 0])
             point.Y = float(pointArray[i, 1])
-            row = rows.NewRow()
+            row = rows.newRow()
             row.shape = point
-            row.SetValue("ID", i)
+            row.setValue("ID", i)
             if pointArray.shape[1] > 3:
-                row.SetValue("corex", int(pointArray[i, 2]))
-                row.SetValue("corey", int(pointArray[i, 3]))
-                row.SetValue("cores_x_y", str(int(pointArray[i, 2])) + '_' +
+                row.setValue("corex", int(pointArray[i, 2]))
+                row.setValue("corey", int(pointArray[i, 3]))
+                row.setValue("cores_x_y", str(int(pointArray[i, 2])) + '_' +
                              str(int(pointArray[i, 3])))
-                row.SetValue("radius", float(pointArray[i, 4]))
+                row.setValue("radius", float(pointArray[i, 4]))
             else:
-                row.SetValue("XCoord", float(pointArray[i, 0]))
-                row.SetValue("YCoord", float(pointArray[i, 1]))
-                row.SetValue(cfg.COREFN, float(pointArray[i, 2]))
+                row.setValue("XCoord", float(pointArray[i, 0]))
+                row.setValue("YCoord", float(pointArray[i, 1]))
+                row.setValue(cfg.COREFN, float(pointArray[i, 2]))
 
-            rows.InsertRow(row)
+            rows.insertRow(row)
             del row
             del point
         del rows
-        gp.workspace = wkspbefore
+        arcpy.env.workspace = wkspbefore
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -764,62 +762,62 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
 
     """
     try:
-        gp.workspace = ws
+        arcpy.env.workspace = ws
         rows = get_links_from_core_pairs(linktable, sourceCore, targetCore)
         link = rows[0]
 
         lcpline = os.path.join(ws, "lcpline.shp")
         lcpRas = os.path.join(ws, "lcp")
 
-        gp.RasterToPolyline_conversion(lcpRas, lcpline, "NODATA", "",
+        arcpy.RasterToPolyline_conversion(lcpRas, lcpline, "NODATA", "",
                                            "NO_SIMPLIFY")
 
         lcplineDslv = os.path.join(ws, "lcplineDslv.shp")
-        gp.Dissolve_management(lcpline, lcplineDslv)
+        arcpy.Dissolve_management(lcpline, lcplineDslv)
 
-        gp.AddField_management(lcplineDslv, "Link_ID", "LONG", "5")
-        gp.CalculateField_management(lcplineDslv, "Link_ID",
+        arcpy.AddField_management(lcplineDslv, "Link_ID", "LONG", "5")
+        arcpy.CalculateField_management(lcplineDslv, "Link_ID",
                                      int(linktable[link, cfg.LTB_LINKID]),
                                      "PYTHON_9.3")
 
         linktypecode = linktable[link, cfg.LTB_LINKTYPE]
         activelink, linktypedesc = get_link_type_desc(linktypecode)
 
-        gp.AddField_management(lcplineDslv, "Active", "SHORT")
-        gp.CalculateField_management(lcplineDslv, "Active", activelink,
+        arcpy.AddField_management(lcplineDslv, "Active", "SHORT")
+        arcpy.CalculateField_management(lcplineDslv, "Active", activelink,
                                      "PYTHON_9.3")
 
-        gp.AddField_management(lcplineDslv, "Link_Info", "TEXT")
-        gp.CalculateField_management(lcplineDslv, "Link_Info",
+        arcpy.AddField_management(lcplineDslv, "Link_Info", "TEXT")
+        arcpy.CalculateField_management(lcplineDslv, "Link_Info",
                                          linktypedesc, "PYTHON_9.3")
 
-        gp.AddField_management(lcplineDslv, "From_Core", "LONG", "5")
-        gp.CalculateField_management(lcplineDslv, "From_Core",
+        arcpy.AddField_management(lcplineDslv, "From_Core", "LONG", "5")
+        arcpy.CalculateField_management(lcplineDslv, "From_Core",
                                          int(sourceCore), "PYTHON_9.3")
-        gp.AddField_management(lcplineDslv, "To_Core", "LONG", "5")
-        gp.CalculateField_management(lcplineDslv, "To_Core",
+        arcpy.AddField_management(lcplineDslv, "To_Core", "LONG", "5")
+        arcpy.CalculateField_management(lcplineDslv, "To_Core",
                                          int(targetCore), "PYTHON_9.3")
 
-        gp.AddField_management(lcplineDslv, "Euc_Dist", "DOUBLE", "10",
+        arcpy.AddField_management(lcplineDslv, "Euc_Dist", "DOUBLE", "10",
                                    "2")
-        gp.CalculateField_management(lcplineDslv, "Euc_Dist",
+        arcpy.CalculateField_management(lcplineDslv, "Euc_Dist",
                                      linktable[link, cfg.LTB_EUCDIST],
                                      "PYTHON_9.3")
 
-        gp.AddField_management(lcplineDslv, "CW_Dist", "DOUBLE", "10", "2")
-        gp.CalculateField_management(lcplineDslv, "CW_Dist",
+        arcpy.AddField_management(lcplineDslv, "CW_Dist", "DOUBLE", "10", "2")
+        arcpy.CalculateField_management(lcplineDslv, "CW_Dist",
                                      linktable[link, cfg.LTB_CWDIST],
                                      "PYTHON_9.3")
-        gp.AddField_management(lcplineDslv, "LCP_Length", "DOUBLE", "10",
+        arcpy.AddField_management(lcplineDslv, "LCP_Length", "DOUBLE", "10",
                                    "2")
-        rows = gp.UpdateCursor(lcplineDslv)
-        row = rows.Next()
+        rows = arcpy.UpdateCursor(lcplineDslv)
+        row = rows.next()
         while row:
             feat = row.shape
             lcpLength = int(feat.length)
-            row.SetValue("LCP_Length", lcpLength)
-            rows.UpdateRow(row)
-            row = rows.Next()
+            row.setValue("LCP_Length", lcpLength)
+            rows.updateRow(row)
+            row = rows.next()
         del row, rows
 
         try:
@@ -828,9 +826,9 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
         except ZeroDivisionError:
             distRatio1 = -1
 
-        gp.AddField_management(lcplineDslv, "cwd2Euc_R", "DOUBLE", "10",
+        arcpy.AddField_management(lcplineDslv, "cwd2Euc_R", "DOUBLE", "10",
                                    "2")
-        gp.CalculateField_management(lcplineDslv, "cwd2Euc_R", distRatio1,
+        arcpy.CalculateField_management(lcplineDslv, "cwd2Euc_R", distRatio1,
                                      "PYTHON_9.3")
 
         try:
@@ -839,18 +837,18 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
         except ZeroDivisionError:
             distRatio2 = -1
 
-        gp.AddField_management(lcplineDslv, "cwd2Path_R", "DOUBLE", "10",
+        arcpy.AddField_management(lcplineDslv, "cwd2Path_R", "DOUBLE", "10",
                                    "2")
-        gp.CalculateField_management(lcplineDslv, "cwd2Path_R", distRatio2,
+        arcpy.CalculateField_management(lcplineDslv, "cwd2Path_R", distRatio2,
                                      "PYTHON_9.3")
 
         lcpLoop = lcpLoop + 1
         lcpShapefile = os.path.join(cfg.DATAPASSDIR, "lcpLines_s3.shp")
-        gp.RefreshCatalog(cfg.DATAPASSDIR)
+        arcpy.RefreshCatalog(cfg.DATAPASSDIR)
         if lcpLoop == 1:
-            if gp.Exists(lcpShapefile):
+            if arcpy.Exists(lcpShapefile):
                 try:
-                    gp.Delete(lcpShapefile)
+                    arcpy.Delete(lcpShapefile)
 
                 except Exception:
                     dashline(1)
@@ -859,13 +857,13 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
                            'need to re-start ArcMap to release the file lock.')
                     raise_error(msg)
 
-            gp.copy_management(lcplineDslv, lcpShapefile)
+            arcpy.Copy_management(lcplineDslv, lcpShapefile)
         else:
-            gp.Append_management(lcplineDslv, lcpShapefile, "TEST")
+            arcpy.Append_management(lcplineDslv, lcpShapefile, "TEST")
 
         return lcpLoop
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -880,7 +878,7 @@ def get_lcp_shapefile(lastStep, thisStep):
             oldLcpShapefile = os.path.join(
                 cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep) + ".shp")
             # If last step wasn't step 4 then must be step 3
-            if not gp.exists(oldLcpShapefile):
+            if not arcpy.Exists(oldLcpShapefile):
                 # step 3
                 oldLcpShapefile = os.path.join(
                     cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep - 1) +
@@ -893,7 +891,7 @@ def get_lcp_shapefile(lastStep, thisStep):
                 while True:
                     oldLcpShapefile = os.path.join(
                         cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep) + ".shp")
-                    if gp.exists(oldLcpShapefile):
+                    if arcpy.Exists(oldLcpShapefile):
                         break
                     else:
                         lastStep = lastStep - 1
@@ -909,7 +907,7 @@ def get_lcp_shapefile(lastStep, thisStep):
                 cfg.DATAPASSDIR, "lcpLines_s" + str(lastStep) + ".shp")
         return oldLcpShapefile
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -939,51 +937,51 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
         if lastStep != thisStep:
             oldLcpShapefile = get_lcp_shapefile(lastStep, thisStep)
             delete_data(lcpShapefile)
-            gp.copy_management(oldLcpShapefile, lcpShapefile)
+            arcpy.Copy_management(oldLcpShapefile, lcpShapefile)
             #if thisStep > 5:
-            gp.AddField_management(lcpShapefile, "Eff_Resist", "FLOAT") ###
-            gp.AddField_management(lcpShapefile, "cwd2EffR_r", "FLOAT")
-            gp.AddField_management(lcpShapefile, "CF_Central", "FLOAT") ###
-        rows = gp.UpdateCursor(lcpShapefile)
-        row = rows.Next()
+            arcpy.AddField_management(lcpShapefile, "Eff_Resist", "FLOAT") ###
+            arcpy.AddField_management(lcpShapefile, "cwd2EffR_r", "FLOAT")
+            arcpy.AddField_management(lcpShapefile, "CF_Central", "FLOAT") ###
+        rows = arcpy.UpdateCursor(lcpShapefile)
+        row = rows.next()
         line = 0
         while row:
-            linkid = row.getvalue("Link_ID")
+            linkid = row.getValue("Link_ID")
             linktypecode = linktable[linkid - 1, cfg.LTB_LINKTYPE]
             activelink, linktypedesc = get_link_type_desc(linktypecode)
-            row.SetValue("Link_Info", linktypedesc)
-            row.SetValue("Active", activelink)
+            row.setValue("Link_Info", linktypedesc)
+            row.setValue("Active", activelink)
             if thisStep > 5:
                 current = linkTableTemp[linkid - 1, cfg.LTB_CURRENT]
                 effResist = linkTableTemp[linkid - 1, cfg.LTB_EFFRESIST]
                 CWDTORRatio = linkTableTemp[linkid - 1, cfg.LTB_CWDTORR]
                 #fixme: linkid - 1 assumes linktable ordered
-                row.SetValue("Eff_Resist", effResist)
-                row.SetValue("cwd2EffR_r",CWDTORRatio)
-                row.SetValue("CF_Central", current)
+                row.setValue("Eff_Resist", effResist)
+                row.setValue("cwd2EffR_r",CWDTORRatio)
+                row.setValue("CF_Central", current)
             else:
-                row.SetValue("Eff_Resist", -1)
-                row.SetValue("cwd2EffR_r",-1)
-                row.SetValue("CF_Central", -1)
-            rows.UpdateRow(row)
+                row.setValue("Eff_Resist", -1)
+                row.setValue("cwd2EffR_r",-1)
+                row.setValue("CF_Central", -1)
+            rows.updateRow(row)
 
             linktablerow = get_linktable_row(linkid, linkTableTemp)
-            linkTableTemp[linktablerow, cfg.LTB_LCPLEN] = row.getvalue(
+            linkTableTemp[linktablerow, cfg.LTB_LCPLEN] = row.getValue(
                 "LCP_Length")
-            linkTableTemp[linktablerow, cfg.LTB_CWDEUCR] = row.getvalue(
+            linkTableTemp[linktablerow, cfg.LTB_CWDEUCR] = row.getValue(
                 "cwd2Euc_R")
-            linkTableTemp[linktablerow, cfg.LTB_CWDPATHR] = row.getvalue(
+            linkTableTemp[linktablerow, cfg.LTB_CWDPATHR] = row.getValue(
                 "cwd2Path_R")
-            row = rows.Next()
+            row = rows.next()
             line = line + 1
         # delete cursor and row points to remove locks on the data
         del row, rows
 
         outputLcpShapefile = os.path.join(cfg.OUTPUTDIR, cfg.PREFIX +
                                         "_lcpLines_s" + str(thisStep) + ".shp")
-        if gp.exists(outputLcpShapefile):
+        if arcpy.Exists(outputLcpShapefile):
             try:
-                gp.delete_management(outputLcpShapefile)
+                arcpy.Delete_management(outputLcpShapefile)
             except Exception:
                 dashline(1)
                 msg = ('ERROR: Could not remove lcp shapefile from output '
@@ -992,11 +990,11 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
                        'need to re-start ArcMap to release the file lock.')
                 raise_error(msg)
 
-        gp.copy_management(lcpShapefile, outputLcpShapefile)
+        arcpy.Copy_management(lcpShapefile, outputLcpShapefile)
 
         return linkTableTemp
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -1149,9 +1147,9 @@ def load_link_table(linkTableFile):
 ############################################################################
 def gprint(string):
     if string[0:7] == "Warning":
-        gp.AddWarning(string)
+        arcpy.AddWarning(string)
     else:
-        gp.AddMessage(string)
+        arcpy.AddMessage(string)
     try:
         if cfg.LOGMESSAGES:
             write_log(string)
@@ -1323,7 +1321,7 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
 
 
         outFile.close()
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -1349,19 +1347,19 @@ def write_link_maps(linkTableFile, step):
 
     """
     try:
-        gp.workspace = cfg.OUTPUTDIR
-        gp.RefreshCatalog(cfg.OUTPUTDIR)
+        arcpy.env.workspace = cfg.OUTPUTDIR
+        arcpy.RefreshCatalog(cfg.OUTPUTDIR)
         linktable = load_link_table(linkTableFile)
 
         numLinks = linktable.shape[0]
-        gp.toolbox = "management"
+        arcpy.toolbox = "management"
 
         coresForLinework = "cores_for_linework.shp"
 
         # Preferred method to get geometric center
         pointArray = get_centroids(cfg.COREFC, cfg.COREFN)
 
-        make_points(gp.workspace, pointArray, coresForLinework)
+        make_points(arcpy.env.workspace, pointArray, coresForLinework)
         numLinks = linktable.shape[0]
 
         coreLinks = linktable
@@ -1411,11 +1409,10 @@ def write_link_maps(linkTableFile, step):
 
         coreLinksShapefile = cfg.PREFIX + '_sticks_s' + str(step) + '.shp'
 
-        file = os.path.join(gp.workspace,coreLinksShapefile)
-        if gp.Exists(file):
+        file = os.path.join(arcpy.env.workspace,coreLinksShapefile)
+        if arcpy.Exists(file):
             try:
-                gp.Delete(file)
-
+                arcpy.Delete_management(file)
             except Exception:
                 dashline(1)
                 msg = ('ERROR: Could not remove shapefile ' +
@@ -1425,30 +1422,30 @@ def write_link_maps(linkTableFile, step):
 
         # make coreLinks.shp using linkCoords table
         # will contain linework between each pair of connected cores
-        gp.CreateFeatureclass(gp.workspace, coreLinksShapefile,
-                                  "POLYLINE")
+        arcpy.CreateFeatureclass_management(
+            arcpy.env.workspace, coreLinksShapefile, "POLYLINE")
 
         # ADD ATTRIBUTES
-        gp.AddField_management(coreLinksShapefile, "Link_ID", "LONG")
-        gp.AddField_management(coreLinksShapefile, "Active", "SHORT")
-        gp.AddField_management(coreLinksShapefile, "Link_Info", "TEXT")
-        gp.AddField_management(coreLinksShapefile, "From_Core", "LONG")
-        gp.AddField_management(coreLinksShapefile, "To_Core", "LONG")
-        gp.AddField_management(coreLinksShapefile, "Euc_Dist", "FLOAT")
-        gp.AddField_management(coreLinksShapefile, "CW_Dist", "FLOAT")
-        gp.AddField_management(coreLinksShapefile, "cwd2Euc_R", "FLOAT")
-        gp.AddField_management(coreLinksShapefile, "Eff_Resist", "FLOAT")
-        gp.AddField_management(coreLinksShapefile, "cwd2EffR_r", "FLOAT")
-        gp.AddField_management(coreLinksShapefile, "CF_Central", "FLOAT")
+        arcpy.AddField_management(coreLinksShapefile, "Link_ID", "LONG")
+        arcpy.AddField_management(coreLinksShapefile, "Active", "SHORT")
+        arcpy.AddField_management(coreLinksShapefile, "Link_Info", "TEXT")
+        arcpy.AddField_management(coreLinksShapefile, "From_Core", "LONG")
+        arcpy.AddField_management(coreLinksShapefile, "To_Core", "LONG")
+        arcpy.AddField_management(coreLinksShapefile, "Euc_Dist", "FLOAT")
+        arcpy.AddField_management(coreLinksShapefile, "CW_Dist", "FLOAT")
+        arcpy.AddField_management(coreLinksShapefile, "cwd2Euc_R", "FLOAT")
+        arcpy.AddField_management(coreLinksShapefile, "Eff_Resist", "FLOAT")
+        arcpy.AddField_management(coreLinksShapefile, "cwd2EffR_r", "FLOAT")
+        arcpy.AddField_management(coreLinksShapefile, "CF_Central", "FLOAT")
         #Create an Array and Point object.
-        lineArray = gp.CreateObject("Array")
-        pnt = gp.CreateObject("Point")
+        lineArray = arcpy.Array()
+        pnt = arcpy.Point()
 
         # linkCoords indices:
         numLinks = len(linkCoords)
 
         #Open a cursor to insert rows into the shapefile.
-        cur = gp.InsertCursor(coreLinksShapefile)
+        cur = arcpy.InsertCursor(coreLinksShapefile)
 
         ##Loop through each record in linkCoords table
         for i in range(0, numLinks):
@@ -1466,42 +1463,42 @@ def write_link_maps(linkTableFile, step):
             lineArray.add(pnt)
 
             #Insert the new poly into the feature class.
-            feature = cur.NewRow()
+            feature = cur.newRow()
             feature.shape = lineArray
-            cur.InsertRow(feature)
+            cur.insertRow(feature)
 
-            lineArray.RemoveAll()
+            lineArray.removeAll()
         del cur
 
         #Add attribute data to link shapefile
-        rows = gp.UpdateCursor(coreLinksShapefile)
-        row = rows.Next()
+        rows = arcpy.UpdateCursor(coreLinksShapefile)
+        row = rows.next()
         line = 0
         while row:
             # linkCoords indices
-            row.SetValue("Link_ID", linkCoords[line, 0])
+            row.setValue("Link_ID", linkCoords[line, 0])
             if linkCoords[line, 9] == 2:
-                row.SetValue("Link_Info", "Group_Pair")
+                row.setValue("Link_Info", "Group_Pair")
             linktypecode = linkCoords[line, 9]
             activelink, linktypedesc = get_link_type_desc(linktypecode)
-            row.SetValue("Active", activelink)
-            row.SetValue("Link_Info", linktypedesc)
+            row.setValue("Active", activelink)
+            row.setValue("Link_Info", linktypedesc)
 
-            row.SetValue("From_Core", linkCoords[line, 1])
-            row.SetValue("To_Core", linkCoords[line, 2])
-            row.SetValue("Euc_Dist", linkCoords[line, 3])
-            row.SetValue("CW_Dist", linkCoords[line, 4])
+            row.setValue("From_Core", linkCoords[line, 1])
+            row.setValue("To_Core", linkCoords[line, 2])
+            row.setValue("Euc_Dist", linkCoords[line, 3])
+            row.setValue("CW_Dist", linkCoords[line, 4])
             if linkCoords[line, 4] <= 0 or linkCoords[line, 3] <= 0:
-                row.SetValue("cwd2Euc_R", -1)
+                row.setValue("cwd2Euc_R", -1)
             else:
-                row.SetValue("cwd2Euc_R", linkCoords[line, 4] /
+                row.setValue("cwd2Euc_R", linkCoords[line, 4] /
                              linkCoords[line, 3])
-            row.SetValue("Eff_Resist", linkCoords[line, 10])
-            row.SetValue("cwd2EffR_r", linkCoords[line, 11])
-            row.SetValue("CF_Central", linkCoords[line, 12])
+            row.setValue("Eff_Resist", linkCoords[line, 10])
+            row.setValue("cwd2EffR_r", linkCoords[line, 11])
+            row.setValue("CF_Central", linkCoords[line, 12])
 
-            rows.UpdateRow(row)
-            row = rows.Next()
+            rows.updateRow(row)
+            row = rows.next()
             line = line + 1
 
         del row, rows
@@ -1511,7 +1508,7 @@ def write_link_maps(linkTableFile, step):
 
         return
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -1519,14 +1516,9 @@ def write_link_maps(linkTableFile, step):
 
 def set_dataframe_sr():
     """Sets data frame spatial reference to input core area projection.
-       Differing spatial reference can cause problems in step 1.
-       Arcpy only.
 
+       Differing spatial reference can cause problems in step 1.
     """
-    try:
-        import arcpy
-    except Exception:
-        return
     try:
         sr = arcpy.Describe(cfg.COREFC).spatialReference
         gprint('Setting data frame spatial reference to that of '
@@ -1543,10 +1535,11 @@ def set_dataframe_sr():
     except Exception:
         pass
 
+
 def create_dir(lmfolder):
     """Creates folder if it doesn't exist."""
     if not os.path.exists(lmfolder):
-        gp.CreateFolder_management(os.path.dirname(lmfolder),
+        arcpy.CreateFolder_management(os.path.dirname(lmfolder),
                                        os.path.basename(lmfolder))
 
 
@@ -1733,7 +1726,7 @@ def get_prev_step_link_table(step):
                    'for valid linktable files.')
             raise_error(msg)
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -1750,7 +1743,7 @@ def get_this_step_link_table(step):
                              + '.csv')
         return filename
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -1778,7 +1771,7 @@ def clean_up_link_tables(step):
         delete_file(filename)
         filename = os.path.join(cfg.OUTPUTDIR, cfg.PREFIX + 'linkTable_s5.csv')
         delete_file(filename)
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -1793,54 +1786,54 @@ def copy_final_link_maps(step):
         lcpShapefile = os.path.join(cfg.DATAPASSDIR, 'lcpLines_s' +
                                     str(step) + '.shp')
 
-        if not gp.exists(cfg.LINKMAPGDB):
-            gp.createfilegdb(os.path.dirname(cfg.LINKMAPGDB),
+        if not arcpy.Exists(cfg.LINKMAPGDB):
+            arcpy.CreateFileGDB_management(os.path.dirname(cfg.LINKMAPGDB),
                              os.path.basename(cfg.LINKMAPGDB))
 
-        if not gp.exists(cfg.LOGLINKMAPGDB):
-            gp.createfilegdb(os.path.dirname(cfg.LOGLINKMAPGDB),
+        if not arcpy.Exists(cfg.LOGLINKMAPGDB):
+            arcpy.CreateFileGDB_management(os.path.dirname(cfg.LOGLINKMAPGDB),
                              os.path.basename(cfg.LOGLINKMAPGDB))
 
-        if gp.exists(coreLinksShapefile):
-            gp.MakeFeatureLayer(coreLinksShapefile, "flinks")
+        if arcpy.Exists(coreLinksShapefile):
+            arcpy.MakeFeatureLayer_management(coreLinksShapefile, "flinks")
 
 
             field = "Active"
             expression = field + " = " + str(1)
-            gp.selectlayerbyattribute("flinks", "NEW_SELECTION",
+            arcpy.SelectLayerByAttribute_management("flinks", "NEW_SELECTION",
                                           expression)
 
             activeLinksShapefile = os.path.join(cfg.LINKMAPGDB,
                                                PREFIX + '_Sticks')
-            gp.CopyFeatures_management("flinks", activeLinksShapefile)
+            arcpy.CopyFeatures_management("flinks", activeLinksShapefile)
 
             rename_fields(activeLinksShapefile)
 
             expression = field + " = " + str(0)
-            gp.selectlayerbyattribute("flinks", "NEW_SELECTION",
+            arcpy.SelectLayerByAttribute_management("flinks", "NEW_SELECTION",
                                           expression)
             inActiveLinksShapefile = os.path.join(cfg.LINKMAPGDB,
                                                   PREFIX + '_Inactive_Sticks')
-            gp.CopyFeatures_management("flinks", inActiveLinksShapefile)
+            arcpy.CopyFeatures_management("flinks", inActiveLinksShapefile)
 
 
-        if gp.exists(lcpShapefile):
-            gp.MakeFeatureLayer(lcpShapefile, "flcp")
+        if arcpy.Exists(lcpShapefile):
+            arcpy.MakeFeatureLayer_management(lcpShapefile, "flcp")
             field = "Active"
             expression = field + " = " + str(1)
-            gp.selectlayerbyattribute("flcp", "NEW_SELECTION", expression)
+            arcpy.SelectLayerByAttribute_management("flcp", "NEW_SELECTION", expression)
 
             activeLcpShapefile = os.path.join(cfg.LINKMAPGDB,
                                               PREFIX + '_LCPs')
 
-            gp.CopyFeatures_management("flcp", activeLcpShapefile)
+            arcpy.CopyFeatures_management("flcp", activeLcpShapefile)
             rename_fields(activeLcpShapefile)
 
             expression = field + " = " + str(0)
-            gp.selectlayerbyattribute("flcp", "NEW_SELECTION", expression)
+            arcpy.SelectLayerByAttribute_management("flcp", "NEW_SELECTION", expression)
             inActiveLcpShapefile = os.path.join(cfg.LINKMAPGDB,
                                                PREFIX + '_Inactive_LCPs')
-            gp.CopyFeatures_management("flcp", inActiveLcpShapefile)
+            arcpy.CopyFeatures_management("flcp", inActiveLcpShapefile)
 
         # Move stick and lcp maps for each step to log directory to reduce
         # clutter in output
@@ -1854,7 +1847,7 @@ def copy_final_link_maps(step):
                                         + str(i) + '.shp')
             logLinkFile = os.path.join(cfg.LOGLINKMAPGDB, PREFIX + '_sticks_s'
                                         + str(i))
-            if gp.exists(oldLinkFile):
+            if arcpy.Exists(oldLinkFile):
                 try:
                     move_map(oldLinkFile, logLinkFile)
                 except Exception:
@@ -1868,13 +1861,13 @@ def copy_final_link_maps(step):
                                            + str(i) + '.shp')
             logLcpShapeFile = os.path.join(cfg.LOGLINKMAPGDB, PREFIX + '_lcpLines_s' +
                                            str(i))
-            if gp.exists(oldLcpShapeFile):
+            if arcpy.Exists(oldLcpShapeFile):
                 try:
                     move_map(oldLcpShapeFile, logLcpShapeFile)
                 except Exception:
                     pass
         return
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -1882,10 +1875,10 @@ def copy_final_link_maps(step):
 
 def move_map(oldMap, newMap):
     """Moves a map to a new location """
-    if gp.exists(oldMap):
+    if arcpy.Exists(oldMap):
         delete_data(newMap)
         try:
-            gp.CopyFeatures_management(oldMap, newMap)
+            arcpy.CopyFeatures_management(oldMap, newMap)
             delete_data(oldMap)
         except Exception:
             pass
@@ -1935,30 +1928,30 @@ def call_circuitscape(cspath, outConfigFile):
 
 def rename_fields(FC):
     try:
-        gp.AddField_management(FC, "cw_to_Euc_Dist_Ratio", "FLOAT")
-        gp.CalculateField_management(FC, "cw_to_Euc_Dist_Ratio","!cwd2Euc_R!", "PYTHON")
-        gp.deletefield(FC, "cwd2Euc_R")
+        arcpy.AddField_management(FC, "cw_to_Euc_Dist_Ratio", "FLOAT")
+        arcpy.CalculateField_management(FC, "cw_to_Euc_Dist_Ratio","!cwd2Euc_R!", "PYTHON")
+        arcpy.DeleteField_management(FC, "cwd2Euc_R")
 
-        fieldList = gp.ListFields(FC)
+        fieldList = arcpy.ListFields(FC)
         for field in fieldList:
-            if str(field.Name) == "cwd2Path_R":
-                gp.AddField_management(FC, "cwd_to_Path_Length_Ratio", "FLOAT")
-                gp.CalculateField_management(FC, "cwd_to_Path_Length_Ratio","!cwd2Path_R!", "PYTHON")
-                gp.deletefield(FC, "cwd2Path_R")
+            if str(field.name) == "cwd2Path_R":
+                arcpy.AddField_management(FC, "cwd_to_Path_Length_Ratio", "FLOAT")
+                arcpy.CalculateField_management(FC, "cwd_to_Path_Length_Ratio","!cwd2Path_R!", "PYTHON")
+                arcpy.DeleteField_management(FC, "cwd2Path_R")
 
-        gp.AddField_management(FC, "Current_Flow_Centrality", "FLOAT")
-        gp.CalculateField_management(FC, "Current_Flow_Centrality","!CF_Central!", "PYTHON")
-        gp.deletefield(FC, "CF_Central")
+        arcpy.AddField_management(FC, "Current_Flow_Centrality", "FLOAT")
+        arcpy.CalculateField_management(FC, "Current_Flow_Centrality","!CF_Central!", "PYTHON")
+        arcpy.DeleteField_management(FC, "CF_Central")
 
-        gp.AddField_management(FC, "Effective_Resistance", "FLOAT")
-        gp.CalculateField_management(FC, "Effective_Resistance","!Eff_Resist!", "PYTHON")
-        gp.deletefield(FC, "Eff_Resist")
+        arcpy.AddField_management(FC, "Effective_Resistance", "FLOAT")
+        arcpy.CalculateField_management(FC, "Effective_Resistance","!Eff_Resist!", "PYTHON")
+        arcpy.DeleteField_management(FC, "Eff_Resist")
 
-        gp.AddField_management(FC, "cwd_to_Eff_Resist_Ratio", "FLOAT")
-        gp.CalculateField_management(FC, "cwd_to_Eff_Resist_Ratio","!cwd2EffR_r!", "PYTHON")
-        gp.deletefield(FC, "cwd2EffR_r")
+        arcpy.AddField_management(FC, "cwd_to_Eff_Resist_Ratio", "FLOAT")
+        arcpy.CalculateField_management(FC, "cwd_to_Eff_Resist_Ratio","!cwd2EffR_r!", "PYTHON")
+        arcpy.DeleteField_management(FC, "cwd2EffR_r")
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -2040,10 +2033,10 @@ def check_cores(FC,FN):
                     'must be a positive integer.')
             raise_error(msg)
 
-        fieldList = gp.ListFields(FC)
+        fieldList = arcpy.ListFields(FC)
         for field in fieldList:
-            if str(field.Name) == FN:
-                FT = str(field.Type)
+            if str(field.name) == FN:
+                FT = str(field.type)
                 if (FT != 'SmallInteger' and FT != 'SHORT' and FT != 'Integer'
                     and FT != 'LONG'):
                     dashline(1)
@@ -2057,10 +2050,10 @@ def check_cores(FC,FN):
             msg = ('ERROR: Core area field must contain only positive integers. ')
             raise_error(msg)
 
-        rows = gp.SearchCursor(FC)
-        row = rows.Next()
+        rows = arcpy.SearchCursor(FC)
+        row = rows.next()
         feat = row.shape
-        center = str(feat.Centroid)
+        center = str(feat.centroid)
         xy = center.split(" ")
         if "," in xy[0]:
             msg = ('ERROR: It appears that your region settings are not in '
@@ -2071,7 +2064,7 @@ def check_cores(FC,FN):
                   'to modify the coordinate system of your input files as well.')
             raise_error(msg)
 
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
     except Exception:
         exit_with_python_error(_SCRIPT_NAME)
@@ -2084,14 +2077,14 @@ def retry_arc_error(count, statement):
             count = count + 1
             sleepTime = 20*count
 
-            gp.AddWarning('-------------------------------------------------')
-            gp.AddWarning('Failed to execute ' + statement + ' on try '
+            arcpy.AddWarning('-------------------------------------------------')
+            arcpy.AddWarning('Failed to execute ' + statement + ' on try '
                               '#' + str(count) + '.\n')
 
             print_warnings()
 
-            gp.AddWarning("Will try again. ")
-            gp.AddWarning('---------TRYING AGAIN IN ' +
+            arcpy.AddWarning("Will try again. ")
+            arcpy.AddWarning('---------TRYING AGAIN IN ' +
                                    str(int(sleepTime)) + ' SECONDS---------\n')
             snooze(sleepTime)
             return count, True
@@ -2099,7 +2092,7 @@ def retry_arc_error(count, statement):
         elif count < 7:
             sleepTime = 300
             count = count + 1
-            gp.AddWarning('Failed to execute ' + statement + ' on try #' +
+            arcpy.AddWarning('Failed to execute ' + statement + ' on try #' +
                         str(count) + '.\n Could be an ArcGIS hiccup.  Trying'
                         ' again in 5 minutes.\n')
             snooze(sleepTime)
@@ -2109,7 +2102,7 @@ def retry_arc_error(count, statement):
         else:
             sleepTime = 300
             count = count + 1
-            gp.AddWarning('Failed to execute ' + statement + ' on try #' +
+            arcpy.AddWarning('Failed to execute ' + statement + ' on try #' +
                         str(count) + '.\n Could be an ArcGIS hiccup.  Trying'
                         ' one last time in 5 minutes.\n')
             snooze(sleepTime)
@@ -2127,21 +2120,21 @@ def print_warnings():
     filename = tbinfo.split(", ")[0]
     filename = filename.rsplit("File ")[1]
 
-    if gp.MaxSeverity > 1:
+    if arcpy.GetMaxSeverity > 1:
         msg = ("The following ArcGIS error is being reported "
                     "on line " + line + " of " + filename + ":")
-        gp.AddWarning(msg)
+        arcpy.AddWarning(msg)
         write_log(msg)
-        gp.AddWarning(gp.GetMessages(2))
-        write_log(gp.GetMessages(2))
+        arcpy.AddWarning(arcpy.GetMessages(2))
+        write_log(arcpy.GetMessages(2))
         print_drive_warning()
 
     else:
         msg = ("The following error is being reported at "
                         + line + " of " + filename + ":")
         err = traceback.format_exc().splitlines()[-1]
-        gp.AddWarning(msg)
-        gp.AddWarning(err + '\n')
+        arcpy.AddWarning(msg)
+        arcpy.AddWarning(err + '\n')
         write_log(msg)
         write_log(err)
 
@@ -2150,7 +2143,7 @@ def snooze(sleepTime):
     for i in range(1,int(sleepTime)+1):
         time.sleep(1)
         # Dummy operations to give user ability to cancel:
-        installD = gp.GetInstallInfo("desktop")
+        installD = arcpy.GetInstallInfo("desktop")
 
 
 
@@ -2163,11 +2156,11 @@ def exit_with_geoproc_error(filename):
     line = tbinfo.split(", ")[1]
     msg = ("Geoprocessing error on **" + line + "** of " + filename + " "
                 "in Linkage Mapper Version " + str(cfg.releaseNum) + ":")
-    gp.AddError(msg)
+    arcpy.AddError(msg)
     write_log(msg) #xxx
     dashline(1)
-    msg=gp.GetMessages(2)
-    gp.AddError(gp.GetMessages(2))
+    msg=arcpy.GetMessages(2)
+    arcpy.AddError(arcpy.GetMessages(2))
     write_log(msg)
     dashline()
     print_drive_warning()
@@ -2186,8 +2179,8 @@ def exit_with_python_error(filename):
     err = traceback.format_exc().splitlines()[-1]
     msg = ("Python error on **" + line + "** of " + filename + " "
                 "in Linkage Mapper Version " + str(cfg.releaseNum) + ":")
-    gp.AddError(msg)
-    gp.AddError(err)
+    arcpy.AddError(msg)
+    arcpy.AddError(err)
     write_log(msg)
     write_log(err)
     close_log_file()
@@ -2195,7 +2188,7 @@ def exit_with_python_error(filename):
 
 
 def raise_error(msg):
-    gp.AddError(msg)
+    arcpy.AddError(msg)
     write_log(msg)
     close_log_file()
     exit(1)
@@ -2344,7 +2337,7 @@ def writeCircuitscapeConfigFile(configFile, options):
     f.close()
 
 def warn(string):
-    gp.AddWarning(string)
+    arcpy.AddWarning(string)
     try:
         if cfg.LOGMESSAGES:
             write_log(string)

@@ -6,20 +6,12 @@ import sys
 
 import traceback
 
-try:
-    import arcpy
-    from arcpy.sa import *
-    arcpy.CheckOutExtension("spatial")
-    gp = arcpy.gp
-    arcgisscripting = arcpy
-    arc10 = True
-except Exception:
-    arc10 = False
-    import arcgisscripting
-    gp = arcgisscripting.create()
-    gp.CheckOutExtension("Spatial")
+import arcpy
 
-gprint = gp.addmessage
+
+arcpy.CheckOutExtension("spatial")
+
+gprint = arcpy.AddMessage
 
 _SCRIPT_NAME = "clip_corridors"
 
@@ -44,27 +36,17 @@ def clip_corridor():
         outRaster = path.join(outputGDB,outRasterFN)
         delete_data(outRaster)
 
-        desc = gp.Describe(inRaster)
+        desc = arcpy.Describe(inRaster)
         if hasattr(desc, "catalogPath"):
-            inRaster = gp.Describe(inRaster).catalogPath
-        if arc10:
-            arcpy.env.overwriteOutput = True
-            arcpy.env.workspace = outputGDB
-            arcpy.env.scratchWorkspace = outputGDB
-            arcpy.env.extent = inRaster
-            arcpy.env.cellSize = inRaster
-            output = arcpy.sa.Con(Raster(inRaster) <= float(cutoffVal),inRaster)
-            output.save(outRaster)
-        else:
-            gp.OverwriteOutput = True
-            gp.extent = gp.Describe(inRaster).extent
-            gp.cellSize = gp.Describe(inRaster).MeanCellHeight
-            gp.workspace = outputGDB
-            gp.scratchWorkspace = outputGDB
-
-            expression = ("(" + inRaster + " * (con(" + inRaster + " <= "
-                              + str(cutoffVal) + ",1)))")
-            gp.SingleOutputMapAlgebra_sa(expression, outRaster)
+            inRaster = arcpy.Describe(inRaster).catalogPath
+        arcpy.env.overwriteOutput = True
+        arcpy.env.workspace = outputGDB
+        arcpy.env.scratchWorkspace = outputGDB
+        arcpy.env.extent = inRaster
+        arcpy.env.cellSize = inRaster
+        output = arcpy.sa.Con(
+            arcpy.sa.Raster(inRaster) <= float(cutoffVal), inRaster)
+        output.save(outRaster)
 
         gprint('Building output statistics for truncated raster')
         build_stats(outRaster)
@@ -74,7 +56,7 @@ def clip_corridor():
         gprint(outputGDB)
 
     # Return GEOPROCESSING specific errors
-    except arcgisscripting.ExecuteError:
+    except arcpy.ExecuteError:
         exit_with_geoproc_error(_SCRIPT_NAME)
 
     # Return any PYTHON or system specific errors
@@ -90,12 +72,12 @@ def exit_with_geoproc_error(filename):
     tbinfo = traceback.format_tb(tb)[0]
     line = tbinfo.split(", ")[1]
 
-    gp.AddError("Geoprocessing error on **" + line + "** of " + filename +
+    arcpy.AddError("Geoprocessing error on **" + line + "** of " + filename +
                 " :")
-    for msg in range(0, gp.MessageCount):
-        if gp.GetSeverity(msg) == 2:
-            gp.AddReturnMessage(msg)
-        print gp.AddReturnMessage(msg)
+    for msg in range(0, arcpy.GetMessageCount() - 1):
+        if arcpy.GetSeverity(msg) == 2:
+            arcpy.AddReturnMessage(msg)
+        print arcpy.AddReturnMessage(msg)
     exit(0)
 
 def exit_with_python_error(filename):
@@ -111,8 +93,8 @@ def exit_with_python_error(filename):
 
 def delete_data(dataset):
     try:
-        if gp.Exists(dataset):
-            gp.delete_management(dataset)
+        if arcpy.Exists(dataset):
+            arcpy.Delete_management(dataset)
     except Exception:
         pass
 
@@ -120,11 +102,11 @@ def delete_data(dataset):
 def build_stats(raster):
     """Builds statistics and pyramids for output rasters"""
     try:
-        gp.CalculateStatistics_management(raster, "1", "1", "#")
+        arcpy.CalculateStatistics_management(raster, "1", "1", "#")
     except Exception:
         gprint('Statistics failed. They can still be calculated manually.')
     try:
-        gp.BuildPyramids_management(raster)
+        arcpy.BuildPyramids_management(raster)
     except Exception:
         gprint('Pyramids failed. They can still be built manually.')
     return
