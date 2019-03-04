@@ -154,7 +154,8 @@ def STEP3_calc_cwds():
             extentBoxList = npy.zeros((0,5), dtype='float32')
             for x in range(len(coresToMap)):
                 core = coresToMap[x]
-                boxCoords = lu.get_extent_box_coords(core)
+                boxCoords = lu.get_sel_ext_box_coords(
+                    cfg.COREFC, cfg.COREFN, core)
                 extentBoxList = npy.append(extentBoxList, boxCoords, axis=0)
             gprint('\nDone calculating bounding boxes.')
             start_time = lu.elapsed_time(start_time)
@@ -222,8 +223,9 @@ def STEP3_calc_cwds():
                               str(float(cfg.BUFFERDIST)) + ' map units.\n')
 
 
+            # NOTE - Duplicate code in s1
             extentBoxList = npy.zeros((0,5),dtype='float32')
-            boxCoords = lu.get_extent_box_coords()
+            boxCoords = lu.get_ext_box_coords(cfg.COREFC)
             extentBoxList = npy.append(extentBoxList,boxCoords,axis=0)
             extentBoxList[0,0] = 0
 

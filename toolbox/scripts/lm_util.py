@@ -548,41 +548,6 @@ def get_alloc_lookup_table(workspace, combine_ras):
 ############################################################################
 ## Bounding Circle Functions ##########################
 ############################################################################
-def new_extent(fc, field, value):
-    """Returns the maximum area extent of features where field == value"""
-    try:
-        shapeFieldName = arcpy.Describe(fc).shapeFieldName
-
-        searchRows = arcpy.SearchCursor(fc, field + ' = ' + str(value))
-        searchRow = searchRows.next()
-        # get the 1st features extent
-        extentObj = searchRow.getValue(shapeFieldName).extent
-        xMin = extentObj.XMin
-        yMin = extentObj.YMin
-        xMax = extentObj.XMax
-        yMax = extentObj.YMax
-        searchRow = searchRows.next()  # now move on to the other features
-        while searchRow:
-            extentObj = searchRow.getValue(shapeFieldName).extent
-            if extentObj.XMin < xMin:
-                xMin = extentObj.XMin
-            if extentObj.YMin < yMin:
-                yMin = extentObj.YMin
-            if extentObj.XMax > xMax:
-                xMax = extentObj.XMax
-            if extentObj.YMax > yMax:
-                yMax = extentObj.YMax
-            searchRow = searchRows.next()
-        del searchRow
-        del searchRows
-    except arcpy.ExecuteError:
-        exit_with_geoproc_error(_SCRIPT_NAME)
-    except Exception:
-        exit_with_python_error(_SCRIPT_NAME)
-
-    return  str(xMin), str(yMin), str(xMax), str(yMax)
-
-
 def get_centroids(shapefile, field):
     """Returns centroids of features"""
     try:
@@ -663,35 +628,29 @@ def get_bounding_circle_data(extentBoxList, corex, corey, distbuff):
     return circlePointData
 
 
-def get_extent_box_coords(fieldValue=None):
-    """Get coordinates of bounding box that contains selected features"""
-    try:
-        # get all features, not just npy.where cfg.COREFN = fieldValue
-        if fieldValue is None:
-            fieldValue = 1
-            desc = arcpy.Describe
-            extent = desc(cfg.FCORES).extent
-            lr = extent.lowerRight
-            ul = extent.upperLeft
-            ulx = ul.X
-            uly = ul.Y
-            lrx = lr.X
-            lry = lr.Y
-        else:
-            ulx, lry, lrx, uly = new_extent(cfg.FCORES, cfg.COREFN, fieldValue)
+def get_box_data(field_val, extent):
+    """Create Numpy array with bounding box data."""
+    box_data = npy.zeros((1, 5), dtype='float32')
+    box_data[0, :] = [field_val, extent.XMin, extent.XMax, extent.YMax,
+                      extent.YMin]
+    return box_data
 
-        ulx = float(ulx)
-        lrx = float(lrx)
-        uly = float(uly)
-        lry = float(lry)
-        boxData = npy.zeros((1, 5), dtype='float32')
-        boxData[0, :] = [fieldValue, ulx, lrx, uly, lry]
-    except arcpy.ExecuteError:
-        exit_with_geoproc_error(_SCRIPT_NAME)
-    except Exception:
-        exit_with_python_error(_SCRIPT_NAME)
 
-    return boxData
+def get_sel_ext_box_coords(feature, field_name, field_val):
+    """Get coordinates of bounding box for a unique feature."""
+    shp_field = arcpy.Describe(feature).shapeFieldName
+    search_row = arcpy.SearchCursor(
+        feature,
+        where_clause="{} = {}".format(field_name, field_val),
+        fields=shp_field).next()
+    extent = search_row.getValue(shp_field).extent
+    del search_row
+    return get_box_data(field_val, extent)
+
+
+def get_ext_box_coords(feature):
+    """Get coordinates of bounding box that contains all features."""
+    return get_box_data(1, arcpy.Describe(feature).extent)
 
 
 def make_points(workspace, pointArray, outFC):

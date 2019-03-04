@@ -57,11 +57,8 @@ def STEP1_get_adjacencies():
                               'plus buffer of ' +
                               str(float(cfg.BUFFERDIST)) + ' map units')
 
-            # Used by lu.get_extent_box_coords()
-            arcpy.MakeFeatureLayer_management(cfg.COREFC, cfg.FCORES)
-
             extentBoxList = npy.zeros((0, 5), dtype='float32')
-            boxCoords = lu.get_extent_box_coords()
+            boxCoords = lu.get_ext_box_coords(cfg.COREFC)
             extentBoxList = npy.append(extentBoxList, boxCoords, axis=0)
             extentBoxList[0, 0] = 0
 
