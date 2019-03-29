@@ -803,7 +803,6 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
 
         lcpLoop = lcpLoop + 1
         lcpShapefile = os.path.join(cfg.DATAPASSDIR, "lcpLines_s3.shp")
-        arcpy.RefreshCatalog(cfg.DATAPASSDIR)
         if lcpLoop == 1:
             if arcpy.Exists(lcpShapefile):
                 try:
@@ -1307,7 +1306,6 @@ def write_link_maps(linkTableFile, step):
     """
     try:
         arcpy.env.workspace = cfg.OUTPUTDIR
-        arcpy.RefreshCatalog(cfg.OUTPUTDIR)
         linktable = load_link_table(linkTableFile)
 
         numLinks = linktable.shape[0]

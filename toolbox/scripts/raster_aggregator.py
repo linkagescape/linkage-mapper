@@ -52,8 +52,6 @@ def raster_aggregator():
             arcpy.AddError(msg)
             exit(1)
 
-        arcpy.RefreshCatalog(OUTPUTDIR)
-
         OUTPUTGDBNAME = 'agregated_rasters.gdb'
         OUTPUTGDB = path.join(OUTPUTDIR, path.basename(OUTPUTGDBNAME))
         if not arcpy.Exists(OUTPUTGDB):

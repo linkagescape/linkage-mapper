@@ -49,8 +49,6 @@ def lm_master(argv=None):
         arcpy.env.rasterStatistics = "NONE"
 
         # Create output directories if they don't exist
-        if arcpy.Exists(cfg.OUTPUTDIR):
-            arcpy.RefreshCatalog(cfg.OUTPUTDIR)
         lu.create_dir(cfg.OUTPUTDIR)
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)

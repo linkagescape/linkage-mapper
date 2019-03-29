@@ -68,7 +68,6 @@ def step6_calc_barriers():
         link_table_file = lu.get_prev_step_link_table(step=6)
         arcpy.env.workspace = cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-        arcpy.RefreshCatalog(cfg.PROJECTDIR)
         prefix = path.basename(cfg.PROJECTDIR)
         # For speed:
         arcpy.env.pyramid = "NONE"
