@@ -12,7 +12,7 @@ nearest neighboring cluster
 # core pairs, not all cores in 1 constellation to all cores in another.
 # Could use previous (now discarded) combo code to mosaic CWDS if wanted.
 
-import os.path as path
+from os import path
 import time
 
 import arcgisscripting

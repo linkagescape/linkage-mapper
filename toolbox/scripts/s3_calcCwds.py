@@ -9,8 +9,9 @@ extent of cwd calculations and speed computation.
 """
 
 
-import os.path as path
+from os import path
 import time
+
 import numpy as npy
 
 from lm_config import tool_env as cfg
@@ -96,11 +97,9 @@ def STEP3_calc_cwds():
             gp.Extent = "MINOF"
         gp.mask = cfg.RESRAST
         if arcpy:
-            arcpy.env.overwriteOutput = True
             arcpy.env.workspace = cfg.SCRATCHDIR
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         else:
-            gp.OverwriteOutput = True
             gp.workspace = cfg.SCRATCHDIR
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
 
@@ -150,8 +149,10 @@ def STEP3_calc_cwds():
         # If picking up a failed run, use old folders
         if not rerun:
             startIndex = 0
-            if cfg.TOOL <> cfg.TOOL_CC:
-                lu.make_cwd_paths(max(coresToMap)) # Set up cwd directories
+            if cfg.TOOL != cfg.TOOL_CC:
+                # Set up cwd directories
+                lu.make_raster_paths(int(max(coresToMap)), cfg.CWDBASEDIR,
+                                     cfg.CWDSUBDIR_NM)
 
         # make a feature layer for input cores to select from
         gp.MakeFeatureLayer(cfg.COREFC, cfg.FCORES)
@@ -418,13 +419,11 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             gp = arcpy.gp
             arcpy.env.workspace = coreDir
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-            arcpy.env.overwriteOutput = True
             arcpy.env.extent = "MINOF"
         else:
             gp = cfg.gp
             gp.workspace = coreDir
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
-            gp.OverwriteOutput = True
             gp.Extent = "MINOF"
 
         write_cores_to_map(x, coresToMap)
@@ -802,8 +801,7 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
 
     """
     try:
-        gp.workspace = workspace
-        gp.OverwriteOutput = True
+        gp.workspace = workspace 
         if gp.exists("addRas"): #Can't use tif for getrasterproperties
             gp.delete_management("addRas")
         count = 0

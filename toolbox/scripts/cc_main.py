@@ -21,7 +21,6 @@ import sys
 import csv
 import itertools
 import traceback
-from datetime import datetime as dt
 
 import arcinfo  # Import arcinfo license. Needed before arcpy import.
 import arcpy
@@ -35,21 +34,20 @@ import lm_util
 
 _SCRIPT_NAME = "cc_main.py"
 
-TFORMAT = "%m/%d/%y %H:%M:%S"
-
 FR_COL = "From_Core"
 TO_COL = "To_Core"
 
 
 def main(argv=None):
     """Run Climate Linkage Mapper tool."""
-    start_time = dt.now()
+    stime = lm_util.start_time()
 
     if argv is None:
         argv = sys.argv
     try:
         cc_env.configure(argv)
         cc_util.check_cc_project_dir()
+        lm_util.create_dir(cc_env.proj_dir)
 
         check_out_sa_license()
         arc_wksp_setup()
@@ -73,7 +71,7 @@ def main(argv=None):
                        "".join(traceback.format_tb(exc_traceback)))
     finally:
         arcpy.CheckInExtension("Spatial")
-        print_runtime(start_time)
+        lm_util.run_time(stime)
 
 
 def check_out_sa_license():
@@ -86,9 +84,8 @@ def check_out_sa_license():
 
 def arc_wksp_setup():
     """Define ArcPy workspace."""
-    arcpy.env.overwriteOutput = True
     arcpy.env.cellSize = "MAXOF"  # Setting to default. For batch runs.
-    cc_util.arc_delete(cc_env.scratch_dir)
+    lm_util.delete_data(cc_env.scratch_dir)
     cc_util.mk_proj_dir(cc_env.scratch_dir)
     arcpy.CreateFileGDB_management(os.path.dirname(cc_env.cc_gdb),
                                    os.path.basename(cc_env.cc_gdb))
@@ -305,7 +302,6 @@ def limit_cores(pair_tbl, stats_tbl):
     lm_util.gprint(str(rows_del) + " rows deleted")
 
 
-
 def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
     """Add zonal and calculated statistics to stick table."""
     tmp_mea = fld_pre + "_tmp_mea"
@@ -385,7 +381,7 @@ def pairs_from_list(pairings):
 
 
 def create_lnk_tbl(corefc, core_pairs, frm_cores):
-    """Create link table file and limit based on near table results"""
+    """Create link table file and limit based on near table results."""
     # Temporary query layers
     fcore_vw = "fcore_vw"
     tcore_vw = "tcore_vw"
@@ -464,7 +460,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
     except Exception:
         raise
     finally:
-        cc_util.arc_delete(near_tbl)
+        lm_util.delete_data(near_tbl)
         if link_tbl:
             link_tbl.close()
         if srow:
@@ -486,16 +482,6 @@ def simplify_corefc():
         cc_env.prj_core_fc, corefc_simp,
         "POINT_REMOVE", tolerance, "#", "NO_CHECK", "NO_KEEP")
     return corefc_simp
-
-
-def print_runtime(stime):
-    """Print process time when running from script."""
-    etime = dt.now()
-    rtime = etime - stime
-    hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
-                      (rtime.seconds // 60) % 60)
-    print "End time: %s" % etime.strftime(TFORMAT)
-    print "Elapsed time: %s hrs %s mins" % (hours, minutes)
 
 
 if __name__ == "__main__":

@@ -5,12 +5,12 @@
 import os
 import sys
 import subprocess
+from datetime import datetime as dt
 import time
 import traceback
 import ConfigParser
 import shutil
 import gc
-import glob
 import ctypes
 import locale
 from lm_retry_decorator import Retry
@@ -19,6 +19,7 @@ from lm_retry_decorator import Retry
 import numpy as npy
 
 import arcgisscripting
+import arcpy
 
 from lm_config import tool_env as cfg
 try:
@@ -29,6 +30,16 @@ except Exception:
 _SCRIPT_NAME = "lm_util.py"
 
 gp = cfg.gp
+
+
+def cwd_cutoff_str(cutoff):
+    """Convert CDW cutoff to text and abbreviate if possible."""
+    cutoff_text = str(cutoff)
+    if cutoff_text[-6:] == "000000":
+        cutoff_text = cutoff_text[0:-6] + "m"
+    elif cutoff_text[-3:] == "000":
+        cutoff_text = cutoff_text[0:-3] + "k"
+    return cutoff_text
 
 
 def get_linktable_row(linkid, linktable):
@@ -288,28 +299,43 @@ def get_core_targets(core, linktable):
     return targetList
 
 
+def start_time():
+    """Print and return start time."""
+    start_time = dt.now()
+    print "Start time: {}".format(start_time.strftime("%m/%d/%y %H:%M:%S"))
+    return start_time
+
+
+def s2hhmmss(s):
+    """Convert seconds to hours, minutes and seconds."""
+    m, s = divmod(int(s), 60)
+    h, m = divmod(m, 60)
+    return h, m, s
+
+
+def run_time(stime):
+    """Print program execution time when running from script."""
+    etime = dt.now()
+    hours, minutes, seconds = s2hhmmss((etime - stime).total_seconds())
+    print "End time: {}".format(etime.strftime("%m/%d/%y %H:%M:%S"))
+    print "Execution time: {} hrs {} mins {} seconds".format(
+        hours, minutes, seconds)
+
+
 def elapsed_time(start_time):
-    """Returns elapsed time given a start time"""
-    try:
-        now = time.clock()
-        elapsed = now - start_time
-        secs = int(elapsed)
-        mins = int(elapsed / 60)
-        hours = int(mins / 60)
-        mins = mins - hours * 60
-        secs = secs - mins * 60 - hours * 3600
-        if mins == 0:
-            gprint('That took ' + str(secs) + ' seconds.\n')
-        elif hours == 0:
-            gprint('That took ' + str(mins) + ' minutes and ' +
-                              str(secs) + ' seconds.\n')
-        else:
-            gprint('That took ' + str(hours) + ' hours ' +
-                              str(mins) + ' minutes and ' + str(secs) +
-                              ' seconds.\n')
-        return now
-    except Exception:
-        exit_with_python_error(_SCRIPT_NAME)
+    """Print elapsed time given a start time and return a new start time."""
+    now = time.clock()
+    hours, minutes, seconds = s2hhmmss(now - start_time)
+    msg = "Task took:"
+    if minutes == 0:
+        gprint("{} {} seconds.\n".format(msg, seconds))
+    elif hours == 0:
+        gprint("{} {} minutes and {} seconds.\n".format(
+            msg, minutes, seconds))
+    else:
+        gprint("{} {} hours and {} minutes and {} seconds.\n".format(
+            msg, hours, minutes, seconds))
+    return now
 
 
 def report_pct_done(current, goal, last):
@@ -893,7 +919,6 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
     """Updates lcp shapefiles with new link information/status"""
 
     try:
-        gp.OverwriteOutput = True
         lcpShapefile = os.path.join(cfg.DATAPASSDIR, "lcpLines_s" +
                                     str(thisStep) + ".shp")
 
@@ -1147,16 +1172,6 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
         logFile.write('Start time:\t%s \n' % (timeNow))
         logFile.write('Parameters:\t%s \n\n' % (inParameters))
-        if toolName == "Linkage Mapper":
-            if cfg.LMCUSTSETTINGS:
-                logFile.write('Linkage Mapper (LM) settings from' + cfg.LMCUSTSETTINGS + ':\n')
-            else:
-                logFile.write('Linkage Mapper (LM) settings from lm_settings.py:\n')
-            logFile.write('CALCNONNORMLCCS: %s \n' % (cfg.CALCNONNORMLCCS))
-            logFile.write('MINCOSTDIST: %s \n' % (cfg.MINCOSTDIST))
-            logFile.write('MINEUCDIST: %s \n' % (cfg.MINEUCDIST))
-            logFile.write('SAVENORMLCCS: %s \n' % (cfg.SAVENORMLCCS))
-            logFile.write('SIMPLIFY_CORES: %s \n' % (cfg.SIMPLIFY_CORES))
     logFile.close()
     dashline()
     gprint('A record of run settings and messages can be found in your '
@@ -1178,6 +1193,16 @@ def write_log(string):
         pass
     finally:
         logFile.close()
+
+
+def write_custom_to_log(settings_file):
+    """Write custom settings to log file."""
+    write_log("Custom settings from {}:".format(settings_file))
+    with open(settings_file) as custfile:
+        for line in custfile.readlines():
+            if not line.startswith('#') and "=" in line:
+                write_log(line[:line.find("#")].replace(' =', ':'))
+    write_log("")
 
 
 def close_log_file():
@@ -1324,7 +1349,6 @@ def write_link_maps(linkTableFile, step):
 
     """
     try:
-        gp.OverwriteOutput = True
         gp.workspace = cfg.OUTPUTDIR
         gp.RefreshCatalog(cfg.OUTPUTDIR)
         linktable = load_link_table(linkTableFile)
@@ -1563,117 +1587,71 @@ def move_results_folder(oldFolder, newFolder):
         exit_with_python_error(_SCRIPT_NAME)
 
 
-def delete_file(file):
+def delete_file(filename):
+    """Delete file from disk."""
     try:
-        if os.path.isfile(file):
-            os.remove(file)
-            gc.collect()
-    except Exception:
+        os.remove(filename)
+    except OSError:
         pass
-    return
 
 
-def delete_dir(dir):
+def delete_dir(dir_path):
+    """Delete directory from disk ignoring errors."""
+    if os.path.isdir(dir_path):
+        shutil.rmtree(dir_path, ignore_errors=True)
+
+
+def delete_data(item):
+    """Delete data from disk using ArcPy."""
     try:
-        if gp.Exists(dir):
-            shutil.rmtree(dir)
-        return
-    except Exception:
-        snooze(5)
-        try: #Try again following cleanup attempt
-            gp.RefreshCatalog(dir)
-            gc.collect()
-            shutil.rmtree(dir)
-        except Exception:
-            pass
-        return
+        arcpy.Delete_management(item)
+    except arcpy.ExecuteError:
+        pass
 
 
 def clean_out_workspace(ws):
-    try:
-        if gp.exists(ws):
-            gp.workspace = ws
-            gp.OverwriteOutput = True
-            fcs = gp.ListFeatureClasses()
-            for fc in fcs:
-                fcPath = os.path.join(ws,fc)
-                gp.delete_management(fcPath)
-
-            rasters = gp.ListRasters()
-            for raster in rasters:
-                rasterPath = os.path.join(ws,raster)
-                gp.delete_management(rasterPath)
-        gc.collect()
-        return
-
-    except arcgisscripting.ExecuteError:
-        exit_with_geoproc_error(_SCRIPT_NAME)
-    except Exception:
-        exit_with_python_error(_SCRIPT_NAME)
+    """Delete all datasets in an ArcPy workspace."""
+    if arcpy.Exists(ws):
+        cur_ws = arcpy.env.workspace
+        arcpy.env.workspace = ws
+        datasets = arcpy.ListDatasets()
+        for data in datasets:
+                delete_data(data)
+        arcpy.env.workspace = cur_ws
 
 
-def delete_data(dataset):
-    try:
-        if gp.Exists(dataset):
-            gp.delete_management(dataset)
+def make_raster_paths(no_rast, base_dir, sub_dir):
+    r"""Set up raster directories to insure < 100 grids in any one directory.
 
-            # Users are reporting stray vat and other files.  Below is attempt
-            # to rid directory of them as they may be causing grid write
-            # problems.
-            dir = os.path.dirname(dataset)
-            base = os.path.basename(dataset)
-            baseName, extension = os.path.splitext(base)
-            basepath = os.path.join(dir,baseName)
-            fileList = glob.glob(basepath + '.*')
-            for item in fileList:
-                try:
-                    os.remove(item)
-                except Exception:
-                    pass
-            gc.collect()
-    except Exception:
-        pass
-
-
-def make_cwd_paths(max_core_no):
-    """Set up cwd directories to insure < 100 grids in any one directory.
-
-    Outputs are written to: cwd\cw for cores 1-99, cwd\cw1 for cores 100-199,
-    etc.
+    Outputs are written to: base\sub for rasters 1-99, base\sub1 for rasters
+    100-199, etc.
     """
+    delete_dir(base_dir)
     try:
-        delete_dir(cfg.CWDBASEDIR)
-
-        gprint("\nCreating cost-weighted distance output folders")
-        gprint('...' + cfg.CWDSUBDIR_NM)
-
-        gp.CreateFolder_management(os.path.dirname(cfg.CWDBASEDIR),
-                                       os.path.basename(cfg.CWDBASEDIR))
-        gp.CreateFolder_management(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
-
-        no_dirs = int(max_core_no / 100)
-        if no_dirs > 1:
-            gprint('...' + cfg.CWDSUBDIR_NM + '1')
-            gprint('...etc.')
-        for dir_no in range(1, no_dirs + 1):
-            ccwdir = cfg.CWDSUBDIR_NM + str(dir_no)
-            gp.CreateFolder_management(cfg.CWDBASEDIR, ccwdir)
-
-    except arcgisscripting.ExecuteError:
-        exit_with_geoproc_error(_SCRIPT_NAME)
-    except Exception:
+        os.makedirs(os.path.join(base_dir, sub_dir))
+        for dir_no in range(1, (no_rast / 100) + 1):
+            os.mkdir(os.path.join(base_dir,
+                                  ''.join([sub_dir, str(dir_no)])))
+    except OSError:
         exit_with_python_error(_SCRIPT_NAME)
+
+
+def rast_path(count, base_dir, sub_dir):
+    """Return the path for the raster corresponding to its count."""
+    dir_count = count / 100
+    if dir_count > 0:
+        rast_path = os.path.join(base_dir,
+                                 ''.join([sub_dir, str(dir_count)]))
+    else:
+        rast_path = os.path.join(base_dir, sub_dir)
+    return rast_path
 
 
 def get_cwd_path(core):
-    """Returns the path for the cwd raster corresponding to a core area """
-    dirCount = int(core / 100)
-    if dirCount > 0:
-        return os.path.join(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM + str(dirCount),
-                         "cwd_" + str(core))
-    else:
-        return os.path.join(cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM, "cwd_"
-                         + str(core))
+    """Return the path for the cwd raster corresponding to a core area."""
+    dir_path = rast_path(core, cfg.CWDBASEDIR, cfg.CWDSUBDIR_NM)
+    fname = "cwd_{}".format(core)
+    return os.path.join(dir_path, fname)
 
 
 def get_focal_path(core,radius):

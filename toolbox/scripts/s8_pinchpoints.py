@@ -8,7 +8,7 @@ Python 2.6
 Numpy
 """
 
-import os.path as path
+from os import path
 import time
 
 import numpy as npy
@@ -45,7 +45,6 @@ def STEP8_calc_pinchpoints():
 
         outputGDB = path.join(cfg.OUTPUTDIR, path.basename(cfg.PINCHGDB))
 
-        arcpy.OverWriteOutput = True
         arcpy.env.workspace = cfg.SCRATCHDIR
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         arcpy.env.pyramid = "NONE"
@@ -122,11 +121,7 @@ def STEP8_calc_pinchpoints():
         CONFIGDIR = path.join(INCIRCUITDIR, cfg.CIRCUITCONFIGDIR_NM)
 
         # Cutoff value text to append to filenames
-        cutoffText = str(cfg.CWDCUTOFF)
-        if cutoffText[-6:] == '000000':
-            cutoffText = cutoffText[0:-6]+'m'
-        elif cutoffText[-3:] == '000':
-            cutoffText = cutoffText[0:-3]+'k'
+        cutoffText = lu.cwd_cutoff_str(cfg.CWDCUTOFF)
 
         if cfg.SQUARERESISTANCES:
             # Square resistance values

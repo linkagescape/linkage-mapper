@@ -6,21 +6,27 @@ Assigns input parameters from ToolBox to variables, and sets constants.
 
 """
 
+from os import path
 import imp
-import os.path as path
 
 import arcgisscripting
 
 import lm_version as ver
-import lm_settings
+import lm_util_config as util
 
 
-GP_NULL = '#'
+def get_code_path():
+    """Get full path to tool scripts folder."""
+    return path.dirname(path.realpath(__file__))
 
 
-def str2bool(pstr):
-    """Convert ESRI boolean string to Python boolean type."""
-    return pstr == 'true'
+def set_custom(settings, config_obj):
+    """Add attributes for custom file to configuration object."""
+    cust_settings = imp.load_source("set_mod", settings)
+    for setting in dir(cust_settings):
+        if setting == setting.upper():
+            setting_value = getattr(cust_settings, setting)
+            setattr(config_obj, setting, setting_value)
 
 
 def setadjmeth(inparam):
@@ -32,20 +38,13 @@ def setadjmeth(inparam):
 
 def nullfloat(innum):
     """Convert ESRI float or null to Python float."""
-    if innum == GP_NULL:
+    if innum == util.GP_NULL:
         nfloat = None
     else:
         nfloat = float(innum)
         if nfloat == 0:
             nfloat = None
     return nfloat
-
-
-def nullstring(arg_string):
-    """Convert ESRI nullstring to Python null."""
-    if arg_string == GP_NULL:
-        arg_string = None
-    return arg_string
 
 
 def config_global(config, arg):
@@ -162,25 +161,24 @@ def config_lm(config, arg):
     """Configure global variables for Linkage Mapper."""
     config.CONNECTFRAGS = False
     config.COREFC = arg[2]  # Core area feature class
-    splits = config.COREFC.split("\\")
-    config.CORENAME = splits[len(splits) - 1].split(".")[0]
+    config.CORENAME = path.splitext(path.basename(config.COREFC))[0]
     config.COREFN = arg[3]  # Core area field name
     config.RESRAST_IN = arg[4]  # Resistance raster
 
     # Processing steps inputs
-    config.STEP1 = str2bool(arg[5])
+    config.STEP1 = util.str2bool(arg[5])
 
     config.S1ADJMETH_CW = True
     config.S1ADJMETH_EU = True
 
-    config.STEP2 = str2bool(arg[6])
+    config.STEP2 = util.str2bool(arg[6])
     config.S2ADJMETH_CW, config.S2ADJMETH_EU = setadjmeth(arg[7])
-    config.S2EUCDISTFILE = nullstring(arg[8])
+    config.S2EUCDISTFILE = util.nullstring(arg[8])
 
-    config.STEP3 = str2bool(arg[9])
+    config.STEP3 = util.str2bool(arg[9])
     # Drop LCC's passing through intermediate cores
-    config.S3DROPLCCS = str2bool(arg[10])
-    config.STEP4 = str2bool(arg[11])
+    config.S3DROPLCCS = util.str2bool(arg[10])
+    config.STEP4 = util.str2bool(arg[11])
     if arg[12] == "Unlimited":
         config.S4MAXNN = 99
         config.IGNORES4MAXNN = True
@@ -189,8 +187,11 @@ def config_lm(config, arg):
         config.IGNORES4MAXNN = False
     # NN Unit
     config.S4DISTTYPE_CW, config.S4DISTTYPE_EU = setadjmeth(arg[13])
-    config.S4CONNECT = str2bool(arg[14])
-    config.STEP5 = str2bool(arg[15])
+    config.S4CONNECT = util.str2bool(arg[14])
+
+    config.STEP5 = util.str2bool(arg[15])
+    config.WRITETRUNCRASTER = util.str2bool(arg[16])
+    config.CWDTHRESH = int(arg[17])
 
     # Optional input parameters
     config.BUFFERDIST = nullfloat(arg[18])
@@ -207,42 +208,21 @@ def config_lm(config, arg):
 
     config.MAXEUCDIST = nullfloat(arg[20])
 
-    # Optional parameters that only apply to 2.0.0+ toolbox,
-    # for ArcGIS 10.x only
-    if "10." in config.gp.GetInstallInfo('desktop')['Version']:
-        config.WRITETRUNCRASTER = str2bool(arg[16])
-        config.CWDTHRESH = int(arg[17])
-        config.OUTPUTFORMODELBUILDER = nullstring(arg[21])
-        config.LMCUSTSETTINGS = nullstring(arg[22])
+    config.OUTPUTFORMODELBUILDER = util.nullstring(arg[21])
+
+    if arg[22] == util.GP_NULL:
+        config.LMCUSTSETTINGS = path.join(get_code_path(),
+                                          'lm_settings.py')
     else:
-        config.OUTPUTFORMODELBUILDER = None
+        config.LMCUSTSETTINGS = arg[22]
 
-        # These two settings are hardcoded based on the values
-        # used in lm_settings, before they were daylighted in
-        # the toolbox in LM 2.0.0+ for ArcGIS10.x
-        config.WRITETRUNCRASTER = True
-        config.CWDTHRESH = 200000
-
-        config.LMCUSTSETTINGS = None
-
-    if config.LMCUSTSETTINGS:
-        cust_settings = (imp.load_source(
-            config.LMCUSTSETTINGS.split(".")[0], config.LMCUSTSETTINGS))
-        for setting in dir(cust_settings):
-            if setting == setting.upper():
-                setting_value = getattr(cust_settings, setting)
-                setattr(config, setting, setting_value)
-    else:
-        for setting in dir(lm_settings):
-            if setting == setting.upper():
-                setting_value = getattr(lm_settings, setting)
-                setattr(config, setting, setting_value)
+    set_custom(config.LMCUSTSETTINGS, config)
 
     if config.MAXCOSTDIST is None:
         config.TMAXCWDIST = None
     elif config.CWDTHRESH is not None:
         config.TMAXCWDIST = None
-    config.SCRATCHGDB = path.join(config.SCRATCHDIR, "scratch.gdb")
+
     config.CORERAS = path.join(config.SCRATCHDIR, "core_ras")
     return True
 
@@ -254,8 +234,8 @@ def config_barrier(config, arg):
     config.ENDRADIUS = arg[4]
     config.RADIUSSTEP = arg[5]
     config.BARRIER_METH = arg[6]
-    config.SAVE_RADIUS_RASTERS = str2bool(arg[7])
-    config.WRITE_PCT_RASTERS = str2bool(arg[8])
+    config.SAVE_RADIUS_RASTERS = util.str2bool(arg[7])
+    config.WRITE_PCT_RASTERS = util.str2bool(arg[8])
     if len(arg) > 9:
         config.BARRIER_CWD_THRESH = arg[9]
         if arg[9] == "#" or arg[9] == "" or arg[9] == 0 or arg[9] == "0":
@@ -266,7 +246,8 @@ def config_barrier(config, arg):
     config.BARRIER_METH_MAX = 'max' in config.BARRIER_METH.lower()
     config.BARRIER_METH_SUM = 'sum' in config.BARRIER_METH.lower()
 
-    if config.RADIUSSTEP == GP_NULL or config.ENDRADIUS == config.STARTRADIUS:
+    if (config.RADIUSSTEP == util.GP_NULL
+            or config.ENDRADIUS == config.STARTRADIUS):
         config.RADIUSSTEP = 0
     if ((float(config.STARTRADIUS) + float(config.RADIUSSTEP))
             > float(config.ENDRADIUS)):
@@ -296,7 +277,82 @@ def config_climate(config, arg):
 
 def config_lp(config, arg):
     """Configure global variables for Linkage Priority tool."""
-    config.lm_configured = config_lm(config, arg)
+    # Model Inputs
+    # ------------
+    config.COREFC = arg[2]
+    config.COREFN = arg[3]
+    config.RESRAST_IN = arg[4]
+
+    # Core Area Value (CAV) Options
+    # -----------------------------
+    config.OCAVRAST_IN = util.nullstring(arg[5])
+    config.RESWEIGHT = float(arg[6])
+    config.SIZEWEIGHT = float(arg[7])
+    config.APWEIGHT = float(arg[8])
+    config.ECAVWEIGHT = float(arg[9])
+    config.CFCWEIGHT = float(arg[10])
+    config.OCAVWEIGHT = float(arg[11])
+
+    # Corridor Specific Priority (CSP) Options
+    # ----------------------------------------
+    #  Expert Corridor Importance Value
+    config.COREPAIRSTABLE_IN = util.nullstring(arg[12])
+    config.FROMCOREFIELD = util.nullstring(arg[13])
+    config.TOCOREFIELD = util.nullstring(arg[14])
+    config.ECIVFIELD = util.nullstring(arg[15])
+
+    # Climate Linkage Priority Value
+    config.CCERAST_IN = util.nullstring(arg[16])
+    config.FCERAST_IN = util.nullstring(arg[18])
+    config.CANALOG_MIN = float(arg[19])
+    config.CANALOG_MAX = float(arg[20])
+    config.CANALOG_TARGET = float(arg[21])
+    config.CANALOG_PIORITY = float(arg[22])
+    config.CANALOG_WEIGHT = float(arg[23])
+    config.CPREF_VALUE = float(arg[24])
+    config.CPREF_MIN = float(arg[25])
+    config.CPREF_MAX = float(arg[26])
+    config.CPREF_WEIGHT = float(arg[27])
+
+    # CSP Weights
+    config.CLOSEWEIGHT = float(arg[28])
+    config.PERMWEIGHT = float(arg[29])
+    config.CAVWEIGHT = float(arg[30])
+    config.ECIVWEIGHT = float(arg[31])
+    config.CEDWEIGHT = float(arg[32])
+
+    # CPS Trim Value
+    config.CPSNORM_CUTOFF = nullfloat(arg[33])
+
+    # Blended Priority Options
+    # ------------------------
+    config.TRUNCWEIGHT = float(arg[34])
+    config.LPWEIGHT = float(arg[35])
+
+    # Additional Options
+    # ------------------
+    config.OUTPUTFORMODELBUILDER = util.nullstring(arg[36])
+    if arg[37] == util.GP_NULL:
+        config.LPCUSTSETTINGS_IN = path.join(get_code_path(),
+                                             'lp_settings.py')
+    else:
+        config.LPCUSTSETTINGS_IN = arg[37]
+
+    # Settings from Linkage Pathways
+    # ------------------------------
+    config.CWDTHRESH = int(arg[38])
+
+    #  Custom settings
+    # ----------------
+    set_custom(config.LPCUSTSETTINGS_IN, config)
+
+    config.CALC_CSP = 1  # Calculate Corridor Specific Priority (CSP)
+    config.CALC_CSPBP = 2  # Calculate CSP and Blended Priority
+
+    # Misc
+    # ----
+    config.SCRATCHGDB = path.join(config.SCRATCHDIR, "scratch.gdb")
+    config.CORENAME = path.splitext(path.basename(config.COREFC))[0]
 
 
 def config_circuitscape(config, arg):
@@ -314,14 +370,17 @@ def config_circuitscape(config, arg):
         config.DOPINCH = True
         config.DOCENTRALITY = False
         config.RESRAST_IN = arg[4]
-        config.CWDCUTOFF = int(nullfloat(arg[5]))  # CDW cutoff distance
-        config.SQUARERESISTANCES = str2bool(arg[6])  # Square resistance values
+
+        # CDW cutoff distance
+        config.CWDCUTOFF = int(nullfloat(arg[5]))
+        # Square resistance values
+        config.SQUARERESISTANCES = util.str2bool(arg[6])
 
         # Do adjacent pair corridor pinchpoint calculations
         # using raster CWD maps
-        config.DO_ADJACENTPAIRS = str2bool(arg[7])
+        config.DO_ADJACENTPAIRS = util.str2bool(arg[7])
         # Do all-pair current calculations using raster corridor map
-        config.DO_ALLPAIRS = str2bool(arg[8])
+        config.DO_ALLPAIRS = util.str2bool(arg[8])
         config.ALL_PAIR_CHOICE = arg[9]
         if config.DO_ALLPAIRS:
             if "pairwise" in config.ALL_PAIR_CHOICE.lower():

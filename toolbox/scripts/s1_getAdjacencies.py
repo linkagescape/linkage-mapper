@@ -7,8 +7,8 @@ cost-weighted distance space
 
 """
 
+from os import path
 import time
-import os.path as path
 
 import numpy as npy
 

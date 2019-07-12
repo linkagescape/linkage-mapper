@@ -186,7 +186,6 @@ def main():
             arcpy.env.cellSize = res_ras
             arcpy.env.extent = res_ras
             arcpy.env.snapRaster = res_ras
-            arcpy.env.overwriteOutput = True
             arcpy.env.scratchWorkspace = output_gdb
             arcpy.env.workspace = output_gdb
 
@@ -224,7 +223,6 @@ def main():
                     # Put a copy here for future runs
                     shutil.copyfile(dist_file1, dist_file)
 
-            arcpy.env.overwriteOutput = True
             arcpy.env.scratchWorkspace = output_gdb
             arcpy.env.workspace = output_gdb
 
@@ -257,7 +255,6 @@ def main():
             arcpy.env.cellSize = res_ras
             arcpy.env.extent = res_ras
             arcpy.env.snapRaster = res_ras
-            arcpy.env.overwriteOutput = True
             arcpy.env.scratchWorkspace = output_gdb
             arcpy.env.workspace = output_gdb
 

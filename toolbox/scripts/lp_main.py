@@ -7,209 +7,196 @@ import os
 import sys
 import glob
 import traceback
-from datetime import datetime as dt
 from collections import namedtuple
 
 import arcpy
 
-from lp_config import lp_env
 from lm_config import tool_env as lm_env
 import lm_util
 
 
 _SCRIPT_NAME = "lp_main.py"
-TFORMAT = "%m/%d/%y %H:%M:%S"
 
 NM_SCORE = "SCORE_RANGE"  # Score range normalization
 NM_MAX = "MAX_VALUE"  # Maximum value normalization
 
-
 CoordPoint = namedtuple('Point', 'x y')
 
 
-def delete_datasets_in_workspace():
-    """Delete all datasets in workspace."""
-    datasets = arcpy.ListDatasets()
-    for dataset in datasets:
-        delete_dataset(dataset)
+class AppError(Exception):
+    """Custom error class."""
+
+    pass
 
 
-def delete_dataset(dataset):
-    """Delete one dataset."""
-    try:
-        arcpy.Delete_management(dataset)
-    except arcpy.ExecuteError:
-        arcpy.AddWarning("Error deleting scratch/intermediate/temporary "
-                         "dataset %s. Program will continue." % dataset)
+def normalize_raster(in_raster, normalization_method=NM_MAX, invert=False):
+    """Normalize values in in_raster.
 
-
-def delete_arcpy_temp_datasets():
-    """Delete datasets left behind by arcpy."""
-    if arcpy.Exists(os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")):
-        # datasets in scratch gdb (including core_resistance_stats and old
-        # hangovers)
-        arcpy.env.workspace = os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")
-        delete_datasets_in_workspace()
-    # datasets in intermediate gdb (including old hangovers)
-    if not lp_env.KEEPINTERMEDIATE:
-        if arcpy.Exists(os.path.join(lm_env.SCRATCHDIR, "intermediate.gdb")):
-            arcpy.env.workspace = os.path.join(lm_env.SCRATCHDIR,
-                                               "intermediate.gdb")
-            delete_datasets_in_workspace()
-    # datasets in current OS directory
-    arcpy.env.workspace = os.getcwd()
-    delete_datasets_in_workspace()
-
-
-def print_runtime(stime):
-    """Print process time when running from script."""
-    etime = dt.now()
-    rtime = etime - stime
-    hours, minutes = ((rtime.days * 24 + rtime.seconds // 3600),
-                      (rtime.seconds // 60) % 60)
-    print "End time: %s" % etime.strftime(TFORMAT)
-    print "Elapsed time: %s hrs %s mins" % (hours, minutes)
-
-
-def main(argv=None):
-    """Run Linkage Priority tool."""
-    start_time = dt.now()
-    print "Start time: %s" % start_time.strftime(TFORMAT)
-
-    if argv is None:
-        # get parameters passed from tool dialog, if any
-        argv = sys.argv
-    try:
-        # preparation steps
-        lp_env.configure(argv)
-        check_lp_project_dir()
-        check_out_sa_license()
-        arc_wksp_setup()
-        config_lm()
-        log_setup()
-        # primary analysis
-        run_analysis()
-    except arcpy.ExecuteError:
-        # arcpy error
-        msg = arcpy.GetMessages(2)
-        arcpy.AddError(msg)
-        lm_util.write_log(msg)
-        exc_traceback = sys.exc_info()[2]
-        lm_util.gprint(
-            "Traceback (most recent call last):\n" +
-            "".join(traceback.format_tb(exc_traceback)[:-1]))
-    except Exception:
-        # other exceptions
-        exc_value, exc_traceback = sys.exc_info()[1:]
-        arcpy.AddError(exc_value)
-        lm_util.gprint(
-            "Traceback (most recent call last):\n" +
-            "".join(traceback.format_tb(exc_traceback)))
-    finally:
-        delete_arcpy_temp_datasets()
-        arcpy.CheckInExtension("Spatial")
-        print_runtime(start_time)
-        lm_util.close_log_file()
-
-
-def check_lp_project_dir():
-    """Check to make sure path name is not too long.
-
-    Long path names can cause problems with ESRI grids.
+    Normalize values in in_raster using score range or max score method,
+    with optional inversion.
     """
-    if len(lp_env.PROJDIR) > 140:
-        msg = ('ERROR: Project directory "' + lp_env.PROJDIR +
-               '" is too deep.  Please choose a shallow directory' +
-               r'(something like "C:\PUMA").')
-        raise Exception(msg)
-
-    if ("-" in lp_env.PROJDIR or " " in lp_env.PROJDIR or
-            "." in lp_env.PROJDIR):
-        msg = ("ERROR: Project directory cannot contain spaces, dashes, or "
-               "special characters.")
-        raise Exception(msg)
-
-
-def check_out_sa_license():
-    """Check out the ArcGIS Spatial Analyst extension license."""
-    if arcpy.CheckExtension("Spatial") == "Available":
-        arcpy.CheckOutExtension("Spatial")
+    lm_util.build_stats(in_raster)
+    result = arcpy.GetRasterProperties_management(in_raster, "MINIMUM")
+    min_val = float(result.getOutput(0))
+    result = arcpy.GetRasterProperties_management(in_raster, "MAXIMUM")
+    max_val = float(result.getOutput(0))
+    if max_val > 0:
+        if normalization_method == NM_SCORE:
+            if invert:
+                return (max_val - in_raster) / (max_val - min_val)
+            return (in_raster - min_val) / (max_val - min_val)
+        else:  # Max score normalization
+            if invert:
+                return (max_val + min_val - in_raster) / max_val
+            return in_raster / max_val
     else:
-        msg = ("ERROR: Spatial Analyst extension not available.")
-        raise Exception(msg)
+        return in_raster * 0
 
 
-def arc_wksp_setup():
-    """Define ArcPy workspace."""
-    arcpy.env.overwriteOutput = True
+def save_interm_rast(rast_list, base_name):
+    """Save intermediate rasters if user chooses."""
+    if lm_env.KEEPINTERMEDIATE:
+        gdb_name = ".".join([base_name, "gdb"])
+        arcpy.CreateFileGDB_management(lm_env.SCRATCHDIR, gdb_name)
+        for rast_name, rast in rast_list:
+            rast.save(os.path.join(lm_env.SCRATCHDIR, gdb_name, rast_name))
 
 
-def config_lm():
-    """Configure Linkage Mapper."""
-    # get log file for last LM run
-    spath = os.path.join(lp_env.PROJDIR, "run_history", "log",
-                         "*_Linkage Mapper.txt")
-    entries = sorted(glob.glob(spath), key=os.path.getctime, reverse=True)
-    last_lm_log = next(iter(entries or []), None)
-    if not last_lm_log:
-        raise Exception("ERROR: Log file for last Linkage Mapper run not "
-                        "found. Please ensure Linkage Mapper is run "
-                        "for this project before running Linkage Priority.")
+def blended_priority(rast_list, lcp_ncsp):
+    """Calculate overall Blended Priority."""
+    lm_util.gprint("-Calculating overall BP")
 
-    # read parameters section from file and turn into tuple for passing
-    parms = ""
-    with open(last_lm_log) as log_file:
-        for line in log_file:
-            if line[0:13] == "Parameters:\t[":
-                parms = line[13:len(line) - 3]
-                break
-    lm_arg = tuple(parms.replace("'", "").split(", "))
-    if parms == "":
-        raise Exception("ERROR: Log file for last Linkage Mapper run does not "
-                        "contain a Parameters line")
+    blend_rast = []
+    for fname, rast in rast_list:
+        blend_rast.append([fname, (lm_env.TRUNCWEIGHT * rast) +
+                           (lm_env.LPWEIGHT * lcp_ncsp[fname])])
 
-    # use LM config in addition to LP config by passing in parms from
-    # last LM run
-    try:
-        lm_env.configure(lm_env.TOOL_LP, lm_arg)
-    except Exception:
-        raise Exception("ERROR: Parameters from log file for last Linkage "
-                        "Mapper run could not be used. Please Ensure the "
-                        "last run was completed with the current version "
-                        "of Linkage Mapper.")
+    save_interm_rast(blend_rast, "bp_step4")
 
-    lm_util.gprint("\nLinkage Priority Version " + lm_env.releaseNum)
+    overall_bp = arcpy.sa.CellStatistics(
+        [rast[1] for rast in blend_rast],
+        statistics_type="MAXIMUM", ignore_nodata="DATA")
+    overall_bp.save(os.path.join(lm_env.OUTPUTGDB, "blended_priority"))
 
 
-def log_setup():
-    """Set up Linkage Mapper logging."""
-    lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR,
-                                                 lm_env.TOOL, lp_env.PARAMS)
-    if lp_env.LPCUSTSETTINGS_IN:
-        lm_util.write_log("Linkage Priority (LP) settings from " +
-                          lp_env.LPCUSTSETTINGS_IN + ":")
+def inv_norm(rast_list):
+    """Invert and normalize each corridor."""
+    lm_util.gprint("-Inverting and normalizing each corridor")
+    norm_rast_list = []
+
+    for fname, rast in rast_list:
+        norm_rast = normalize_raster(rast, lm_env.NORMCORRNORMETH, True)
+        norm_rast_list.append([fname, norm_rast])
+
+    save_interm_rast(norm_rast_list, "bp_step3")
+    return norm_rast_list
+
+
+def clip_to_bound_geom(core_lyr, rast_list):
+    """Clip NLCC rasters using minimum bounding geometry."""
+    lm_util.gprint("-Clipping NLCC rasters using minimum bounding geometry")
+    bnd_rast_list = []
+    arcpy.env.extent = rast_list[0][1].extent
+
+    for fname, bnd_rast in rast_list:
+        from_core, to_core = fname.split('_')[1:]
+        xy_lyr = arcpy.MakeFeatureLayer_management(
+            core_lyr, out_layer="xy_lyr",
+            where_clause="{} in ({}, {})".format(
+                lm_env.COREFN, from_core, to_core))
+
+        bnd_fc = os.path.join(lm_env.SCRATCHGDB, fname)
+        if arcpy.CheckProduct("ArcInfo") == "Available":
+            arcpy.MinimumBoundingGeometry_management(
+                xy_lyr, bnd_fc, geometry_type="CONVEX_HULL",
+                group_option="ALL")
+        else:
+            arcpy.MinimumBoundingGeometry_management(
+                xy_lyr, bnd_fc, geometry_type="CIRCLE", group_option="ALL")
+
+        bnd_rast = arcpy.sa.ExtractByMask(bnd_rast, bnd_fc)
+        bnd_rast_list.append([fname, bnd_rast])
+        lm_util.delete_data(bnd_fc)
+
+    arcpy.env.extent = None
+    save_interm_rast(bnd_rast_list, "bp_step2")
+    return bnd_rast_list
+
+
+def clip_nlcc_to_threashold(lcp_list):
+    """Clip NLCC_A_B rasters to CWD threshold.
+
+    Clip the normalized least cost corridors using the specified CWD
+    Threshold.
+    """
+    lm_util.gprint("-Clipping NLCC rasters to CWD threshold")
+
+    prev_workspace = arcpy.env.workspace
+    nlcc_top_list = []
+
+    for dirpath, _, filenames in arcpy.da.Walk(
+            lm_env.LCCBASEDIR, topdown=True, datatype="RasterDataset"):
+        arcpy.env.workspace = dirpath
+        for filename in filenames:
+            if lm_env.LCCNLCDIR_NM in dirpath and filename in lcp_list:
+                rast = arcpy.sa.ExtractByAttributes(
+                    filename,
+                    "VALUE <= {}".format(lm_env.CWDTHRESH))
+
+                # Raster names cannot begin with a number in a GDB
+                nfilename = '_'.join(["nlc", filename])
+
+                nlcc_top_list.append([nfilename, rast])
+
+    if not nlcc_top_list:
+        raise AppError("No normalized least cost corridor rasters found")
+
+    arcpy.env.workspace = prev_workspace
+    save_interm_rast(nlcc_top_list, "bp_step1")
+
+    return nlcc_top_list
+
+
+def lcp_csp_for_bp(lcp_lines):
+    """Get list of LCPs and their normalized CSP values for BP raster creation.
+
+    Filter LCPs based on CPS cutoff if applicable. Return list with LCP
+    filenames and dictionary with LCP GDB filename as key and normalized CSP
+    as value.
+    """
+    lcp_list = []
+    lcp_ncsp = {}
+
+    if lm_env.CPSNORM_CUTOFF is not None:
+        cursor_filter = "CSP_Norm_Trim=1"
     else:
-        lm_util.write_log("Linkage Priority (LP) settings from "
-                          "lp_settings.py:")
-    lm_util.write_log("RELPERMNORMETH: %s" % lp_env.RELPERMNORMETH)
-    lm_util.write_log("RELCLOSENORMETH: %s" % lp_env.RELCLOSENORMETH)
-    lm_util.write_log("CALCLP: %s" % lp_env.CALCLP)
-    lm_util.write_log("NORMCORRNORMETH: %s" % lp_env.NORMCORRNORMETH)
-    lm_util.write_log("RESNORMETH: %s" % lp_env.RESNORMETH)
-    lm_util.write_log("SIZENORMETH: %s" % lp_env.SIZENORMETH)
-    lm_util.write_log("APNORMETH: %s" % lp_env.APNORMETH)
-    lm_util.write_log("ECAVNORMETH: %s" % lp_env.ECAVNORMETH)
-    lm_util.write_log("MINCPV: %s" % lp_env.MINCPV)
-    lm_util.write_log("NORMALIZERCI: %s" % lp_env.NORMALIZERCI)
-    lm_util.write_log("TRUNCNORMETH: %s" % lp_env.TRUNCNORMETH)
-    lm_util.write_log("CALCBP: %s" % lp_env.CALCBP)
-    lm_util.write_log("NORMALIZELP: %s" % lp_env.NORMALIZELP)
-    lm_util.write_log("NORMALIZEBP: %s" % lp_env.NORMALIZEBP)
-    lm_util.write_log("KEEPINTERMEDIATE: %s" % lp_env.KEEPINTERMEDIATE)
-    lm_util.write_log("MAXCSPWEIGHT: %s" % lp_env.MAXCSPWEIGHT)
-    lm_util.write_log("MEANCSPWEIGHT: %s" % lp_env.MEANCSPWEIGHT)
-    lm_util.write_log("HIGHERCE_COOLER: %s" % lp_env.HIGHERCE_COOLER)
-    lm_util.write_log("")
+        cursor_filter = None
+    lcp_rows = arcpy.SearchCursor(
+        lcp_lines,
+        where_clause=cursor_filter,
+        fields="From_Core; To_Core; CSP_Norm")
+
+    for lcp_row in lcp_rows:
+        lcp_name = ("{}_{}".format(lcp_row.getValue("From_Core"),
+                                   lcp_row.getValue("To_Core")))
+        lcp_list.append(lcp_name)
+
+        # Use raster GDB name for key value
+        lcp_ncsp['_'.join(["nlc", lcp_name])] = lcp_row.getValue("CSP_Norm")
+
+    return lcp_list, lcp_ncsp
+
+
+def calc_blended_priority(core_lyr, lcp_lines):
+    """Generate Blended Priority raster from NLCC rasters."""
+    lm_util.gprint("Calculating Blended Priority (BP):")
+
+    lcp_list, lcp_ncsp = lcp_csp_for_bp(lcp_lines)
+    nlcc_rast = clip_nlcc_to_threashold(lcp_list)
+    nlcc_rast = clip_to_bound_geom(core_lyr, nlcc_rast)
+    nlcc_rast = inv_norm(nlcc_rast)
+
+    blended_priority(nlcc_rast, lcp_ncsp)
 
 
 def check_add_field(feature_class, field_name, data_type):
@@ -223,13 +210,23 @@ def check_add_field(feature_class, field_name, data_type):
     return exists
 
 
-def value_range(layer, field):
-    """Get value range of field in layer."""
-    min_value = arcpy.SearchCursor(
-        layer, fields=field, sort_fields=field + " A").next().getValue(field)
-    max_value = arcpy.SearchCursor(
-        layer, fields=field, sort_fields=field + " D").next().getValue(field)
-    return min_value, max_value
+def clim_priority_combine(lcp_lines):
+    """Combine climate priority (A & L) values.
+
+    Combine climate priority values A & L in a weighted sum to yield Core
+    Areas Climate Linkage Priority Value (O).
+    """
+    check_add_field(lcp_lines, "Clim_Lnk_Priority", "float")
+    lnk_rows = arcpy.UpdateCursor(
+        lcp_lines,
+        fields="Clim_Lnk_Priority; NCLPv_Analog; NCLPv_Prefer")
+    for lnk_row in lnk_rows:
+        lnk_row.setValue(
+            "Clim_Lnk_Priority",
+            (lnk_row.getValue("NCLPv_Analog") * lm_env.CANALOG_WEIGHT) +
+            (lnk_row.getValue("NCLPv_Prefer") * lm_env.CPREF_WEIGHT))
+        lnk_rows.updateRow(lnk_row)
+    del lnk_rows
 
 
 def normalize_field(in_table, in_field, out_field,
@@ -265,295 +262,33 @@ def normalize_field(in_table, in_field, out_field,
                     arcpy.CalculateField_management(
                         in_table, out_field,
                         "!" + in_field + "! / " + str(max_val), "PYTHON_9.3")
-        except Exception:
-            # other exception - assume it was caused by situation described in
-            # exception message
-            exc_value, exc_traceback = sys.exc_info()[1:]
-            arcpy.AddError(exc_value)
-            lm_util.gprint("Traceback (most recent call last):\n" +
-                           "".join(traceback.format_tb(exc_traceback)))
-            raise Exception(
+        except arcpy.ExecuteError:
+            lm_util.gprint(
                 "ERROR! MOST LIKELY CAUSE: One or more core areas are smaller "
                 "than a pixel in the Resistance layer and/or Raster Analysis "
                 "Cell Size environment setting. Try enlarging small core "
                 "areas, resampling the Resistance layer or adjusting the Cell"
                 "Size environment setting.")
+            raise
     else:
         arcpy.CalculateField_management(in_table, out_field, "0", "PYTHON_9.3")
 
 
-def normalize_raster(in_raster, normalization_method=NM_MAX, invert=False):
-    """Normalize values in in_raster.
+def clim_priority_val_normal(lcp_lines):
+    """Normalize climate priority values (A & L) for each core pair."""
+    normalize_field(lcp_lines, "CLPv_Analog", "NCLPv_Analog",
+                    lm_env.CANALOGNORMETH)
+    normalize_field(lcp_lines, "CLPv_Prefer", "NCLPv_Prefer",
+                    lm_env.CPREFERNORMETH)
 
-    Normalize values in in_raster using score range or max score method,
-    with optional inversion.
+
+def sline_y_value(x_coord, slope_val, intercept_val):
+    """For a x value on a straight line find its corresponding y value.
+
+    The equation of a straight line is: y = mx + b
+    where m is the slope of the line and b is the intercept.
     """
-    lm_util.build_stats(in_raster)
-    result = arcpy.GetRasterProperties_management(in_raster, "MINIMUM")
-    min_val = float(result.getOutput(0))
-    result = arcpy.GetRasterProperties_management(in_raster, "MAXIMUM")
-    max_val = float(result.getOutput(0))
-    if max_val > 0:
-        if normalization_method == NM_SCORE:
-            if invert:
-                return (max_val - in_raster) / (max_val - min_val)
-            return (in_raster - min_val) / (max_val - min_val)
-        else:  # Max score normalization
-            if invert:
-                return (max_val + min_val - in_raster) / max_val
-            return in_raster / max_val
-    else:
-        return in_raster * 0
-
-
-def calc_permeability(lcp_lines):
-    """Calculate raw and relative permeability for each Least Cost Path."""
-    # raw
-    lm_util.gprint("Calculating raw permeability for each LCP line")
-    check_add_field(lcp_lines, "Raw_Perm", "DOUBLE")
-    arcpy.CalculateField_management(lcp_lines, "Raw_Perm",
-                                    "!LCP_Length! / !CW_Dist!", "PYTHON_9.3")
-
-    # relative
-    lm_util.gprint("Calculating relative permeability for each LCP line")
-    normalize_field(lcp_lines, "Raw_Perm", "Rel_Perm", lp_env.RELPERMNORMETH)
-
-
-def calc_closeness(lcp_lines):
-    """Calculate relative closeness for each Least Cost Path."""
-    lm_util.gprint("Calculating relative closeness for each LCP line")
-    normalize_field(lcp_lines, "LCP_Length", "Rel_Close",
-                    lp_env.RELCLOSENORMETH, True)
-
-
-def inv_norm():
-    """Invert and normalize each corridor."""
-    lm_util.gprint("Inverting and normalizing each corridor")
-    prev_ws = arcpy.env.workspace
-    # could be multiple nlc folders
-    nlc_idx = 0
-    while True:
-        nlc_str = ""
-        if nlc_idx > 0:
-            nlc_str = str(nlc_idx)
-        if not os.path.exists(
-                os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str)):
-            break
-        arcpy.env.workspace = os.path.join(lm_env.DATAPASSDIR, "nlcc",
-                                           "nlc" + nlc_str)
-        # process each corridor raster in folder
-        for input_raster in arcpy.ListRasters():
-            # max score normalization with inversion
-            inv_norm_raster = normalize_raster(arcpy.sa.Raster(input_raster),
-                                               lp_env.NORMCORRNORMETH, True)
-            if not os.path.exists(os.path.join(
-                    lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str, "inv_norm")):
-                arcpy.CreateFolder_management(
-                    os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str),
-                    "inv_norm")
-            inv_norm_raster.save(
-                os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" + nlc_str,
-                             "inv_norm", input_raster))
-        nlc_idx += 1
-    arcpy.env.workspace = prev_ws
-
-
-def core_mean(in_rast, core_lyr, in_var):
-    """Calculate the mean values of a raster within each core area."""
-    tbl_name = "_".join(["core", in_var])
-    mean_fld = ".".join([lp_env.CORENAME, in_var])
-    mean_value = "".join(["[", tbl_name, ".MEAN]"])
-
-    mean_tbl = arcpy.sa.ZonalStatisticsAsTable(
-        lp_env.COREFC, lp_env.COREFN, in_rast,
-        os.path.join(lm_env.SCRATCHDIR, "scratch.gdb", tbl_name),
-        statistics_type="MEAN")
-    arcpy.AddJoin_management(core_lyr, lp_env.COREFN, mean_tbl,
-                             lp_env.COREFN)
-    arcpy.CalculateField_management(core_lyr, mean_fld, mean_value)
-    arcpy.RemoveJoin_management(core_lyr)
-
-
-def cav(core_lyr):
-    """Calculate Core Area Value (CAV) and its components for each core."""
-    lm_util.gprint("Calculating Core Area Value (CAV) and its components for "
-                   "each core")
-    # check weights and warn if issues
-    if lp_env.OCAVRAST_IN:
-        if (lp_env.RESWEIGHT + lp_env.SIZEWEIGHT + lp_env.APWEIGHT +
-                lp_env.ECAVWEIGHT + lp_env.CFCWEIGHT + lp_env.OCAVWEIGHT
-                != 1.0):
-            lm_util.gprint("Warning: RESWEIGHT + SIZEWEIGHT + APWEIGHT + "
-                           "ECAVWEIGHT + CFCWEIGHT + OCAVWEIGHT <> 1.0")
-    else:
-        if (lp_env.RESWEIGHT + lp_env.SIZEWEIGHT + lp_env.APWEIGHT +
-                lp_env.ECAVWEIGHT + lp_env.CFCWEIGHT != 1.0):
-            lm_util.gprint("Warning: RESWEIGHT + SIZEWEIGHT + APWEIGHT + "
-                           "ECAVWEIGHT + CFCWEIGHT <> 1.0")
-    if lp_env.OCAVWEIGHT > 0 and not lp_env.OCAVRAST_IN:
-        lm_util.gprint("Warning: OCAVWEIGHT > 0 but no OCAV raster input "
-                       "provided")
-    if lp_env.OCAVWEIGHT == 0 and lp_env.OCAVRAST_IN:
-        lm_util.gprint("Warning: OCAV raster input provided, but "
-                       "OCAVWEIGHT = 0")
-
-    # check/add fields
-    for field in ("mean_res", "norm_res", "area", "norm_size", "perimeter",
-                  "ap_ratio", "norm_ratio", "cav", "norm_cav", "cclim_env",
-                  "fclim_env", "ocav", "nocav"):
-        check_add_field(lp_env.COREFC, field, "DOUBLE")
-
-    if not check_add_field(lp_env.COREFC, "ecav", "DOUBLE"):
-        if lp_env.ECAVWEIGHT > 0:
-            lm_util.gprint("Warning: ECAVWEIGHT > 0 but no ecav field in  "
-                           "Cores feature class")
-        arcpy.CalculateField_management(lp_env.COREFC, "ecav", "0")
-    check_add_field(lp_env.COREFC, "necav", "DOUBLE")
-
-    # current flow centrality (CFC, CF_Central) is copied from
-    # Centrality Mapper
-    if not check_add_field(lp_env.COREFC, "CF_Central", "DOUBLE"):
-        # default to 0s
-        arcpy.CalculateField_management(lp_env.COREFC, "CF_Central", "0")
-    if lp_env.CFCWEIGHT > 0:
-        # copy values from Centrality Mapper output
-        # (core_centrality.gdb.project_Cores) if available
-        centrality_cores = os.path.join(lm_env.CORECENTRALITYGDB,
-                                        lm_env.PREFIX + "_Cores")
-        if arcpy.Exists(centrality_cores):
-            arcpy.AddJoin_management(core_lyr, lp_env.COREFN,
-                                     centrality_cores, lp_env.COREFN)
-            arcpy.CalculateField_management(
-                core_lyr, lp_env.CORENAME + ".CF_Central", "[" +
-                lm_env.PREFIX + "_Cores.CF_Central]")
-            arcpy.RemoveJoin_management(core_lyr)
-        # ensure cores have at least one non-0 value for CFC (could have been
-        # copied above or set earlier)
-        max_val = value_range(lm_env.COREFC, "CF_Central")[1]
-        if max_val is None or max_val == 0:
-            msg = ("ERROR: A Current Flow Centrality Weight (CFCWEIGHT) was "
-                   "provided but no Current Flow Centrality (CF_Central) "
-                   "values are available. Please run Centrality Mapper on "
-                   "this project, then run Linkage Priority.")
-            raise Exception(msg)
-    check_add_field(lp_env.COREFC, "ncfc", "DOUBLE")
-
-    # calc mean resistance
-    core_mean(lp_env.RESRAST_IN, core_lyr, "mean_res")
-
-    # calc area, perimeter and ratio
-    arcpy.CalculateField_management(core_lyr, "area", "!SHAPE.AREA!",
-                                    "PYTHON_9.3")
-    arcpy.CalculateField_management(core_lyr, "perimeter", "!SHAPE.LENGTH!",
-                                    "PYTHON_9.3")
-    arcpy.CalculateField_management(core_lyr, "ap_ratio",
-                                    "!area! / !perimeter!", "PYTHON_9.3")
-
-    # normalize CAV inputs
-    # resistance - invert
-    normalize_field(core_lyr, "mean_res", "norm_res", lp_env.RESNORMETH,
-                    True)
-
-    # size
-    normalize_field(core_lyr, "area", "norm_size", lp_env.SIZENORMETH)
-
-    # area/perimeter ratio
-    normalize_field(core_lyr, "ap_ratio", "norm_ratio", lp_env.APNORMETH)
-
-    # ecav
-    normalize_field(core_lyr, "ecav", "necav", lp_env.ECAVNORMETH)
-
-    # cfc
-    normalize_field(core_lyr, "CF_Central", "ncfc", lp_env.CFCNORMETH)
-
-    # calc OCAV
-    if lp_env.OCAVRAST_IN:
-        # get max and min
-        lm_util.build_stats(lp_env.OCAVRAST_IN)
-        result = arcpy.GetRasterProperties_management(lp_env.OCAVRAST_IN,
-                                                      "MAXIMUM")
-        max_ocav = float(result.getOutput(0))
-        result = arcpy.GetRasterProperties_management(lp_env.OCAVRAST_IN,
-                                                      "MINIMUM")
-        min_ocav = float(result.getOutput(0))
-        # calc score range normalization on input
-        ocav_raster = ((arcpy.sa.Raster(lp_env.OCAVRAST_IN) - min_ocav)
-                       / (max_ocav - min_ocav))
-        # calc aerial mean ocav for each core
-        core_mean(ocav_raster, core_lyr, "ocav")
-        normalize_field(core_lyr, "ocav", "nocav", NM_SCORE)
-
-        # calc CAV
-        arcpy.CalculateField_management(
-            core_lyr, "cav",
-            "(!norm_res! * " + str(lp_env.RESWEIGHT) + ") + (!norm_size! * " +
-            str(lp_env.SIZEWEIGHT) + ") + (!norm_ratio! * " +
-            str(lp_env.APWEIGHT) + ") + (!necav! * " + str(lp_env.ECAVWEIGHT)
-            + ") + (!ncfc! * " + str(lp_env.CFCWEIGHT) + ") + (!nocav! * " +
-            str(lp_env.OCAVWEIGHT) + ")", "PYTHON_9.3")
-
-    else:
-        # calc CAV
-        arcpy.CalculateField_management(
-            core_lyr, "cav", "(!norm_res! * " + str(lp_env.RESWEIGHT) +
-            ") + (!norm_size! * " + str(lp_env.SIZEWEIGHT) +
-            ") + (!norm_ratio! * " + str(lp_env.APWEIGHT) +
-            ") + (!necav! * " + str(lp_env.ECAVWEIGHT) + ") + (!ncfc! * " +
-            str(lp_env.CFCWEIGHT) + ")", "PYTHON_9.3")
-
-    normalize_field(core_lyr, "cav", "norm_cav", NM_SCORE)
-
-
-def chk_weights():
-    """Check weights."""
-    if lp_env.CCERAST_IN:
-        if (lp_env.CLOSEWEIGHT + lp_env.PERMWEIGHT + lp_env.CAVWEIGHT +
-                lp_env.ECIVWEIGHT + lp_env.CEDWEIGHT != 1.0):
-            lm_util.gprint("Warning: CLOSEWEIGHT + PERMWEIGHT + CAVWEIGHT + "
-                           "ECIVWEIGHT + CEDWEIGHT <> 1.0")
-    else:
-        if (lp_env.CLOSEWEIGHT + lp_env.PERMWEIGHT +
-                lp_env.CAVWEIGHT + lp_env.ECIVWEIGHT != 1.0):
-            lm_util.gprint("Warning: CLOSEWEIGHT + PERMWEIGHT + CAVWEIGHT + "
-                           "ECIVWEIGHT <> 1.0")
-    if lp_env.CEDWEIGHT > 0 and not lp_env.CCERAST_IN:
-        lm_util.gprint("Warning: CEDWEIGHT > 0, but no Current Climate "
-                       "Envelope raster input provided")
-    if lp_env.CEDWEIGHT == 0 and lp_env.CCERAST_IN:
-        lm_util.gprint("Warning: Current Climate Envelope raster input "
-                       "provided, but CEDWEIGHT = 0")
-    if lp_env.ECIVWEIGHT > 0 and (
-            (not lp_env.COREPAIRSTABLE_IN) or (not lp_env.ECIVFIELD)):
-        lm_util.gprint("Warning: ECIVWEIGHT > 0, but no Expert Corridor "
-                       "Importance Value field provided")
-    if (lp_env.ECIVWEIGHT == 0 and lp_env.COREPAIRSTABLE_IN
-            and lp_env.ECIVFIELD):
-        lm_util.gprint("Warning: Expert Corridor Importance Value field "
-                       "provided, but ECIVWEIGHT = 0")
-
-
-def eciv():
-    """Normalize Expert Corridor Importance Value (ECIV) for each corridor."""
-    lm_util.gprint("Normalizing Expert Corridor Importance Value (ECIV) "
-                   "for each corridor")
-    normalize_field(lp_env.COREPAIRSTABLE_IN, lp_env.ECIVFIELD, "neciv",
-                    NM_SCORE)
-
-
-def clim_envelope(core_lyr):
-    """Determine Climate Envelope for each core."""
-    lm_util.gprint("Calculating Climate Envelope for each core")
-    core_mean(lp_env.CCERAST_IN, core_lyr, "cclim_env")
-    if lp_env.FCERAST_IN:
-        core_mean(lp_env.FCERAST_IN, core_lyr, "fclim_env")
-
-
-def slope(point1, point2):
-    """Calculate slope of a straight line.
-
-    Where (x1,y1) and (x2,y2) are points on the line.
-    """
-    return (point2.y - point1.y) / (point2.x - point1.x)
+    return (slope_val * x_coord) + intercept_val
 
 
 def intercept(point, slope_val):
@@ -564,13 +299,12 @@ def intercept(point, slope_val):
     return point.y - (point.x * slope_val)
 
 
-def sline_y_value(x_coord, slope_val, intercept_val):
-    """For a x value on a straight line find its corresponding y value.
+def slope(point1, point2):
+    """Calculate slope of a straight line.
 
-    The equation of a straight line is: y = mx + b
-    where m is the slope of the line and b is the intercept.
+    Where (x1,y1) and (x2,y2) are points on the line.
     """
-    return (slope_val * x_coord) + intercept_val
+    return (point2.y - point1.y) / (point2.x - point1.x)
 
 
 def clim_lnk_value(xlnk, min_pnt, target_pnt, max_pnt):
@@ -589,49 +323,13 @@ def clim_lnk_value(xlnk, min_pnt, target_pnt, max_pnt):
     return sline_y_value(xlnk, line_slope, line_intercept)
 
 
-def clim_env_read(core_lyr, core, field):
-    """Read core climate envelope."""
-    rows = arcpy.SearchCursor(
-        core_lyr, fields=field,
-        where_clause=lp_env.COREFN + " = " + str(core))
-    return rows.next().getValue(field)
-
-
-def clim_ratios(lcp_lines, core_lyr):
-    """Calculate and save climate ratios to LCP layer.
-
-    Calculate and save climate ratios to LCP layer and include start core and
-    destination.
-    """
-    lm_util.gprint("Calculating climate ratios for each core paring")
-    check_add_field(lcp_lines, "Core_Start", "integer")
-    check_add_field(lcp_lines, "Core_End", "integer")
-    check_add_field(lcp_lines, "CAnalog_Ratio", "float")
-    check_add_field(lcp_lines, "CPrefer_Ratio", "float")
-
-    lnk_rows = arcpy.UpdateCursor(
-        lcp_lines,
-        fields=("From_Core; To_Core; Core_Start; Core_End; CAnalog_Ratio;"
-                "CPrefer_Ratio"))
-    for lnk_row in lnk_rows:
-        core_start = lnk_row.getValue("From_Core")
-        core_dest = lnk_row.getValue("To_Core")
-        clim_start = clim_env_read(core_lyr, core_start, "cclim_env")
-        clim_dest = clim_env_read(core_lyr, core_dest, "cclim_env")
-
-        if clim_start <= clim_dest and not lp_env.HIGHERCE_COOLER:
-            core_start, core_dest = core_dest, core_start
-            clim_start, clim_dest = clim_dest, clim_start
-
-        if lp_env.FCERAST_IN:
-            clim_dest = clim_env_read(core_lyr, core_dest, "fclim_env")
-
-        lnk_row.setValue("Core_Start", core_start)
-        lnk_row.setValue("Core_End", core_dest)
-        lnk_row.setValue("CAnalog_Ratio", clim_dest/clim_start)
-        lnk_row.setValue("CPrefer_Ratio", clim_dest/lp_env.CPREF_VALUE)
-        lnk_rows.updateRow(lnk_row)
-    del lnk_rows
+def value_range(layer, field):
+    """Get value range of field in layer."""
+    min_value = arcpy.SearchCursor(
+        layer, fields=field, sort_fields=field + " A").next().getValue(field)
+    max_value = arcpy.SearchCursor(
+        layer, fields=field, sort_fields=field + " D").next().getValue(field)
+    return min_value, max_value
 
 
 def clim_priority_values(lcp_lines):
@@ -641,22 +339,20 @@ def clim_priority_values(lcp_lines):
     Climate Preference Linkage Priority Value (L) for each core pair
     to LCP Layer.
     """
-    lm_util.gprint("Calculating Climate Analog and Preference Linkage "
-                   "Priority Values")
     check_add_field(lcp_lines, "CLPv_Analog", "float")
     check_add_field(lcp_lines, "CLPv_Prefer", "float")
 
     canalog_r_min, canalog_r_max = value_range(lcp_lines, "CAnalog_Ratio")
     cprefer_r_min, cprefer_r_max = value_range(lcp_lines, "CPrefer_Ratio")
 
-    canalog_min_pnt = CoordPoint(canalog_r_min, lp_env.CANALOG_MIN)
-    canalog_target_pnt = CoordPoint(lp_env.CANALOG_PIORITY,
-                                    lp_env.CANALOG_TARGET)
-    canalog_max_pnt = CoordPoint(canalog_r_max, lp_env.CANALOG_MAX)
+    canalog_min_pnt = CoordPoint(canalog_r_min, lm_env.CANALOG_MIN)
+    canalog_target_pnt = CoordPoint(lm_env.CANALOG_PIORITY,
+                                    lm_env.CANALOG_TARGET)
+    canalog_max_pnt = CoordPoint(canalog_r_max, lm_env.CANALOG_MAX)
 
-    cprefer_min_pnt = CoordPoint(cprefer_r_min, lp_env.CPREF_MIN)
+    cprefer_min_pnt = CoordPoint(cprefer_r_min, lm_env.CPREF_MIN)
     cprefer_target_pnt = CoordPoint(1, 1)
-    cprefer_max_pnt = CoordPoint(cprefer_r_max, lp_env.CPREF_MAX)
+    cprefer_max_pnt = CoordPoint(cprefer_r_max, lm_env.CPREF_MAX)
 
     lnk_rows = arcpy.UpdateCursor(
         lcp_lines,
@@ -677,38 +373,77 @@ def clim_priority_values(lcp_lines):
     del lnk_rows
 
 
-def clim_priority_val_normal(lcp_lines):
-    """Normalize climate priority values (A & L) for each core pair."""
-    lm_util.gprint("Normalizing Climate Analog and Preference Linkage "
-                   "Priority Values")
-    normalize_field(lcp_lines, "CLPv_Analog", "NCLPv_Analog",
-                    lp_env.CANALOGNORMETH)
-    normalize_field(lcp_lines, "CLPv_Prefer", "NCLPv_Prefer",
-                    lp_env.CPREFERNORMETH)
+def clim_env_read(core_lyr, core, field):
+    """Read core climate envelope."""
+    rows = arcpy.SearchCursor(
+        core_lyr, fields=field,
+        where_clause=lm_env.COREFN + " = " + str(core))
+    return rows.next().getValue(field)
 
 
-def clim_priority_combine(lcp_lines):
-    """Combine climate priority (A & L) values.
+def clim_ratios(lcp_lines, core_lyr):
+    """Calculate and save climate ratios to LCP layer.
 
-    Combine climate priority values A & L in a weighted sum to yield Core
-    Areas Climate Linkage Priority Value (O).
+    Calculate and save climate ratios to LCP layer and include start core and
+    destination.
     """
-    lm_util.gprint("Calculating Core Areas Climate Linkage Priority Value")
-    check_add_field(lcp_lines, "Clim_Lnk_Priority", "float")
+    check_add_field(lcp_lines, "Core_Start", "integer")
+    check_add_field(lcp_lines, "Core_End", "integer")
+    check_add_field(lcp_lines, "CAnalog_Ratio", "float")
+    check_add_field(lcp_lines, "CPrefer_Ratio", "float")
+
     lnk_rows = arcpy.UpdateCursor(
         lcp_lines,
-        fields="Clim_Lnk_Priority; NCLPv_Analog; NCLPv_Prefer")
+        fields=("From_Core; To_Core; Core_Start; Core_End; CAnalog_Ratio;"
+                "CPrefer_Ratio"))
     for lnk_row in lnk_rows:
-        lnk_row.setValue(
-            "Clim_Lnk_Priority",
-            (lnk_row.getValue("NCLPv_Analog") * lp_env.CANALOG_WEIGHT) +
-            (lnk_row.getValue("NCLPv_Prefer") * lp_env.CPREF_WEIGHT))
+        core_start = lnk_row.getValue("From_Core")
+        core_dest = lnk_row.getValue("To_Core")
+        clim_start = clim_env_read(core_lyr, core_start, "cclim_env")
+        clim_dest = clim_env_read(core_lyr, core_dest, "cclim_env")
+
+        if clim_start <= clim_dest and not lm_env.HIGHERCE_COOLER:
+            core_start, core_dest = core_dest, core_start
+            clim_start, clim_dest = clim_dest, clim_start
+
+        if lm_env.FCERAST_IN:
+            clim_dest = clim_env_read(core_lyr, core_dest, "fclim_env")
+
+        lnk_row.setValue("Core_Start", core_start)
+        lnk_row.setValue("Core_End", core_dest)
+        lnk_row.setValue("CAnalog_Ratio", clim_dest/clim_start)
+        lnk_row.setValue("CPrefer_Ratio", clim_dest/lm_env.CPREF_VALUE)
         lnk_rows.updateRow(lnk_row)
     del lnk_rows
 
 
+def core_mean(in_rast, core_lyr, in_var):
+    """Calculate the mean values of a raster within each core area."""
+    tbl_name = "_".join(["core", in_var])
+    mean_fld = ".".join([lm_env.CORENAME, in_var])
+    mean_value = "".join(["[", tbl_name, ".MEAN]"])
+
+    mean_tbl = arcpy.sa.ZonalStatisticsAsTable(
+        lm_env.COREFC, lm_env.COREFN, in_rast,
+        os.path.join(lm_env.SCRATCHGDB, tbl_name),
+        statistics_type="MEAN")
+    arcpy.AddJoin_management(core_lyr, lm_env.COREFN, mean_tbl,
+                             lm_env.COREFN)
+    arcpy.CalculateField_management(core_lyr, mean_fld, mean_value)
+    arcpy.RemoveJoin_management(core_lyr)
+    lm_util.delete_data(mean_tbl)
+
+
+def clim_envelope(core_lyr):
+    """Determine Climate Envelope for each core."""
+    core_mean(lm_env.CCERAST_IN, core_lyr, "cclim_env")
+    if lm_env.FCERAST_IN:
+        core_mean(lm_env.FCERAST_IN, core_lyr, "fclim_env")
+
+
 def clim_linkage_priority(lcp_lines, core_lyr):
-    """Calculate Core Areas Climate Linkage Priority Value (O)."""
+    """Calculate Core Areas Climate Linkage Priority Value."""
+    lm_util.gprint("-Calculating Core Areas Climate Linkage Priority Value")
     clim_envelope(core_lyr)
     clim_ratios(lcp_lines, core_lyr)
     clim_priority_values(lcp_lines)
@@ -716,329 +451,421 @@ def clim_linkage_priority(lcp_lines, core_lyr):
     clim_priority_combine(lcp_lines)
 
 
-def csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines,
-        core_lyr):
-    """Calculate Corridor Specific Priority (CSP) for each corridor."""
-    lm_util.gprint("Calculating Corridor Specific Priority (CSP) for each "
-                   "corridor")
-    chk_weights()
+def eciv():
+    """Normalize Expert Corridor Importance Value (ECIV) for each corridor."""
+    lm_util.gprint("-Normalizing Expert Corridor Importance Value (ECIV) "
+                   "for each corridor")
+    normalize_field(lm_env.COREPAIRSTABLE_IN, lm_env.ECIVFIELD, "neciv",
+                    NM_SCORE)
 
-    # normalize Expert Corridor Importance Value (ECIV)
-    if lp_env.COREPAIRSTABLE_IN:
+
+def chk_csp_wts():
+    """Check weights used in CSP calculation."""
+    if lm_env.CCERAST_IN:
+        if (lm_env.CLOSEWEIGHT + lm_env.PERMWEIGHT + lm_env.CAVWEIGHT +
+                lm_env.ECIVWEIGHT + lm_env.CEDWEIGHT != 1.0):
+            lm_util.gprint("Warning: CLOSEWEIGHT + PERMWEIGHT + CAVWEIGHT + "
+                           "ECIVWEIGHT + CEDWEIGHT <> 1.0")
+    else:
+        if (lm_env.CLOSEWEIGHT + lm_env.PERMWEIGHT +
+                lm_env.CAVWEIGHT + lm_env.ECIVWEIGHT != 1.0):
+            lm_util.gprint("Warning: CLOSEWEIGHT + PERMWEIGHT + CAVWEIGHT + "
+                           "ECIVWEIGHT <> 1.0")
+    if lm_env.CEDWEIGHT > 0 and not lm_env.CCERAST_IN:
+        lm_util.gprint("Warning: CEDWEIGHT > 0, but no Current Climate "
+                       "Envelope raster input provided")
+    if lm_env.CEDWEIGHT == 0 and lm_env.CCERAST_IN:
+        lm_util.gprint("Warning: Current Climate Envelope raster input "
+                       "provided, but CEDWEIGHT = 0")
+    if lm_env.ECIVWEIGHT > 0 and (
+            (not lm_env.COREPAIRSTABLE_IN) or (not lm_env.ECIVFIELD)):
+        lm_util.gprint("Warning: ECIVWEIGHT > 0, but no Expert Corridor "
+                       "Importance Value field provided")
+    if (lm_env.ECIVWEIGHT == 0 and lm_env.COREPAIRSTABLE_IN
+            and lm_env.ECIVFIELD):
+        lm_util.gprint("Warning: Expert Corridor Importance Value field "
+                       "provided, but ECIVWEIGHT = 0")
+
+
+def calc_csp(lcp_lines, core_lyr):
+    """Calculate Corridor Specific Priority (CSP) for each linkage."""
+    lm_util.gprint("Calculating Corridor Specific Priority (CSP) for each "
+                   "linkage:")
+    chk_csp_wts()
+
+    # Normalize Expert Corridor Importance Value (ECIV)
+    if lm_env.COREPAIRSTABLE_IN:
         eciv()
 
-    # calc climate envelope and analog ratio
-    if lp_env.CCERAST_IN:
+    # Calc climate envelope and analog ratio
+    if lm_env.CCERAST_IN:
         clim_linkage_priority(lcp_lines, core_lyr)
+        lnk_fields = ("From_Core; To_Core; Rel_Close; Rel_Perm; "
+                      "clim_lnk_priority; CSP")
+    else:
+        lnk_fields = "From_Core; To_Core; Rel_Close; Rel_Perm; CSP"
 
-    prev_ws = arcpy.env.workspace
+    lm_util.gprint("-Calculating CSP")
+    check_add_field(lcp_lines, "CSP", "float")
 
-    # could be multiple folders
-    nlc_idx = 0
-    while True:
-        nlc_str = ""
-        if nlc_idx > 0:
-            nlc_str = str(nlc_idx)
-        if not os.path.exists(os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" +
-                                           nlc_str, "inv_norm")):
-            break
-        arcpy.env.workspace = (os.path.join(lm_env.DATAPASSDIR, "nlcc", "nlc" +
-                                            nlc_str, "inv_norm"))
-        csp_rasters = []
-        count_rasters = []
-        # process each corridor raster in folder
-        for in_rast in arcpy.ListRasters():
-            # check for max 1
-            result = arcpy.GetRasterProperties_management(in_rast, "MAXIMUM")
-            max_in = float(result.getOutput(0))
-            if max_in != 1.0:
-                lm_util.gprint("Warning: maximum " + in_rast +
-                               " value <> 1.0")
+    lnk_rows = arcpy.UpdateCursor(
+        lcp_lines,
+        fields=lnk_fields)
 
-            # get cores from raster name
-            name_parts = in_rast.partition("_")
-            from_core = name_parts[0]
-            to_core = name_parts[2]
+    for lnk_row in lnk_rows:
+        from_core = lnk_row.getValue("From_Core")
+        to_core = lnk_row.getValue("To_Core")
 
-            # check for corresponding link
-            links = arcpy.SearchCursor(
-                lcp_lines,
-                where_clause="(From_Core = " + from_core + " AND To_Core = "
-                + to_core + ") OR (From_Core = " + to_core +
-                " AND To_Core = " + from_core + ")",
-                fields="Rel_Close; Rel_Perm; clim_lnk_priority")
+        # Get and avg CAVs for the core pair
+        x_cav = arcpy.SearchCursor(
+            core_lyr,
+            where_clause="{} = {}".format(lm_env.COREFN, from_core),
+            fields="norm_cav").next().getValue("norm_cav")
+        y_cav = arcpy.SearchCursor(
+            core_lyr,
+            where_clause="{} = {}".format(lm_env.COREFN, to_core),
+            fields="norm_cav").next().getValue("norm_cav")
 
-            if links:
-                link = links.next()
+        avg_cav = (x_cav + y_cav) / 2
 
-                # get and avg CAVs for the core pair
-                x_cav = arcpy.SearchCursor(
-                    core_lyr,
-                    where_clause=lp_env.COREFN + " = " + from_core,
-                    fields="norm_cav").next().getValue("norm_cav")
-                y_cav = arcpy.SearchCursor(
-                    core_lyr,
-                    where_clause=lp_env.COREFN + " = " + to_core,
-                    fields="norm_cav").next().getValue("norm_cav")
+        # Calc weighted sum
+        csp = (
+            (lm_env.CLOSEWEIGHT * lnk_row.getValue("Rel_Close")) +
+            (lm_env.PERMWEIGHT * lnk_row.getValue("Rel_Perm")) +
+            (lm_env.CAVWEIGHT * avg_cav))
 
-                avg_cav = (x_cav + y_cav) / 2
+        # Get ECIV for the core pair
+        if lm_env.COREPAIRSTABLE_IN and lm_env.ECIVFIELD:
+            neciv = arcpy.SearchCursor(
+                lm_env.COREPAIRSTABLE_IN,
+                where_clause="({0}={2} AND {1}={3}) "
+                "OR ({1}={2} AND {0}={3})".format(
+                    lm_env.FROMCOREFIELD, lm_env.TOCOREFIELD,
+                    from_core, to_core),
+                fields="neciv").next().getValue("neciv")
+            csp += lm_env.ECIVWEIGHT * neciv
 
-                # calc weighted sum
-                output_raster = (
-                    (lp_env.CLOSEWEIGHT * link.getValue("Rel_Close")) +
-                    (lp_env.PERMWEIGHT * link.getValue("Rel_Perm")) +
-                    (0.0001 * arcpy.sa.Raster(in_rast)) +
-                    (lp_env.CAVWEIGHT * avg_cav))
+        # Increment weighted sum with Climate Gradient
+        if lm_env.CCERAST_IN:
+            csp += (lnk_row.getValue("Clim_Lnk_Priority") *
+                    lm_env.CEDWEIGHT)
+        lnk_row.setValue("CSP", csp)
+        lnk_rows.updateRow(lnk_row)
+    del lnk_rows
 
-                # get ECIV for the core pair
-                if lp_env.COREPAIRSTABLE_IN and lp_env.ECIVFIELD:
-                    neciv = arcpy.SearchCursor(
-                        lp_env.COREPAIRSTABLE_IN,
-                        where_clause="(" + lp_env.FROMCOREFIELD + " = " +
-                        from_core + " AND " + lp_env.TOCOREFIELD + " = " +
-                        to_core + ") OR" + "(" + lp_env.TOCOREFIELD + " = " +
-                        from_core + " AND " + lp_env.FROMCOREFIELD + " = " +
-                        to_core + ")").next().getValue("neciv")
-                    output_raster += lp_env.ECIVWEIGHT * neciv
+    # Normalize CSP values
+    cps_norm_fld = "CSP_Norm"
+    normalize_field(lcp_lines, "CSP", cps_norm_fld)
 
-                # Increment weighted sum with Climate Gradient
-                if lp_env.CCERAST_IN:
-                    output_raster += (link.getValue("Clim_Lnk_Priority") *
-                                      lp_env.CEDWEIGHT)
+    # If user requests, flag low quality corridors not to use
+    if lm_env.CPSNORM_CUTOFF:
+        csp_trim_fld = "CSP_Norm_Trim"
+        expression = "set_bool(!{}!, {})".format(cps_norm_fld,
+                                                 lm_env.CPSNORM_CUTOFF)
+        codeblock = (
+            """def set_bool(cps_norm, cps_cutoff):
+                   if cps_norm <= cps_cutoff:
+                       return 0
+                   else:
+                       return 1""")
 
-                if lp_env.KEEPINTERMEDIATE:
-                    # also save a copy for debugging purposes
-                    arcpy.CopyRaster_management(
-                        output_raster,
-                        os.path.join(lm_env.SCRATCHDIR, "intermediate.gdb",
-                                     lm_env.PREFIX + "_CSP_" + from_core +
-                                     "_" + to_core),
-                        None, None, None, None, None, "32_BIT_FLOAT")
-
-                # get max and min
-                lm_util.build_stats(output_raster)
-                result = arcpy.GetRasterProperties_management(output_raster,
-                                                              "MAXIMUM")
-                max_csp = float(result.getOutput(0))
-                result = arcpy.GetRasterProperties_management(output_raster,
-                                                              "MINIMUM")
-                min_csp = float(result.getOutput(0))
-
-                # determine threshold value
-                diff_csp = max_csp - min_csp
-                thres_csp = max_csp - (diff_csp * lp_env.PROPCSPKEEP)
-
-                # apply threshold
-                con_raster = arcpy.sa.Con(output_raster, output_raster, "#",
-                                          "VALUE > " + str(thres_csp))
-                is_null_raster = arcpy.sa.IsNull(con_raster)
-                count_raster = arcpy.sa.EqualTo(is_null_raster, 0)
-                count_rasters.append(count_raster)
-                csp_rasters.append(con_raster)
-                if lp_env.KEEPINTERMEDIATE:
-                    # also save a copy for debugging purposes
-                    arcpy.CopyRaster_management(
-                        con_raster,
-                        os.path.join(lm_env.SCRATCHDIR, "intermediate.gdb",
-                                     lm_env.PREFIX + "_CSP_TOP_" + from_core +
-                                     "_" + to_core),
-                        None, None, None, None, None, "32_BIT_FLOAT")
-            del link, links
-
-        # perform intermediate calculations on CSPs leading toward CPV
-        arcpy.env.scratchWorkspace = lm_env.SCRATCHGDB
-        sum_raster = arcpy.sa.CellStatistics(csp_rasters, "SUM", "DATA")
-        sum_rasters.append(sum_raster)
-        count_non_null_cells = (
-            arcpy.sa.CellStatistics(count_rasters, "SUM", "DATA"))
-        cnt_non_null_cells_rast.append(count_non_null_cells)
-        max_raster = arcpy.sa.CellStatistics(csp_rasters, "MAXIMUM", "DATA")
-        max_rasters.append(max_raster)
-        nlc_idx += 1
-
-    arcpy.env.workspace = prev_ws
+        check_add_field(lcp_lines, csp_trim_fld, "SHORT")
+        arcpy.CalculateField_management(lcp_lines, csp_trim_fld, expression,
+                                        "PYTHON_9.3", codeblock)
 
 
-def cpv(sum_rasters, cnt_non_null_cells_rast, max_rasters, cpv_raster):
-    """Combine CSPs using Max and Mean to create overall CPV.
+def chk_cav_wts():
+    """Check weights used in CAV calculation."""
+    if lm_env.OCAVRAST_IN:
+        if (lm_env.RESWEIGHT + lm_env.SIZEWEIGHT + lm_env.APWEIGHT +
+                lm_env.ECAVWEIGHT + lm_env.CFCWEIGHT + lm_env.OCAVWEIGHT
+                != 1.0):
+            lm_util.gprint("Warning: RESWEIGHT + SIZEWEIGHT + APWEIGHT + "
+                           "ECAVWEIGHT + CFCWEIGHT + OCAVWEIGHT <> 1.0")
+    else:
+        if (lm_env.RESWEIGHT + lm_env.SIZEWEIGHT + lm_env.APWEIGHT +
+                lm_env.ECAVWEIGHT + lm_env.CFCWEIGHT != 1.0):
+            lm_util.gprint("Warning: RESWEIGHT + SIZEWEIGHT + APWEIGHT + "
+                           "ECAVWEIGHT + CFCWEIGHT <> 1.0")
+    if lm_env.OCAVWEIGHT > 0 and not lm_env.OCAVRAST_IN:
+        lm_util.gprint("Warning: OCAVWEIGHT > 0 but no OCAV raster input "
+                       "provided")
+    if lm_env.OCAVWEIGHT == 0 and lm_env.OCAVRAST_IN:
+        lm_util.gprint("Warning: OCAV raster input provided, but "
+                       "OCAVWEIGHT = 0")
 
-    CPV - Corridor Priority Value
+
+def calc_cav(core_lyr):
+    """Calculate Core Area Value (CAV) and its components for each core."""
+    lm_util.gprint("Calculating Core Area Value (CAV) and its components for "
+                   "each core")
+    chk_cav_wts()
+
+    # Check/add fields
+    for field in ("mean_res", "norm_res", "area", "norm_size", "perimeter",
+                  "ap_ratio", "norm_ratio", "cav", "norm_cav", "cclim_env",
+                  "fclim_env", "ocav", "nocav"):
+        check_add_field(lm_env.COREFC, field, "DOUBLE")
+
+    if not check_add_field(lm_env.COREFC, "ecav", "DOUBLE"):
+        if lm_env.ECAVWEIGHT > 0:
+            lm_util.gprint("Warning: ECAVWEIGHT > 0 but no ecav field in  "
+                           "Cores feature class")
+        arcpy.CalculateField_management(lm_env.COREFC, "ecav", "0")
+    check_add_field(lm_env.COREFC, "necav", "DOUBLE")
+
+    # Current flow centrality (CFC, CF_Central) is copied from
+    # Centrality Mapper
+    if not check_add_field(lm_env.COREFC, "CF_Central", "DOUBLE"):
+        # Default to 0s
+        arcpy.CalculateField_management(lm_env.COREFC, "CF_Central", "0")
+    if lm_env.CFCWEIGHT > 0:
+        # Copy values from Centrality Mapper output
+        # (core_centrality.gdb.project_Cores) if available
+        centrality_cores = os.path.join(lm_env.CORECENTRALITYGDB,
+                                        lm_env.PREFIX + "_Cores")
+        if arcpy.Exists(centrality_cores):
+            arcpy.AddJoin_management(core_lyr, lm_env.COREFN,
+                                     centrality_cores, lm_env.COREFN)
+            arcpy.CalculateField_management(
+                core_lyr, lm_env.CORENAME + ".CF_Central", "[" +
+                lm_env.PREFIX + "_Cores.CF_Central]")
+            arcpy.RemoveJoin_management(core_lyr)
+        # Ensure cores have at least one non-0 value for CFC (could have been
+        # copied above or set earlier)
+        max_val = value_range(lm_env.COREFC, "CF_Central")[1]
+        if max_val is None or max_val == 0:
+            raise AppError(
+                "ERROR: A Current Flow Centrality Weight (CFCWEIGHT) was "
+                "provided but no Current Flow Centrality (CF_Central) "
+                "values are available. Please run Centrality Mapper on "
+                "this project, then run Linkage Priority.")
+
+    check_add_field(lm_env.COREFC, "ncfc", "DOUBLE")
+
+    # Calc mean resistance
+    core_mean(lm_env.RESRAST_IN, core_lyr, "mean_res")
+
+    # Calc area, perimeter and ratio
+    arcpy.CalculateField_management(core_lyr, "area", "!SHAPE.AREA!",
+                                    "PYTHON_9.3")
+    arcpy.CalculateField_management(core_lyr, "perimeter", "!SHAPE.LENGTH!",
+                                    "PYTHON_9.3")
+    arcpy.CalculateField_management(core_lyr, "ap_ratio",
+                                    "!area! / !perimeter!", "PYTHON_9.3")
+
+    # Normalize CAV inputs
+    normalize_field(core_lyr, "mean_res", "norm_res", lm_env.RESNORMETH,
+                    True)
+    normalize_field(core_lyr, "area", "norm_size", lm_env.SIZENORMETH)
+    normalize_field(core_lyr, "ap_ratio", "norm_ratio", lm_env.APNORMETH)
+    normalize_field(core_lyr, "ecav", "necav", lm_env.ECAVNORMETH)
+    normalize_field(core_lyr, "CF_Central", "ncfc", lm_env.CFCNORMETH)
+
+    # Calc OCAV
+    if lm_env.OCAVRAST_IN:
+        # Get max and min
+        lm_util.build_stats(lm_env.OCAVRAST_IN)
+        result = arcpy.GetRasterProperties_management(lm_env.OCAVRAST_IN,
+                                                      "MAXIMUM")
+        max_ocav = float(result.getOutput(0))
+        result = arcpy.GetRasterProperties_management(lm_env.OCAVRAST_IN,
+                                                      "MINIMUM")
+        min_ocav = float(result.getOutput(0))
+        # Calc score range normalization on input
+        ocav_raster = ((arcpy.sa.Raster(lm_env.OCAVRAST_IN) - min_ocav)
+                       / (max_ocav - min_ocav))
+        # Calc aerial mean ocav for each core
+        core_mean(ocav_raster, core_lyr, "ocav")
+        normalize_field(core_lyr, "ocav", "nocav", NM_SCORE)
+
+        # Calc CAV
+        arcpy.CalculateField_management(
+            core_lyr, "cav",
+            "(!norm_res! * " + str(lm_env.RESWEIGHT) + ") + (!norm_size! * " +
+            str(lm_env.SIZEWEIGHT) + ") + (!norm_ratio! * " +
+            str(lm_env.APWEIGHT) + ") + (!necav! * " + str(lm_env.ECAVWEIGHT)
+            + ") + (!ncfc! * " + str(lm_env.CFCWEIGHT) + ") + (!nocav! * " +
+            str(lm_env.OCAVWEIGHT) + ")", "PYTHON_9.3")
+
+    else:
+        # Calc CAV
+        arcpy.CalculateField_management(
+            core_lyr, "cav", "(!norm_res! * " + str(lm_env.RESWEIGHT) +
+            ") + (!norm_size! * " + str(lm_env.SIZEWEIGHT) +
+            ") + (!norm_ratio! * " + str(lm_env.APWEIGHT) +
+            ") + (!necav! * " + str(lm_env.ECAVWEIGHT) + ") + (!ncfc! * " +
+            str(lm_env.CFCWEIGHT) + ")", "PYTHON_9.3")
+
+    normalize_field(core_lyr, "cav", "norm_cav", NM_SCORE)
+
+
+def calc_closeness(lcp_lines):
+    """Calculate relative closeness for each Least Cost Path."""
+    lm_util.gprint("Calculating relative closeness for each LCP line")
+    normalize_field(lcp_lines, "LCP_Length", "Rel_Close",
+                    lm_env.RELCLOSENORMETH, True)
+
+
+def calc_permeability(lcp_lines):
+    """Calculate raw and relative permeability for each Least Cost Path."""
+    lm_util.gprint("Calculating permeability for each LCP line")
+
+    check_add_field(lcp_lines, "Raw_Perm", "DOUBLE")
+    arcpy.CalculateField_management(lcp_lines, "Raw_Perm",
+                                    "!LCP_Length! / !CW_Dist!", "PYTHON_9.3")
+
+    normalize_field(lcp_lines, "Raw_Perm", "Rel_Perm", lm_env.RELPERMNORMETH)
+
+
+def add_output_path(in_str):
+    """Append LinkMap GDB path to inputted value."""
+    return os.path.join(lm_env.OUTPUTGDB,
+                        '_'.join([lm_env.PREFIX, in_str]))
+
+
+def make_core_lyr():
+    """Create feature layer from cores feature class.
+
+    Raise error if core feature class is not found.
     """
-    lm_util.gprint("Combining CSPs using Max and Mean to create overall "
-                   "Corridor Priority Value (CPV)")
-    sum_all_raster = arcpy.sa.CellStatistics(sum_rasters, "SUM", "DATA")
-    cnt_nonnull_rast = (
-        arcpy.sa.CellStatistics(cnt_non_null_cells_rast, "SUM", "DATA"))
-    max_all_raster = arcpy.sa.CellStatistics(max_rasters, "MAXIMUM", "DATA")
-    cpv_raster_tmp = ((max_all_raster * lp_env.MAXCSPWEIGHT) +
-                      ((sum_all_raster / cnt_nonnull_rast)
-                       * lp_env.MEANCSPWEIGHT))
-    cpv_raster_tmp.save(cpv_raster)
-    if not lp_env.KEEPINTERMEDIATE:
-        # clean-up CSP input rasters
-        # could be multiple nlc folders
-        nlc_idx = 0
-        prev_ws = arcpy.env.workspace
-        while True:
-            nlc_str = ""
-            if nlc_idx > 0:
-                nlc_str = str(nlc_idx)
-            if not os.path.exists(os.path.join(lm_env.DATAPASSDIR, "nlcc",
-                                               "nlc" + nlc_str)):
-                break
-            arcpy.env.workspace = os.path.join(lm_env.DATAPASSDIR, "nlcc",
-                                               "nlc" + nlc_str, "inv_norm")
-            for in_rast in arcpy.ListRasters():
-                lm_util.delete_data(in_rast)
-            nlc_idx += 1
-        arcpy.env.workspace = prev_ws
+    if not arcpy.Exists(lm_env.COREFC):
+        raise AppError("Cores feature class not found. Please rerun "
+                       "Linkage Pathways tool")
+    return arcpy.MakeFeatureLayer_management(lm_env.COREFC, "core_lyr")
 
 
-def rci(cpv_raster, rci_raster):
-    """Clip CPV to the MINCPV and renormalize.
-
-    Creates relative corridor "importance (RCI).
-
-    """
-    lm_util.gprint("Calculating overall Relative Corridor Importance (RCI)")
-    tmp_raster = arcpy.sa.ExtractByAttributes(
-        cpv_raster, " VALUE >= " + str(lp_env.MINCPV))
-    if lp_env.NORMALIZERCI:
-        rci_raster_tmp = normalize_raster(tmp_raster, NM_SCORE)
-    else:
-        rci_raster_tmp = tmp_raster
-    arcpy.CopyRaster_management(rci_raster_tmp, rci_raster, None, None, None,
-                                None, None, "32_BIT_FLOAT")
+def get_lcp_fc():
+    """Get LCP feature class. Raise error if not found."""
+    lcp_lines = os.path.join(lm_env.LINKMAPGDB, lm_env.PREFIX + "_LCPs")
+    if not arcpy.Exists(lcp_lines):
+        raise AppError("LCP feature class not found. Please rerun "
+                       "Linkage Pathways tool")
+    if arcpy.GetCount_management(lcp_lines) == 0:
+        raise AppError("LCP feature class contains no records")
+    return lcp_lines
 
 
-def linkage_priority(rci_raster, trunc_raster, lp_raster):
-    """Clip RCI to extent of truncated raster (LP)."""
-    lm_util.gprint("Calculating overall Linkage Priority")
-    # mask RCI based on extent of truncated raster
-    # (which is based on CWDTHRESH)
-    tmp_raster2 = arcpy.sa.ExtractByMask(rci_raster, trunc_raster)
-    if lp_env.NORMALIZELP:
-        lp_raster_tmp = normalize_raster(tmp_raster2, NM_SCORE)
-    else:
-        lp_raster_tmp = tmp_raster2
-    arcpy.CopyRaster_management(lp_raster_tmp, lp_raster, None, None, None,
-                                None, None, "32_BIT_FLOAT")
+def create_run_gdbs():
+    """Create scratch and if necessary intermediate GDB."""
+    if not os.path.isdir(lm_env.SCRATCHDIR):
+        os.makedirs(lm_env.SCRATCHDIR)
+
+    if not arcpy.Exists(lm_env.SCRATCHGDB):
+        arcpy.CreateFileGDB_management(
+            lm_env.SCRATCHDIR, os.path.basename(lm_env.SCRATCHGDB))
 
 
-def norm_trunc(trunc_raster, norm_trunc_raster):
-    """Invert and normalize truncated raster (NORMTRUNC)."""
-    lm_util.gprint("Inverting and normalizing truncated raster (NORMTRUNC)")
-    norm_trunc_raster_tmp = normalize_raster(arcpy.sa.Raster(trunc_raster),
-                                             lp_env.TRUNCNORMETH, True)
-    arcpy.CopyRaster_management(norm_trunc_raster_tmp, norm_trunc_raster, None,
-                                None, None, None, None, "32_BIT_FLOAT")
-
-
-def blended_priority(norm_trunc_raster, lp_raster, bp_raster):
-    """Calculate overall Blended Priority."""
-    lm_util.gprint("Calculating overall Blended Priority")
-    tmp_raster3 = ((lp_env.TRUNCWEIGHT * arcpy.sa.Raster(norm_trunc_raster)) +
-                   (lp_env.LPWEIGHT * arcpy.sa.Raster(lp_raster)))
-    if lp_env.NORMALIZEBP:
-        bp_raster_tmp = normalize_raster(tmp_raster3, NM_SCORE)
-    else:
-        bp_raster_tmp = tmp_raster3
-    arcpy.CopyRaster_management(bp_raster_tmp, bp_raster, None, None, None,
-                                None, None, "32_BIT_FLOAT")
+def chk_lnk_tbls():
+    """Check that LM finished with steps 3 and 5."""
+    if (not os.path.isfile(os.path.join(lm_env.DATAPASSDIR,
+                                        "linkTable_s3.csv"))
+            or not os.path.isfile(os.path.join(lm_env.DATAPASSDIR,
+                                               "linkTable_s5.csv"))):
+        raise AppError("ERROR: Project directory must contain a successful "
+                       "Linkage Mapper run with Steps 3 and 5.")
 
 
 def run_analysis():
     """Run main Linkage Priority analysis."""
-    lm_util.gprint("Checking inputs")
+    lm_util.gprint("Retreiving outputs from Linkage Pathways model run""")
+    lcp_lines = get_lcp_fc()
+    core_lyr = make_core_lyr()
 
-    # check that LM finished with steps 3 and 5
-    if (not os.path.exists(os.path.join(lm_env.DATAPASSDIR,
-                                        "linkTable_s3.csv"))
-            or not os.path.exists(os.path.join(lm_env.DATAPASSDIR,
-                                               "linkTable_s5.csv"))):
-        msg = ("ERROR: Project directory must contain a successful Linkage "
-               "Mapper run with Steps 3 and 5.")
-        raise Exception(msg)
+    chk_lnk_tbls()
+    create_run_gdbs()
 
-    # check/create gdb for scratch
-    if not os.path.isdir(lm_env.SCRATCHDIR):
-        os.makedirs(lm_env.SCRATCHDIR)
-    if not arcpy.Exists(os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")):
-        arcpy.CreateFileGDB_management(lm_env.SCRATCHDIR, "scratch.gdb")
-    arcpy.env.scratchWorkspace = os.path.join(lm_env.SCRATCHDIR, "scratch.gdb")
-
-    # check/create gdb for intermediate
-    if lp_env.KEEPINTERMEDIATE:
-        if not arcpy.Exists(os.path.join(lm_env.SCRATCHDIR,
-                                         "intermediate.gdb")):
-            arcpy.CreateFileGDB_management(lm_env.SCRATCHDIR,
-                                           "intermediate.gdb")
-
-    # set key dataset locations
-    lcp_lines = os.path.join(lm_env.LINKMAPGDB, lm_env.PREFIX + "_LCPs")
-    cpv_raster = os.path.join(lm_env.OUTPUTGDB, lm_env.PREFIX + "_CPV")
-    rci_raster = os.path.join(lm_env.OUTPUTGDB, lm_env.PREFIX + "_RCI")
-    cutoff_text = str(lm_env.CWDTHRESH)
-    if cutoff_text[-6:] == "000000":
-        cutoff_text = cutoff_text[0:-6] + "m"
-    elif cutoff_text[-3:] == "000":
-        cutoff_text = cutoff_text[0:-3] + "k"
-    trunc_raster = (lm_env.OUTPUTGDB + "\\" + lm_env.PREFIX +
-                    "_corridors_truncated_at_" + cutoff_text)
-    norm_trunc_raster = os.path.join(lm_env.OUTPUTGDB,
-                                     lm_env.PREFIX + "_NORMTRUNC")
-    lp_raster = os.path.join(lm_env.OUTPUTGDB,
-                             lm_env.PREFIX + "_linkage_priority")
-    bp_raster = os.path.join(lm_env.OUTPUTGDB,
-                             lm_env.PREFIX + "_blended_priority")
-
-    # calc permeability
     calc_permeability(lcp_lines)
-
-    # calc relative closeness
     calc_closeness(lcp_lines)
+    calc_cav(core_lyr)
 
-    # invert and normalize each corridor
-    inv_norm()
+    # Calculate Corridor Specific Value and Blended Priority raster
+    if lm_env.CALCCSPBP in ([lm_env.CALC_CSP, lm_env.CALC_CSPBP]):
+        calc_csp(lcp_lines, core_lyr)
+        if lm_env.CALCCSPBP == lm_env.CALC_CSPBP:
+            calc_blended_priority(core_lyr, lcp_lines)
 
-    # calc Core Area Value (CAV) and its components for each core
-    core_lyr = arcpy.MakeFeatureLayer_management(lp_env.COREFC, "core_lyr")
-    cav(core_lyr)
+    # Save a copy of Cores as the "Output for ModelBuilder Precondition"
+    if lm_env.OUTPUTFORMODELBUILDER:
+        arcpy.CopyFeatures_management(lm_env.COREFC,
+                                      lm_env.OUTPUTFORMODELBUILDER)
 
-    # calc Corridor Specific Priority (CSP)
-    prev_ws = arcpy.env.workspace
-    sum_rasters = []
-    cnt_non_null_cells_rast = []
-    max_rasters = []
-    csp(sum_rasters, cnt_non_null_cells_rast, max_rasters, lcp_lines, core_lyr)
 
-    # calc Corridor Priority Value (CPV)
-    cpv(sum_rasters, cnt_non_null_cells_rast, max_rasters, cpv_raster)
-    arcpy.env.workspace = prev_ws
+def read_lm_params(proj_dir):
+    """Read Linkage Pathways input parameters from log file."""
+    # Get log file for last LM run
+    spath = os.path.join(proj_dir, "run_history", "log",
+                         "*_Linkage Mapper.txt")
+    entries = sorted(glob.glob(spath), key=os.path.getctime, reverse=True)
+    last_lm_log = next(iter(entries or []), None)
+    if not last_lm_log:
+        raise AppError("ERROR: Log file for last Linkage Mapper run not "
+                       "found. Please ensure Linkage Mapper is run "
+                       "for this project before running Linkage Priority.")
 
-    # calc Relative Corridor Importance (RCI)
-    rci(cpv_raster, rci_raster)
+    # Read parameters section from file and turn into tuple for passing
+    parms = ""
+    with open(last_lm_log) as log_file:
+        for line in log_file:
+            if line[0:13] == "Parameters:\t[":
+                parms = line[13:len(line) - 3].replace("\\\\", "\\")
+                break
+    if parms == "":
+        raise AppError("ERROR: Log file for last Linkage Mapper run does not "
+                       "contain a Parameters line")
 
-    # calc Linkage Priority (LP)
-    if lp_env.CALCLP:
-        linkage_priority(rci_raster, trunc_raster, lp_raster)
+    return tuple(parms.replace("'", "").split(", "))
 
-    # calc Blended Priority (BP)
-    if lp_env.CALCBP:
-        if not lm_env.WRITETRUNCRASTER:
-            msg = ("When CALCBP = True, set WRITETRUNCRASTER = True in "
-                   "Linkage Mapper")
-            lm_util.raise_error(msg)
-        if not lp_env.CALCLP:
-            msg = "When CALCBP = True, set CALCLP = True"
-            lm_util.raise_error(msg)
-        norm_trunc(trunc_raster, norm_trunc_raster)
-        blended_priority(norm_trunc_raster, lp_raster, bp_raster)
 
-    # save a copy of Cores as the "Output for ModelBuilder Precondition"
-    if lp_env.OUTPUTFORMODELBUILDER:
-        arcpy.CopyFeatures_management(lp_env.COREFC,
-                                      lp_env.OUTPUTFORMODELBUILDER)
+def get_lm_params(argv):
+    """Get settings from Linkage Pathways inputs."""
+    lm_params = read_lm_params(argv[1])  # Pass in project dir
+    argv.append(lm_params[17])  # Get CWDTHRESH
+
+
+def log_setup():
+    """Set up Linkage Mapper logging."""
+    lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR,
+                                                 lm_env.TOOL, lm_env.PARAMS)
+    lm_util.write_custom_to_log(lm_env.LPCUSTSETTINGS_IN)
+
+
+def main(argv=None):
+    """Run Linkage Priority tool."""
+    stime = lm_util.start_time()
+
+    if argv is None:
+        argv = sys.argv  # Get parameters from ArcGIS tool dialog
+    try:
+        get_lm_params(argv)
+        lm_env.configure(lm_env.TOOL_LP, argv)
+        lm_util.gprint("\nLinkage Priority Version " + lm_env.releaseNum)
+        lm_util.check_project_dir()
+        log_setup()
+        run_analysis()
+    except AppError as err:
+        lm_util.gprint(err.message)
+        lm_util.write_log(err.message)
+    except arcpy.ExecuteError:
+        msg = arcpy.GetMessages(2)
+        arcpy.AddError(msg)
+        lm_util.write_log(msg)
+        exc_traceback = sys.exc_info()[2]
+        lm_util.gprint(
+            "Traceback (most recent call last):\n" +
+            "".join(traceback.format_tb(exc_traceback)[:-1]))
+    except Exception:
+        exc_value, exc_traceback = sys.exc_info()[1:]
+        arcpy.AddError(exc_value)
+        lm_util.gprint(
+            "Traceback (most recent call last):\n" +
+            "".join(traceback.format_tb(exc_traceback)))
+    finally:
+        if not lm_env.KEEPINTERMEDIATE:
+            lm_util.delete_dir(lm_env.SCRATCHDIR)
+        arcpy.CheckInExtension("Spatial")
+        lm_util.run_time(stime)
+        lm_util.close_log_file()
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ pairs specified in linkTable and cwd layers
 
 """
 
-import os.path as path
+from os import path
 import time
 
 import numpy as npy
@@ -78,12 +78,10 @@ def calc_lccs(normalize):
         if cfg.useArcpy:
             arcpy.env.workspace = cfg.SCRATCHDIR
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-            arcpy.env.overwriteOutput = True
             arcpy.env.compression = "NONE"
         else:
             gp.workspace = cfg.SCRATCHDIR
             gp.scratchWorkspace = cfg.ARCSCRATCHDIR
-            gp.OverwriteOutput = True
 
         if cfg.MAXEUCDIST is not None:
             gprint('Max Euclidean distance between cores')
@@ -389,14 +387,9 @@ def calc_lccs(normalize):
             # Set anything beyond cfg.CWDTHRESH to NODATA.
             if arcpyAvailable:
                 cfg.useArcpy = True # For Alissa Pump's error with 10.1
-            cutoffText = str(cfg.CWDTHRESH)
-            if cutoffText[-6:] == '000000':
-                cutoffText = cutoffText[0:-6]+'m'
-            elif cutoffText[-3:] == '000':
-                cutoffText = cutoffText[0:-3]+'k'
 
             truncRaster = (outputGDB + '\\' + PREFIX + mosaicBaseName +
-                           '_truncated_at_' + cutoffText)
+                           '_truncated_at_' + lu.cwd_cutoff_str(cfg.CWDTHRESH))
 
             count = 0
             if cfg.useArcpy:

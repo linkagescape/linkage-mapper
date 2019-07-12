@@ -11,12 +11,7 @@ import os
 import subprocess
 import sys
 
-
-def nullstring(arg_string):
-    """Convert ESRI nullstring to Python null."""
-    if arg_string == "#":
-        arg_string = None
-    return arg_string
+import lm_util_config as util
 
 
 class ClimateConfig(object):
@@ -33,7 +28,7 @@ class ClimateConfig(object):
         self.core_fc = arg[2]  # Core area feature class
         self.core_fld = arg[3]  # Core area field name
         self.climate_rast = arg[4]  # Climate raster (+ path)
-        self.resist_rast = nullstring(arg[5])  # Resistance raster (+ path)
+        self.resist_rast = util.nullstring(arg[5])  # Resist raster (+ path)
 
         # Setup GRASS environmental variables
         self.gisbase = os.environ['GISBASE'] = arg[6]  # GRASS path
@@ -62,7 +57,6 @@ class ClimateConfig(object):
         self.keep_constelations = arg[14]
 
         # Setup model global variables
-        self.code_dir = os.path.dirname(os.path.abspath(__file__))
         self.scratch_dir = os.path.join(self.proj_dir, "scratch")
         self.cc_gdb = os.path.join(self.scratch_dir, "cc.gdb")
 

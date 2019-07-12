@@ -41,12 +41,11 @@ def lm_master(argv=None):
         cfg.configure(cfg.TOOL_LM, argv)
 
     gp = cfg.gp
+    gprint = lu.gprint
 
     try:
-        gprint = lu.gprint
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
-        gp.OverwriteOutput = True
         gp.pyramid = "NONE"
         gp.rasterstatistics = "NONE"
 
@@ -64,6 +63,7 @@ def lm_master(argv=None):
         if cfg.TOOL == cfg.TOOL_LM:
             cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
                                              cfg.PARAMS)
+            lu.write_custom_to_log(cfg.LMCUSTSETTINGS)
         lu.print_drive_warning()
 
         installD = gp.GetInstallInfo("desktop")

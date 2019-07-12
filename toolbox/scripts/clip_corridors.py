@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # Author: Brad McRae
 
-import os.path as path
+from os import path
 import sys
 
 import traceback
