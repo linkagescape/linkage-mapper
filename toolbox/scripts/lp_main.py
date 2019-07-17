@@ -711,12 +711,15 @@ def calc_permeability(lcp_lines):
     """Calculate raw and relative permeability for each Least Cost Path."""
     lm_util.gprint("Calculating permeability for each LCP line")
 
-    check_add_field(lcp_lines, "Raw_Perm", "DOUBLE")
-    arcpy.CalculateField_management(lcp_lines, "Raw_Perm",
-                                    "!LCP_Length! / !CW_Dist!", "PYTHON_9.3")
-
-    normalize_field(lcp_lines, "Raw_Perm", "Rel_Perm", lm_env.RELPERMNORMETH)
-
+    # Code/Changes by Nathaniel Mills and John Gallo
+    # check_add_field(lcp_lines, "Raw_Perm", "DOUBLE")
+    # arcpy.CalculateField_management(lcp_lines, "Raw_Perm",
+    #                                 "!LCP_Length! / !CW_Dist!", "PYTHON_9.3")
+    #
+    # normalize_field(lcp_lines, "Raw_Perm", "Rel_Perm", lm_env.RELPERMNORMETH)
+    normalize_field(lcp_lines, "cwd_to_Path_Length_Ratio", "Rel_Perm",
+                    lm_env.RELPERMNORMETH, True)
+    # End Additions
 
 def add_output_path(in_str):
     """Append LinkMap GDB path to inputted value."""
@@ -764,7 +767,6 @@ def chk_lnk_tbls():
                                                "linkTable_s5.csv"))):
         raise AppError("ERROR: Project directory must contain a successful "
                        "Linkage Mapper run with Steps 3 and 5.")
-
 
 def run_analysis():
     """Run main Linkage Priority analysis."""
