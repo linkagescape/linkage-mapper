@@ -681,6 +681,7 @@ def calc_permeability(lcp_lines):
     normalize_field(lcp_lines, "cwd_to_Path_Length_Ratio", "Rel_Perm",
                     lm_env.RELPERMNORMETH, True)
 
+
 def add_output_path(in_str):
     """Append LinkMap GDB path to inputted value."""
     return os.path.join(lm_env.OUTPUTGDB,
@@ -727,6 +728,7 @@ def chk_lnk_tbls():
                                                "linkTable_s5.csv"))):
         raise AppError("ERROR: Project directory must contain a successful "
                        "Linkage Mapper run with Steps 3 and 5.")
+
 
 def run_analysis():
     """Run main Linkage Priority analysis."""
