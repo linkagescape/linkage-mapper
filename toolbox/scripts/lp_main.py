@@ -156,7 +156,7 @@ def lcp_csp_for_bp(lcp_lines):
     return lcp_list, lcp_ncsp
 
 
-def calc_blended_priority(core_lyr, lcp_lines):
+def calc_blended_priority(lcp_lines):
     """Generate Blended Priority raster from NLCC rasters."""
     lm_util.gprint("Calculating Blended Priority (BP):")
 
@@ -747,7 +747,7 @@ def run_analysis():
     if lm_env.CALCCSPBP in ([lm_env.CALC_CSP, lm_env.CALC_CSPBP]):
         calc_csp(lcp_lines, core_lyr)
         if lm_env.CALCCSPBP == lm_env.CALC_CSPBP:
-            calc_blended_priority(core_lyr, lcp_lines)
+            calc_blended_priority(lcp_lines)
 
     # Save a copy of Cores as the "Output for ModelBuilder Precondition"
     if lm_env.OUTPUTFORMODELBUILDER:
