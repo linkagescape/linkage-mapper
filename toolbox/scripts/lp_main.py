@@ -92,37 +92,6 @@ def inv_norm(rast_list):
     return norm_rast_list
 
 
-##def clip_to_bound_geom(core_lyr, rast_list):
-##    """Clip NLCC rasters using minimum bounding geometry."""
-##    lm_util.gprint("-Clipping NLCC rasters using minimum bounding geometry")
-##    bnd_rast_list = []
-##    arcpy.env.extent = rast_list[0][1].extent
-##
-##    for fname, bnd_rast in rast_list:
-##        from_core, to_core = fname.split('_')[1:]
-##        xy_lyr = arcpy.MakeFeatureLayer_management(
-##            core_lyr, out_layer="xy_lyr",
-##            where_clause="{} in ({}, {})".format(
-##                lm_env.COREFN, from_core, to_core))
-##
-##        bnd_fc = os.path.join(lm_env.SCRATCHGDB, fname)
-##        if arcpy.CheckProduct("ArcInfo") == "Available":
-##            arcpy.MinimumBoundingGeometry_management(
-##                xy_lyr, bnd_fc, geometry_type="CONVEX_HULL",
-##                group_option="ALL")
-##        else:
-##            arcpy.MinimumBoundingGeometry_management(
-##                xy_lyr, bnd_fc, geometry_type="CIRCLE", group_option="ALL")
-##
-##        bnd_rast = arcpy.sa.ExtractByMask(bnd_rast, bnd_fc)
-##        bnd_rast_list.append([fname, bnd_rast])
-##        lm_util.delete_data(bnd_fc)
-##
-##    arcpy.env.extent = None
-##    save_interm_rast(bnd_rast_list, "bp_step2")
-##    return bnd_rast_list
-
-
 def clip_nlcc_to_threashold(lcp_list):
     """Clip NLCC_A_B rasters to CWD threshold.
 
@@ -193,7 +162,6 @@ def calc_blended_priority(core_lyr, lcp_lines):
 
     lcp_list, lcp_ncsp = lcp_csp_for_bp(lcp_lines)
     nlcc_rast = clip_nlcc_to_threashold(lcp_list)
-    ## nlcc_rast = clip_to_bound_geom(core_lyr, nlcc_rast)
     nlcc_rast = inv_norm(nlcc_rast)
 
     blended_priority(nlcc_rast, lcp_ncsp)
@@ -710,16 +678,8 @@ def calc_closeness(lcp_lines):
 def calc_permeability(lcp_lines):
     """Calculate raw and relative permeability for each Least Cost Path."""
     lm_util.gprint("Calculating permeability for each LCP line")
-
-    # Code/Changes by Nathaniel Mills and John Gallo
-    # check_add_field(lcp_lines, "Raw_Perm", "DOUBLE")
-    # arcpy.CalculateField_management(lcp_lines, "Raw_Perm",
-    #                                 "!LCP_Length! / !CW_Dist!", "PYTHON_9.3")
-    #
-    # normalize_field(lcp_lines, "Raw_Perm", "Rel_Perm", lm_env.RELPERMNORMETH)
     normalize_field(lcp_lines, "cwd_to_Path_Length_Ratio", "Rel_Perm",
                     lm_env.RELPERMNORMETH, True)
-    # End Additions
 
 def add_output_path(in_str):
     """Append LinkMap GDB path to inputted value."""
