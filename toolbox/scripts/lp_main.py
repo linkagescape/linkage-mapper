@@ -3,22 +3,20 @@
 
 """Linkage Priority main module."""
 
+import arcpy
+import glob
+import lm_util
 import os
 import sys
-import glob
 import traceback
 from collections import namedtuple
-
-import arcpy
-
 from lm_config import tool_env as lm_env
-import lm_util
-
 
 _SCRIPT_NAME = "lp_main.py"
 
 NM_SCORE = "SCORE_RANGE"  # Score range normalization
 NM_MAX = "MAX_VALUE"  # Maximum value normalization
+
 
 CoordPoint = namedtuple('Point', 'x y')
 
@@ -92,6 +90,37 @@ def inv_norm(rast_list):
     return norm_rast_list
 
 
+def clip_to_bound_geom(core_lyr, rast_list):
+    """Clip NLCC rasters using minimum bounding geometry."""
+    lm_util.gprint("-Clipping NLCC rasters using minimum bounding geometry")
+    bnd_rast_list = []
+    arcpy.env.extent = rast_list[0][1].extent
+
+    for fname, bnd_rast in rast_list:
+        from_core, to_core = fname.split('_')[1:]
+        xy_lyr = arcpy.MakeFeatureLayer_management(
+            core_lyr, out_layer="xy_lyr",
+            where_clause="{} in ({}, {})".format(
+                lm_env.COREFN, from_core, to_core))
+
+        bnd_fc = os.path.join(lm_env.SCRATCHGDB, fname)
+        if arcpy.CheckProduct("ArcInfo") == "Available":
+            arcpy.MinimumBoundingGeometry_management(
+                xy_lyr, bnd_fc, geometry_type="CONVEX_HULL",
+                group_option="ALL")
+        else:
+            arcpy.MinimumBoundingGeometry_management(
+                xy_lyr, bnd_fc, geometry_type="CIRCLE", group_option="ALL")
+
+        bnd_rast = arcpy.sa.ExtractByMask(bnd_rast, bnd_fc)
+        bnd_rast_list.append([fname, bnd_rast])
+        lm_util.delete_data(bnd_fc)
+
+    arcpy.env.extent = None
+    save_interm_rast(bnd_rast_list, "bp_step2")
+    return bnd_rast_list
+
+
 def clip_nlcc_to_threashold(lcp_list):
     """Clip NLCC_A_B rasters to CWD threshold.
 
@@ -140,10 +169,9 @@ def lcp_csp_for_bp(lcp_lines):
         cursor_filter = "CSP_Norm_Trim=1"
     else:
         cursor_filter = None
-    lcp_rows = arcpy.SearchCursor(
-        lcp_lines,
-        where_clause=cursor_filter,
-        fields="From_Core; To_Core; CSP_Norm")
+    lcp_rows = arcpy.da.SearchCursor(
+        lcp_lines, fields=["From_Core", "To_Core", "CSP_Norm"],
+        where_clause=cursor_filter)
 
     for lcp_row in lcp_rows:
         lcp_name = ("{}_{}".format(lcp_row.getValue("From_Core"),
@@ -156,12 +184,13 @@ def lcp_csp_for_bp(lcp_lines):
     return lcp_list, lcp_ncsp
 
 
-def calc_blended_priority(lcp_lines):
+def calc_blended_priority(core_lyr, lcp_lines):
     """Generate Blended Priority raster from NLCC rasters."""
     lm_util.gprint("Calculating Blended Priority (BP):")
 
     lcp_list, lcp_ncsp = lcp_csp_for_bp(lcp_lines)
     nlcc_rast = clip_nlcc_to_threashold(lcp_list)
+    nlcc_rast = clip_to_bound_geom(core_lyr, nlcc_rast)
     nlcc_rast = inv_norm(nlcc_rast)
 
     blended_priority(nlcc_rast, lcp_ncsp)
@@ -185,9 +214,9 @@ def clim_priority_combine(lcp_lines):
     Areas Climate Linkage Priority Value (O).
     """
     check_add_field(lcp_lines, "Clim_Lnk_Priority", "float")
-    lnk_rows = arcpy.UpdateCursor(
+    lnk_rows = arcpy.da.UpdateCursor(
         lcp_lines,
-        fields="Clim_Lnk_Priority; NCLPv_Analog; NCLPv_Prefer")
+        fields=["Clim_Lnk_Priority", "NCLPv_Analog", "NCLPv_Prefer"])
     for lnk_row in lnk_rows:
         lnk_row.setValue(
             "Clim_Lnk_Priority",
@@ -293,10 +322,12 @@ def clim_lnk_value(xlnk, min_pnt, target_pnt, max_pnt):
 
 def value_range(layer, field):
     """Get value range of field in layer."""
-    min_value = arcpy.SearchCursor(
-        layer, fields=field, sort_fields=field + " A").next().getValue(field)
-    max_value = arcpy.SearchCursor(
-        layer, fields=field, sort_fields=field + " D").next().getValue(field)
+    min_value = arcpy.da.SearchCursor(
+        layer, field, "", "", "", sql_clause=(None, 'ORDER BY SORT_FIELD ASC')).next().getValue(
+        field)
+    max_value = arcpy.da.SearchCursor(
+        layer, field, "", "", "", sql_clause=(None, 'ORDER BY SORT_FIELD DESC')).next().getValue(
+        field)
     return min_value, max_value
 
 
@@ -312,7 +343,6 @@ def clim_priority_values(lcp_lines):
 
     canalog_r_min, canalog_r_max = value_range(lcp_lines, "CAnalog_Ratio")
     cprefer_r_min, cprefer_r_max = value_range(lcp_lines, "CPrefer_Ratio")
-
     canalog_min_pnt = CoordPoint(canalog_r_min, lm_env.CANALOG_MIN)
     canalog_target_pnt = CoordPoint(lm_env.CANALOG_PIORITY,
                                     lm_env.CANALOG_TARGET)
@@ -322,9 +352,9 @@ def clim_priority_values(lcp_lines):
     cprefer_target_pnt = CoordPoint(1, 1)
     cprefer_max_pnt = CoordPoint(cprefer_r_max, lm_env.CPREF_MAX)
 
-    lnk_rows = arcpy.UpdateCursor(
+    lnk_rows = arcpy.da.UpdateCursor(
         lcp_lines,
-        fields="CAnalog_Ratio; CPrefer_Ratio; CLPv_Analog; CLPv_Prefer")
+        fields=["CAnalog_Ratio", "CPrefer_Ratio", "CLPv_Analog", "CLPv_Prefer"])
     for lnk_row in lnk_rows:
         lnk_row.setValue(
             "CLPv_Analog",
@@ -343,7 +373,7 @@ def clim_priority_values(lcp_lines):
 
 def clim_env_read(core_lyr, core, field):
     """Read core climate envelope."""
-    rows = arcpy.SearchCursor(
+    rows = arcpy.da.SearchCursor(
         core_lyr, fields=field,
         where_clause=lm_env.COREFN + " = " + str(core))
     return rows.next().getValue(field)
@@ -360,10 +390,10 @@ def clim_ratios(lcp_lines, core_lyr):
     check_add_field(lcp_lines, "CAnalog_Ratio", "float")
     check_add_field(lcp_lines, "CPrefer_Ratio", "float")
 
-    lnk_rows = arcpy.UpdateCursor(
+    lnk_rows = arcpy.da.UpdateCursor(
         lcp_lines,
-        fields=("From_Core; To_Core; Core_Start; Core_End; CAnalog_Ratio;"
-                "CPrefer_Ratio"))
+        fields=["From_Core", "To_Core", "Core_Start", "Core_End",
+                                     "CAnalog_Ratio", "CPrefer_Ratio"])
     for lnk_row in lnk_rows:
         core_start = lnk_row.getValue("From_Core")
         core_dest = lnk_row.getValue("To_Core")
@@ -468,15 +498,15 @@ def calc_csp(lcp_lines, core_lyr):
     # Calc climate envelope and analog ratio
     if lm_env.CCERAST_IN:
         clim_linkage_priority(lcp_lines, core_lyr)
-        lnk_fields = ("From_Core; To_Core; Rel_Close; Rel_Perm; "
-                      "clim_lnk_priority; CSP")
+        lnk_fields = ["From_Core", "To_Core", "Rel_Close", "Rel_Perm",
+                      "clim_lnk_priority", "CSP"]
     else:
-        lnk_fields = "From_Core; To_Core; Rel_Close; Rel_Perm; CSP"
+        lnk_fields = ["From_Core", "To_Core", "Rel_Close", "Rel_Perm", "CSP"]
 
     lm_util.gprint("-Calculating CSP")
     check_add_field(lcp_lines, "CSP", "float")
 
-    lnk_rows = arcpy.UpdateCursor(
+    lnk_rows = arcpy.da.UpdateCursor(
         lcp_lines,
         fields=lnk_fields)
 
@@ -485,14 +515,14 @@ def calc_csp(lcp_lines, core_lyr):
         to_core = lnk_row.getValue("To_Core")
 
         # Get and avg CAVs for the core pair
-        x_cav = arcpy.SearchCursor(
-            core_lyr,
-            where_clause="{} = {}".format(lm_env.COREFN, from_core),
-            fields="norm_cav").next().getValue("norm_cav")
-        y_cav = arcpy.SearchCursor(
-            core_lyr,
-            where_clause="{} = {}".format(lm_env.COREFN, to_core),
-            fields="norm_cav").next().getValue("norm_cav")
+        x_cav = arcpy.da.SearchCursor(
+            core_lyr, fields="norm_cav",
+            where_clause="{} = {}".format(lm_env.COREFN, from_core)
+            ).next().getValue("norm_cav")
+        y_cav = arcpy.da.SearchCursor(
+            core_lyr, fields="norm_cav",
+            where_clause="{} = {}".format(lm_env.COREFN, to_core)
+            ).next().getValue("norm_cav")
 
         avg_cav = (x_cav + y_cav) / 2
 
@@ -504,13 +534,12 @@ def calc_csp(lcp_lines, core_lyr):
 
         # Get ECIV for the core pair
         if lm_env.COREPAIRSTABLE_IN and lm_env.ECIVFIELD:
-            neciv = arcpy.SearchCursor(
-                lm_env.COREPAIRSTABLE_IN,
+            neciv = arcpy.da.SearchCursor(
+                lm_env.COREPAIRSTABLE_IN, fields="neciv",
                 where_clause="({0}={2} AND {1}={3}) "
                 "OR ({1}={2} AND {0}={3})".format(
                     lm_env.FROMCOREFIELD, lm_env.TOCOREFIELD,
-                    from_core, to_core),
-                fields="neciv").next().getValue("neciv")
+                    from_core, to_core)).next().getValue("neciv")
             csp += lm_env.ECIVWEIGHT * neciv
 
         # Increment weighted sum with Climate Gradient
@@ -678,9 +707,11 @@ def calc_closeness(lcp_lines):
 def calc_permeability(lcp_lines):
     """Calculate raw and relative permeability for each Least Cost Path."""
     lm_util.gprint("Calculating permeability for each LCP line")
+
+    # Code/Changes by Nathaniel Mills and John Gallo
     normalize_field(lcp_lines, "cwd_to_Path_Length_Ratio", "Rel_Perm",
                     lm_env.RELPERMNORMETH, True)
-
+    # End Additions
 
 def add_output_path(in_str):
     """Append LinkMap GDB path to inputted value."""
@@ -729,7 +760,6 @@ def chk_lnk_tbls():
         raise AppError("ERROR: Project directory must contain a successful "
                        "Linkage Mapper run with Steps 3 and 5.")
 
-
 def run_analysis():
     """Run main Linkage Priority analysis."""
     lm_util.gprint("Retreiving outputs from Linkage Pathways model run""")
@@ -747,7 +777,7 @@ def run_analysis():
     if lm_env.CALCCSPBP in ([lm_env.CALC_CSP, lm_env.CALC_CSPBP]):
         calc_csp(lcp_lines, core_lyr)
         if lm_env.CALCCSPBP == lm_env.CALC_CSPBP:
-            calc_blended_priority(lcp_lines)
+            calc_blended_priority(core_lyr, lcp_lines)
 
     # Save a copy of Cores as the "Output for ModelBuilder Precondition"
     if lm_env.OUTPUTFORMODELBUILDER:
