@@ -338,8 +338,6 @@ def config_lp(config, arg):
     else:
         config.LPCUSTSETTINGS_IN = arg[37]
 
-    # Addition by Nathaniel Mills
-    # ---------------------------
     config.MINRMAX = float(arg[38])
 
     # Settings from Linkage Pathways
