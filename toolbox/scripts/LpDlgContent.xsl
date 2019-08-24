@@ -146,7 +146,7 @@ function Window_onresize()
       <xsl:for-each select="Property">  <xsl:value-of select="CtrlName"/>.width = window.document.body.clientWidth - 30;
         <!-- LM Addition -->
         <xsl:choose>
-          <xsl:when test='PropertyName="Param13" or PropertyName="Param14" or PropertyName="Param15" or PropertyName="Param19" or PropertyName="Param18" or PropertyName="Param20" or PropertyName="Param21" or PropertyName="Param22" or PropertyName="Param23" or PropertyName="Param24" or PropertyName="Param25" or PropertyName="Param26" or PropertyName="Param27"'>
+          <xsl:when test='PropertyName="Param13" or PropertyName="Param14" or PropertyName="Param15" or PropertyName="Param19" or PropertyName="Param18" or PropertyName="Param20" or PropertyName="Param21" or PropertyName="Param22" or PropertyName="Param23" or PropertyName="Param24" or PropertyName="Param25" or PropertyName="Param26" or PropertyName="Param27" or PropertyName="Param28"'>
             <xsl:value-of select="CtrlName"/>.width = window.document.body.clientWidth - 50;
           </xsl:when>
           <xsl:otherwise>
@@ -593,7 +593,7 @@ function clicker(a,b)
 
         <xsl:otherwise>
           <xsl:choose>
-            <xsl:when test='PropertyName="Param13" or PropertyName="Param14" or PropertyName="Param15" or PropertyName="Param19" or PropertyName="Param18" or PropertyName="Param20" or PropertyName="Param21" or PropertyName="Param22" or PropertyName="Param23" or PropertyName="Param24" or PropertyName="Param25" or PropertyName="Param26" or PropertyName="Param27"'>
+            <xsl:when test='PropertyName="Param13" or PropertyName="Param14" or PropertyName="Param15" or PropertyName="Param19" or PropertyName="Param18" or PropertyName="Param20" or PropertyName="Param21" or PropertyName="Param22" or PropertyName="Param23" or PropertyName="Param24" or PropertyName="Param25" or PropertyName="Param26" or PropertyName="Param27" or PropertyName="Param28"'>
               <TD class="lmsteppad">
                 <OBJECT width="100%" style="z-index: -1" classid="CLSID:9FA602C6-85AF-40E2-A64A-E938C70C67B9" id="{CtrlLabel}" onfocus="ShowHelpTopic('{PropertyName}Topic');"/>
                 <OBJECT width="100%" style="z-index: -1" classid="CLSID:{CtrlCLSID}" id="{CtrlName}" onfocus="ShowHelpTopic('{PropertyName}Topic');"/>

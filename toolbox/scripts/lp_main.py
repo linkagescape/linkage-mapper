@@ -313,6 +313,9 @@ def clim_priority_values(lcp_lines):
     canalog_r_min, canalog_r_max = value_range(lcp_lines, "CAnalog_Ratio")
     cprefer_r_min, cprefer_r_max = value_range(lcp_lines, "CPrefer_Ratio")
 
+    if lm_env.CANALOG_MINRMAX > canalog_r_max:
+        canalog_r_max = lm_env.CANALOG_MINRMAX
+
     canalog_min_pnt = CoordPoint(canalog_r_min, lm_env.CANALOG_MIN)
     canalog_target_pnt = CoordPoint(lm_env.CANALOG_PIORITY,
                                     lm_env.CANALOG_TARGET)

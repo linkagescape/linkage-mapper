@@ -305,41 +305,42 @@ def config_lp(config, arg):
     config.FCERAST_IN = util.nullstring(arg[18])
     config.CANALOG_MIN = float(arg[19])
     config.CANALOG_MAX = float(arg[20])
-    config.CANALOG_TARGET = float(arg[21])
-    config.CANALOG_PIORITY = float(arg[22])
-    config.CANALOG_WEIGHT = float(arg[23])
-    config.CPREF_VALUE = float(arg[24])
-    config.CPREF_MIN = float(arg[25])
-    config.CPREF_MAX = float(arg[26])
-    config.CPREF_WEIGHT = float(arg[27])
+    config.CANALOG_MINRMAX = float(arg[21])
+    config.CANALOG_TARGET = float(arg[22])
+    config.CANALOG_PIORITY = float(arg[23])
+    config.CANALOG_WEIGHT = float(arg[24])
+    config.CPREF_VALUE = float(arg[25])
+    config.CPREF_MIN = float(arg[26])
+    config.CPREF_MAX = float(arg[27])
+    config.CPREF_WEIGHT = float(arg[28])
 
     # CSP Weights
-    config.CLOSEWEIGHT = float(arg[28])
-    config.PERMWEIGHT = float(arg[29])
-    config.CAVWEIGHT = float(arg[30])
-    config.ECIVWEIGHT = float(arg[31])
-    config.CEDWEIGHT = float(arg[32])
+    config.CLOSEWEIGHT = float(arg[29])
+    config.PERMWEIGHT = float(arg[30])
+    config.CAVWEIGHT = float(arg[31])
+    config.ECIVWEIGHT = float(arg[32])
+    config.CEDWEIGHT = float(arg[33])
 
     # CPS Trim Value
-    config.CPSNORM_CUTOFF = nullfloat(arg[33])
+    config.CPSNORM_CUTOFF = nullfloat(arg[34])
 
     # Blended Priority Options
     # ------------------------
-    config.TRUNCWEIGHT = float(arg[34])
-    config.LPWEIGHT = float(arg[35])
+    config.TRUNCWEIGHT = float(arg[35])
+    config.LPWEIGHT = float(arg[36])
 
     # Additional Options
     # ------------------
-    config.OUTPUTFORMODELBUILDER = util.nullstring(arg[36])
-    if arg[37] == util.GP_NULL:
+    config.OUTPUTFORMODELBUILDER = util.nullstring(arg[37])
+    if arg[38] == util.GP_NULL:
         config.LPCUSTSETTINGS_IN = path.join(get_code_path(),
                                              'lp_settings.py')
     else:
-        config.LPCUSTSETTINGS_IN = arg[37]
+        config.LPCUSTSETTINGS_IN = arg[38]
 
     # Settings from Linkage Pathways
     # ------------------------------
-    config.CWDTHRESH = int(arg[38])
+    config.CWDTHRESH = int(arg[39])
 
     #  Custom settings
     # ----------------
