@@ -237,14 +237,14 @@ def get_core_list(coreFC, coreFN):
         # Get core data into numpy array
         coreList = npy.zeros((1, 2))
         cur = arcpy.SearchCursor(coreFC)
-        row = cur.next()
+        row = next(cur)
         i = 0
         while row:
             if i > 0:
                 coreList = npy.append(coreList,  npy.zeros((1, 2)), axis=0)
             coreList[i, 0] = row.getValue(coreFN)
             coreList[i, 1] = row.getValue(coreFN)
-            row = cur.next()
+            row = next(cur)
             i = i + 1
 
         del cur, row
@@ -524,7 +524,7 @@ def get_alloc_lookup_table(workspace, combine_ras):
         appendRow = npy.zeros((1, 3), dtype="int32")
 
         rows = arcpy.SearchCursor(combine_ras)
-        row = rows.next()
+        row = next(rows)
         while row:
             alloc = row.getValue(allocFld)
             alloc_sh = row.getValue(allocFld_sh)
@@ -534,7 +534,7 @@ def get_alloc_lookup_table(workspace, combine_ras):
                 appendRow[0, 2] = alloc_sh
                 allocLookupTable = npy.append(allocLookupTable, appendRow,
                                               axis=0)
-            row = rows.next()
+            row = next(rows)
         del row
         del rows
 
@@ -555,7 +555,7 @@ def get_centroids(shapefile, field):
         xyCumArray = npy.zeros((0, 3), dtype="float32")
         xyArray = npy.zeros((1, 3), dtype="float32")
         rows = arcpy.SearchCursor(shapefile)
-        row = rows.next()
+        row = next(rows)
         while row:
             feat = row.shape
             center = feat.centroid
@@ -574,7 +574,7 @@ def get_centroids(shapefile, field):
             value = row.getValue(field)
             xyArray[0, 2] = int(value)
             xyCumArray = npy.append(xyCumArray, xyArray, axis=0)
-            row = rows.next()
+            row = next(rows)
         del row, rows
         pointArray = npy.append(pointArray, xyCumArray, axis=0)
 
@@ -639,10 +639,10 @@ def get_box_data(field_val, extent):
 def get_sel_ext_box_coords(feature, field_name, field_val):
     """Get coordinates of bounding box for a unique feature."""
     shp_field = arcpy.Describe(feature).shapeFieldName
-    search_row = arcpy.SearchCursor(
+    search_row = next(arcpy.SearchCursor(
         feature,
         where_clause="{} = {}".format(field_name, field_val),
-        fields=shp_field).next()
+        fields=shp_field))
     extent = search_row.getValue(shp_field).extent
     del search_row
     return get_box_data(field_val, extent)
@@ -770,13 +770,13 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
         arcpy.AddField_management(lcplineDslv, "LCP_Length", "DOUBLE", "10",
                                    "2")
         rows = arcpy.UpdateCursor(lcplineDslv)
-        row = rows.next()
+        row = next(rows)
         while row:
             feat = row.shape
             lcpLength = int(feat.length)
             row.setValue("LCP_Length", lcpLength)
             rows.updateRow(row)
-            row = rows.next()
+            row = next(rows)
         del row, rows
 
         try:
@@ -901,7 +901,7 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
             arcpy.AddField_management(lcpShapefile, "cwd2EffR_r", "FLOAT")
             arcpy.AddField_management(lcpShapefile, "CF_Central", "FLOAT") ###
         rows = arcpy.UpdateCursor(lcpShapefile)
-        row = rows.next()
+        row = next(rows)
         line = 0
         while row:
             linkid = row.getValue("Link_ID")
@@ -930,7 +930,7 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
                 "cwd2Euc_R")
             linkTableTemp[linktablerow, cfg.LTB_CWDPATHR] = row.getValue(
                 "cwd2Path_R")
-            row = rows.next()
+            row = next(rows)
             line = line + 1
         # delete cursor and row points to remove locks on the data
         del row, rows
@@ -1429,7 +1429,7 @@ def write_link_maps(linkTableFile, step):
 
         #Add attribute data to link shapefile
         rows = arcpy.UpdateCursor(coreLinksShapefile)
-        row = rows.next()
+        row = next(rows)
         line = 0
         while row:
             # linkCoords indices
@@ -1455,7 +1455,7 @@ def write_link_maps(linkTableFile, step):
             row.setValue("CF_Central", linkCoords[line, 12])
 
             rows.updateRow(row)
-            row = rows.next()
+            row = next(rows)
             line = line + 1
 
         del row, rows
@@ -2002,7 +2002,7 @@ def check_cores(FC,FN):
             raise_error(msg)
 
         rows = arcpy.SearchCursor(FC)
-        row = rows.next()
+        row = next(rows)
         feat = row.shape
         center = str(feat.centroid)
         xy = center.split(" ")

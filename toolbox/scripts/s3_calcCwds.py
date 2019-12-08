@@ -547,7 +547,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
 
                 lu.raise_error(msg)
         tableRows = arcpy.SearchCursor(ZNSTATS)
-        tableRow = tableRows.next()
+        tableRow = next(tableRows)
         while tableRow:
             if tableRow.Value > sourceCore:
                 link = lu.get_links_from_core_pairs(linkTable,
@@ -565,7 +565,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                            (linkTable[link,cfg.LTB_LINKTYPE] != cfg.LT_KEEP)):
                             # Disable link, it's too short
                             linkTable[link,cfg.LTB_LINKTYPE] = cfg.LT_TSLC
-            tableRow = tableRows.next()
+            tableRow = next(tableRows)
         del tableRow, tableRows
 
         # ---------------------------------------------------------

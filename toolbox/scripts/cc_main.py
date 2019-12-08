@@ -444,7 +444,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
                 sort_fields=jtocore_fn + " A; NEAR_DIST A")
 
             # Process near table and output into a link table
-            srow = srows.next()
+            srow = next(srows)
             if srow:
                 core_list.add(int(frm_core))
                 while srow:
@@ -453,7 +453,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
                     writer.writerow([i, frm_core, to_coreid, -1, -1, 1,
                                      dist_value, -1, -1, -1])
                     core_list.add(to_coreid)
-                    srow = srows.next()
+                    srow = next(srows)
                     i += 1
 
     except Exception:

@@ -330,7 +330,7 @@ def generate_distance_file():
                 "#", "NO_LOCATION", "NO_ANGLE", "ALL", "0")
 
             rows = arcpy.SearchCursor(near_tbl)
-            row = rows.next()
+            row = next(rows)
             minDist = 1e20
             if row:  # May be running on selected core areas in step 2
                 while row:
@@ -344,7 +344,7 @@ def generate_distance_file():
                         outputrow.append(str(targetCore))
                         outputrow.append(str(dist))
                     del row
-                    row = rows.next()
+                    row = next(rows)
             del rows
             output.append(csvseparator.join(outputrow))
 
@@ -445,13 +445,13 @@ def connect_clusters(linkTable):
         arcpy.AddField_management(clusterFC, cluster_ID, "LONG")
 
         rows = arcpy.UpdateCursor(clusterFC)
-        row = rows.next()
+        row = next(rows)
         while row:
             # linkCoords indices
             fragID = row.getValue(cfg.COREFN)
             row.setValue(cluster_ID, fragID)
             rows.UpdateRow(row)
-            row = rows.next()
+            row = next(rows)
         del row, rows
 
 
@@ -480,12 +480,12 @@ def connect_clusters(linkTable):
 
                     # update shapefile to new fragment ID in cluster_ID field
                     rows = arcpy.UpdateCursor(clusterFC)
-                    row = rows.next()
+                    row = next(rows)
                     while row:
                         if row.getValue(cluster_ID) == frag2ID:
                             row.setValue(cluster_ID, frag1ID)
                         rows.UpdateRow(row)
-                        row = rows.next()
+                        row = next(rows)
                     del row, rows
 
         gprint('Done Joining.  Creating output shapefiles.')
@@ -510,21 +510,21 @@ def connect_clusters(linkTable):
         #run through rows- get cluster id, then get area from coreFCwitharea using searchcursor
 
         rows = arcpy.UpdateCursor(clusterFCFinal)
-        row = rows.next()
+        row = next(rows)
         while row:
             # linkCoords indices
             clustID = row.getValue(cluster_ID)
             rows2 = arcpy.SearchCursor(coreFCWithArea)
-            row2 = rows2.next()
+            row2 = next(rows2)
             while row2:
                 if row2.getValue(cluster_ID) == clustID:
                     fArea = "F_AREA"
                     clustArea = row2.getValue(fArea)
                     break
-                row2 = rows2.next()
+                row2 = next(rows2)
             row.setValue("clust_area", clustArea)
             rows.UpdateRow(row)
-            row = rows.next()
+            row = next(rows)
         del row, rows, row2, rows2
         gprint('Cores with cluster ID and cluster area written to: '
                 + clusterFCFinal)
