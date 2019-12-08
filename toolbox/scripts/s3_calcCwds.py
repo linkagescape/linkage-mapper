@@ -73,7 +73,7 @@ def STEP3_calc_cwds():
                               str(float(cfg.BUFFERDIST)) + ' map units will '
                               'be used \n to limit extent of cost distance '
                               'calculations.')
-        elif cfg.TOOL <> cfg.TOOL_CC:
+        elif cfg.TOOL != cfg.TOOL_CC:
             gprint('NOT using bounding circles in cost distance '
                               'calculations.')
 
