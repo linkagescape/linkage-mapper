@@ -487,11 +487,11 @@ def get_allocs_from_shift(workspace, alloc, alloc_sh):
                      'comb_ras.save(combine_ras)')
         while True:
             try:
-                exec statement
+                exec(statement)
             except Exception:
                 count, tryAgain = retry_arc_error(count, statement)
                 if not tryAgain:
-                    exec statement
+                    exec(statement)
             else:
                 break
         allocLookupTable = get_alloc_lookup_table(arcpy.env.workspace,

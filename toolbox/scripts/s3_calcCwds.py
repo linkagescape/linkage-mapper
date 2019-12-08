@@ -247,10 +247,10 @@ def STEP3_calc_cwds():
                 'bound_resis.save(cfg.BOUNDRESIS)')
             while True:
                 try:
-                    exec statement
+                    exec(statement)
                 except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
-                    if not tryAgain: exec statement
+                    if not tryAgain: exec(statement)
                 else: break
             gprint('\nReduced resistance raster extracted using '
                               'bounding circle.')
@@ -466,12 +466,12 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 'arcpy.sa.ExtractByMask(cfg.BOUNDRESIS, cfg.BNDFC); '
                 'bnd_resis.save(bResistance)')
             try:
-                exec statement
+                exec(statement)
             except Exception:
                 failures = lu.print_arcgis_failures(statement, failures)
                 if failures < 20:
                     return None,failures,lcpLoop
-                else: exec statement
+                else: exec(statement)
 
         else:
             bResistance = cfg.BOUNDRESIS
@@ -495,12 +495,12 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 'arcpy.sa.Con(arcpy.Raster(cfg.CORERAS) == int(sourceCore), 1);'
                 'conRaster.save(SRCRASTER)')
             try:
-                exec statement
+                exec(statement)
             except Exception:
                 failures = lu.print_arcgis_failures(statement, failures)
                 if failures < 20:
                     return None, failures, lcpLoop
-                else: exec statement
+                else: exec(statement)
 
             # Cost distance raster creation
             arcpy.env.extent = "MINOF"
@@ -511,13 +511,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                          'bResistance, cfg.TMAXCWDIST, back_rast);'
                          'outCostDist.save(outDistanceRaster)')
             try:
-                exec statement
+                exec(statement)
             except Exception:
                 failures = lu.print_arcgis_failures(statement, failures)
                 if failures < 20:
                     return None, failures, lcpLoop
                 else:
-                    exec statement
+                    exec(statement)
 
         start_time = time.clock()
         # Extract cost distances from source core to target cores
@@ -531,7 +531,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
         statement = ('outZSaT = arcpy.sa.ZonalStatisticsAsTable(cfg.CORERAS, '
                     '"VALUE", outDistanceRaster,ZNSTATS, "DATA", "MINIMUM")')
         try:
-            exec statement
+            exec(statement)
         except Exception:
             failures = lu.print_arcgis_failures(statement, failures)
             if failures < 20:
@@ -598,12 +598,12 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                         'arcpy.sa.Con(arcpy.sa.Raster(cfg.CORERAS) '
                         '== int(targetCore), 1)); '
                         'conRaster.save(TARGETRASTER)')
-                    exec statement
+                    exec(statement)
                 except Exception:
                     failures = lu.print_arcgis_failures(statement, failures)
                     if failures < 20:
                         return None,failures,lcpLoop
-                    else: exec statement
+                    else: exec(statement)
                 # Execute ZonalStatistics to get more precise cw distance if
                 # arc rounded it earlier (not critical, hence the try/pass)
                 if (linkTable[link,cfg.LTB_CWDIST] ==
@@ -630,7 +630,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     'outDistanceRaster, back_rast, "BEST_SINGLE", ""); '
                     'outCostPath.save(lcpRas)')
                 try:
-                    exec statement
+                    exec(statement)
                 except Exception:
                     failures = lu.print_arcgis_failures(statement, failures)
                     if failures < 20:
@@ -643,7 +643,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                             str(int(targetCore)) + '\n.'
                             'Retrying one more time in 5 minutes.')
                         lu.snooze(300)
-                        exec statement
+                        exec(statement)
 
                 # fixme: may be fastest to not do selection, do
                 # EXTRACTBYMASK,.getValuelist, use code snippet at end
@@ -674,13 +674,13 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                     statement = ('arcpy.FeatureToRaster_conversion(cfg.FCORES, '
                                 'cfg.COREFN, corePairRas, arcpy.env.cellSize)')
                     try:
-                        exec statement
+                        exec(statement)
                     except Exception:
                         failures = lu.print_arcgis_failures(statement,
                                                             failures)
                         if failures < 20:
                             return None,failures,lcpLoop
-                        else: exec statement
+                        else: exec(statement)
 
                     #------------------------------------------
                     # Intermediate core test
@@ -748,10 +748,10 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
                      'outRas.save("addRas")')
         while True:
             try:
-                exec statement
+                exec(statement)
             except Exception:
                 count,tryAgain = lu.retry_arc_error(count,statement)
-                if not tryAgain: exec statement
+                if not tryAgain: exec(statement)
             else: break
 
         # Test to see if raster has data

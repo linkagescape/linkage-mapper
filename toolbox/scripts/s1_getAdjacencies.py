@@ -154,11 +154,11 @@ def cwadjacency():
         count = 0
         while True:
             try:
-                exec statement
+                exec(statement)
             except Exception:
                 count, tryAgain = lu.retry_arc_error(count, statement)
                 if not tryAgain:
-                    exec statement
+                    exec(statement)
             else:
                 break
 
@@ -217,11 +217,11 @@ def euadjacency():
                      'alloc_raster.save(alloc_ras)')
         while True:
             try:
-                exec statement
+                exec(statement)
             except Exception:
                 count, tryAgain = lu.retry_arc_error(count, statement)
                 if not tryAgain:
-                    exec statement
+                    exec(statement)
             else:
                 break
 

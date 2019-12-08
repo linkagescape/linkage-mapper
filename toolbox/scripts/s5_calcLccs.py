@@ -177,11 +177,11 @@ def calc_lccs(normalize):
             count = 0
             while True:
                 try:
-                    exec statement
+                    exec(statement)
                 except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain:
-                        exec statement
+                        exec(statement)
                 else: break
 
             if normalize:
@@ -227,7 +227,7 @@ def calc_lccs(normalize):
                 while True:
                     try:
                         lu.write_log('Executing mosaic for link #'+str(linkId))
-                        exec statement
+                        exec(statement)
                         lu.write_log('Done with mosaic.')
                     except Exception:
                         count,tryAgain = lu.retry_arc_error(count,statement)
@@ -238,7 +238,7 @@ def calc_lccs(normalize):
                         lu.create_dir(mosaicDir)
                         mosaicRaster = path.join(mosaicDir,mosFN)
                         if not tryAgain:
-                            exec statement
+                            exec(statement)
                     else: break
             endTime = time.clock()
             processTime = round((endTime - start_time), 2)
@@ -314,10 +314,10 @@ def calc_lccs(normalize):
         count = 0
         while True:
             try:
-                exec statement
+                exec(statement)
             except Exception:
                 count,tryAgain = lu.retry_arc_error(count,statement)
-                if not tryAgain: exec statement
+                if not tryAgain: exec(statement)
             else: break
         # ---------------------------------------------------------------------
 
@@ -336,10 +336,10 @@ def calc_lccs(normalize):
             count = 0
             while True:
                 try:
-                    exec statement
+                    exec(statement)
                 except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
-                    if not tryAgain: exec statement
+                    if not tryAgain: exec(statement)
                 else: break
         # ---------------------------------------------------------------------
         # Check for unreasonably low minimum NLCC values
