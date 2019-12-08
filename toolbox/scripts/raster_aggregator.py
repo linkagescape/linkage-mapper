@@ -128,7 +128,7 @@ def raise_geoproc_error(filename):
     for msg in range(0, arcpy.GetMessageCount() - 1):
         if arcpy.GetSeverity(msg) == 2:
             arcpy.AddReturnMessage(msg)
-        print arcpy.AddReturnMessage(msg)
+        print(arcpy.AddReturnMessage(msg))
     exit(0)
 
 

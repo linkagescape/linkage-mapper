@@ -77,7 +77,7 @@ def exit_with_geoproc_error(filename):
     for msg in range(0, arcpy.GetMessageCount() - 1):
         if arcpy.GetSeverity(msg) == 2:
             arcpy.AddReturnMessage(msg)
-        print arcpy.AddReturnMessage(msg)
+        print(arcpy.AddReturnMessage(msg))
     exit(0)
 
 def exit_with_python_error(filename):

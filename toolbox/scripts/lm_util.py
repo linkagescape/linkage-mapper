@@ -298,7 +298,7 @@ def get_core_targets(core, linktable):
 def start_time():
     """Print and return start time."""
     start_time = dt.now()
-    print "Start time: {}".format(start_time.strftime("%m/%d/%y %H:%M:%S"))
+    print("Start time: {}".format(start_time.strftime("%m/%d/%y %H:%M:%S")))
     return start_time
 
 
@@ -313,9 +313,9 @@ def run_time(stime):
     """Print program execution time when running from script."""
     etime = dt.now()
     hours, minutes, seconds = s2hhmmss((etime - stime).total_seconds())
-    print "End time: {}".format(etime.strftime("%m/%d/%y %H:%M:%S"))
-    print "Execution time: {} hrs {} mins {} seconds".format(
-        hours, minutes, seconds)
+    print("End time: {}".format(etime.strftime("%m/%d/%y %H:%M:%S")))
+    print("Execution time: {} hrs {} mins {} seconds".format(
+        hours, minutes, seconds))
 
 
 def elapsed_time(start_time):
