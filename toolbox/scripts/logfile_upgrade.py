@@ -65,7 +65,7 @@ def main(proj_name=None):
         lines = open(last_lm_log).read().splitlines()
         lines[4] = update_params(lines[4])
         open(new_log_file, 'w').write('\n'.join(lines))
-    except LogFileException, err:
+    except LogFileException as err:
         arcpy.AddError(err)
     else:
         arcpy.AddMessage(

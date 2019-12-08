@@ -38,7 +38,7 @@ class Retry(object):
             for i in range(self.tries):
                 try:
                     return func_in(*args, **kwargs)
-                except self.exceptions, func_error:
+                except self.exceptions as func_error:
                     tbobj = sys.exc_info()[2]  # Get the traceback object
                     # tbinfo contains the error's line number and the code
                     tbinfo = traceback.format_tb(tbobj)[1]
