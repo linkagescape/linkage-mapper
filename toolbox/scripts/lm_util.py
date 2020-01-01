@@ -1585,7 +1585,7 @@ def make_raster_paths(no_rast, base_dir, sub_dir):
     delete_dir(base_dir)
     try:
         os.makedirs(os.path.join(base_dir, sub_dir))
-        for dir_no in range(1, (no_rast / 100) + 1):
+        for dir_no in range(1, int((no_rast / 100) + 1)):
             os.mkdir(os.path.join(base_dir,
                                   ''.join([sub_dir, str(dir_no)])))
     except OSError:
@@ -1594,7 +1594,7 @@ def make_raster_paths(no_rast, base_dir, sub_dir):
 
 def rast_path(count, base_dir, sub_dir):
     """Return the path for the raster corresponding to its count."""
-    dir_count = count / 100
+    dir_count = int(count / 100)
     if dir_count > 0:
         rast_path = os.path.join(base_dir,
                                  ''.join([sub_dir, str(dir_count)]))
@@ -1610,7 +1610,7 @@ def get_cwd_path(core):
     return os.path.join(dir_path, fname)
 
 
-def get_focal_path(core,radius):
+def get_focal_path(core, radius):
     """Returns the path for the focal raster corresponding to a core area """
     dirCount = int(core / 100)
     focalDir1 = cfg.FOCALSUBDIR1_NM + str(radius)

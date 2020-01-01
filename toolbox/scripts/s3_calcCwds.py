@@ -361,7 +361,7 @@ def STEP3_calc_cwds():
         if cfg.TOOL == cfg.TOOL_CC:
             coreList = npy.unique(linkTable[:, cfg.LTB_CORE1:cfg.LTB_CORE2 + 1])
             for core in coreList:
-                cwdRaster = lu.get_cwd_path(int(core))
+                cwdRaster = lu.get_cwd_path(core)
                 back_rast = cwdRaster.replace("cwd_", "back_")
                 lu.delete_data(back_rast)
 
