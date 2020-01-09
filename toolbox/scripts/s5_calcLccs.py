@@ -216,12 +216,14 @@ def calc_lccs(normalize):
                 #If this is the first grid then copy rather than mosaic
                 arcpy.CopyRaster_management(lccNormRaster, mosaicRaster)
             else:
-
-                rasterString = '"'+lccNormRaster+";"+lastMosaicRaster+'"'
-                statement = ('arcpy.MosaicToNewRaster_management('
-                            'rasterString,mosaicDir,mosFN, "", '
-                            '"32_BIT_FLOAT", arcpy.env.cellSize, "1", "MINIMUM", '
-                            '"MATCH")')
+                statement = (
+                    'arcpy.MosaicToNewRaster_management('
+                    'input_rasters=";".join([lccNormRaster, '
+                    'lastMosaicRaster]), output_location=mosaicDir, '
+                    'raster_dataset_name_with_extension=mosFN, '
+                    'pixel_type="32_BIT_FLOAT", cellsize=arcpy.env.cellSize, '
+                    'number_of_bands="1", mosaic_method="MINIMUM", '
+                    'mosaic_colormap_mode="MATCH")')
 
                 count = 0
                 while True:

@@ -369,16 +369,22 @@ def step6_calc_barriers():
                                     out_con.save(tmp_mosaic_ras_trim)
 
                             else:
-                                raster_string = ('"' + barrier_ras + ";" +
-                                                 last_mosaic_ras + '"')
+                                in_rasters = (";".join([barrier_ras,
+                                                        last_mosaic_ras]))
 
                                 @Retry(10)
                                 def mosaic_to_new():
                                     """Mosaic to new raster."""
                                     arcpy.MosaicToNewRaster_management(
-                                        raster_string, mosaic_dir, mos_fn, "",
-                                        "32_BIT_FLOAT", arcpy.env.cellSize,
-                                        "1", "MAXIMUM", "MATCH")
+                                        input_rasters=in_rasters,
+                                        output_location=mosaic_dir,
+                                        raster_dataset_name_with_extension\
+                                        =mos_fn,
+                                        pixel_type="32_BIT_FLOAT",
+                                        cellsize=arcpy.env.cellSize,
+                                        number_of_bands="1",
+                                        mosaic_method="MAXIMUM",
+                                        mosaic_colormap_mode="MATCH")
                                 mosaic_to_new()
 
                         if link_loop > 1:  # Clean up from previous loop
@@ -429,19 +435,22 @@ def step6_calc_barriers():
                                         out_con.save(tmp_mosaic_ras_pct)
                                     sum_barriers()
                                 else:
-                                    raster_string = ('"' + barrier_ras_pct
-                                                     + ";"
-                                                     + last_mosaic_ras_pct
-                                                     + '"')
+                                    in_rasters = (";".join([barrier_ras_pct,
+                                                  last_mosaic_ras_pct]))
 
                                     @Retry(10)
                                     def max_barriers():
                                         """Get max barriers."""
                                         arcpy.MosaicToNewRaster_management(
-                                            raster_string, mosaic_dir_pct,
-                                            mos_pct_fn, "", "32_BIT_FLOAT",
-                                            arcpy.env.cellSize, "1",
-                                            "MAXIMUM", "MATCH")
+                                            input_rasters=in_rasters,
+                                            output_location=mosaic_dir_pct,
+                                            raster_dataset_name_with_extension
+                                            =mos_pct_fn,
+                                            pixel_type="32_BIT_FLOAT",
+                                            cellsize=arcpy.env.cellSize,
+                                            number_of_bands="1",
+                                            mosaic_method="MAXIMUM",
+                                            mosaic_colormap_mode="MATCH")
                                     max_barriers()
 
                             if link_loop > 1:  # Clean up from previous loop
