@@ -91,7 +91,7 @@ def STEP4_refine_network():
             else:
                 maxRange = min(len(rows), cfg.S4MAXNN)
             for link in range (0, maxRange):
-                linkId = distsFromCore[link, cfg.LTB_LINKID]
+                linkId = int(distsFromCore[link, cfg.LTB_LINKID])
                 # assumes linktable sequentially numbered with no gaps
                 linkTable[linkId - 1, cfg.LTB_LINKTYPE] = cfg.LT_NNCT
 
