@@ -3,9 +3,7 @@
 """Aggregates resistance rasters to coarser cell size using average resistance.
     Written by Brad McRae
 Reguired Software:
-ArcGIS 9.3 with Spatial Analyst extension (toolbox is Arc 10).
-Python 2.5
-
+ArcGIS Desktop 10.3+ or ArcGIS Pro with Spatial Analyst extension
 
 """
 

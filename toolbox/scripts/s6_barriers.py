@@ -3,8 +3,7 @@
 """Detect influential barriers given CWD calculations from Step 3.
 
 Reguired Software:
-ArcGIS 10.x with Spatial Analyst extension
-Python 2.6
+ArcGIS Desktop 10.3+ or ArcGIS Pro with Spatial Analyst extension
 Numpy
 """
 

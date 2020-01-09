@@ -4,8 +4,7 @@
 """Master script for Linkage Lapper.
 
 Reguired Software:
-ArcGIS 9.3+ with Spatial Analyst extension
-Python 2.5+
+ArcGIS Desktop 10.3+ or ArcGIS Pro with Spatial Analyst extension
 Numpy
 
 """
