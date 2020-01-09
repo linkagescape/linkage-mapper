@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 """Script to run Pinchpoint Mapper tool.
 
 Assumes Linkage Mapper scripts are in their default folders.

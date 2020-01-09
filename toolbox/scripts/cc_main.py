@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # Authors: Darren Kavanagh and Brad McRae
 
 """Create linkages between core areas that fall along a climatic gradient.

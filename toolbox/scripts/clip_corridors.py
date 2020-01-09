@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # Author: Brad McRae
 
 from os import path

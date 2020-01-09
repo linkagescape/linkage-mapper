@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # Authors: John Gallo and Randal Greene 2017
 
 """Linkage Priority main module."""

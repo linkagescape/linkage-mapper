@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 """Script to run Centrality Mapper tool.
 
 Assumes Linkage Mapper scripts and demo data are in their default folders.

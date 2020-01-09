@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 """Upgrade v1.x logfile to v2.0 logfile."""
 
 import os

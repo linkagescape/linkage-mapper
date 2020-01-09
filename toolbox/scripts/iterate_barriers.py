@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 """Restore for maximum return of investment (ROI).
 
 Script to iteratively run linkage mapper and barrier mapper tools restoring
