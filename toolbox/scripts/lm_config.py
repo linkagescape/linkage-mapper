@@ -236,7 +236,7 @@ def config_barrier(config, arg):
     config.BARRIER_METH = arg[6]
     config.SAVE_RADIUS_RASTERS = util.str2bool(arg[7])
     config.WRITE_PCT_RASTERS = util.str2bool(arg[8])
-    if (len(arg) < 9 or
+    if (len(arg) == 9 or
             (len(arg) > 9 and arg[9] in ["#", "", 0, "0"])):
         config.BARRIER_CWD_THRESH = None
     else:
