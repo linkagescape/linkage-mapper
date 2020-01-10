@@ -276,6 +276,9 @@ def limit_cores(pair_tbl, stats_tbl):
 
     # Add basic stats to distance table
     lm_util.gprint("Joining zonal statistics to pairings table")
+    arcpy.AddIndex_management(pair_vw, FR_COL, "fridx")
+    arcpy.AddIndex_management(pair_vw, TO_COL, "toidx")
+    arcpy.AddIndex_management(stats_vw, core_id, "coreidx")
     add_stats(stats_vw, core_id, "fr", pair_vw, TO_COL)
     add_stats(stats_vw, core_id, "to", pair_vw, FR_COL)
 
@@ -315,12 +318,6 @@ def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
                               "", "", "NULLABLE")
 
     # Join distance table to zonal stats table
-    arcpy.AddIndex_management(table_vw, FR_COL, "fridx", "NON_UNIQUE",
-                              "ASCENDING")
-    arcpy.AddIndex_management(table_vw, TO_COL, "toidx", "NON_UNIQUE",
-                              "ASCENDING")
-    arcpy.AddIndex_management(stats_vw, core_id, "coreidx", "UNIQUE",
-                              "ASCENDING")
     arcpy.AddJoin_management(table_vw, join_col, stats_vw, core_id)
 
     tbl_name = arcpy.Describe(table_vw).baseName
