@@ -742,37 +742,37 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
 
         arcpy.AddField_management(lcplineDslv, "Link_ID", "LONG", "5")
         arcpy.CalculateField_management(lcplineDslv, "Link_ID",
-                                     int(linktable[link, cfg.LTB_LINKID]),
-                                     "PYTHON_9.3")
+                                        int(linktable[link, cfg.LTB_LINKID]),
+                                        "PYTHON_9.3")
 
         linktypecode = linktable[link, cfg.LTB_LINKTYPE]
         activelink, linktypedesc = get_link_type_desc(linktypecode)
 
         arcpy.AddField_management(lcplineDslv, "Active", "SHORT")
         arcpy.CalculateField_management(lcplineDslv, "Active", activelink,
-                                     "PYTHON_9.3")
+                                        "PYTHON_9.3")
 
         arcpy.AddField_management(lcplineDslv, "Link_Info", "TEXT")
         arcpy.CalculateField_management(lcplineDslv, "Link_Info",
-                                         linktypedesc, "PYTHON_9.3")
+                                        linktypedesc, "PYTHON_9.3")
 
         arcpy.AddField_management(lcplineDslv, "From_Core", "LONG", "5")
         arcpy.CalculateField_management(lcplineDslv, "From_Core",
-                                         int(sourceCore), "PYTHON_9.3")
+                                        int(sourceCore), "PYTHON_9.3")
         arcpy.AddField_management(lcplineDslv, "To_Core", "LONG", "5")
         arcpy.CalculateField_management(lcplineDslv, "To_Core",
-                                         int(targetCore), "PYTHON_9.3")
+                                        int(targetCore), "PYTHON_9.3")
 
         arcpy.AddField_management(lcplineDslv, "Euc_Dist", "DOUBLE", "10",
                                    "2")
         arcpy.CalculateField_management(lcplineDslv, "Euc_Dist",
-                                     linktable[link, cfg.LTB_EUCDIST],
-                                     "PYTHON_9.3")
+                                        linktable[link, cfg.LTB_EUCDIST],
+                                        "PYTHON_9.3")
 
         arcpy.AddField_management(lcplineDslv, "CW_Dist", "DOUBLE", "10", "2")
         arcpy.CalculateField_management(lcplineDslv, "CW_Dist",
-                                     linktable[link, cfg.LTB_CWDIST],
-                                     "PYTHON_9.3")
+                                        linktable[link, cfg.LTB_CWDIST],
+                                        "PYTHON_9.3")
         arcpy.AddField_management(lcplineDslv, "LCP_Length", "DOUBLE", "10",
                                    "2")
         rows = arcpy.UpdateCursor(lcplineDslv)
@@ -794,7 +794,7 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
         arcpy.AddField_management(lcplineDslv, "cwd2Euc_R", "DOUBLE", "10",
                                    "2")
         arcpy.CalculateField_management(lcplineDslv, "cwd2Euc_R", distRatio1,
-                                     "PYTHON_9.3")
+                                        "PYTHON_9.3")
 
         try:
             distRatio2 = (float(linktable[link, cfg.LTB_CWDIST])
@@ -805,7 +805,7 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
         arcpy.AddField_management(lcplineDslv, "cwd2Path_R", "DOUBLE", "10",
                                    "2")
         arcpy.CalculateField_management(lcplineDslv, "cwd2Path_R", distRatio2,
-                                     "PYTHON_9.3")
+                                        "PYTHON_9.3")
 
         lcpLoop = lcpLoop + 1
         lcpShapefile = os.path.join(cfg.DATAPASSDIR, "lcpLines_s3.shp")
@@ -1892,26 +1892,32 @@ def call_circuitscape(cspath, outConfigFile):
 def rename_fields(FC):
     try:
         arcpy.AddField_management(FC, "cw_to_Euc_Dist_Ratio", "FLOAT")
-        arcpy.CalculateField_management(FC, "cw_to_Euc_Dist_Ratio","!cwd2Euc_R!", "PYTHON")
+        arcpy.CalculateField_management(FC, "cw_to_Euc_Dist_Ratio",
+                                        "!cwd2Euc_R!", "PYTHON_9.3")
         arcpy.DeleteField_management(FC, "cwd2Euc_R")
 
         fieldList = arcpy.ListFields(FC)
         for field in fieldList:
             if str(field.name) == "cwd2Path_R":
                 arcpy.AddField_management(FC, "cwd_to_Path_Length_Ratio", "FLOAT")
-                arcpy.CalculateField_management(FC, "cwd_to_Path_Length_Ratio","!cwd2Path_R!", "PYTHON")
+                arcpy.CalculateField_management(
+                    FC, "cwd_to_Path_Length_Ratio", "!cwd2Path_R!",
+                    "PYTHON_9.3")
                 arcpy.DeleteField_management(FC, "cwd2Path_R")
 
         arcpy.AddField_management(FC, "Current_Flow_Centrality", "FLOAT")
-        arcpy.CalculateField_management(FC, "Current_Flow_Centrality","!CF_Central!", "PYTHON")
+        arcpy.CalculateField_management(FC, "Current_Flow_Centrality",
+                                        "!CF_Central!", "PYTHON_9.3")
         arcpy.DeleteField_management(FC, "CF_Central")
 
         arcpy.AddField_management(FC, "Effective_Resistance", "FLOAT")
-        arcpy.CalculateField_management(FC, "Effective_Resistance","!Eff_Resist!", "PYTHON")
+        arcpy.CalculateField_management(FC, "Effective_Resistance",
+                                        "!Eff_Resist!", "PYTHON_9.3")
         arcpy.DeleteField_management(FC, "Eff_Resist")
 
         arcpy.AddField_management(FC, "cwd_to_Eff_Resist_Ratio", "FLOAT")
-        arcpy.CalculateField_management(FC, "cwd_to_Eff_Resist_Ratio","!cwd2EffR_r!", "PYTHON")
+        arcpy.CalculateField_management(FC, "cwd_to_Eff_Resist_Ratio",
+                                        "!cwd2EffR_r!", "PYTHON_9.3")
         arcpy.DeleteField_management(FC, "cwd2EffR_r")
 
     except arcpy.ExecuteError:

@@ -419,15 +419,16 @@ def main():
 
             arcpy.AddField_management(out_point, "restorationNumber", "SHORT")
             arcpy.CalculateField_management(out_point, "restorationNumber",
-                                            cur_iter)
+                                            cur_iter, "PYTHON_9.3")
             arcpy.AddField_management(out_point, "radius", "DOUBLE")
-            arcpy.CalculateField_management(out_point, "radius", radius)
+            arcpy.CalculateField_management(out_point, "radius", radius,
+                                            "PYTHON_9.3")
             arcpy.AddField_management(out_point, "barrierScore_per_m",
                                       "DOUBLE")
             arcpy.CalculateField_management(
                 out_point, "barrierScore_per_m",
                 "(float(!barrierScore!) / (!radius! * 2))",
-                "PYTHON")
+                "PYTHON_9.3")
 
             gprint('\nCreating restoration circles')
             if restore_max_roi:

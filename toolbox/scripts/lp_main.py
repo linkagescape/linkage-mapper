@@ -391,7 +391,7 @@ def core_mean(in_rast, core_lyr, in_var):
     """Calculate the mean values of a raster within each core area."""
     tbl_name = "_".join(["core", in_var])
     mean_fld = ".".join([lm_env.CORENAME, in_var])
-    mean_value = "".join(["[", tbl_name, ".MEAN]"])
+    mean_value = "".join(["!", tbl_name, ".MEAN!"])
 
     mean_tbl = arcpy.sa.ZonalStatisticsAsTable(
         lm_env.COREFC, lm_env.COREFN, in_rast,
@@ -399,7 +399,8 @@ def core_mean(in_rast, core_lyr, in_var):
         statistics_type="MEAN")
     arcpy.AddJoin_management(core_lyr, lm_env.COREFN, mean_tbl,
                              lm_env.COREFN)
-    arcpy.CalculateField_management(core_lyr, mean_fld, mean_value)
+    arcpy.CalculateField_management(core_lyr, mean_fld, mean_value,
+                                    "PYTHON_9.3")
     arcpy.RemoveJoin_management(core_lyr)
     lm_util.delete_data(mean_tbl)
 
@@ -581,14 +582,16 @@ def calc_cav(core_lyr):
         if lm_env.ECAVWEIGHT > 0:
             lm_util.gprint("Warning: ECAVWEIGHT > 0 but no ecav field in  "
                            "Cores feature class")
-        arcpy.CalculateField_management(lm_env.COREFC, "ecav", "0")
+        arcpy.CalculateField_management(lm_env.COREFC, "ecav", "0",
+                                       "PYTHON_9.3")
     check_add_field(lm_env.COREFC, "necav", "DOUBLE")
 
     # Current flow centrality (CFC, CF_Central) is copied from
     # Centrality Mapper
     if not check_add_field(lm_env.COREFC, "CF_Central", "DOUBLE"):
         # Default to 0s
-        arcpy.CalculateField_management(lm_env.COREFC, "CF_Central", "0")
+        arcpy.CalculateField_management(lm_env.COREFC, "CF_Central", "0",
+                                        "PYTHON_9.3")
     if lm_env.CFCWEIGHT > 0:
         # Copy values from Centrality Mapper output
         # (core_centrality.gdb.project_Cores) if available
@@ -598,8 +601,8 @@ def calc_cav(core_lyr):
             arcpy.AddJoin_management(core_lyr, lm_env.COREFN,
                                      centrality_cores, lm_env.COREFN)
             arcpy.CalculateField_management(
-                core_lyr, lm_env.CORENAME + ".CF_Central", "[" +
-                lm_env.PREFIX + "_Cores.CF_Central]")
+                core_lyr, lm_env.CORENAME + ".CF_Central",
+                "!" + lm_env.PREFIX + "_Cores.CF_Central!", "PYTHON_9.3")
             arcpy.RemoveJoin_management(core_lyr)
         # Ensure cores have at least one non-0 value for CFC (could have been
         # copied above or set earlier)
