@@ -80,7 +80,7 @@ def calc_lccs(normalize):
         # set the analysis extent and cell size to that of the resistance
         # surface
         arcpy.env.extent = cfg.RESRAST
-        arcpy.env.cellSize = cfg.RESRAST
+        arcpy.env.cellSize = arcpy.Describe(cfg.RESRAST).MeanCellHeight
         arcpy.env.snapRaster = cfg.RESRAST
         arcpy.env.mask = cfg.RESRAST
 

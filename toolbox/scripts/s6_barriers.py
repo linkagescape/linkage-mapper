@@ -75,7 +75,7 @@ def step6_calc_barriers():
         # set the analysis extent and cell size to that of the resistance
         # surface
         arcpy.env.extent = cfg.RESRAST
-        arcpy.env.cellSize = cfg.RESRAST
+        arcpy.env.cellSize = arcpy.Describe(cfg.RESRAST).MeanCellHeight
         arcpy.env.snapRaster = cfg.RESRAST
         spatialref = arcpy.Describe(cfg.RESRAST).spatialReference
         map_units = (str(spatialref.linearUnitName)).lower()
@@ -85,7 +85,7 @@ def step6_calc_barriers():
         if (float(arcpy.env.cellSize) > start_radius
                 or start_radius > end_radius):
             msg = ('Error: minimum detection radius must be greater than '
-                   'cell size (' + str(arcpy.env.cellSize) +
+                   'cell size (' + arcpy.env.cellSize +
                    ') \nand less than or equal to maximum detection radius.')
             lu.raise_error(msg)
 

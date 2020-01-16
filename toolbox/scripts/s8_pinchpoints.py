@@ -51,7 +51,7 @@ def STEP8_calc_pinchpoints():
         # set the analysis extent and cell size to that of the resistance
         # surface
         arcpy.env.extent = cfg.RESRAST
-        arcpy.env.cellSize = cfg.RESRAST
+        arcpy.env.cellSize = arcpy.Describe(cfg.RESRAST).MeanCellHeight
         arcpy.snapRaster = cfg.RESRAST
 
         resRaster = cfg.RESRAST
@@ -320,7 +320,7 @@ def STEP8_calc_pinchpoints():
                 resistances = npy.loadtxt(resistancesFile,
                                           dtype = 'Float64', comments='#')
 
-                resistance = float(str(arcpy.env.cellSize)) * resistances[2]
+                resistance = float(arcpy.env.cellSize) * resistances[2]
                 linkTable[link,cfg.LTB_EFFRESIST] = resistance
 
                 # Ratio
