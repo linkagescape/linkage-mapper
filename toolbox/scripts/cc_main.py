@@ -390,7 +390,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
     link_tbl, srow, srows = None, None, None
 
     try:
-        link_tbl = open(link_file, 'wb')
+        link_tbl = open(link_file, 'w')
         writer = csv.writer(link_tbl, delimiter=',')
         headings = ["# link", "coreId1", "coreId2", "cluster1", "cluster2",
                     "linkType", "eucDist", "lcDist", "eucAdj", "cwdAdj"]
