@@ -1858,7 +1858,7 @@ def call_circuitscape(cspath, outConfigFile):
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             shell=True)
     while proc.poll() is None:
-        output = proc.stdout.readline()
+        output = proc.stdout.readline().decode()
 
         if 'Traceback' in output:
             gprint("\nCircuitscape failed.")
@@ -1872,7 +1872,7 @@ def call_circuitscape(cspath, outConfigFile):
             gprint("      " + output.replace("\r\n", ""))
 
     # Catch any output lost if process closes too quickly
-    output = proc.communicate()[0]
+    output = proc.communicate()[0].decode()
     for line in output.split('\r\n'):
         if 'Traceback' in line:
             gprint("\nCircuitscape failed.")
