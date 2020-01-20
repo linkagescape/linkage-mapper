@@ -2173,131 +2173,93 @@ def dashline(lspace=0):
 
 
 ############################################################################
-## Circuitscape Functions ##################################################
+# Circuitscape Functions ##################################################
 ############################################################################
 @Retry(5)
-def setCircuitscapeOptions():
-    """Sets default options for calling Circuitscape.
-
-    """
+def set_cs_options():
+    """Set default options for calling Circuitscape."""
     options = {}
-    options['data_type']='raster'
-    options['version']='unknown'
-    options['low_memory_mode']=False
-    options['scenario']='pairwise'
-    options['habitat_file']='(Browse for a habitat map file)'
-    options['habitat_map_is_resistances']=True
-    options['point_file']=('(Browse for file with '
-                          'locations of focal points or areas)')
-    options['point_file_contains_polygons']=True
-    options['connect_four_neighbors_only']=False
-    options['connect_using_avg_resistances']=True
-    options['use_polygons']=False
-    options['polygon_file']='(Browse for a short-circuit region file)'
-    options['source_file']='(Browse for a current source file)'
-    options['ground_file']='(Browse for a ground point file)'
-    options['ground_file_is_resistances']=True
-    options['use_unit_currents']=False
-    options['use_direct_grounds']=False
-    options['remove_src_or_gnd']='not entered'
-    options['output_file']='(Choose a base name for output files)'
-    options['write_cur_maps']=True
-    options['write_cum_cur_map_only']=True
-    options['log_transform_maps']=False
-    options['write_volt_maps']=False
-    options['solver']='cg+amg'
-    options['compress_grids']=False
-    options['print_timings']=False
-    options['use_mask']=False
-    options['mask_file']='None'
-    options['use_included_pairs']=False
-    options['included_pairs_file']='None'
-    options['use_variable_source_strengths']=False
-    options['variable_source_file']='None'
-    options['write_max_cur_maps']=False
-    options['set_focal_node_currents_to_zero']=True
-
+    options['data_type'] = 'raster'
+    options['version'] = 'unknown'
+    options['low_memory_mode'] = False
+    options['scenario'] = 'pairwise'
+    options['habitat_file'] = '(Browse for a habitat map file)'
+    options['habitat_map_is_resistances'] = True
+    options['point_file'] = ('(Browse for file with '
+                             'locations of focal points or areas)')
+    options['point_file_contains_polygons'] = True
+    options['connect_four_neighbors_only'] = False
+    options['connect_using_avg_resistances'] = True
+    options['use_polygons'] = False
+    options['polygon_file'] = '(Browse for a short-circuit region file)'
+    options['source_file'] = '(Browse for a current source file)'
+    options['ground_file'] = '(Browse for a ground point file)'
+    options['ground_file_is_resistances'] = True
+    options['use_unit_currents'] = False
+    options['use_direct_grounds'] = False
+    options['remove_src_or_gnd'] = 'not entered'
+    options['output_file'] = '(Choose a base name for output files)'
+    options['write_cur_maps'] = True
+    options['write_cum_cur_map_only'] = True
+    options['log_transform_maps'] = False
+    options['write_volt_maps'] = False
+    options['solver'] = 'cg+amg'
+    options['compress_grids'] = False
+    options['print_timings'] = False
+    options['use_mask'] = False
+    options['mask_file'] = 'None'
+    options['use_included_pairs'] = False
+    options['included_pairs_file'] = 'None'
+    options['use_variable_source_strengths'] = False
+    options['variable_source_file'] = 'None'
+    options['write_max_cur_maps'] = False
+    options['set_focal_node_currents_to_zero'] = True
     return options
 
-def writeCircuitscapeConfigFile(configFile, options):
-    """Creates a configuration file for calling Circuitscape.
 
-    """
+def write_cs_cfg_file(config_file, options):
+    """Create a configuration file for calling Circuitscape."""
+
     config = RawConfigParser()
 
-    sections={}
-    section='Version'
-    sections['version']=section
+    def bld_config(sect, opts):
+        config.add_section(sect)
+        for opt in opts:
+            config.set(sect, opt, options[opt])
 
-    section='Connection scheme for raster habitat data'
-    sections['connect_four_neighbors_only']=section
-    sections['connect_using_avg_resistances']=section
+    bld_config('Version',
+               ['version'])
+    bld_config('Connection scheme for raster habitat data',
+               ['connect_four_neighbors_only',
+                'connect_using_avg_resistances'])
+    bld_config('Short circuit regions (aka polygons)',
+               ['use_polygons', 'polygon_file'])
+    bld_config('Options for advanced mode',
+               ['source_file', 'ground_file', 'ground_file_is_resistances',
+                'use_unit_currents', 'use_direct_grounds',
+                'remove_src_or_gnd'])
+    bld_config('Calculation options',
+               ['solver', 'print_timings', 'low_memory_mode'])
+    bld_config('Output options',
+               ['output_file', 'write_cur_maps', 'write_cum_cur_map_only',
+                'log_transform_maps', 'write_volt_maps', 'compress_grids',
+                'write_max_cur_maps', 'set_focal_node_currents_to_zero'])
+    bld_config('Mask file',
+               ['use_mask', 'mask_file'])
+    bld_config('Options for pairwise and one-to-all and all-to-one modes',
+               ['use_included_pairs', 'included_pairs_file',
+                'point_file', 'point_file_contains_polygons'])
+    bld_config('Options for one-to-all and all-to-one modes',
+               ['use_variable_source_strengths', 'variable_source_file'])
+    bld_config('Habitat raster or graph',
+               ['habitat_file', 'habitat_map_is_resistances'])
+    bld_config('Circuitscape mode',
+               ['scenario', 'data_type'])
 
-    section='Short circuit regions (aka polygons)'
-    sections['use_polygons']=section
-    sections['polygon_file']=section
+    cfile = open(config_file, 'w')
+    config.write(cfile)
+    cfile.close()
 
-    section='Options for advanced mode'
-    sections['source_file']=section
-    sections['ground_file']=section
-    sections['ground_file_is_resistances']=section
-    sections['use_unit_currents']=section
-    sections['use_direct_grounds']=section
-    sections['remove_src_or_gnd']=section
-
-    section='Calculation options'
-    sections['solver']=section
-    sections['print_timings']=section
-    sections['low_memory_mode']=section
-
-    section='Output options'
-    sections['output_file']=section
-    sections['write_cur_maps']=section
-    sections['write_cum_cur_map_only']=section
-    sections['log_transform_maps']=section
-    sections['write_volt_maps']=section
-    sections['compress_grids']=section
-    sections['write_max_cur_maps']=section
-    sections['set_focal_node_currents_to_zero']=section
-
-    section='Mask file'
-    sections['use_mask']=section
-    sections['mask_file']=section
-
-    section='Options for pairwise and one-to-all and all-to-one modes'
-    sections['use_included_pairs']=section
-    sections['included_pairs_file']=section
-    sections['point_file']=section
-    sections['point_file_contains_polygons']=section
-
-    section='Options for one-to-all and all-to-one modes'
-    sections['use_variable_source_strengths']=section
-    sections['variable_source_file']=section
-
-    section='Habitat raster or graph'
-    sections['habitat_file']=section
-    sections['habitat_map_is_resistances']=section
-
-    section="Circuitscape mode"
-    sections['scenario']=section
-    sections['data_type']=section
-
-    if options['ground_file_is_resistances']=='not entered':
-        options['ground_file_is_resistances'] = False
-    if options['point_file_contains_polygons']=='not entered':
-        options['point_file_contains_polygons'] = False
-
-    for option in sections:
-        try:
-            config.add_section(sections[option])
-        except Exception:
-            pass
-    for option in sections:
-        config.set(sections[option], option, options[option])
-
-    f = open(configFile, 'w')
-    config.write(f)
-    f.close()
 
 def warn(string):
     arcpy.AddWarning(string)
