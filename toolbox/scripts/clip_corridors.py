@@ -24,14 +24,17 @@ gprint = gp.addmessage
 _SCRIPT_NAME = "clip_corridors"
 
 
-def clip_corridor():
+def clip_corridor(argv=None):
     """Truncates corridors at user-specified cutoff width in CWD units.
 
     """
+    if argv is None:
+        argv = sys.argv  # Get parameters from ArcGIS tool dialog
+
     try:
-        inRaster = sys.argv[1]
-        cutoffVal = sys.argv[2]
-        outputGDB = sys.argv[3]
+        inRaster = argv[1]
+        cutoffVal = argv[2]
+        outputGDB = argv[3]
         
         cutoffText = str(cutoffVal)
         if cutoffText[-6:] == '000000':
