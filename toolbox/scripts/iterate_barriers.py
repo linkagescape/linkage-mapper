@@ -341,10 +341,9 @@ def main():
             out_calc.save(total_roi_ras)
             lu.build_stats(total_roi_ras)
 
-            max_barrier = arcpy.GetRasterProperties_management(
-                candidate_barrier_ras, "MAXIMUM")
-            gprint('Maximum barrier improvement score: '
-                   + str(max_barrier.getOutput(0)))
+            max_barrier = float(arcpy.GetRasterProperties_management(
+                candidate_barrier_ras, "MAXIMUM").getOutput(0))
+            gprint('Maximum barrier improvement score: ' + str(max_barrier))
             if max_barrier < 0:
                 arcpy.AddWarning("\nNo barriers found that meet CWD or Ag "
                                  "threshold criteria.")
@@ -382,8 +381,7 @@ def main():
                 gprint('Choosing circle with maximum BARRIER IMPROVEMENT SCORE'
                        ' to restore')
                 out_con = arcpy.sa.Con(
-                    (arcpy.sa.Raster(candidate_barrier_ras) >=
-                     float(max_barrier.getOutput(0))),
+                    (arcpy.sa.Raster(candidate_barrier_ras) >= max_barrier),
                     candidate_barrier_ras)
                 max_barrier_ras = os.path.join(output_gdb, 'maxBarrierRaster')
                 out_con.save(max_barrier_ras)
