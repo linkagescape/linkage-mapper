@@ -166,11 +166,15 @@ def circuitscape_master(argv=None):
 def get_cs_path():
     """Return path to Circuitscape installation."""
     env_list = ["ProgramW6432", "ProgramFiles", "ProgramFiles(x86)"]
+    cs_app_path = None
 
-    for i in env_list:
-        cs_app_path = path.join(os.environ[i], "Circuitscape\\cs_run.exe")
-        if path.exists(cs_app_path):
-            return cs_app_path
+    for env_path in [os.environ[key] for key in env_list if key in os.environ]:
+        chk_path = path.join(env_path, "Circuitscape\\cs_run.exe")
+        if path.exists(chk_path):
+            cs_app_path = chk_path
+            break
+
+    return cs_app_path
 
 
 if __name__ == "__main__":
