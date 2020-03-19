@@ -171,6 +171,10 @@ def get_cs_path():
     env_list = ["ProgramW6432", "ProgramFiles", "ProgramFiles(x86)"]
 
     for i in env_list:
+        # skip unset environment variables
+        if not i in os.environ:
+            continue
+
         cs_app_path = path.join(os.environ[i], "Circuitscape\\cs_run.exe")
         if path.exists(cs_app_path):
             return cs_app_path
