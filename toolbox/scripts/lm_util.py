@@ -1990,16 +1990,10 @@ def check_cores(FC,FN):
                     'must be a positive integer.')
             raise_error(msg)
 
-        fieldList = arcpy.ListFields(FC)
-        for field in fieldList:
-            if str(field.name) == FN:
-                FT = str(field.type)
-                if (FT != 'SmallInteger' and FT != 'SHORT' and FT != 'Integer'
-                    and FT != 'LONG'):
-                    dashline(1)
-                    msg = ('ERROR: Core area field must be in Integer '
-                            'format.')
-                    raise_error(msg)
+        cid_field = arcpy.ListFields(FC, FN)[0]
+        if cid_field.type not in ('Integer', 'SmallInteger'):
+            dashline(1)
+            raise_error('ERROR: Core area field must be in Integer format.')
 
         coreList = get_core_list(FC,FN)
         if npy.amin(coreList) < 1:
@@ -2324,5 +2318,3 @@ def get_mem():
     totMem = float(int(10 * float(stat.ullTotalPhys)/1073741824))/10
     availMem = float(int(10 * float(stat.ullAvailPhys)/1073741824))/10
     return totMem, availMem
-
-
