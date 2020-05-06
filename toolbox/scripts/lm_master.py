@@ -176,7 +176,7 @@ def lm_master(argv=None):
             gprint(cfg.OUTPUTDIR)
 
         # Clean up
-        lu.delete_dir(cfg.SCRATCHDIR) 
+        lu.delete_dir(cfg.SCRATCHDIR)
 
         arcpy.AddMessage('\nDone with linkage mapping.\n')
 

@@ -114,6 +114,3 @@ def build_stats(raster):
 
 if __name__ == "__main__":
     clip_corridor()
-
-
-

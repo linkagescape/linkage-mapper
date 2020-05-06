@@ -739,7 +739,7 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
 
     """
     try:
-        arcpy.env.workspace = workspace 
+        arcpy.env.workspace = workspace
         if arcpy.Exists("addRas"): #Can't use tif for getrasterproperties
             arcpy.Delete_management("addRas")
         count = 0

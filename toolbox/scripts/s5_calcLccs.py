@@ -162,7 +162,7 @@ def calc_lccs(normalize):
             offset = 10000
 
             # Normalized lcc rasters are created by adding cwd rasters and
-            # subtracting the least cost distance between them. 
+            # subtracting the least cost distance between them.
             lcDist = (float(linkTable[link,cfg.LTB_CWDIST]) - offset)
 
             if normalize:
@@ -204,7 +204,7 @@ def calc_lccs(normalize):
                            'bounding circle, or that a corridor passed outside of the '
                            'resistance map. \n')
                     lu.warn(msg)
-            
+
             arcpy.env.extent = cfg.RESRAST
 
             mosaicDir = path.join(cfg.LCCBASEDIR,'mos'+str(x+1))
@@ -327,7 +327,7 @@ def calc_lccs(normalize):
             # Set anything beyond cfg.CWDTHRESH to NODATA.
             truncRaster = (outputGDB + '\\' + PREFIX + mosaicBaseName +
                            '_truncated_at_' + lu.cwd_cutoff_str(cfg.CWDTHRESH))
-            
+
             statement = ('outRas = arcpy.sa.Raster(intRaster)'
                          '* (arcpy.sa.Con(arcpy.sa.Raster(intRaster) '
                          '<= cfg.CWDTHRESH, 1)); '

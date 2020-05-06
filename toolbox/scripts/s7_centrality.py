@@ -247,5 +247,3 @@ def load_graph(filename,graphType,datatype):
             raise RuntimeError('Error reading',type,
                                'file.  Please check file format')
     return graphObject
-
-
