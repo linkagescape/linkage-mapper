@@ -781,18 +781,3 @@ def delay_restart(failures):
         gprint('Restarting iteration in 5 minutes. ')
         lu.dashline(2)
         lu.snooze(300)
-
-
-def test_for_intermediate_core_old_method(workspace,lcpRas,corePairRas):
-    """ Zonal stats method to test for intermediate core test (discontinued)
-
-    """
-    ZNSTATS2 = path.join(cfg.SCRATCHDIR, "zonestats2.dbf")
-    value = "VALUE"
-    arcpy.sa.ZonalStatisticsAsTable(corePairRas, value, lcpRas, ZNSTATS2,
-                                    "DATA", "MINIMUM")
-    coreMin = lu.get_zonal_minimum(ZNSTATS2)
-    if coreMin:
-        return True
-    else:
-        return False

@@ -305,18 +305,6 @@ def calc_lccs(normalize):
         arcpy.env.pyramid = "NONE"
         arcpy.env.rasterStatistics = "NONE"
 
-
-        # Copy mosaic raster to output geodatabase
-        saveFloatRaster = False
-        if saveFloatRaster == True:
-            floatRaster = outputGDB + '\\' + PREFIX + mosaicBaseName + '_flt' # Full path
-            statement = 'arcpy.CopyRaster_management(mosaicRaster, floatRaster)'
-            try:
-                exec statement
-            except Exception:
-                pass
-
-
         # ---------------------------------------------------------------------
         # convert mosaic raster to integer
         intRaster = path.join(outputGDB,PREFIX + mosaicBaseName)
