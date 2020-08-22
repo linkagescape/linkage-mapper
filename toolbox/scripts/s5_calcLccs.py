@@ -222,8 +222,7 @@ def calc_lccs(normalize):
                     'lastMosaicRaster]), output_location=mosaicDir, '
                     'raster_dataset_name_with_extension=mosFN, '
                     'pixel_type="32_BIT_FLOAT", cellsize=arcpy.env.cellSize, '
-                    'number_of_bands="1", mosaic_method="MINIMUM", '
-                    'mosaic_colormap_mode="MATCH")')
+                    'number_of_bands="1", mosaic_method="MINIMUM")')
 
                 count = 0
                 while True:

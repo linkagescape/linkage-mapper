@@ -382,8 +382,7 @@ def step6_calc_barriers():
                                         pixel_type="32_BIT_FLOAT",
                                         cellsize=arcpy.env.cellSize,
                                         number_of_bands="1",
-                                        mosaic_method="MAXIMUM",
-                                        mosaic_colormap_mode="MATCH")
+                                        mosaic_method="MAXIMUM")
                                 mosaic_to_new()
 
                         if link_loop > 1:  # Clean up from previous loop
@@ -448,8 +447,7 @@ def step6_calc_barriers():
                                             pixel_type="32_BIT_FLOAT",
                                             cellsize=arcpy.env.cellSize,
                                             number_of_bands="1",
-                                            mosaic_method="MAXIMUM",
-                                            mosaic_colormap_mode="MATCH")
+                                            mosaic_method="MAXIMUM")
                                     max_barriers()
 
                             if link_loop > 1:  # Clean up from previous loop
