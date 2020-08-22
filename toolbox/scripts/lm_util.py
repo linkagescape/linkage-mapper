@@ -1314,16 +1314,12 @@ def write_link_maps(linkTableFile, step):
         arcpy.env.workspace = cfg.OUTPUTDIR
         linktable = load_link_table(linkTableFile)
 
-        numLinks = linktable.shape[0]
-        arcpy.toolbox = "management"
-
         coresForLinework = "cores_for_linework.shp"
 
         # Preferred method to get geometric center
         pointArray = get_centroids(cfg.COREFC, cfg.COREFN)
 
         make_points(arcpy.env.workspace, pointArray, coresForLinework)
-        numLinks = linktable.shape[0]
 
         coreLinks = linktable
 
@@ -1353,8 +1349,10 @@ def write_link_maps(linkTableFile, step):
             ind = npy.lexsort((linkCoords[:, 2], linkCoords[:, 1]))
             linkCoords = linkCoords[ind]
 
+        numLinks = len(linkCoords)
+
         # Get core coordinates into linkCoords
-        for i in range(0, len(linkCoords)):
+        for i in range(0, numLinks):
             grp1 = linkCoords[i, 1]
             grp2 = linkCoords[i, 2]
 
@@ -1403,9 +1401,6 @@ def write_link_maps(linkTableFile, step):
         #Create an Array and Point object.
         lineArray = arcpy.Array()
         pnt = arcpy.Point()
-
-        # linkCoords indices:
-        numLinks = len(linkCoords)
 
         #Open a cursor to insert rows into the shapefile.
         cur = arcpy.InsertCursor(coreLinksShapefile)
