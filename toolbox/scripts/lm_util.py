@@ -1414,14 +1414,14 @@ def write_link_maps(linkTableFile, step):
         for i in range(0, numLinks):
 
             #Set the X and Y coordinates for origin vertex.
-            pnt.x = linkCoords[i, 5]
-            pnt.y = linkCoords[i, 6]
+            pnt.X = linkCoords[i, 5]
+            pnt.Y = linkCoords[i, 6]
             #Insert it into the line array
             lineArray.add(pnt)
 
             #Set the X and Y coordinates for destination vertex
-            pnt.x = linkCoords[i, 7]
-            pnt.y = linkCoords[i, 8]
+            pnt.X = linkCoords[i, 7]
+            pnt.Y = linkCoords[i, 8]
             #Insert it into the line array
             lineArray.add(pnt)
 
