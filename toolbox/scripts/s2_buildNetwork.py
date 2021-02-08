@@ -280,7 +280,7 @@ def get_adj_list(adjFile):
 def generate_distance_file():
     """Use ArcGIS to create Conefor distance file
 
-    Requires ArcInfo license.
+    For ArcGIS Desktop users an Advanced license is required.
 
     """
     try:

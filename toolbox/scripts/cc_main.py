@@ -21,7 +21,7 @@ import csv
 import itertools
 import traceback
 
-import arcinfo  # Import arcinfo license. Needed before arcpy import.
+import arcinfo  # Import Advanced license. Needed before arcpy import.
 import arcpy
 
 from cc_config import cc_env
@@ -344,7 +344,7 @@ def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
 def process_pairings(pairings):
     """Limit core pairings based on distance inputs and create linkage table.
 
-    Requires ArcInfo license.
+    For ArcGIS Desktop users an Advanced license is required.
 
     """
     lm_util.gprint("\nLIMITING CORE PAIRS BASED ON INPUTED DISTANCES AND "
