@@ -544,12 +544,12 @@ function clicker(a,b)
             Corridor Specific Priority (CSP) Options
           </TD>
         </xsl:when>
-        <xsl:when test='PropertyName="Param34"'>
+        <xsl:when test='PropertyName="Param35"'>
           <TD style="padding-bottom=5; padding-top=10">
             Blended Priority Options
           </TD>
         </xsl:when>
-        <xsl:when test='PropertyName="Param36"'>
+        <xsl:when test='PropertyName="Param37"'>
           <TD style="padding-bottom=5; padding-top=10">
             Additional Options
           </TD>
