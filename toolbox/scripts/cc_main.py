@@ -5,9 +5,9 @@
 This tool is designed to create linkages between designated core areas that
 fall along a climatic gradient (e.g. temperature).
 
-When using ArcGIS Desktop this module is called from the Climate Linkage
-Mapper tool within the Linkage Mapper Toolkit. See Climate Linkage Mapper
-User Guide for more details.
+When using ArcGIS Desktop or ArcGIS Pro this module is called from the Climate
+Linkage Mapper tool within the Linkage Mapper toolbox. See the Climate Linkage
+Mapper User Guide for more details.
 
 Reguired Software:
 ArcGIS 10.x with Spatial Analyst extension
