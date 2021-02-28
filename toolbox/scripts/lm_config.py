@@ -224,7 +224,6 @@ def config_lm(config, arg):
         config.TMAXCWDIST = None
 
     config.CORERAS = path.join(config.SCRATCHDIR, "core_ras")
-    return True
 
 
 def config_barrier(config, arg):
@@ -271,7 +270,7 @@ def config_barrier(config, arg):
 
 def config_climate(config, arg):
     """Configure global variables for Climate Corridor tool."""
-    config.lm_configured = config_lm(config, arg)
+    config_lm(config, arg)
 
 
 def config_lp(config, arg):
@@ -406,14 +405,14 @@ class Configure(object):
         """Initialize class."""
         arcpy.CheckOutExtension("Spatial")
         arcpy.env.overwriteOutput = True
-        self.lm_configured = False
+        self.TOOL = ''
 
     def configure(self, tool, arg):
         """Assign variables for Configure class."""
         config_global(self, arg)
 
         if tool == Configure.TOOL_LM:
-            self.lm_configured = config_lm(self, arg)
+            config_lm(self, arg)
         elif tool == Configure.TOOL_CC:
             config_climate(self, arg)
         elif tool == Configure.TOOL_LP:

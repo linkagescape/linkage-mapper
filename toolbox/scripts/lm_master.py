@@ -33,7 +33,7 @@ def lm_master(argv=None):
 
     """
     # Setup global variables
-    if not cfg.lm_configured:
+    if cfg.TOOL != cfg.TOOL_CC:
         if argv is None:
             argv = sys.argv
         cfg.configure(cfg.TOOL_LM, argv)
@@ -194,6 +194,7 @@ def lm_master(argv=None):
         gprint(cfg.MESSAGEDIR)
         lu.dashline(2)
         lu.close_log_file()
+
 
 if __name__ == "__main__":
     lm_master()

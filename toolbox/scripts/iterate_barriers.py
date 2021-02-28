@@ -233,7 +233,6 @@ def main(argv=None):
                     'true', do_step_5, 'true', '200000', '10000', '#', '#',
                     '#', '#')
             gprint('Running ' + str(argv))
-            cfg.lm_configured = False
             lm_master.lm_master(argv)
             do_step_1 = 'false'  # Can skip for future iterations
             do_step_2 = 'false'  # Can skip for future iterations
