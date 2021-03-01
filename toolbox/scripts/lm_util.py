@@ -2078,7 +2078,7 @@ def print_warnings():
     filename = tbinfo.split(", ")[0]
     filename = filename.rsplit("File ")[1]
 
-    if arcpy.GetMaxSeverity > 1:
+    if arcpy.GetMaxSeverity() > 1:
         msg = ("The following ArcGIS error is being reported "
                     "on line " + line + " of " + filename + ":")
         arcpy.AddWarning(msg)
