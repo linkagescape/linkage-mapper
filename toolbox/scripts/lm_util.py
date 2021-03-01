@@ -1212,7 +1212,7 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
         outFile.write("# Linkage Mapper Version " + cfg.releaseNum)
         outFile.write("\n# ---Run Settings---")
         outFile.write("\n# Project Directory: " + cfg.PROJECTDIR)
-        if cfg.TOOL == 'linkage_mapper':
+        if cfg.TOOL == cfg.TOOL_LM:
             outFile.write("\n# Core Area Feature Class: " + cfg.COREFC)
 
             outFile.write("\n# Core Area Field Name: " + cfg.COREFN)
@@ -1259,13 +1259,13 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
                            + str(cfg.MINEUCDIST))
 
 
-        elif cfg.TOOL == 'pinchpoint_mapper':
+        elif cfg.TOOL == cfg.TOOL_CS:
             outFile.write("\n# Pinchpoints Analyzed: "
                            + str(cfg.DOPINCH))
             outFile.write("\n# Resistance Raster: " + cfg.RESRAST)
             outFile.write("\n# CWD Cutoff Distance: "
                            + str(cfg.CWDCUTOFF))
-            outFile.write("\n# Resistance Raster ValuesS quared for "
+            outFile.write("\n# Resistance Raster Values Squared for "
                             "Circuitscape Analyses: "+ str(cfg.SQUARERESISTANCES))
             outFile.write("\n# Network Centrality Analyzed: "
                           + str(cfg.DOCENTRALITY))
