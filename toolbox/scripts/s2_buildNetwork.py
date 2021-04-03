@@ -437,11 +437,9 @@ def connect_clusters(linkTable):
         gprint('Running custom fragment connecting code.')
         numLinks = linkTable.shape[0]
 
-        fieldList = arcpy.ListFields(clusterFC)
         cluster_ID = 'clus' + str(int(cfg.MAXEUCDIST))
-        for field in fieldList:
-            if str(field.name) == cluster_ID:
-                arcpy.DeleteField_management(clusterFC, cluster_ID)
+        if arcpy.ListFields(clusterFC, cluster_ID):
+            arcpy.DeleteField_management(clusterFC, cluster_ID)
         arcpy.AddField_management(clusterFC, cluster_ID, "LONG")
 
         rows = arcpy.UpdateCursor(clusterFC)
