@@ -1897,14 +1897,11 @@ def rename_fields(FC):
                                         "!cwd2Euc_R!", "PYTHON_9.3")
         arcpy.DeleteField_management(FC, "cwd2Euc_R")
 
-        fieldList = arcpy.ListFields(FC)
-        for field in fieldList:
-            if str(field.name) == "cwd2Path_R":
-                arcpy.AddField_management(FC, "cwd_to_Path_Length_Ratio", "FLOAT")
-                arcpy.CalculateField_management(
-                    FC, "cwd_to_Path_Length_Ratio", "!cwd2Path_R!",
-                    "PYTHON_9.3")
-                arcpy.DeleteField_management(FC, "cwd2Path_R")
+        if arcpy.ListFields(FC, "cwd2Path_R"):
+            arcpy.AddField_management(FC, "cwd_to_Path_Length_Ratio", "FLOAT")
+            arcpy.CalculateField_management(FC, "cwd_to_Path_Length_Ratio",
+                                            "!cwd2Path_R!", "PYTHON_9.3")
+            arcpy.DeleteField_management(FC, "cwd2Path_R")
 
         arcpy.AddField_management(FC, "Current_Flow_Centrality", "FLOAT")
         arcpy.CalculateField_management(FC, "Current_Flow_Centrality",

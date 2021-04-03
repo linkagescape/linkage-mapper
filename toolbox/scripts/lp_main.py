@@ -168,12 +168,11 @@ def calc_blended_priority(lcp_lines):
 
 def check_add_field(feature_class, field_name, data_type):
     """Check if field exists, and if not then add."""
-    field_names = [field.name for field in arcpy.ListFields(feature_class)]
-    if field_name not in field_names:
+    if arcpy.ListFields(feature_class, field_name):
+        exists = True
+    else:
         exists = False
         arcpy.AddField_management(feature_class, field_name, data_type)
-    else:
-        exists = True
     return exists
 
 
