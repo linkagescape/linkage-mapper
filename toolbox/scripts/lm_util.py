@@ -1127,7 +1127,8 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('*'*70 + '\n')
         logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
         logFile.write('Start time:\t%s \n' % (timeNow))
-        logFile.write('Parameters:\t%s \n\n' % (inParameters))
+        logFile.write('Parameters: \n')
+        write_parameters(logFile, cfg)
     logFile.close()
     dashline()
     gprint('A record of run settings and messages can be found in your '
@@ -1136,6 +1137,19 @@ def create_log_file(messageDir, toolName, inParameters):
     dashline(2)
 
     return filePath
+
+
+def write_parameters(logFile, config):
+    conf_dict = vars(config)
+    lm_inputs = ["PROJECTDIR", "COREFC", "COREFN", "RESRAST_IN", "STEP1",
+                 "STEP2", "S2ADJMETH_CW","S2ADJMETH_EU", "S2EUCDISTFILE", "STEP3",
+                 "S3DROPLCCS", "STEP4", "S4MAXNN", "S4DISTTYPE_CW", "S4CONNECT",
+                 "STEP5", "WRITETRUNCRASTER", "CWDTHRESH", "BUFFERDIST", "MAXCOSTDIST",
+                 "MAXEUCDIST", "OUTPUTFORMODELBUILDER", "LMCUSTSETTINGS"]
+    for item in lm_inputs:
+        logFile.write(item + " : " + str(conf_dict[item]) + "\n")
+    logFile.write("\n")
+
 
 def write_log(string):
     try:
