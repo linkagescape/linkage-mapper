@@ -1114,6 +1114,7 @@ def gprint(string):
     except Exception:
         pass
 
+
 def create_log_file(messageDir, toolName, inParameters):
     ft = tuple(time.localtime())
     timeNow = time.ctime()
@@ -1127,8 +1128,26 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('*'*70 + '\n')
         logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
         logFile.write('Start time:\t%s \n' % (timeNow))
+        logFile.write('Parameters:\t%s \n\n' % (inParameters))
         logFile.write('Parameters: \n')
-        write_parameters(logFile, cfg)
+
+        if toolName == "Linkage Mapper":
+            inputs = cfg.LM_INPUTS
+        elif toolName == "Climate Linkage Mapper":
+            inputs = cfg.CC_INPUTS
+        elif toolName == "Linkage Priority":
+            inputs = cfg.LP_INPUTS
+        elif toolName == "Barrier mapper":
+            inputs = cfg.BM_INPUTS
+        elif toolName == "Circuitscape":
+            inputs = cfg.CS_INPUTS
+        else:
+            raise RuntimeError('Undefined tool to configure')
+        inParameters= inParameters.strip('][').split(', ')
+        for nm_idx, param in enumerate(list(inParameters)):
+            logFile.write(str(inputs[nm_idx]) + " : " + str(param) + "\n")
+        logFile.write("\n")
+
     logFile.close()
     dashline()
     gprint('A record of run settings and messages can be found in your '
@@ -1137,18 +1156,6 @@ def create_log_file(messageDir, toolName, inParameters):
     dashline(2)
 
     return filePath
-
-
-def write_parameters(logFile, config):
-    conf_dict = vars(config)
-    lm_inputs = ["PROJECTDIR", "COREFC", "COREFN", "RESRAST_IN", "STEP1",
-                 "STEP2", "S2ADJMETH_CW","S2ADJMETH_EU", "S2EUCDISTFILE", "STEP3",
-                 "S3DROPLCCS", "STEP4", "S4MAXNN", "S4DISTTYPE_CW", "S4CONNECT",
-                 "STEP5", "WRITETRUNCRASTER", "CWDTHRESH", "BUFFERDIST", "MAXCOSTDIST",
-                 "MAXEUCDIST", "OUTPUTFORMODELBUILDER", "LMCUSTSETTINGS"]
-    for item in lm_inputs:
-        logFile.write(item + " : " + str(conf_dict[item]) + "\n")
-    logFile.write("\n")
 
 
 def write_log(string):
