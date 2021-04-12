@@ -760,38 +760,6 @@ def run_analysis():
                                       lm_env.OUTPUTFORMODELBUILDER)
 
 
-def read_lm_params(proj_dir):
-    """Read Linkage Pathways input parameters from log file."""
-    # Get log file for last LM run
-    spath = os.path.join(proj_dir, "run_history", "log",
-                         "*_Linkage Mapper.txt")
-    entries = sorted(glob.glob(spath), key=os.path.getctime, reverse=True)
-    last_lm_log = next(iter(entries or []), None)
-    if not last_lm_log:
-        raise AppError("ERROR: Log file for last Linkage Mapper run not "
-                       "found. Please ensure Linkage Mapper is run "
-                       "for this project before running Linkage Priority.")
-
-    # Read parameters section from file and turn into tuple for passing
-    parms = ""
-    with open(last_lm_log) as log_file:
-        for line in log_file:
-            if line[0:13] == "Parameters:\t[":
-                parms = line[13:len(line) - 3].replace("\\\\", "\\")
-                break
-    if parms == "":
-        raise AppError("ERROR: Log file for last Linkage Mapper run does not "
-                       "contain a Parameters line")
-
-    return tuple(parms.replace("'", "").split(", "))
-
-
-def get_lm_params(argv):
-    """Get settings from Linkage Pathways inputs."""
-    lm_params = read_lm_params(argv[1])  # Pass in project dir
-    argv.append(lm_params[17])  # Get CWDTHRESH
-
-
 def log_setup():
     """Set up Linkage Mapper logging."""
     lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR,
@@ -806,7 +774,6 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv  # Get parameters from ArcGIS tool dialog
     try:
-        get_lm_params(argv)
         lm_env.configure(lm_env.TOOL_LP, argv)
         lm_util.gprint("\nLinkage Priority Version " + lm_env.releaseNum)
         lm_util.check_project_dir()

@@ -7,6 +7,7 @@ pairs specified in linkTable and cwd layers
 
 """
 
+import json
 from os import path
 import time
 
@@ -19,6 +20,13 @@ import lm_util as lu
 _SCRIPT_NAME = "s5_calcLccs.py"
 
 gprint = lu.gprint
+
+
+def save_parameters():
+    """Save parameters required for other tools."""
+    parameters = {"CWDTHRESH": cfg.CWDTHRESH}
+    with open(cfg.LM_PASSFILE, 'w') as params_file:
+        json.dump(parameters, params_file)
 
 
 def STEP5_calc_lccs():
@@ -422,6 +430,7 @@ def calc_lccs(normalize):
                               'for truncated corridor raster')
             lu.build_stats(truncRaster)
 
+        save_parameters()
         if cfg.OUTPUTFORMODELBUILDER:
             arcpy.CopyFeatures_management(cfg.COREFC, cfg.OUTPUTFORMODELBUILDER)
 
