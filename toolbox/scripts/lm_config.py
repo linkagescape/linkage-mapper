@@ -8,6 +8,7 @@ Assigns input parameters from ToolBox to variables, and sets constants.
 
 from os import path
 import imp
+import json
 
 import arcpy
 
@@ -59,6 +60,7 @@ def config_global(config, arg):
     config.ARCSCRATCHDIR = path.join(config.SCRATCHDIR, "arcscratch")
     config.PREFIX = path.basename(proj_dir)
     config.DATAPASSDIR = path.join(proj_dir, "datapass")
+    config.LM_PASSFILE = path.join(config.DATAPASSDIR, "lm_param.json")
     config.CWDADJFILE = path.join(config.DATAPASSDIR, "cwdAdj.csv")
     config.EUCADJFILE = path.join(config.DATAPASSDIR, "eucAdj.csv")
     config.OUTPUTDIR = path.join(proj_dir, "output")
@@ -273,6 +275,17 @@ def config_climate(config, arg):
     config_lm(config, arg)
 
 
+def get_cwdthresh(lm_passfile):
+    """Get CWDTHRESH from Linkage Pathways model run."""
+    try:
+        with open(lm_passfile, 'r') as params_file:
+            settings = json.load(params_file)
+    except FileNotFoundError:
+        raise RuntimeError('Linkage Pathways parameters file not found. '
+                           'Try re-running Linkage Pathways.')
+    return settings['CWDTHRESH']
+
+
 def config_lp(config, arg):
     """Configure global variables for Linkage Priority tool."""
     # Model Inputs
@@ -339,7 +352,7 @@ def config_lp(config, arg):
 
     # Settings from Linkage Pathways
     # ------------------------------
-    config.CWDTHRESH = int(arg[39])
+    config.CWDTHRESH = get_cwdthresh(config.LM_PASSFILE)
 
     #  Custom settings
     # ----------------
