@@ -1133,7 +1133,8 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('*'*70 + '\n')
         logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
         logFile.write('Start time:\t%s \n' % (timeNow))
-        logFile.write('Parameters:\t%s \n\n' % (inParameters))
+        logFile.write('Parameters:\t%s \n\n' %
+                      (', '.join([str(item) for item in inParameters[1:]])))
     logFile.close()
     dashline()
     gprint('A record of run settings and messages can be found in your '

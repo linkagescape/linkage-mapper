@@ -760,10 +760,10 @@ def run_analysis():
                                       lm_env.OUTPUTFORMODELBUILDER)
 
 
-def log_setup():
+def log_setup(argv):
     """Set up Linkage Mapper logging."""
     lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR,
-                                                 lm_env.TOOL, lm_env.PARAMS)
+                                                 lm_env.TOOL, argv)
     lm_util.write_custom_to_log(lm_env.LPCUSTSETTINGS_IN)
 
 
@@ -777,7 +777,7 @@ def main(argv=None):
         lm_env.configure(lm_env.TOOL_LP, argv)
         lm_util.gprint("\nLinkage Priority Version " + lm_env.releaseNum)
         lm_util.check_project_dir()
-        log_setup()
+        log_setup(argv)
         run_analysis()
     except AppError as err:
         lm_util.gprint(err.message)
