@@ -43,8 +43,7 @@ def circuitscape_master(argv=None):
     try:
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
-        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
-                                           cfg.PARAMS)
+        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, argv)
 
         if cfg.CSPATH is None:
             lu.raise_error("Cannot find an installation of Circuitscape"

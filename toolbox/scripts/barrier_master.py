@@ -32,8 +32,7 @@ def bar_master(argv=None):
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
 
-        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
-                                             cfg.PARAMS)
+        cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL, argv)
 
         lu.print_drive_warning()
 
