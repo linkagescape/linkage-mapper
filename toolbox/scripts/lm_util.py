@@ -1128,7 +1128,6 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('*'*70 + '\n')
         logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
         logFile.write('Start time:\t%s \n' % (timeNow))
-        logFile.write('Parameters:\t%s \n\n' % (inParameters))
         logFile.write('Parameters: \n')
 
         if toolName == "Linkage Mapper":
@@ -1141,11 +1140,10 @@ def create_log_file(messageDir, toolName, inParameters):
             inputs = cfg.BM_INPUTS
         elif toolName == "Circuitscape":
             inputs = cfg.CS_INPUTS
-        else:
-            raise RuntimeError('Undefined tool to configure')
+
         inParameters= inParameters.strip('][').split(', ')
-        for nm_idx, param in enumerate(list(inParameters)):
-            logFile.write(str(inputs[nm_idx]) + " : " + str(param) + "\n")
+        for inpt, param in zip(inputs, inParameters[1:]):
+            logFile.write("{} : {}\n".format(inpt, param))
         logFile.write("\n")
 
     logFile.close()
