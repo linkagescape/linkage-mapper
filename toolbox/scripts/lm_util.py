@@ -1120,29 +1120,30 @@ def gprint(string):
     except Exception:
         pass
 
-def create_log_file(messageDir, toolName, inParameters):
-    ft = tuple(time.localtime())
-    timeNow = time.ctime()
-    fileName = ('%s_%s_%s_%s%s_%s.txt' % (ft[0], ft[1], ft[2], ft[3], ft[4], toolName))
-    filePath = os.path.join(messageDir,fileName)
-    try:
-        logFile=open(filePath,'a')
-    except Exception:
-        logFile=open(filePath,'w')
-    if inParameters is not None:
-        logFile.write('*'*70 + '\n')
-        logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
-        logFile.write('Start time:\t%s \n' % (timeNow))
-        logFile.write('Parameters:\t%s \n\n' %
-                      (', '.join([str(item) for item in inParameters[1:]])))
-    logFile.close()
+
+def create_log_file(message_dir, tool_name, in_parameters):
+    """Create log file for model run."""
+    start_time = dt.now()
+    log_file = os.path.join(
+        message_dir,
+        ''.join([start_time.strftime("%Y_%m_%d_%H%M_"), tool_name, ".txt"]))
+
+    with open(log_file, 'w') as lfile:
+        lfile.write('*'*70 + '\n')
+        lfile.write('Linkage Mapper log file: %s \n\n' % (tool_name))
+        lfile.write('Start time:\t%s \n' % (
+            start_time.strftime("%H%M %Y-%m-%d")))
+        lfile.write('Parameters:\t%s \n\n' %
+                    (', '.join([str(item) for item in in_parameters[1:]])))
+
     dashline()
     gprint('A record of run settings and messages can be found in your '
            'log directory:')
     gprint(cfg.MESSAGEDIR)
     dashline(2)
 
-    return filePath
+    return log_file
+
 
 def write_log(string):
     try:
