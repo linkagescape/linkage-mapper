@@ -1128,21 +1128,9 @@ def create_log_file(messageDir, toolName, inParameters):
         logFile.write('*'*70 + '\n')
         logFile.write('Linkage Mapper log file: %s \n\n' % (toolName))
         logFile.write('Start time:\t%s \n' % (timeNow))
-        logFile.write('Parameters: \n')
-
-        if toolName == "Linkage Mapper":
-            inputs = cfg.LM_INPUTS
-        elif toolName == "Climate Linkage Mapper":
-            inputs = cfg.CC_INPUTS
-        elif toolName == "Linkage Priority":
-            inputs = cfg.LP_INPUTS
-        elif toolName == "Barrier mapper":
-            inputs = cfg.BM_INPUTS
-        elif toolName == "Circuitscape":
-            inputs = cfg.CS_INPUTS
-
-        inParameters= inParameters.strip('][').split(', ')
-        for inpt, param in zip(inputs, inParameters[1:]):
+        logFile.write('Parameters:\t%s \n\n' % (inParameters))
+        inParameters = inParameters.strip('][').split(', ')
+        for inpt, param in zip(cfg.inputs, inParameters[1:]):
             logFile.write("{} : {}\n".format(inpt, param))
         logFile.write("\n")
 

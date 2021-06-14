@@ -403,9 +403,9 @@ class Configure(object):
     TOOL_CS = 'Circuitscape'
 
     LM_INPUTS = ["PROJECT DIR", "CORE LAYER", "CORE FIELD", "RESISTANCE LAYER",
-                 "STEP1", "STEP2", "S2ADJMETH_CW", "S2ADJMETH_EU", "S2EUCDISTFILE", "STEP3",
-                 "S3DROPLCCS", "STEP4", "S4MAXNN", "S4DISTTYPE_CW", "S4CONNECT", "STEP5",
-                 "WRITETRUNCRASTER", "CWDTHRESH", "BUFFERDIST", "MAXCOSTDIST",
+                 "STEP1", "STEP2", "S2ADJMETHOD", "S2EUCDISTFILE", "STEP3",
+                 "S3DROPLCCS", "STEP4", "S4MAXNN", "S4DISTTYPE", "S4CONNECT", "STEP5",
+                 "CWDTHRESH", "WRITETRUNCRASTER", "CWDTHRESH", "BUFFERDIST", "MAXCOSTDIST",
                  "MAXEUCDIST", "OUTPUTFORMODELBUILDER", "LMCUSTSETTINGS"]
     CC_INPUTS = ["PROJECT DIR", "CORE LAYER", "CORE FIELD", "CLIMATE LAYER",
                  "RESISTANCE LAYER", "GRASS GIS FOLDER", "MINEUCDIST", "MAXEUCDIST",
@@ -428,6 +428,7 @@ class Configure(object):
         arcpy.CheckOutExtension("Spatial")
         arcpy.env.overwriteOutput = True
         self.lm_configured = False
+        self.inputs = False
 
     def configure(self, tool, arg):
         """Assign variables for Configure class."""
@@ -435,15 +436,19 @@ class Configure(object):
 
         if tool == Configure.TOOL_LM:
             self.lm_configured = config_lm(self, arg)
-
+            self.inputs = self.LM_INPUTS
         elif tool == Configure.TOOL_CC:
             config_climate(self, arg)
+            self.inputs = self.CC_INPUTS
         elif tool == Configure.TOOL_LP:
             config_lp(self, arg)
+            self.inputs = self.LP_INPUTS
         elif tool == Configure.TOOL_BM:
             config_barrier(self, arg)
+            self.inputs = self.BM_INPUTS
         elif tool == Configure.TOOL_CS:
             config_circuitscape(self, arg)
+            self.inputs = self.CS_INPUTS
         else:
             raise RuntimeError('Undefined tool to configure')
         self.TOOL = tool
