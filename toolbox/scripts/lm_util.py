@@ -1277,25 +1277,29 @@ def write_link_table(linktable, outlinkTableFile, *inLinkTableFile):
             outFile.write("\n# Minimum Euclidean Corridor Distance: "
                            + str(cfg.MINEUCDIST))
 
-
         elif cfg.TOOL == cfg.TOOL_CS:
-            outFile.write("\n# Pinchpoints Analyzed: "
-                           + str(cfg.DOPINCH))
-            outFile.write("\n# Resistance Raster: " + cfg.RESRAST)
-            outFile.write("\n# CWD Cutoff Distance: "
-                           + str(cfg.CWDCUTOFF))
-            outFile.write("\n# Resistance Raster Values Squared for "
-                            "Circuitscape Analyses: "+ str(cfg.SQUARERESISTANCES))
-            outFile.write("\n# Network Centrality Analyzed: "
-                          + str(cfg.DOCENTRALITY))
-            outFile.write("\n# Core Area Feature Class: " + cfg.COREFC)
+            def write_core_info():
+                outFile.write("\n# Core Area Feature Class: " + cfg.COREFC)
+                outFile.write("\n# Core Area Field Name: " + cfg.COREFN)
 
-            outFile.write("\n# Core Area Field Name: " + cfg.COREFN)
+            if cfg.DOCENTRALITY:
+                outFile.write("\n# Network Centrality Analyzed")
+                write_core_info()
+
+            if cfg.DOPINCH:
+                outFile.write("\n# Pinchpoints Analyzed")
+                write_core_info()
+                outFile.write("\n# Resistance Raster: " + cfg.RESRAST)
+                outFile.write("\n# CWD Cutoff Distance: "
+                              + str(cfg.CWDCUTOFF))
+                outFile.write("\n# Resistance Raster Values Squared for "
+                              "Circuitscape Analyses: "
+                              + str(cfg.SQUARERESISTANCES))
+
             FN = str(inLinkTableFile)
             FN = FN.replace("('", "")
             FN = FN.replace("',)", "")
             outFile.write("\n# Link Data Derived from: " + FN)
-
 
         outFile.close()
     except arcpy.ExecuteError:
