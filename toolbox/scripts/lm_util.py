@@ -14,6 +14,7 @@ import gc
 import ctypes
 import locale
 from lm_retry_decorator import Retry
+import platform
 
 
 import numpy as npy
@@ -1115,6 +1116,23 @@ def gprint(string):
         pass
 
 
+def process_info():
+    opr_sys = platform.platform()
+    sys_processor = platform.processor()
+    arc_version = arcpy.GetInstallInfo("desktop")['Version']
+    corelayer = arcpy.Describe(cfg.COREFC).SpatialReference.name
+    numcores = get_core_list(cfg.COREFC, cfg.COREFN)
+    reslayer = arcpy.Describe(cfg.RESRAST_IN)
+    return 'System and data information' + '\n'+\
+           'Operating system :  ' + opr_sys + '\n'+\
+           'Precessor type :  ' + sys_processor + '\n'+\
+           'Arc version :  ' + str(arc_version) + '\n' +\
+           'Coordinate system of core layer : ' + corelayer + '\n' +\
+            'Number of cores :  ' + str(numcores.shape[0]) + '\n'+\
+           'Coordinate system of resistance layer  : ' + reslayer.SpatialReference.name + '\n'+\
+           'Cell size & units :  ' + str(reslayer.meanCellHeight) + ' & ' + reslayer.SpatialReference.linearUnitName +'\n'+\
+           'Resistance layer size (width, height) :  ' + str(reslayer.width) +', '+ str(reslayer.height) + '\n'
+
 def create_log_file(messageDir, toolName, inParameters):
     ft = tuple(time.localtime())
     timeNow = time.ctime()
@@ -1133,7 +1151,8 @@ def create_log_file(messageDir, toolName, inParameters):
         for inpt, param in zip(cfg.inputs, inParameters[1:]):
             logFile.write("{} : {}\n".format(inpt, param))
         logFile.write("\n")
-
+        logFile.write(process_info())
+        logFile.write("\n")
     logFile.close()
     dashline()
     gprint('A record of run settings and messages can be found in your '
