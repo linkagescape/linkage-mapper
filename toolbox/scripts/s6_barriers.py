@@ -3,8 +3,7 @@
 """Detect influential barriers given CWD calculations from Step 3.
 
 Reguired Software:
-ArcGIS 10.x with Spatial Analyst extension
-Python 2.6
+ArcGIS Desktop 10.3+ or ArcGIS Pro with Spatial Analyst extension
 Numpy
 """
 
@@ -76,7 +75,7 @@ def step6_calc_barriers():
         # set the analysis extent and cell size to that of the resistance
         # surface
         arcpy.env.extent = cfg.RESRAST
-        arcpy.env.cellSize = cfg.RESRAST
+        arcpy.env.cellSize = arcpy.Describe(cfg.RESRAST).MeanCellHeight
         arcpy.env.snapRaster = cfg.RESRAST
         spatialref = arcpy.Describe(cfg.RESRAST).spatialReference
         map_units = (str(spatialref.linearUnitName)).lower()
@@ -86,7 +85,7 @@ def step6_calc_barriers():
         if (float(arcpy.env.cellSize) > start_radius
                 or start_radius > end_radius):
             msg = ('Error: minimum detection radius must be greater than '
-                   'cell size (' + str(arcpy.env.cellSize) +
+                   'cell size (' + arcpy.env.cellSize +
                    ') \nand less than or equal to maximum detection radius.')
             lu.raise_error(msg)
 
@@ -369,16 +368,21 @@ def step6_calc_barriers():
                                     out_con.save(tmp_mosaic_ras_trim)
 
                             else:
-                                raster_string = ('"' + barrier_ras + ";" +
-                                                 last_mosaic_ras + '"')
+                                in_rasters = (";".join([barrier_ras,
+                                                        last_mosaic_ras]))
 
                                 @Retry(10)
                                 def mosaic_to_new():
                                     """Mosaic to new raster."""
                                     arcpy.MosaicToNewRaster_management(
-                                        raster_string, mosaic_dir, mos_fn, "",
-                                        "32_BIT_FLOAT", arcpy.env.cellSize,
-                                        "1", "MAXIMUM", "MATCH")
+                                        input_rasters=in_rasters,
+                                        output_location=mosaic_dir,
+                                        raster_dataset_name_with_extension\
+                                        =mos_fn,
+                                        pixel_type="32_BIT_FLOAT",
+                                        cellsize=arcpy.env.cellSize,
+                                        number_of_bands="1",
+                                        mosaic_method="MAXIMUM")
                                 mosaic_to_new()
 
                         if link_loop > 1:  # Clean up from previous loop
@@ -429,19 +433,21 @@ def step6_calc_barriers():
                                         out_con.save(tmp_mosaic_ras_pct)
                                     sum_barriers()
                                 else:
-                                    raster_string = ('"' + barrier_ras_pct
-                                                     + ";"
-                                                     + last_mosaic_ras_pct
-                                                     + '"')
+                                    in_rasters = (";".join([barrier_ras_pct,
+                                                  last_mosaic_ras_pct]))
 
                                     @Retry(10)
                                     def max_barriers():
                                         """Get max barriers."""
                                         arcpy.MosaicToNewRaster_management(
-                                            raster_string, mosaic_dir_pct,
-                                            mos_pct_fn, "", "32_BIT_FLOAT",
-                                            arcpy.env.cellSize, "1",
-                                            "MAXIMUM", "MATCH")
+                                            input_rasters=in_rasters,
+                                            output_location=mosaic_dir_pct,
+                                            raster_dataset_name_with_extension
+                                            =mos_pct_fn,
+                                            pixel_type="32_BIT_FLOAT",
+                                            cellsize=arcpy.env.cellSize,
+                                            number_of_bands="1",
+                                            mosaic_method="MAXIMUM")
                                     max_barriers()
 
                             if link_loop > 1:  # Clean up from previous loop

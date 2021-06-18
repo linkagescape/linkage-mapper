@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 """Upgrade v1.x logfile to v2.0 logfile."""
 
 import os
@@ -53,19 +51,21 @@ def update_params(param_line):
     return "{}{}".format(pline_heading, lm_arg)
 
 
-def main(proj_name=None):
+def main(argv=None):
     """Upgrade v1.x logfile to v2.0 logfile."""
-    if proj_name is None:
-        proj_name = sys.argv[1]
+    if argv is None:
+        argv = sys.argv  # Get parameters from ArcGIS tool dialog
+
+    proj_dir = argv[1]
 
     try:
-        last_lm_log = get_log_file(proj_name)
+        last_lm_log = get_log_file(proj_dir)
         new_log_file = last_lm_log.replace("_Linkage", FILE_PREFIX)
 
         lines = open(last_lm_log).read().splitlines()
         lines[4] = update_params(lines[4])
         open(new_log_file, 'w').write('\n'.join(lines))
-    except LogFileException, err:
+    except LogFileException as err:
         arcpy.AddError(err)
     else:
         arcpy.AddMessage(

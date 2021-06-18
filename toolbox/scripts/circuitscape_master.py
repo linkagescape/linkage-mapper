@@ -1,11 +1,9 @@
-#!/usr/bin/env python2
 # Author: Brad McRae
 
 """Master script for circuitscape analysis in linkage mapper.
 
 Reguired Software:
-ArcGIS 10 with Spatial Analyst extension
-Python 2.6
+ArcGIS Desktop 10.3+ or ArcGIS Pro with Spatial Analyst extension
 Numpy
 
 """

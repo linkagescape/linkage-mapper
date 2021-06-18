@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 """Master script for barrier analysis in linkage mapper.
 
 Reguired Software:

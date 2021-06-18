@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 """Restore for maximum return of investment (ROI).
 
 Script to iteratively run linkage mapper and barrier mapper tools restoring
@@ -26,64 +24,67 @@ _SCRIPT_NAME = os.path.basename(__file__)
 arcpy.CheckOutExtension("spatial")
 
 
-def main():
+def main(argv=None):
     """Iterate over LM, BM, and restoration tasks."""
+    if argv is None:
+        argv = sys.argv  # Get parameters from ArcGIS tool dialog
+
+    start_time = time.clock()
+
     # USER SETTINGS ######################################################
 
     # Restoration Settings
     # ALL input data must be in the same projection
-    start_time = time.clock()
 
     # Set to True to restore highest ROI. Set to False to restore strongest
     # barrier
-    restore_max_roi = False
+    restore_max_roi = argv[1]
 
     # Resistance value of restored habitat.  Must be 1 or greater.
-    restored_resistance_val = 1
+    restored_resistance_val = argv[2]
 
     # No spaces or special chars in paths or gdb names
-    restoration_data_gdb = ("C:\\barrierClassAnalysis\\"
-                            "RestorationINPUTS_July2013.gdb")
+    restoration_data_gdb = argv[3]
 
     # No spaces in path, avoid using dropbox or network drive
     # Project directories will be created in this (iter1, iter2...) as will an
     # output geodatabase
-    output_dir = "C:\\barrierClassAnalysis\\output"
+    output_dir = argv[4]
 
     # Resistance raster. Should be in input GDB
-    resistance_ras = "URWA_resis"
+    resistance_ras = argv[5]
     # Core area feature class. Should be in input GDB 'URWA_HCAs_Doug_Grant'
-    core_fc = 'URWA_HCAs_Doug_Grant'
+    core_fc = argv[6]
 
-    core_fn = 'HCA_ID'  # Core area field name
+    core_fn = argv[7]  # Core area field name
 
-    radius = 450  # Restoration radius in meters
-    iterations = 13  # Number of restorations to perform
+    radius = argv[8]   # Restoration radius in meters
+    iterations = argv[9]  # Number of restorations to perform
 
     # If less than this proportion of ag in circle, don't consider restoring
     # circle
-    min_ag_threshold = 0.75
+    min_ag_threshold = argv[10]
 
     # Don't consider barriers below this improvement score (average improvement
     # per meter diameter restored)
-    min_improvement_val = 0
+    min_improvement_val = argv[11]
 
     # Average per-m2 parcel cost per pixel. Snapped to resistance raster.
-    parcel_cost_ras = 'DougGrantParcelCost_m2_projected_90m'
+    parcel_cost_ras = argv[12]
 
     # Right now this is just a raster with all pixels set to 0.113174
-    restoration_cost_ras = 'restCostPer_m2'
+    restoration_cost_ras = argv[13]
 
-    ag_ras = "ARESmaskp_projected"  # 1=Ag, 0=Not Ag
+    ag_ras = argv[14]   # 1=Ag, 0=Not Ag
 
     # Some restorations benefit multiple corridors.
     # 'Maximum' takes the greatest improvement across core area pairs
     # 'Sum' adds improvement scores acreoss all pairs.
-    barrier_combine_method = 'Maximum'
+    barrier_combine_method = argv[15]
 
     # Use cwd_thresh = None for no threshold. Use cwd_thresh = X to not
     # consider restorations more than X map units away from each core area.
-    cwd_thresh = None
+    cwd_thresh = argv[16]
 
     # END USER SETTINGS ######################################################
 
@@ -232,7 +233,6 @@ def main():
                     'true', do_step_5, 'true', '200000', '10000', '#', '#',
                     '#', '#')
             gprint('Running ' + str(argv))
-            cfg.lm_configured = False
             lm_master.lm_master(argv)
             do_step_1 = 'false'  # Can skip for future iterations
             do_step_2 = 'false'  # Can skip for future iterations
@@ -343,10 +343,9 @@ def main():
             out_calc.save(total_roi_ras)
             lu.build_stats(total_roi_ras)
 
-            max_barrier = arcpy.GetRasterProperties_management(
-                candidate_barrier_ras, "MAXIMUM")
-            gprint('Maximum barrier improvement score: '
-                   + str(max_barrier.getOutput(0)))
+            max_barrier = float(arcpy.GetRasterProperties_management(
+                candidate_barrier_ras, "MAXIMUM").getOutput(0))
+            gprint('Maximum barrier improvement score: ' + str(max_barrier))
             if max_barrier < 0:
                 arcpy.AddWarning("\nNo barriers found that meet CWD or Ag "
                                  "threshold criteria.")
@@ -384,8 +383,7 @@ def main():
                 gprint('Choosing circle with maximum BARRIER IMPROVEMENT SCORE'
                        ' to restore')
                 out_con = arcpy.sa.Con(
-                    (arcpy.sa.Raster(candidate_barrier_ras) >=
-                     float(max_barrier.getOutput(0))),
+                    (arcpy.sa.Raster(candidate_barrier_ras) >= max_barrier),
                     candidate_barrier_ras)
                 max_barrier_ras = os.path.join(output_gdb, 'maxBarrierRaster')
                 out_con.save(max_barrier_ras)
@@ -421,15 +419,16 @@ def main():
 
             arcpy.AddField_management(out_point, "restorationNumber", "SHORT")
             arcpy.CalculateField_management(out_point, "restorationNumber",
-                                            cur_iter)
+                                            cur_iter, "PYTHON_9.3")
             arcpy.AddField_management(out_point, "radius", "DOUBLE")
-            arcpy.CalculateField_management(out_point, "radius", radius)
+            arcpy.CalculateField_management(out_point, "radius", radius,
+                                            "PYTHON_9.3")
             arcpy.AddField_management(out_point, "barrierScore_per_m",
                                       "DOUBLE")
             arcpy.CalculateField_management(
                 out_point, "barrierScore_per_m",
                 "(float(!barrierScore!) / (!radius! * 2))",
-                "PYTHON")
+                "PYTHON_9.3")
 
             gprint('\nCreating restoration circles')
             if restore_max_roi:

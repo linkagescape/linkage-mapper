@@ -8,7 +8,13 @@ import subprocess
 from datetime import datetime as dt
 import time
 import traceback
-import ConfigParser
+
+# Support configparser in Python 2 and 3
+try:
+    from configparser import RawConfigParser  # Python 3
+except ImportError:
+    from ConfigParser import RawConfigParser  # Python 2
+
 import shutil
 import gc
 import ctypes
@@ -237,14 +243,14 @@ def get_core_list(coreFC, coreFN):
         # Get core data into numpy array
         coreList = npy.zeros((1, 2))
         cur = arcpy.SearchCursor(coreFC)
-        row = cur.next()
+        row = next(cur)
         i = 0
         while row:
             if i > 0:
                 coreList = npy.append(coreList,  npy.zeros((1, 2)), axis=0)
             coreList[i, 0] = row.getValue(coreFN)
             coreList[i, 1] = row.getValue(coreFN)
-            row = cur.next()
+            row = next(cur)
             i = i + 1
 
         del cur, row
@@ -298,7 +304,7 @@ def get_core_targets(core, linktable):
 def start_time():
     """Print and return start time."""
     start_time = dt.now()
-    print "Start time: {}".format(start_time.strftime("%m/%d/%y %H:%M:%S"))
+    print("Start time: {}".format(start_time.strftime("%m/%d/%y %H:%M:%S")))
     return start_time
 
 
@@ -313,9 +319,9 @@ def run_time(stime):
     """Print program execution time when running from script."""
     etime = dt.now()
     hours, minutes, seconds = s2hhmmss((etime - stime).total_seconds())
-    print "End time: {}".format(etime.strftime("%m/%d/%y %H:%M:%S"))
-    print "Execution time: {} hrs {} mins {} seconds".format(
-        hours, minutes, seconds)
+    print("End time: {}".format(etime.strftime("%m/%d/%y %H:%M:%S")))
+    print("Execution time: {} hrs {} mins {} seconds".format(
+        hours, minutes, seconds))
 
 
 def elapsed_time(start_time):
@@ -487,11 +493,11 @@ def get_allocs_from_shift(workspace, alloc, alloc_sh):
                      'comb_ras.save(combine_ras)')
         while True:
             try:
-                exec statement
+                exec(statement)
             except Exception:
                 count, tryAgain = retry_arc_error(count, statement)
                 if not tryAgain:
-                    exec statement
+                    exec(statement)
             else:
                 break
         allocLookupTable = get_alloc_lookup_table(arcpy.env.workspace,
@@ -524,7 +530,7 @@ def get_alloc_lookup_table(workspace, combine_ras):
         appendRow = npy.zeros((1, 3), dtype="int32")
 
         rows = arcpy.SearchCursor(combine_ras)
-        row = rows.next()
+        row = next(rows)
         while row:
             alloc = row.getValue(allocFld)
             alloc_sh = row.getValue(allocFld_sh)
@@ -534,7 +540,7 @@ def get_alloc_lookup_table(workspace, combine_ras):
                 appendRow[0, 2] = alloc_sh
                 allocLookupTable = npy.append(allocLookupTable, appendRow,
                                               axis=0)
-            row = rows.next()
+            row = next(rows)
         del row
         del rows
 
@@ -555,7 +561,7 @@ def get_centroids(shapefile, field):
         xyCumArray = npy.zeros((0, 3), dtype="float32")
         xyArray = npy.zeros((1, 3), dtype="float32")
         rows = arcpy.SearchCursor(shapefile)
-        row = rows.next()
+        row = next(rows)
         while row:
             feat = row.shape
             center = feat.centroid
@@ -574,7 +580,7 @@ def get_centroids(shapefile, field):
             value = row.getValue(field)
             xyArray[0, 2] = int(value)
             xyCumArray = npy.append(xyCumArray, xyArray, axis=0)
-            row = rows.next()
+            row = next(rows)
         del row, rows
         pointArray = npy.append(pointArray, xyCumArray, axis=0)
 
@@ -639,10 +645,10 @@ def get_box_data(field_val, extent):
 def get_sel_ext_box_coords(feature, field_name, field_val):
     """Get coordinates of bounding box for a unique feature."""
     shp_field = arcpy.Describe(feature).shapeFieldName
-    search_row = arcpy.SearchCursor(
+    search_row = next(arcpy.SearchCursor(
         feature,
         where_clause="{} = {}".format(field_name, field_val),
-        fields=shp_field).next()
+        fields=shp_field))
     extent = search_row.getValue(shp_field).extent
     del search_row
     return get_box_data(field_val, extent)
@@ -736,47 +742,47 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
 
         arcpy.AddField_management(lcplineDslv, "Link_ID", "LONG", "5")
         arcpy.CalculateField_management(lcplineDslv, "Link_ID",
-                                     int(linktable[link, cfg.LTB_LINKID]),
-                                     "PYTHON_9.3")
+                                        int(linktable[link, cfg.LTB_LINKID]),
+                                        "PYTHON_9.3")
 
         linktypecode = linktable[link, cfg.LTB_LINKTYPE]
         activelink, linktypedesc = get_link_type_desc(linktypecode)
 
         arcpy.AddField_management(lcplineDslv, "Active", "SHORT")
         arcpy.CalculateField_management(lcplineDslv, "Active", activelink,
-                                     "PYTHON_9.3")
+                                        "PYTHON_9.3")
 
         arcpy.AddField_management(lcplineDslv, "Link_Info", "TEXT")
         arcpy.CalculateField_management(lcplineDslv, "Link_Info",
-                                         linktypedesc, "PYTHON_9.3")
+                                        linktypedesc, "PYTHON_9.3")
 
         arcpy.AddField_management(lcplineDslv, "From_Core", "LONG", "5")
         arcpy.CalculateField_management(lcplineDslv, "From_Core",
-                                         int(sourceCore), "PYTHON_9.3")
+                                        int(sourceCore), "PYTHON_9.3")
         arcpy.AddField_management(lcplineDslv, "To_Core", "LONG", "5")
         arcpy.CalculateField_management(lcplineDslv, "To_Core",
-                                         int(targetCore), "PYTHON_9.3")
+                                        int(targetCore), "PYTHON_9.3")
 
         arcpy.AddField_management(lcplineDslv, "Euc_Dist", "DOUBLE", "10",
                                    "2")
         arcpy.CalculateField_management(lcplineDslv, "Euc_Dist",
-                                     linktable[link, cfg.LTB_EUCDIST],
-                                     "PYTHON_9.3")
+                                        linktable[link, cfg.LTB_EUCDIST],
+                                        "PYTHON_9.3")
 
         arcpy.AddField_management(lcplineDslv, "CW_Dist", "DOUBLE", "10", "2")
         arcpy.CalculateField_management(lcplineDslv, "CW_Dist",
-                                     linktable[link, cfg.LTB_CWDIST],
-                                     "PYTHON_9.3")
+                                        linktable[link, cfg.LTB_CWDIST],
+                                        "PYTHON_9.3")
         arcpy.AddField_management(lcplineDslv, "LCP_Length", "DOUBLE", "10",
                                    "2")
         rows = arcpy.UpdateCursor(lcplineDslv)
-        row = rows.next()
+        row = next(rows)
         while row:
             feat = row.shape
             lcpLength = int(feat.length)
             row.setValue("LCP_Length", lcpLength)
             rows.updateRow(row)
-            row = rows.next()
+            row = next(rows)
         del row, rows
 
         try:
@@ -788,7 +794,7 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
         arcpy.AddField_management(lcplineDslv, "cwd2Euc_R", "DOUBLE", "10",
                                    "2")
         arcpy.CalculateField_management(lcplineDslv, "cwd2Euc_R", distRatio1,
-                                     "PYTHON_9.3")
+                                        "PYTHON_9.3")
 
         try:
             distRatio2 = (float(linktable[link, cfg.LTB_CWDIST])
@@ -799,7 +805,7 @@ def create_lcp_shapefile(ws,linktable, sourceCore, targetCore, lcpLoop):
         arcpy.AddField_management(lcplineDslv, "cwd2Path_R", "DOUBLE", "10",
                                    "2")
         arcpy.CalculateField_management(lcplineDslv, "cwd2Path_R", distRatio2,
-                                     "PYTHON_9.3")
+                                        "PYTHON_9.3")
 
         lcpLoop = lcpLoop + 1
         lcpShapefile = os.path.join(cfg.DATAPASSDIR, "lcpLines_s3.shp")
@@ -901,7 +907,7 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
             arcpy.AddField_management(lcpShapefile, "cwd2EffR_r", "FLOAT")
             arcpy.AddField_management(lcpShapefile, "CF_Central", "FLOAT") ###
         rows = arcpy.UpdateCursor(lcpShapefile)
-        row = rows.next()
+        row = next(rows)
         line = 0
         while row:
             linkid = row.getValue("Link_ID")
@@ -930,7 +936,7 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
                 "cwd2Euc_R")
             linkTableTemp[linktablerow, cfg.LTB_CWDPATHR] = row.getValue(
                 "cwd2Path_R")
-            row = rows.next()
+            row = next(rows)
             line = line + 1
         # delete cursor and row points to remove locks on the data
         del row, rows
@@ -1312,16 +1318,12 @@ def write_link_maps(linkTableFile, step):
         arcpy.env.workspace = cfg.OUTPUTDIR
         linktable = load_link_table(linkTableFile)
 
-        numLinks = linktable.shape[0]
-        arcpy.toolbox = "management"
-
         coresForLinework = "cores_for_linework.shp"
 
         # Preferred method to get geometric center
         pointArray = get_centroids(cfg.COREFC, cfg.COREFN)
 
         make_points(arcpy.env.workspace, pointArray, coresForLinework)
-        numLinks = linktable.shape[0]
 
         coreLinks = linktable
 
@@ -1351,8 +1353,10 @@ def write_link_maps(linkTableFile, step):
             ind = npy.lexsort((linkCoords[:, 2], linkCoords[:, 1]))
             linkCoords = linkCoords[ind]
 
+        numLinks = len(linkCoords)
+
         # Get core coordinates into linkCoords
-        for i in range(0, len(linkCoords)):
+        for i in range(0, numLinks):
             grp1 = linkCoords[i, 1]
             grp2 = linkCoords[i, 2]
 
@@ -1402,9 +1406,6 @@ def write_link_maps(linkTableFile, step):
         lineArray = arcpy.Array()
         pnt = arcpy.Point()
 
-        # linkCoords indices:
-        numLinks = len(linkCoords)
-
         #Open a cursor to insert rows into the shapefile.
         cur = arcpy.InsertCursor(coreLinksShapefile)
 
@@ -1412,14 +1413,14 @@ def write_link_maps(linkTableFile, step):
         for i in range(0, numLinks):
 
             #Set the X and Y coordinates for origin vertex.
-            pnt.x = linkCoords[i, 5]
-            pnt.y = linkCoords[i, 6]
+            pnt.X = linkCoords[i, 5]
+            pnt.Y = linkCoords[i, 6]
             #Insert it into the line array
             lineArray.add(pnt)
 
             #Set the X and Y coordinates for destination vertex
-            pnt.x = linkCoords[i, 7]
-            pnt.y = linkCoords[i, 8]
+            pnt.X = linkCoords[i, 7]
+            pnt.Y = linkCoords[i, 8]
             #Insert it into the line array
             lineArray.add(pnt)
 
@@ -1433,7 +1434,7 @@ def write_link_maps(linkTableFile, step):
 
         #Add attribute data to link shapefile
         rows = arcpy.UpdateCursor(coreLinksShapefile)
-        row = rows.next()
+        row = next(rows)
         line = 0
         while row:
             # linkCoords indices
@@ -1459,7 +1460,7 @@ def write_link_maps(linkTableFile, step):
             row.setValue("CF_Central", linkCoords[line, 12])
 
             rows.updateRow(row)
-            row = rows.next()
+            row = next(rows)
             line = line + 1
 
         del row, rows
@@ -1583,7 +1584,7 @@ def make_raster_paths(no_rast, base_dir, sub_dir):
     delete_dir(base_dir)
     try:
         os.makedirs(os.path.join(base_dir, sub_dir))
-        for dir_no in range(1, (no_rast / 100) + 1):
+        for dir_no in range(1, int((no_rast / 100) + 1)):
             os.mkdir(os.path.join(base_dir,
                                   ''.join([sub_dir, str(dir_no)])))
     except OSError:
@@ -1592,7 +1593,7 @@ def make_raster_paths(no_rast, base_dir, sub_dir):
 
 def rast_path(count, base_dir, sub_dir):
     """Return the path for the raster corresponding to its count."""
-    dir_count = count / 100
+    dir_count = int(count / 100)
     if dir_count > 0:
         rast_path = os.path.join(base_dir,
                                  ''.join([sub_dir, str(dir_count)]))
@@ -1608,7 +1609,7 @@ def get_cwd_path(core):
     return os.path.join(dir_path, fname)
 
 
-def get_focal_path(core,radius):
+def get_focal_path(core, radius):
     """Returns the path for the focal raster corresponding to a core area """
     dirCount = int(core / 100)
     focalDir1 = cfg.FOCALSUBDIR1_NM + str(radius)
@@ -1856,7 +1857,7 @@ def call_circuitscape(cspath, outConfigFile):
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             shell=True)
     while proc.poll() is None:
-        output = proc.stdout.readline()
+        output = proc.stdout.readline().decode()
 
         if 'Traceback' in output:
             gprint("\nCircuitscape failed.")
@@ -1870,7 +1871,7 @@ def call_circuitscape(cspath, outConfigFile):
             gprint("      " + output.replace("\r\n", ""))
 
     # Catch any output lost if process closes too quickly
-    output = proc.communicate()[0]
+    output = proc.communicate()[0].decode()
     for line in output.split('\r\n'):
         if 'Traceback' in line:
             gprint("\nCircuitscape failed.")
@@ -1890,26 +1891,32 @@ def call_circuitscape(cspath, outConfigFile):
 def rename_fields(FC):
     try:
         arcpy.AddField_management(FC, "cw_to_Euc_Dist_Ratio", "FLOAT")
-        arcpy.CalculateField_management(FC, "cw_to_Euc_Dist_Ratio","!cwd2Euc_R!", "PYTHON")
+        arcpy.CalculateField_management(FC, "cw_to_Euc_Dist_Ratio",
+                                        "!cwd2Euc_R!", "PYTHON_9.3")
         arcpy.DeleteField_management(FC, "cwd2Euc_R")
 
         fieldList = arcpy.ListFields(FC)
         for field in fieldList:
             if str(field.name) == "cwd2Path_R":
                 arcpy.AddField_management(FC, "cwd_to_Path_Length_Ratio", "FLOAT")
-                arcpy.CalculateField_management(FC, "cwd_to_Path_Length_Ratio","!cwd2Path_R!", "PYTHON")
+                arcpy.CalculateField_management(
+                    FC, "cwd_to_Path_Length_Ratio", "!cwd2Path_R!",
+                    "PYTHON_9.3")
                 arcpy.DeleteField_management(FC, "cwd2Path_R")
 
         arcpy.AddField_management(FC, "Current_Flow_Centrality", "FLOAT")
-        arcpy.CalculateField_management(FC, "Current_Flow_Centrality","!CF_Central!", "PYTHON")
+        arcpy.CalculateField_management(FC, "Current_Flow_Centrality",
+                                        "!CF_Central!", "PYTHON_9.3")
         arcpy.DeleteField_management(FC, "CF_Central")
 
         arcpy.AddField_management(FC, "Effective_Resistance", "FLOAT")
-        arcpy.CalculateField_management(FC, "Effective_Resistance","!Eff_Resist!", "PYTHON")
+        arcpy.CalculateField_management(FC, "Effective_Resistance",
+                                        "!Eff_Resist!", "PYTHON_9.3")
         arcpy.DeleteField_management(FC, "Eff_Resist")
 
         arcpy.AddField_management(FC, "cwd_to_Eff_Resist_Ratio", "FLOAT")
-        arcpy.CalculateField_management(FC, "cwd_to_Eff_Resist_Ratio","!cwd2EffR_r!", "PYTHON")
+        arcpy.CalculateField_management(FC, "cwd_to_Eff_Resist_Ratio",
+                                        "!cwd2EffR_r!", "PYTHON_9.3")
         arcpy.DeleteField_management(FC, "cwd2EffR_r")
 
     except arcpy.ExecuteError:
@@ -2006,7 +2013,7 @@ def check_cores(FC,FN):
             raise_error(msg)
 
         rows = arcpy.SearchCursor(FC)
-        row = rows.next()
+        row = next(rows)
         feat = row.shape
         center = str(feat.centroid)
         xy = center.split(" ")
@@ -2075,7 +2082,7 @@ def print_warnings():
     filename = tbinfo.split(", ")[0]
     filename = filename.rsplit("File ")[1]
 
-    if arcpy.GetMaxSeverity > 1:
+    if arcpy.GetMaxSeverity() > 1:
         msg = ("The following ArcGIS error is being reported "
                     "on line " + line + " of " + filename + ":")
         arcpy.AddWarning(msg)
@@ -2165,131 +2172,93 @@ def dashline(lspace=0):
 
 
 ############################################################################
-## Circuitscape Functions ##################################################
+# Circuitscape Functions ##################################################
 ############################################################################
 @Retry(5)
-def setCircuitscapeOptions():
-    """Sets default options for calling Circuitscape.
-
-    """
+def set_cs_options():
+    """Set default options for calling Circuitscape."""
     options = {}
-    options['data_type']='raster'
-    options['version']='unknown'
-    options['low_memory_mode']=False
-    options['scenario']='pairwise'
-    options['habitat_file']='(Browse for a habitat map file)'
-    options['habitat_map_is_resistances']=True
-    options['point_file']=('(Browse for file with '
-                          'locations of focal points or areas)')
-    options['point_file_contains_polygons']=True
-    options['connect_four_neighbors_only']=False
-    options['connect_using_avg_resistances']=True
-    options['use_polygons']=False
-    options['polygon_file']='(Browse for a short-circuit region file)'
-    options['source_file']='(Browse for a current source file)'
-    options['ground_file']='(Browse for a ground point file)'
-    options['ground_file_is_resistances']=True
-    options['use_unit_currents']=False
-    options['use_direct_grounds']=False
-    options['remove_src_or_gnd']='not entered'
-    options['output_file']='(Choose a base name for output files)'
-    options['write_cur_maps']=True
-    options['write_cum_cur_map_only']=True
-    options['log_transform_maps']=False
-    options['write_volt_maps']=False
-    options['solver']='cg+amg'
-    options['compress_grids']=False
-    options['print_timings']=False
-    options['use_mask']=False
-    options['mask_file']='None'
-    options['use_included_pairs']=False
-    options['included_pairs_file']='None'
-    options['use_variable_source_strengths']=False
-    options['variable_source_file']='None'
-    options['write_max_cur_maps']=False
-    options['set_focal_node_currents_to_zero']=True
-
+    options['data_type'] = 'raster'
+    options['version'] = 'unknown'
+    options['low_memory_mode'] = False
+    options['scenario'] = 'pairwise'
+    options['habitat_file'] = '(Browse for a habitat map file)'
+    options['habitat_map_is_resistances'] = True
+    options['point_file'] = ('(Browse for file with '
+                             'locations of focal points or areas)')
+    options['point_file_contains_polygons'] = True
+    options['connect_four_neighbors_only'] = False
+    options['connect_using_avg_resistances'] = True
+    options['use_polygons'] = False
+    options['polygon_file'] = '(Browse for a short-circuit region file)'
+    options['source_file'] = '(Browse for a current source file)'
+    options['ground_file'] = '(Browse for a ground point file)'
+    options['ground_file_is_resistances'] = True
+    options['use_unit_currents'] = False
+    options['use_direct_grounds'] = False
+    options['remove_src_or_gnd'] = 'not entered'
+    options['output_file'] = '(Choose a base name for output files)'
+    options['write_cur_maps'] = True
+    options['write_cum_cur_map_only'] = True
+    options['log_transform_maps'] = False
+    options['write_volt_maps'] = False
+    options['solver'] = 'cg+amg'
+    options['compress_grids'] = False
+    options['print_timings'] = False
+    options['use_mask'] = False
+    options['mask_file'] = 'None'
+    options['use_included_pairs'] = False
+    options['included_pairs_file'] = 'None'
+    options['use_variable_source_strengths'] = False
+    options['variable_source_file'] = 'None'
+    options['write_max_cur_maps'] = False
+    options['set_focal_node_currents_to_zero'] = True
     return options
 
-def writeCircuitscapeConfigFile(configFile, options):
-    """Creates a configuration file for calling Circuitscape.
 
-    """
-    config = ConfigParser.ConfigParser()
+def write_cs_cfg_file(config_file, options):
+    """Create a configuration file for calling Circuitscape."""
 
-    sections={}
-    section='Version'
-    sections['version']=section
+    config = RawConfigParser()
 
-    section='Connection scheme for raster habitat data'
-    sections['connect_four_neighbors_only']=section
-    sections['connect_using_avg_resistances']=section
+    def bld_config(sect, opts):
+        config.add_section(sect)
+        for opt in opts:
+            config.set(sect, opt, options[opt])
 
-    section='Short circuit regions (aka polygons)'
-    sections['use_polygons']=section
-    sections['polygon_file']=section
+    bld_config('Version',
+               ['version'])
+    bld_config('Connection scheme for raster habitat data',
+               ['connect_four_neighbors_only',
+                'connect_using_avg_resistances'])
+    bld_config('Short circuit regions (aka polygons)',
+               ['use_polygons', 'polygon_file'])
+    bld_config('Options for advanced mode',
+               ['source_file', 'ground_file', 'ground_file_is_resistances',
+                'use_unit_currents', 'use_direct_grounds',
+                'remove_src_or_gnd'])
+    bld_config('Calculation options',
+               ['solver', 'print_timings', 'low_memory_mode'])
+    bld_config('Output options',
+               ['output_file', 'write_cur_maps', 'write_cum_cur_map_only',
+                'log_transform_maps', 'write_volt_maps', 'compress_grids',
+                'write_max_cur_maps', 'set_focal_node_currents_to_zero'])
+    bld_config('Mask file',
+               ['use_mask', 'mask_file'])
+    bld_config('Options for pairwise and one-to-all and all-to-one modes',
+               ['use_included_pairs', 'included_pairs_file',
+                'point_file', 'point_file_contains_polygons'])
+    bld_config('Options for one-to-all and all-to-one modes',
+               ['use_variable_source_strengths', 'variable_source_file'])
+    bld_config('Habitat raster or graph',
+               ['habitat_file', 'habitat_map_is_resistances'])
+    bld_config('Circuitscape mode',
+               ['scenario', 'data_type'])
 
-    section='Options for advanced mode'
-    sections['source_file']=section
-    sections['ground_file']=section
-    sections['ground_file_is_resistances']=section
-    sections['use_unit_currents']=section
-    sections['use_direct_grounds']=section
-    sections['remove_src_or_gnd']=section
+    cfile = open(config_file, 'w')
+    config.write(cfile)
+    cfile.close()
 
-    section='Calculation options'
-    sections['solver']=section
-    sections['print_timings']=section
-    sections['low_memory_mode']=section
-
-    section='Output options'
-    sections['output_file']=section
-    sections['write_cur_maps']=section
-    sections['write_cum_cur_map_only']=section
-    sections['log_transform_maps']=section
-    sections['write_volt_maps']=section
-    sections['compress_grids']=section
-    sections['write_max_cur_maps']=section
-    sections['set_focal_node_currents_to_zero']=section
-
-    section='Mask file'
-    sections['use_mask']=section
-    sections['mask_file']=section
-
-    section='Options for pairwise and one-to-all and all-to-one modes'
-    sections['use_included_pairs']=section
-    sections['included_pairs_file']=section
-    sections['point_file']=section
-    sections['point_file_contains_polygons']=section
-
-    section='Options for one-to-all and all-to-one modes'
-    sections['use_variable_source_strengths']=section
-    sections['variable_source_file']=section
-
-    section='Habitat raster or graph'
-    sections['habitat_file']=section
-    sections['habitat_map_is_resistances']=section
-
-    section="Circuitscape mode"
-    sections['scenario']=section
-    sections['data_type']=section
-
-    if options['ground_file_is_resistances']=='not entered':
-        options['ground_file_is_resistances'] = False
-    if options['point_file_contains_polygons']=='not entered':
-        options['point_file_contains_polygons'] = False
-
-    for option in sections:
-        try:
-            config.add_section(sections[option])
-        except Exception:
-            pass
-    for option in sections:
-        config.set(sections[option], option, options[option])
-
-    f = open(configFile, 'w')
-    config.write(f)
-    f.close()
 
 def warn(string):
     arcpy.AddWarning(string)

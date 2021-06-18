@@ -1,11 +1,7 @@
-#!/usr/bin/env python2
-
 """Aggregates resistance rasters to coarser cell size using average resistance.
     Written by Brad McRae
 Reguired Software:
-ArcGIS 9.3 with Spatial Analyst extension (toolbox is Arc 10).
-Python 2.5
-
+ArcGIS Desktop 10.3+ or ArcGIS Pro with Spatial Analyst extension
 
 """
 
@@ -27,25 +23,28 @@ arcpy.env.overwriteOutput = True
 gprint = arcpy.AddMessage
 
 
-def raster_aggregator():
+def raster_aggregator(argv=None):
     """Main function
 
     Called by ArcMap with parameters or run from command line with parameters
     entered in script below.
 
     """
+    if argv is None:
+        argv = sys.argv  # Get parameters from ArcGIS tool dialog
+
     try:
 
-        OUTPUTDIR = sys.argv[1]  # Output directory
-        AG_FACTOR =  int(sys.argv[2])
-        METHOD = sys.argv[3]
-        SMOOTH = util.str2bool(sys.argv[4])
+        OUTPUTDIR = argv[1]  # Output directory
+        AG_FACTOR =  int(argv[2])
+        METHOD = argv[3]
+        SMOOTH = util.str2bool(argv[4])
         RESRAS = {}#list of resistance rasters
-        RESRAS[1] = sys.argv[5]
-        RESRAS[2] = sys.argv[6]
-        RESRAS[3] = sys.argv[7]
-        RESRAS[4] = sys.argv[8]
-        RESRAS[5] = sys.argv[9]
+        RESRAS[1] = argv[5]
+        RESRAS[2] = argv[6]
+        RESRAS[3] = argv[7]
+        RESRAS[4] = argv[8]
+        RESRAS[5] = argv[9]
 
         if AG_FACTOR < 2 or AG_FACTOR > 99:
             msg = ('ERROR: Cell factor must be between 2 and 99.')
@@ -128,7 +127,7 @@ def raise_geoproc_error(filename):
     for msg in range(0, arcpy.GetMessageCount() - 1):
         if arcpy.GetSeverity(msg) == 2:
             arcpy.AddReturnMessage(msg)
-        print arcpy.AddReturnMessage(msg)
+        print(arcpy.AddReturnMessage(msg))
     exit(0)
 
 

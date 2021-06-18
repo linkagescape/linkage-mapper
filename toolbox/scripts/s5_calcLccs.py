@@ -80,7 +80,7 @@ def calc_lccs(normalize):
         # set the analysis extent and cell size to that of the resistance
         # surface
         arcpy.env.extent = cfg.RESRAST
-        arcpy.env.cellSize = cfg.RESRAST
+        arcpy.env.cellSize = arcpy.Describe(cfg.RESRAST).MeanCellHeight
         arcpy.env.snapRaster = cfg.RESRAST
         arcpy.env.mask = cfg.RESRAST
 
@@ -177,11 +177,11 @@ def calc_lccs(normalize):
             count = 0
             while True:
                 try:
-                    exec statement
+                    exec(statement)
                 except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
                     if not tryAgain:
-                        exec statement
+                        exec(statement)
                 else: break
 
             if normalize:
@@ -216,18 +216,19 @@ def calc_lccs(normalize):
                 #If this is the first grid then copy rather than mosaic
                 arcpy.CopyRaster_management(lccNormRaster, mosaicRaster)
             else:
-
-                rasterString = '"'+lccNormRaster+";"+lastMosaicRaster+'"'
-                statement = ('arcpy.MosaicToNewRaster_management('
-                            'rasterString,mosaicDir,mosFN, "", '
-                            '"32_BIT_FLOAT", arcpy.env.cellSize, "1", "MINIMUM", '
-                            '"MATCH")')
+                statement = (
+                    'arcpy.MosaicToNewRaster_management('
+                    'input_rasters=";".join([lccNormRaster, '
+                    'lastMosaicRaster]), output_location=mosaicDir, '
+                    'raster_dataset_name_with_extension=mosFN, '
+                    'pixel_type="32_BIT_FLOAT", cellsize=arcpy.env.cellSize, '
+                    'number_of_bands="1", mosaic_method="MINIMUM")')
 
                 count = 0
                 while True:
                     try:
                         lu.write_log('Executing mosaic for link #'+str(linkId))
-                        exec statement
+                        exec(statement)
                         lu.write_log('Done with mosaic.')
                     except Exception:
                         count,tryAgain = lu.retry_arc_error(count,statement)
@@ -238,7 +239,7 @@ def calc_lccs(normalize):
                         lu.create_dir(mosaicDir)
                         mosaicRaster = path.join(mosaicDir,mosFN)
                         if not tryAgain:
-                            exec statement
+                            exec(statement)
                     else: break
             endTime = time.clock()
             processTime = round((endTime - start_time), 2)
@@ -314,10 +315,10 @@ def calc_lccs(normalize):
         count = 0
         while True:
             try:
-                exec statement
+                exec(statement)
             except Exception:
                 count,tryAgain = lu.retry_arc_error(count,statement)
-                if not tryAgain: exec statement
+                if not tryAgain: exec(statement)
             else: break
         # ---------------------------------------------------------------------
 
@@ -336,10 +337,10 @@ def calc_lccs(normalize):
             count = 0
             while True:
                 try:
-                    exec statement
+                    exec(statement)
                 except Exception:
                     count,tryAgain = lu.retry_arc_error(count,statement)
-                    if not tryAgain: exec statement
+                    if not tryAgain: exec(statement)
                 else: break
         # ---------------------------------------------------------------------
         # Check for unreasonably low minimum NLCC values

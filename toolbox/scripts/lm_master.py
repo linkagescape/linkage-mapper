@@ -1,11 +1,9 @@
-#!/usr/bin/env python2
 # Authors: Brad McRae and Darren Kavanagh
 
 """Master script for Linkage Lapper.
 
 Reguired Software:
-ArcGIS 9.3+ with Spatial Analyst extension
-Python 2.5+
+ArcGIS Desktop 10.3+ or ArcGIS Pro with Spatial Analyst extension
 Numpy
 
 """
@@ -35,7 +33,7 @@ def lm_master(argv=None):
 
     """
     # Setup global variables
-    if not cfg.lm_configured:
+    if cfg.TOOL != cfg.TOOL_CC:
         if argv is None:
             argv = sys.argv
         cfg.configure(cfg.TOOL_LM, argv)
@@ -196,6 +194,7 @@ def lm_master(argv=None):
         gprint(cfg.MESSAGEDIR)
         lu.dashline(2)
         lu.close_log_file()
+
 
 if __name__ == "__main__":
     lm_master()

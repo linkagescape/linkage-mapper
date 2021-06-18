@@ -3,8 +3,7 @@
 """Maps pinch points using Circuitscape given CWD calculations from
        s3_calcCwds.py.
 Reguired Software:
-ArcGIS 10 with Spatial Analyst extension
-Python 2.6
+ArcGIS Desktop 10.3+ or ArcGIS Pro with Spatial Analyst extension
 Numpy
 """
 
@@ -111,7 +110,7 @@ def STEP7_calc_centrality():
         CONFIGDIR = path.join(INCENTRALITYDIR, cfg.CIRCUITCONFIGDIR_NM)
 
         # Set Circuitscape options and write config file
-        options = lu.setCircuitscapeOptions()
+        options = lu.set_cs_options()
         options['data_type']='network'
         options['habitat_file'] = path.join(INCENTRALITYDIR,
                                             'Circuitscape_graph.txt')
@@ -122,7 +121,7 @@ def STEP7_calc_centrality():
         options['output_file'] = path.join(OUTCENTRALITYDIR, outputFN)
         configFN = 'Circuitscape_network.ini'
         outConfigFile = path.join(CONFIGDIR, configFN)
-        lu.writeCircuitscapeConfigFile(outConfigFile, options)
+        lu.write_cs_cfg_file(outConfigFile, options)
 
         delRows = npy.asarray(npy.where(linkTable[:,cfg.LTB_LINKTYPE] < 1))
         delRowsVector = npy.zeros((delRows.shape[1]), dtype="int32")

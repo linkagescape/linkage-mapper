@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # Author: Brad McRae
 
 from os import path
@@ -16,14 +15,17 @@ gprint = arcpy.AddMessage
 _SCRIPT_NAME = "clip_corridors"
 
 
-def clip_corridor():
+def clip_corridor(argv=None):
     """Truncates corridors at user-specified cutoff width in CWD units.
 
     """
+    if argv is None:
+        argv = sys.argv  # Get parameters from ArcGIS tool dialog
+
     try:
-        inRaster = sys.argv[1]
-        cutoffVal = sys.argv[2]
-        outputGDB = sys.argv[3]
+        inRaster = argv[1]
+        cutoffVal = argv[2]
+        outputGDB = argv[3]
 
         cutoffText = str(cutoffVal)
         if cutoffText[-6:] == '000000':
@@ -77,7 +79,7 @@ def exit_with_geoproc_error(filename):
     for msg in range(0, arcpy.GetMessageCount() - 1):
         if arcpy.GetSeverity(msg) == 2:
             arcpy.AddReturnMessage(msg)
-        print arcpy.AddReturnMessage(msg)
+        print(arcpy.AddReturnMessage(msg))
     exit(0)
 
 def exit_with_python_error(filename):

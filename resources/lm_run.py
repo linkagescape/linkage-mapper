@@ -1,5 +1,3 @@
-#!/usr/bin/env python2.5
-
 """Script to run Linkage Mapper"""
 import sys
 

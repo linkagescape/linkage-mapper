@@ -185,6 +185,7 @@ def start_grass_cmd(*args, **kwargs):
 
 def chk_stderr(stderr):
     """Check process for error and raises exception if one is found."""
+    stderr = stderr.decode()
     if 'ERROR:' in stderr:
         raise Exception("GRASSS ERROR: %s" % stderr[7:])
 
@@ -200,4 +201,4 @@ def write_grass_cmd(*args, **kwargs):
     stdin = kwargs['stdin']
     kwargs['stdin'] = grass.PIPE
     return_ps = start_grass_cmd(*args, **kwargs)
-    chk_stderr(return_ps.communicate(input=stdin)[1])
+    chk_stderr(return_ps.communicate(input=stdin.encode())[1])

@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # Authors: Darren Kavanagh and Brad McRae
 
 """Create linkages between core areas that fall along a climatic gradient.
@@ -6,9 +5,9 @@
 This tool is designed to create linkages between designated core areas that
 fall along a climatic gradient (e.g. temperature).
 
-When using ArcGIS Desktop this module is called from the Climate Linkage
-Mapper tool within the Linkage Mapper Toolkit. See Climate Linkage Mapper
-User Guide for more details.
+When using ArcGIS Desktop or ArcGIS Pro this module is called from the Climate
+Linkage Mapper tool within the Linkage Mapper toolbox. See the Climate Linkage
+Mapper User Guide for more details.
 
 Reguired Software:
 ArcGIS 10.x with Spatial Analyst extension
@@ -22,7 +21,7 @@ import csv
 import itertools
 import traceback
 
-import arcinfo  # Import arcinfo license. Needed before arcpy import.
+import arcinfo  # Import Advanced license. Needed before arcpy import.
 import arcpy
 
 from cc_config import cc_env
@@ -277,6 +276,9 @@ def limit_cores(pair_tbl, stats_tbl):
 
     # Add basic stats to distance table
     lm_util.gprint("Joining zonal statistics to pairings table")
+    arcpy.AddIndex_management(pair_vw, FR_COL, "fridx")
+    arcpy.AddIndex_management(pair_vw, TO_COL, "toidx")
+    arcpy.AddIndex_management(stats_vw, core_id, "coreidx")
     add_stats(stats_vw, core_id, "fr", pair_vw, TO_COL)
     add_stats(stats_vw, core_id, "to", pair_vw, FR_COL)
 
@@ -316,12 +318,6 @@ def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
                               "", "", "NULLABLE")
 
     # Join distance table to zonal stats table
-    arcpy.AddIndex_management(table_vw, FR_COL, "fridx", "NON_UNIQUE",
-                              "ASCENDING")
-    arcpy.AddIndex_management(table_vw, TO_COL, "toidx", "NON_UNIQUE",
-                              "ASCENDING")
-    arcpy.AddIndex_management(stats_vw, core_id, "coreidx", "UNIQUE",
-                              "ASCENDING")
     arcpy.AddJoin_management(table_vw, join_col, stats_vw, core_id)
 
     tbl_name = arcpy.Describe(table_vw).baseName
@@ -348,7 +344,7 @@ def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
 def process_pairings(pairings):
     """Limit core pairings based on distance inputs and create linkage table.
 
-    Requires ArcInfo license.
+    For ArcGIS Desktop users an Advanced license is required.
 
     """
     lm_util.gprint("\nLIMITING CORE PAIRS BASED ON INPUTED DISTANCES AND "
@@ -394,7 +390,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
     link_tbl, srow, srows = None, None, None
 
     try:
-        link_tbl = open(link_file, 'wb')
+        link_tbl = open(link_file, 'w')
         writer = csv.writer(link_tbl, delimiter=',')
         headings = ["# link", "coreId1", "coreId2", "cluster1", "cluster2",
                     "linkType", "eucDist", "lcDist", "eucAdj", "cwdAdj"]
@@ -444,7 +440,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
                 sort_fields=jtocore_fn + " A; NEAR_DIST A")
 
             # Process near table and output into a link table
-            srow = srows.next()
+            srow = next(srows)
             if srow:
                 core_list.add(int(frm_core))
                 while srow:
@@ -453,7 +449,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
                     writer.writerow([i, frm_core, to_coreid, -1, -1, 1,
                                      dist_value, -1, -1, -1])
                     core_list.add(to_coreid)
-                    srow = srows.next()
+                    srow = next(srows)
                     i += 1
 
     except Exception:
