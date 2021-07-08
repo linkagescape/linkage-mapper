@@ -8,6 +8,7 @@ import subprocess
 from datetime import datetime as dt
 import time
 import traceback
+import platform
 
 # Support configparser in Python 2 and 3
 try:
@@ -1129,27 +1130,43 @@ def create_log_file(param_keys, param_values):
         ''.join([start_time.strftime("%Y_%m_%d_%H%M_"), cfg.TOOL, ".txt"]))
 
     with open(log_file, 'w') as lfile:
-        lfile.write('*'*70 + '\n')
-        lfile.write('Linkage Mapper log file: %s \n\n' % (cfg.TOOL))
-        lfile.write('Start time:\t%s \n\n' % (
-            start_time.strftime("%H%M %Y-%m-%d")))
+        lfile.write("LINKAGE MAPPER LOG FILE\n")
+        lfile.write("Start time: %s\n" % (
+            start_time.strftime("%H:%M %Y-%m-%d")))
+        lfile.write("Version: %s\n" % (cfg.releaseNum))
+        lfile.write("Tool used: %s\n\n" % (cfg.TOOL))
 
-        lfile.write("Model Inputs\n")
+        lfile.write("SYSTEM AND DATA INFORMATION\n")
+        lfile.write("Operating system: {}\n".format(platform.platform()))
+        lfile.write("Processor type: {}\n".format(platform.processor()))
+        total_mem, avail_mem = get_mem()
+        lfile.write("Total & available RAM: {} GB & {} GB\n\n"
+                    .format(total_mem, avail_mem))
+
+        lfile.write("ARCGIS INFORMATION\n")
+        arc_info = arcpy.GetInstallInfo()
+        lfile.write("Product name & version: {0[ProductName]} {0[Version]}\n"
+                    .format(arc_info))
+        lfile.write("Build number: {0[BuildNumber]}\n".format(arc_info))
+        lfile.write("Product license: {}\n".format(arcpy.ProductInfo()))
+        lfile.write("Spatial Analyst status: {}\n\n"
+                    .format(arcpy.CheckExtension("Spatial")))
+
+        lfile.write("MODEL INPUTS\n")
         col_width = len(max(param_keys, key=len)) + 5
-        lfile.write('{:<{digits}} Value\n'.format(
-            'Parameter', digits=col_width))
-        lfile.write('{:<{digits}} -----\n'.format(
-            '---------', digits=col_width))
+        lfile.write("{:<{digits}} Value\n".format(
+                    "Parameter", digits=col_width))
+        lfile.write("{:<{digits}} -----\n".format(
+                    "---------", digits=col_width))
         for inpt, param in zip(param_keys, param_values[1:]):
             lfile.write("{:<{digits}} {}\n".format(
-                inpt.upper(), param, digits=col_width))
+                        inpt.upper(), param, digits=col_width))
+
         lfile.write("\n")
 
-    dashline()
-    gprint('A record of run settings and messages can be found in your '
-           'log directory:')
-    gprint(cfg.MESSAGEDIR)
-    dashline(2)
+    arcpy.AddMessage("A record of run settings and messages can be found in "
+                     "your log directory:")
+    arcpy.AddMessage(cfg.MESSAGEDIR)
 
     return log_file
 
@@ -1187,6 +1204,43 @@ def write_custom_to_log(settings_file):
                   key, value, digits=col_width))
 
     write_log("")
+
+
+def log_metadata(core_lyr=None, rasters=[]):
+    """Write metadata info to logfile."""
+    write_log("INPUT METADATA")
+    if core_lyr:
+        log_core_info(core_lyr)
+    if rasters:
+        for rast in rasters:
+            log_rast_info(rast)
+
+
+def log_core_info(cor_lyr):
+    """Write core info to logfile."""
+    corelyr = arcpy.Describe(cor_lyr)
+    write_log("Core layer: {}".format(corelyr.file))
+    write_log("Data type: {}".format(corelyr.datatype))
+    write_log("Feature type: {}".format(corelyr.featureType))
+    write_log("Shape type : {}".format(corelyr.shapeType))
+    write_log("Number of cores: {}".format(
+              arcpy.GetCount_management(cor_lyr)))
+    write_log("Coordinate system of core layer: {}\n".format(
+              corelyr.SpatialReference.exportToString()))
+
+
+def log_rast_info(rast_lyr):
+    """Write raster info to logfile."""
+    rastlyr = arcpy.Describe(rast_lyr)
+    write_log("Raster: {}".format(rastlyr.file))
+    write_log("Format: {}".format(rastlyr.format))
+    write_log("Band count: {}".format(rastlyr.bandCount))
+    write_log("Cell size: {} {}".format(
+              rastlyr.meanCellHeight, rastlyr.SpatialReference.linearUnitName))
+    write_log("Total number of cells: {}".format(
+              rastlyr.width * rastlyr.height))
+    write_log("Coordinate system of resistance layer: {}\n".format(
+              rastlyr.SpatialReference.exportToString()))
 
 
 def close_log_file():

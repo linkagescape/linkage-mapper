@@ -111,6 +111,11 @@ def log_setup(param_values):
     lm_util.create_dir(lm_env.MESSAGEDIR)
     lm_env.logFilePath = lm_util.create_log_file(
         cc_env.PARAM_NAMES, param_values)
+    if cc_env.resist_rast is not None:
+        lm_util.log_metadata(cc_env.core_fc, [cc_env.climate_rast,
+                                              cc_env.resist_rast])
+    else:
+        lm_util.log_metadata(cc_env.core_fc, [cc_env.climate_rast])
 
 
 def run_analysis():

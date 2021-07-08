@@ -764,6 +764,18 @@ def log_setup(argv):
     lm_env.logFilePath = lm_util.create_log_file(lm_env.PARAM_NAMES, argv)
     lm_util.write_custom_to_log(lm_env.LPCUSTSETTINGS_IN)
 
+    rasts = [lm_env.RESRAST_IN]
+
+    def chk_rast(raster):
+        if raster:
+            rasts.append(raster)
+
+    chk_rast(lm_env.OCAVRAST_IN)
+    chk_rast(lm_env.CCERAST_IN)
+    chk_rast(lm_env.FCERAST_IN)
+
+    lm_util.log_metadata(lm_env.COREFC, rasts)
+
 
 def main(argv=None):
     """Run Linkage Priority tool."""
