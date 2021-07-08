@@ -160,6 +160,16 @@ def config_global(config, arg):
 
 def config_lm(config, arg):
     """Configure global variables for Linkage Mapper."""
+    config.PARAM_NAMES = [
+        'proj_dir', 'core_lyr', 'core_fld', 'resis_lyr',
+        'step1',
+        'step2', 's2_adj_method', 's2_eucdist_file',
+        'step3', 's3_drop_lccs',
+        'step4', 's4_max_nn', 's4_nn_unit', 's4_connect',
+        'step5', 's5_trunc_rast', 's5_cwd_thresh',
+        'cus_buf_dist', 'cus_max_cwd', 'cus_max_eucdist', 'cus_output_mb',
+        'cus_set_file']
+
     config.CONNECTFRAGS = False
     config.COREFC = arg[2]  # Core area feature class
     config.CORENAME = path.splitext(path.basename(config.COREFC))[0]
@@ -229,6 +239,11 @@ def config_lm(config, arg):
 
 def config_barrier(config, arg):
     """Configure global variables for Barrier tool."""
+    config.PARAM_NAMES = [
+        'proj_dir', 'resis_lyr',
+        'min_radius', 'max_radius', 'radius_step', 'method',
+        'save_rast', 'calc_scores']
+
     config.RESRAST_IN = arg[2]
     config.STARTRADIUS = arg[3]
     config.ENDRADIUS = arg[4]
@@ -289,6 +304,21 @@ def config_lp(config, arg):
     """Configure global variables for Linkage Priority tool."""
     # Model Inputs
     # ------------
+    config.PARAM_NAMES = [
+        'proj_dir', 'core_lyr', 'core_fld', 'resis_lyr',
+        'cav_rast', 'cav_rast_wt', 'cav_size_wt', 'cav_ap_wt', 'cav_exp_wt',
+        'cav_cur_wt', 'cav_other_wt',
+        'csp_tbl', 'csp_tbl_fm_fld', 'csp_tbl_to_fld', 'csp_tbl_ex_fld',
+        'csp_cl_rast', 'cps_cli_modify', 'csp_cl_fut_rast',
+        'csp_cl_alg_min', 'csp_cl_alg_max', 'csp_cl_alg_minrmax',
+        'cps_cl_rel_priority', 'csp_cl_alg_targ', 'csp_cl_alg_piority',
+        'csp_cl_pref_val', 'csp_cl_pref_min', 'csp_cl_pref_max',
+        'csp_cl_pref_wt',
+        'csp_close_wt', 'csp_perm_wt', 'csp_cav_wt', 'csp_exp_wt',
+        'csp_grad_wt', 'csp_min_link_wt',
+        'bp_trunc_wt', 'bp_link_wt',
+        'add_output_mb', 'add_set_file']
+
     config.COREFC = arg[2]
     config.COREFN = arg[3]
     config.RESRAST_IN = arg[4]
@@ -373,11 +403,21 @@ def config_circuitscape(config, arg):
     config.COREFN = arg[3]
 
     if len(arg) == 5:
+        config.PARAM_NAMES = [
+            'proj_dir', 'core_lyr', 'core_fld',
+            'cs_path']
+
         config.DOCENTRALITY = True
         config.DOPINCH = False
         config.CWDCUTOFF = 0
         config.DO_ALLPAIRS = False
     else:
+        config.PARAM_NAMES = [
+            'proj_dir', 'core_lyr', 'core_fld', 'res layer',
+            'cwd_cutoff', 'sq_resis', 'adj_pairs',
+            'all_pairs', 'all_pairs_mode',
+            'cs_path']
+
         config.DOPINCH = True
         config.DOCENTRALITY = False
         config.RESRAST_IN = arg[4]

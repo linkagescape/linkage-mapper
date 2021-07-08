@@ -50,7 +50,7 @@ def main(argv=None):
         check_out_sa_license()
         arc_wksp_setup()
         config_lm()
-        log_setup(str(argv))
+        log_setup(argv)
 
         run_analysis()
 
@@ -105,13 +105,12 @@ def config_lm():
                    'PROCESSING (see user guide).')
 
 
-def log_setup(params):
+def log_setup(param_values):
     """Set up Linkage Mapper logging."""
     lm_util.create_dir(lm_env.LOGDIR)
     lm_util.create_dir(lm_env.MESSAGEDIR)
-    lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR,
-                                                 lm_env.TOOL,
-                                                 params)
+    lm_env.logFilePath = lm_util.create_log_file(
+        cc_env.PARAM_NAMES, param_values)
 
 
 def run_analysis():
