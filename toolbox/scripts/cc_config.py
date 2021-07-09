@@ -23,6 +23,13 @@ class ClimateConfig(object):
 
     def configure(self, arg):
         """Assign input parameters and set constants."""
+        # Input parameter names
+        self.PARAM_NAMES = [
+            'proj_dir', 'core_lyr', 'core_fld', 'cli_lyr', 'resis_lyr',
+            'grass_path',
+            'min_eucdist', 'max_eucdist', 'cl_threshold', 'cl_cost',
+            'pn_opt', 'pn_no_nn', 'pn_nn_unit', 'pn_connect']
+
         # Input files
         self.proj_dir = arg[1]  # Project directory
         self.core_fc = arg[2]  # Core area feature class

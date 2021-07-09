@@ -761,8 +761,7 @@ def run_analysis():
 
 def log_setup(argv):
     """Set up Linkage Mapper logging."""
-    lm_env.logFilePath = lm_util.create_log_file(lm_env.MESSAGEDIR,
-                                                 lm_env.TOOL, argv)
+    lm_env.logFilePath = lm_util.create_log_file(lm_env.PARAM_NAMES, argv)
     lm_util.write_custom_to_log(lm_env.LPCUSTSETTINGS_IN)
 
 

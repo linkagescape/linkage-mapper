@@ -56,8 +56,7 @@ def lm_master(argv=None):
             lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
         if cfg.TOOL == cfg.TOOL_LM:
-            cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
-                                                 argv)
+            cfg.logFilePath = lu.create_log_file(cfg.PARAM_NAMES, argv)
             lu.write_custom_to_log(cfg.LMCUSTSETTINGS)
         lu.print_drive_warning()
 
