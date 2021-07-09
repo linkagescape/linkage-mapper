@@ -58,15 +58,9 @@ def lm_master(argv=None):
         if cfg.TOOL == cfg.TOOL_LM:
             cfg.logFilePath = lu.create_log_file(cfg.PARAM_NAMES, argv)
             lu.write_custom_to_log(cfg.LMCUSTSETTINGS)
-        lu.print_drive_warning()
+            lu.log_metadata(cfg.COREFC, [cfg.RESRAST_IN])
 
-        installD = arcpy.GetInstallInfo("desktop")
-        gprint('\nLinkage Mapper Version ' + cfg.releaseNum)
-        try:
-            gprint('on ArcGIS ' + installD['ProductName'] + ' ' +
-                installD['Version'] + ' Service Pack ' + installD['SPNumber'])
-        except Exception:
-            pass
+        lu.print_drive_warning()
 
         if cfg.CONNECTFRAGS:
             lu.dashline(1)
