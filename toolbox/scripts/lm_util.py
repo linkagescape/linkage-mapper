@@ -1121,20 +1121,29 @@ def gprint(string):
         pass
 
 
-def create_log_file(message_dir, tool_name, in_parameters):
+def create_log_file(param_keys, param_values):
     """Create log file for model run."""
     start_time = dt.now()
     log_file = os.path.join(
-        message_dir,
-        ''.join([start_time.strftime("%Y_%m_%d_%H%M_"), tool_name, ".txt"]))
+        cfg.MESSAGEDIR,
+        ''.join([start_time.strftime("%Y_%m_%d_%H%M_"), cfg.TOOL, ".txt"]))
 
     with open(log_file, 'w') as lfile:
         lfile.write('*'*70 + '\n')
-        lfile.write('Linkage Mapper log file: %s \n\n' % (tool_name))
-        lfile.write('Start time:\t%s \n' % (
+        lfile.write('Linkage Mapper log file: %s \n\n' % (cfg.TOOL))
+        lfile.write('Start time:\t%s \n\n' % (
             start_time.strftime("%H%M %Y-%m-%d")))
-        lfile.write('Parameters:\t%s \n\n' %
-                    (', '.join([str(item) for item in in_parameters[1:]])))
+
+        lfile.write("Model Inputs\n")
+        col_width = len(max(param_keys, key=len)) + 5
+        lfile.write("{:<{digits}} Value\n".format(
+                    "Parameter", digits=col_width))
+        lfile.write("{:<{digits}} -----\n".format(
+                    "---------", digits=col_width))
+        for inpt, param in zip(param_keys, param_values[1:]):
+            lfile.write("{:<{digits}} {}\n".format(
+                        inpt.upper(), param, digits=col_width))
+        lfile.write("\n")
 
     dashline()
     gprint('A record of run settings and messages can be found in your '
@@ -1161,11 +1170,22 @@ def write_log(string):
 
 def write_custom_to_log(settings_file):
     """Write custom settings to log file."""
-    write_log("Custom settings from {}:".format(settings_file))
+    cust_keys = []
+    cust_values = []
+
     with open(settings_file) as custfile:
-        for line in custfile.readlines():
-            if not line.startswith('#') and "=" in line:
-                write_log(line[:line.find("#")].replace(' =', ':'))
+        for line in custfile:
+            if not line.startswith('#') and '=' in line:
+                setting = line.split()
+                cust_keys.append(setting[0])
+                cust_values.append(setting[2].replace('"', ''))
+
+    write_log("Custom Settings")
+    col_width = len(max(cust_keys, key=len)) + 5
+    for key, value in zip(cust_keys, cust_values):
+        write_log("{:<{digits}} {}".format(
+                  key, value, digits=col_width))
+
     write_log("")
 
 
