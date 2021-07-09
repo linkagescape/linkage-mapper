@@ -44,6 +44,10 @@ def circuitscape_master(argv=None):
         lu.create_dir(cfg.LOGDIR)
         lu.create_dir(cfg.MESSAGEDIR)
         cfg.logFilePath = lu.create_log_file(cfg.PARAM_NAMES, argv)
+        if cfg.DOPINCH :
+            lu.log_metadata(cfg.COREFC, [cfg.RESRAST_IN])
+        else:
+            lu.log_metadata(cfg.COREFC)
 
         if cfg.CSPATH is None:
             lu.raise_error("Cannot find an installation of Circuitscape"
