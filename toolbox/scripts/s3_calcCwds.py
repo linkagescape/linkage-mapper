@@ -269,7 +269,7 @@ def STEP3_calc_cwds():
         if rerun:
             # saved linktable replaces the one now in memory
             linkTable = lu.load_link_table(savedLinkTableFile)
-            coresToMapSaved = npy.loadtxt(coreListFile, dtype='Float64',
+            coresToMapSaved = npy.loadtxt(coreListFile, dtype=npy.float64,
                                           comments='#', delimiter=',')
             startIndex = coresToMapSaved[0] # Index of core where we left off
             del coresToMapSaved

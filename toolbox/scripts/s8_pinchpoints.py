@@ -86,7 +86,7 @@ def STEP8_calc_pinchpoints():
 
         if linkTable.shape[1] < 16: # If linktable has no entries from prior
                                     # centrality or pinchpint analyses
-            extraCols = npy.zeros((numLinks, 6), dtype="float64")
+            extraCols = npy.zeros((numLinks, 6), dtype=npy.float64)
             linkTable = linkTable[:,0:10]
             linkTable = npy.append(linkTable, extraCols, axis=1)
             linkTable[:, cfg.LTB_LCPLEN] = -1
@@ -318,7 +318,7 @@ def STEP8_calc_pinchpoints():
 
                 resistancesFile = path.join(OUTCIRCUITDIR,resistancesFN)
                 resistances = npy.loadtxt(resistancesFile,
-                                          dtype = 'Float64', comments='#')
+                                          dtype=npy.float64, comments='#')
 
                 resistance = float(arcpy.env.cellSize) * resistances[2]
                 linkTable[link,cfg.LTB_EFFRESIST] = resistance

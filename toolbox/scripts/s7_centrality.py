@@ -77,7 +77,7 @@ def STEP7_calc_centrality():
 
         if linkTable.shape[1] < 16: # If linktable has no entries from prior
                                     # centrality or pinchpint analyses
-            extraCols = npy.zeros((numLinks, 6), dtype="float64")
+            extraCols = npy.zeros((numLinks, 6), dtype=npy.float64)
             linkTable = linkTable[:,0:10]
             linkTable = npy.append(linkTable, extraCols, axis=1)
             linkTable[:, cfg.LTB_LCPLEN] = -1
@@ -124,7 +124,7 @@ def STEP7_calc_centrality():
         LT = lu.delete_row(linkTable, delRowsVector)
         del delRows
         del delRowsVector
-        graphList = npy.zeros((LT.shape[0],3), dtype="float64")
+        graphList = npy.zeros((LT.shape[0],3), dtype=npy.float64)
         graphList[:,0] = LT[:,cfg.LTB_CORE1]
         graphList[:,1] = LT[:,cfg.LTB_CORE2]
         graphList[:,2] = LT[:,cfg.LTB_CWDIST]
@@ -152,7 +152,7 @@ def STEP7_calc_centrality():
 
 
         currents = load_graph(currentList,graphType='graph/network',
-                              datatype='float64')
+                              datatype=npy.float64)
 
         numLinks = currents.shape[0]
         for x in range(0,numLinks):
@@ -167,7 +167,7 @@ def STEP7_calc_centrality():
         coreCurrentFN = 'Circuitscape_network_node_currents_cum.txt'
         nodeCurrentList = path.join(OUTCENTRALITYDIR, coreCurrentFN)
         nodeCurrents = load_graph(nodeCurrentList,graphType='graph/network',
-                              datatype='float64')
+                              datatype=npy.float64)
 
         numNodeCurrents = nodeCurrents.shape[0]
         rows = arcpy.UpdateCursor(coreCopy)
@@ -232,10 +232,10 @@ def load_graph(filename,graphType,datatype):
         raise RuntimeError('File "'  + filename + '" does not exist')
     f = open(filename, 'r')
     try:
-        graphObject = npy.loadtxt(filename, dtype = 'Float64', comments='#')
+        graphObject = npy.loadtxt(filename, dtype=npy.float64, comments='#')
     except Exception:
         try:
-            graphObject = npy.loadtxt(filename, dtype = 'Float64',
+            graphObject = npy.loadtxt(filename, dtype=npy.float64,
                                       comments='#', delimiter=',')
         except Exception:
             raise RuntimeError('Error reading',type,
