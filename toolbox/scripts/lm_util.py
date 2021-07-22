@@ -891,7 +891,7 @@ def update_lcp_shapefile(linktable, lastStep, thisStep):
         if thisStep > 5:
             linkTableTemp = linktable
         else:
-            extraCols = npy.zeros((numLinks, 3), dtype="float64")
+            extraCols = npy.zeros((numLinks, 3), dtype=npy.float64)
             linkTableTemp = npy.append(linktable, extraCols, axis=1)
             del extraCols
             linkTableTemp[:, cfg.LTB_LCPLEN] = -1
@@ -1095,10 +1095,10 @@ def check_stars(D, star): # same as gapdt
 def load_link_table(linkTableFile):
     """Reads link table created by previous step """
     try:
-        linkTable1 = npy.loadtxt(linkTableFile, dtype='Float64',
+        linkTable1 = npy.loadtxt(linkTableFile, dtype=npy.float64,
                              comments='#', delimiter=',')
         if len(linkTable1) == linkTable1.size:  # Just one connection
-            linktable = npy.zeros((1, len(linkTable1)), dtype='Float64')
+            linktable = npy.zeros((1, len(linkTable1)), dtype=npy.float64)
             linktable[:, 0:len(linkTable1)] = linkTable1[0:len(linkTable1)]
         else:
             linktable = linkTable1
@@ -1404,7 +1404,7 @@ def write_link_maps(linkTableFile, step):
         coreLinks = linktable
 
         # create coreCoords array, with geographic centers of cores
-        coreCoords = npy.zeros(pointArray.shape, dtype='float64')
+        coreCoords = npy.zeros(pointArray.shape, dtype=npy.float64)
         coreCoords[:, 0] = pointArray[:, 2]
         coreCoords[:, 1] = pointArray[:, 0]
         coreCoords[:, 2] = pointArray[:, 1]
