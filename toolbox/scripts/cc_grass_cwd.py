@@ -3,6 +3,7 @@
 """Create CWD and Back rasters using GRASS GIS r.walk function."""
 
 import os
+import subprocess
 
 import arcpy
 
@@ -178,6 +179,9 @@ def start_grass_cmd(*args, **kwargs):
 
     Returns Popen object
     """
+    startupinfo = hideprocess()
+    kwargs['startupinfo'] = startupinfo
+
     kwargs['stdout'] = grass.PIPE
     kwargs['stderr'] = grass.PIPE
     return grass.start_command(*args, **kwargs)
@@ -202,3 +206,13 @@ def write_grass_cmd(*args, **kwargs):
     kwargs['stdin'] = grass.PIPE
     return_ps = start_grass_cmd(*args, **kwargs)
     chk_stderr(return_ps.communicate(input=stdin.encode())[1])
+
+
+def hideprocess():
+    # Overwrite default startup subprocess variables to insure the console
+    # window is hidden. This is necessary as functions within the GRASS
+    # scripting library open subprocesses with the console window open.
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
+    return startupinfo
