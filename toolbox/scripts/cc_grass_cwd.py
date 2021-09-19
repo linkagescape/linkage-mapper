@@ -122,7 +122,7 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
     # Map from directional degree output from GRASS to Arc's 1 to 8 directions
     # format. See r.walk source code and ArcGIS's 'Understanding cost distance
     # analysis' help page.
-    rc_rules = "180=5\n225=4\n270=3\n315=2\n360=1\n45=8\n90=7\n135=6"
+    rc_rules = "0=0\n180=5\n225=4\n270=3\n315=2\n360=1\n45=8\n90=7\n135=6"
 
     try:
         for position, core_no in enumerate(core_list):
@@ -146,8 +146,14 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
                           start_points=core_points, walk_coeff=walk_coeff,
                           slope_factor=slope_factor)
 
+            # Set source cells equal to zero to match ArcGIS back rasters
+            grass.mapcalc("gback_src_rst = "
+                          "eval(fcore = if(isnull({fcore_rst}), 255, 0), "
+                          "if(fcore == 0, 0, {gback_rst}))".format(
+                            fcore_rst=focal_core_rast, gback_rst=gback))
+
             # Reclassify back raster directional degree output to ArcGIS format
-            write_grass_cmd("r.reclass", input=gback, output=gbackrc,
+            write_grass_cmd("r.reclass", input="gback_src_rst", output=gbackrc,
                             rules="-", stdin=rc_rules)
 
             # Get spatial reference for defining ARCINFO raster projections
@@ -162,8 +168,8 @@ def gen_cwd_back(core_list, climate_lyr, resist_lyr, core_lyr):
                 ascii_grid = os.path.join(cc_env.scratch_dir,
                                           rtype + core_no_txt + ".asc")
                 arc_grid = cwd_path.replace("cwd_", rtype)
-                run_grass_cmd("r.out.gdal", input=grass_grid,
-                              output=ascii_grid, format="AAIGrid")
+                run_grass_cmd("r.out.gdal", flags="c", input=grass_grid,
+                              output=ascii_grid, format="AAIGrid", nodata=15)
                 arcpy.CopyRaster_management(ascii_grid, arc_grid)
                 arcpy.DefineProjection_management(arc_grid, spatial_ref)
                 lm_util.delete_data(ascii_grid)
