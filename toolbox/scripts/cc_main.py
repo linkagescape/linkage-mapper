@@ -83,6 +83,9 @@ def check_out_sa_license():
 def arc_wksp_setup():
     """Define ArcPy workspace."""
     arcpy.env.cellSize = "MAXOF"  # Setting to default. For batch runs.
+    arcpy.env.pyramid = "NONE"
+    arcpy.env.rasterStatistics = "NONE"
+
     lm_util.delete_data(cc_env.scratch_dir)
     cc_util.mk_proj_dir(cc_env.scratch_dir)
     arcpy.CreateFileGDB_management(os.path.dirname(cc_env.cc_gdb),
