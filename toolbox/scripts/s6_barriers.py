@@ -130,7 +130,7 @@ def step6_calc_barriers():
                        str(map_units) + ' radius analysis scale.')
                 focal_dir_base_name = dir2
 
-                cp100 = cores_to_process.astype('int32') / 100
+                cp100 = cores_to_process.astype('int32') // 100
                 ind = npy.where(cp100 > 0)
                 dir_nums = npy.unique(cp100[ind])
                 for dir_num in dir_nums:
