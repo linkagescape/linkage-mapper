@@ -327,7 +327,7 @@ def limit_cores(pair_tbl, stats_tbl):
     except Exception:
         raise
     finally:
-        cc_util.delete_features([stats_vw, pair_vw])
+        cc_util.delete_features(stats_vw, pair_vw)
 
 
 def add_stats(stats_vw, core_id, fld_pre, table_vw, join_col):
@@ -481,7 +481,7 @@ def create_lnk_tbl(corefc, core_pairs, frm_cores):
         raise
     finally:
         cc_util.delete_features(
-            [near_tbl, os.path.splitext(corefc)[0] + "_Pnt.shp"])
+            near_tbl, os.path.splitext(corefc)[0] + "_Pnt.shp")
         if link_tbl:
             link_tbl.close()
         if srow:
