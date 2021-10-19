@@ -21,11 +21,10 @@ from lm_util import gprint
 
 _SCRIPT_NAME = os.path.basename(__file__)
 
-arcpy.CheckOutExtension("spatial")
-
 
 def main(argv=None):
     """Iterate over LM, BM, and restoration tasks."""
+    arcpy.CheckOutExtension("spatial")
     if argv is None:
         argv = sys.argv  # Get parameters from ArcGIS tool dialog
 
@@ -112,6 +111,7 @@ def main(argv=None):
         # Write a copy of this file to output dir as a record of settings
         shutil.copyfile(__file__, log_file)
 
+        arcpy.ResetEnvironments()
         arcpy.env.cellSize = res_ras
         arcpy.env.extent = res_ras
         arcpy.env.snapRaster = res_ras

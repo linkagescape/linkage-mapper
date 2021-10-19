@@ -8,8 +8,6 @@ import traceback
 import arcpy
 
 
-arcpy.CheckOutExtension("spatial")
-
 gprint = arcpy.AddMessage
 
 _SCRIPT_NAME = "clip_corridors"
@@ -19,6 +17,7 @@ def clip_corridor(argv=None):
     """Truncates corridors at user-specified cutoff width in CWD units.
 
     """
+    arcpy.CheckOutExtension("spatial")
     if argv is None:
         argv = sys.argv  # Get parameters from ArcGIS tool dialog
 
@@ -41,6 +40,7 @@ def clip_corridor(argv=None):
         desc = arcpy.Describe(inRaster)
         if hasattr(desc, "catalogPath"):
             inRaster = arcpy.Describe(inRaster).catalogPath
+        arcpy.ResetEnvironments()
         arcpy.env.overwriteOutput = True
         arcpy.env.workspace = outputGDB
         arcpy.env.scratchWorkspace = outputGDB

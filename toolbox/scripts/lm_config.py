@@ -444,6 +444,14 @@ def config_circuitscape(config, arg):
     config.SAVECENTRALITYDIR = False
 
 
+def check_out_sa_license():
+    """Check out the ArcGIS Spatial Analyst extension license."""
+    if arcpy.CheckExtension("Spatial") == "Available":
+        arcpy.CheckOutExtension("Spatial")
+    else:
+        raise RuntimeError("Spatial Analyst license is unavailable")
+
+
 class Configure(object):
     """Class container to hold global variables."""
 
@@ -455,12 +463,13 @@ class Configure(object):
 
     def __init__(self):
         """Initialize class."""
-        arcpy.CheckOutExtension("Spatial")
-        arcpy.env.overwriteOutput = True
         self.TOOL = ''
 
     def configure(self, tool, arg):
         """Assign variables for Configure class."""
+        check_out_sa_license()
+        arcpy.ResetEnvironments()
+        arcpy.env.overwriteOutput = True
         config_global(self, arg)
 
         if tool == Configure.TOOL_LM:

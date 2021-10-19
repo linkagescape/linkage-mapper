@@ -33,7 +33,6 @@ SET_CORES_TO_NULL = False
 def step6_calc_barriers():
     """Detect influential barriers given CWD calculations from Step 3."""
     try:
-        arcpy.CheckOutExtension("spatial")
         lu.dashline(0)
         gprint('Running script ' + _SCRIPT_NAME)
 
