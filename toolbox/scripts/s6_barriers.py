@@ -38,7 +38,6 @@ def STEP6_calc_barriers():
     """
     
     try:
-        arcpy.CheckOutExtension("spatial")
         lu.dashline(0)
         gprint('Running script ' + _SCRIPT_NAME)
         

@@ -9,7 +9,6 @@ import traceback
 try:
     import arcpy
     from arcpy.sa import *
-    arcpy.CheckOutExtension("spatial")
     gp = arcpy.gp
     arcgisscripting = arcpy
     arc10 = True
@@ -17,7 +16,6 @@ except:
     arc10 = False
     import arcgisscripting
     gp = arcgisscripting.create()
-    gp.CheckOutExtension("Spatial")
 
 gprint = gp.addmessage
 
@@ -51,6 +49,8 @@ def clip_corridor(argv=None):
         if hasattr(desc, "catalogPath"):
             inRaster = gp.Describe(inRaster).catalogPath
         if arc10:
+            arcpy.CheckOutExtension("spatial")
+            arcpy.ResetEnvironments()
             arcpy.env.overwriteOutput = True  
             arcpy.env.workspace = outputGDB
             arcpy.env.scratchWorkspace = outputGDB
@@ -59,6 +59,8 @@ def clip_corridor(argv=None):
             output = arcpy.sa.Con(Raster(inRaster) <= float(cutoffVal),inRaster)
             output.save(outRaster)
         else:
+            gp.CheckOutExtension("spatial")
+            gp.ResetEnvironments()
             gp.OverwriteOutput = True  
             gp.extent = gp.Describe(inRaster).extent
             gp.cellSize = gp.Describe(inRaster).MeanCellHeight

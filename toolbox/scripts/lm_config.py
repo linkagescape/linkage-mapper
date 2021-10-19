@@ -335,6 +335,14 @@ def config_circuitscape(config, arg):
     config.SAVECENTRALITYDIR = False
 
 
+def check_out_sa_license(config):
+    """Check out the ArcGIS Spatial Analyst extension license."""
+    if config.gp.CheckExtension("Spatial") == "Available":
+        config.gp.CheckOutExtension("Spatial")
+    else:
+        raise RuntimeError("Spatial Analyst license is unavailable")
+
+
 class Configure(object):
     """Class container to hold global variables."""
 
@@ -347,12 +355,13 @@ class Configure(object):
     def __init__(self):
         """Initialize class and create single geoprocessor object."""
         self.gp = arcgisscripting.create(9.3)
-        self.gp.CheckOutExtension("Spatial")
-        self.gp.OverwriteOutput = True
         self.lm_configured = False
 
     def configure(self, tool, arg):
         """Assign variables for Configure class."""
+        check_out_sa_license(self)
+        self.gp.ResetEnvironments()
+        self.gp.OverwriteOutput = True
         config_global(self, arg)
 
         if tool == Configure.TOOL_LM:

@@ -18,8 +18,6 @@ import os.path as path
 import sys
 import traceback
 gp = arcgisscripting.create(9.3)
-gp.CheckOutExtension("Spatial")
-gp.OverwriteOutput = True
 
 gprint = gp.addmessage
 
@@ -34,6 +32,7 @@ def raster_aggregator(argv=None):
     entered in script below.  
 
     """
+    gp.CheckOutExtension("Spatial")
     if argv is None:
         argv = sys.argv  # Get parameters from ArcGIS tool dialog
 
@@ -75,6 +74,8 @@ def raster_aggregator(argv=None):
         gprint('\nThere are ' + str(numRasters) + ' rasters to aggregate.')
         gprint('\nCell factor is ' + str(AG_FACTOR))
         gprint('\nCell sizes will be multiplied by this amount')
+        gp.ResetEnvironments()
+        gp.OverwriteOutput = True
         for rasterNum in range(1,numRasters+1):
             inputRaster = RESRAS[rasterNum]
             gp.SnapRaster = inputRaster

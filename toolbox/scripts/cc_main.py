@@ -48,9 +48,8 @@ def main(argv=None):
         cc_env.configure(argv)
         cc_util.check_cc_project_dir()
 
-        check_out_sa_license()
-        arc_wksp_setup()
         config_lm()
+        arc_wksp_setup()
         log_setup()
 
         run_analysis()
@@ -71,14 +70,6 @@ def main(argv=None):
     finally:
         arcpy.CheckInExtension("Spatial")
         print_runtime(start_time)
-
-
-def check_out_sa_license():
-    """Check out the ArcGIS Spatial Analyst extension license"""
-    if arcpy.CheckExtension("Spatial") == "Available":
-        arcpy.CheckOutExtension("Spatial")
-    else:
-        raise
 
 
 def arc_wksp_setup():
@@ -147,7 +138,7 @@ def run_analysis():
             # Run Linkage Mapper
             lm_util.gprint("\nRUNNING LINKAGE MAPPER "
                            "TO CREATE CLIMATE CORRIDORS")
-            lm_master.lm_master()
+            lm_master.run_lm()
 
 
 def cc_copy_inputs():

@@ -20,8 +20,6 @@ import lm_util as lu
 
 _SCRIPT_NAME = "s7_centrality.py"
 
-arcpy.CheckOutExtension("spatial")
-
 gprint = lu.gprint
 
 
