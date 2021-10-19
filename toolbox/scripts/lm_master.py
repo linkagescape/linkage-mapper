@@ -35,14 +35,23 @@ def lm_master(argv=None):
 
     """
     # Setup global variables
-    if not cfg.lm_configured: # Causing problems with iterative scripting
-        if argv is None:
-            argv = sys.argv
-        cfg.configure(cfg.TOOL_LM, argv)
+    if argv is None:
+        argv = sys.argv
+    cfg.configure(cfg.TOOL_LM, argv)
 
-    gp = cfg.gp
+    lu.create_dir(cfg.LOGDIR)
+    lu.create_dir(cfg.MESSAGEDIR)
+    cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
+                                         cfg.PARAMS)
 
+    lu.delete_dir(cfg.SCRATCHDIR)
+    run_lm()
+
+
+def run_lm():
+    """Run Linkage Mapper."""
     try:
+        gp = cfg.gp
         gprint = lu.gprint
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
@@ -54,21 +63,15 @@ def lm_master(argv=None):
         if gp.Exists(cfg.OUTPUTDIR):
             gp.RefreshCatalog(cfg.OUTPUTDIR)
         lu.create_dir(cfg.OUTPUTDIR)
-        lu.create_dir(cfg.LOGDIR)
-        lu.create_dir(cfg.MESSAGEDIR)
         lu.create_dir(cfg.DATAPASSDIR)
         # Create fresh scratch directory if not restarting in midst of step 3
         # if cfg.S2EUCDISTFILE != None:
             # if cfg.S2EUCDISTFILE.lower() == "restart": pass
         # else:
-        lu.delete_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
-        if cfg.TOOL == 'Linkage Mapper':
-            cfg.logFilePath = lu.create_log_file(cfg.MESSAGEDIR, cfg.TOOL,
-                                             cfg.PARAMS)
-        lu.print_drive_warning()        
-        
+        lu.print_drive_warning()
+
         installD = gp.GetInstallInfo("desktop")
         gprint('\nLinkage Mapper Version ' + cfg.releaseNum)
         try:

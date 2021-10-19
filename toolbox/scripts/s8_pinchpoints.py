@@ -25,8 +25,6 @@ import lm_util as lu
 
 _SCRIPT_NAME = "s8_pinchpoints.py"
 
-arcpy.CheckOutExtension("spatial")
-
 SETCORESTONULL = True
 gprint = lu.gprint
 # gwarn = arcpy.AddWarning

@@ -50,9 +50,8 @@ def main(argv=None):
 
         grass_dir_setup()
 
-        check_out_sa_license()
-        arc_wksp_setup()
         config_lm()
+        arc_wksp_setup()
         log_setup()
 
         run_analysis()
@@ -87,13 +86,6 @@ def grass_dir_setup():
                          "\nPlease choose a new project directory.")
         raise Exception("Cannot delete GRASS workspace: " + gisdbase)
 
-
-def check_out_sa_license():
-    """Check out the ArcGIS Spatial Analyst extension license"""
-    if arcpy.CheckExtension("Spatial") == "Available":
-        arcpy.CheckOutExtension("Spatial")
-    else:
-        raise
 
 
 def arc_wksp_setup():
@@ -161,7 +153,7 @@ def run_analysis():
             # Run Linkage Mapper
             lm_util.gprint("\nRUNNING LINKAGE MAPPER "
                            "TO CREATE CLIMATE CORRIDORS")
-            lm_master.lm_master()
+            lm_master.run_lm()
 
 
 def cc_copy_inputs():
