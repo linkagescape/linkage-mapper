@@ -73,7 +73,7 @@ def raster_aggregator(argv=None):
             inputRaster = RESRAS[rasterNum]
             arcpy.env.snapRaster = inputRaster
             oldCellSize = arcpy.Describe(inputRaster).MeanCellHeight
-            dir,fileName = path.split(inputRaster)
+            fileName = path.splitext(path.basename(inputRaster))[0]
 
             if SMOOTH == True and METHOD == "MEAN":
                 gprint('\nSmoothing cell values by taking mean of ' + str(AG_FACTOR) +'x' + str(AG_FACTOR) + ' neighborhood')
