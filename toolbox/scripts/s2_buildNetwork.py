@@ -379,7 +379,7 @@ def get_full_adj_list():
             coreList = lu.get_core_list(cfg.COREFC, cfg.COREFN)
             coreList = coreList[:,0]
             numCores = len(coreList)
-            adjList = npy.zeros((numCores*(numCores-1)/2,2), dtype="int32")
+            adjList = npy.zeros((numCores*(numCores-1)//2,2), dtype="int32")
             pairIndex = 0
             for sourceIndex in range(0,numCores-1):
                 for targetIndex in range(sourceIndex + 1, numCores):
