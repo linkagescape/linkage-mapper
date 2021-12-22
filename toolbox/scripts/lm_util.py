@@ -1158,6 +1158,7 @@ def create_log_file(param_keys, param_values):
                     "Parameter", digits=col_width))
         lfile.write("{:<{digits}} -----\n".format(
                     "---------", digits=col_width))
+        gprint(str(param_values))
         for inpt, param in zip(param_keys, param_values[1:]):
             lfile.write("{:<{digits}} {}\n".format(
                         inpt.upper(), param, digits=col_width))
@@ -1964,6 +1965,28 @@ def call_circuitscape(cspath, outConfigFile):
     return mem_flag
 
 
+def call_julia(jl_soft, jl_file):
+    mem_flag = False
+    gprint('     Calling Circuitscape-5 from Julia:')
+    proc = subprocess.Popen([jl_soft, jl_file],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            shell=True)
+    while True:
+        line = proc.stdout.readline().decode()
+        if not line:
+            break
+        x = line.rstrip()
+        gprint("     " + x)  # 29slice number
+
+    return mem_flag
+
+
+def create_julia_file(jl_file_path, ini_file_path):
+    with open(jl_file_path, 'w') as julia_file:
+        julia_file.write("using Circuitscape\n")
+        julia_file.write('compute' + '("' + ini_file_path + '")')
+
+
 def rename_fields(FC):
     try:
         arcpy.AddField_management(FC, "cw_to_Euc_Dist_Ratio", "FLOAT")
@@ -2179,7 +2202,6 @@ def snooze(sleepTime):
         time.sleep(1)
         # Dummy operations to give user ability to cancel:
         installD = arcpy.GetInstallInfo("desktop")
-
 
 
 def exit_with_geoproc_error(filename):
