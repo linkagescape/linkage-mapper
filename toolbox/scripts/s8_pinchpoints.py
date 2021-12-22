@@ -130,6 +130,11 @@ def STEP8_calc_pinchpoints():
             outRas.save(squaredRaster)
             resRaster = squaredRaster
 
+        if cfg.USE_CS5:
+            cs_version = 5
+        else:
+            cs_version = 4
+
         if cfg.DO_ADJACENTPAIRS:
             linkLoop = 0
             lu.dashline(1)
@@ -138,7 +143,7 @@ def STEP8_calc_pinchpoints():
             lu.dashline(1)
             gprint('If you try to cancel your run and the Arc dialog hangs, ')
             gprint('you can kill Circuitscape by opening Windows Task Manager')
-            gprint('and ending the cs_run.exe process.')
+            gprint('and ending the cs_run.exe process.') # need to change if Julia used
             lu.dashline(2)
 
             for x in range(0,numLinks):
@@ -199,11 +204,46 @@ def STEP8_calc_pinchpoints():
                 outRas = arcpy.sa.ExtractByMask(resRaster, resMaskPoly) + 0.0
                 outRas.save(resClipRasterMasked)
 
-                resNpyFN = 'resistances_link_' + linkId + '.npy'
-                resNpyFile = path.join(INCIRCUITDIR, resNpyFN)
-                numElements, numResistanceNodes = export_ras_to_npy(resClipRasterMasked,
-                                                          resNpyFile)
+                corePairRaster = path.join(linkDir, 'core_pairs' + tif)
+                arcpy.env.extent = resClipRasterMasked
 
+                # Next result needs to be floating pt for numpy export
+                outCon = (arcpy.sa.Con(arcpy.sa.Raster(cwdRaster1) == 0, corex,
+                                       arcpy.sa.Con(arcpy.sa.Raster(cwdRaster2) == 0, corey
+                                                    + 0.0)))
+                outCon.save(corePairRaster)
+
+                # Currently, Circuitescape4 is using .npy files and Circuitscape5 is using
+                # .asc files as inputs. Npy file format can not be used in CS5 and some
+                # research has to be done whether using ASCII files in CS4 helpful.
+                if cs_version == 4:
+                    resFN = 'resistances_link_' + linkId + '.npy'
+                    resFile = path.join(INCIRCUITDIR, resFN)
+                    numElements, numResistanceNodes = export_ras_to_npy(resClipRasterMasked,
+                                                              resFile)
+                    coreFN = 'cores_link_' + linkId + '.npy'
+                    coreFile = path.join(INCIRCUITDIR, coreFN)
+                    numElements, numNodes = export_ras_to_npy(corePairRaster,
+                                                              coreFile)
+                    currentFN = ('Circuitscape_link' + linkId
+                                 + '_cum_curmap.npy')
+
+                elif cs_version == 5:
+                    # creating resistance grid in ASCII format
+                    resFN = 'resistances_link_' + linkId + '.asc'
+                    resFile = path.join(INCIRCUITDIR, resFN)
+                    numElements, numResistanceNodes = export_ras_to_asc(resClipRasterMasked,
+                                                                        resFile)
+                    # creating core grid in ASCII format
+                    coreFN = 'cores_link_' + linkId + '.asc'
+                    coreFile = path.join(INCIRCUITDIR, coreFN)
+                    numElements, numNodes = export_ras_to_asc(corePairRaster,
+                                                                        coreFile)
+                    currentFN = ('Circuitscape_link' + linkId
+                                 + '_cum_curmap.asc')
+
+                # This memory warning raise based on the CS4. Number of resistance nodes
+                # can process by CS5 has to confirm and write the warning.
                 totMem, availMem = lu.get_mem()
                 if numResistanceNodes / availMem > 2000000:
                     lu.dashline(1)
@@ -215,30 +255,17 @@ def STEP8_calc_pinchpoints():
                             + ' GB. \nYour resistance raster has '
                             + str(numResistanceNodes) + ' nodes.')
                     lu.dashline(2)
-                corePairRaster = path.join(linkDir, 'core_pairs'+tif)
-                arcpy.env.extent = resClipRasterMasked
 
-                # Next result needs to be floating pt for numpy export
-                outCon = (arcpy.sa.Con(arcpy.sa.Raster(cwdRaster1) == 0, corex,
-                          arcpy.sa.Con(arcpy.sa.Raster(cwdRaster2) == 0, corey
-                          + 0.0)))
-                outCon.save(corePairRaster)
-
-                coreNpyFN = 'cores_link_' + linkId + '.npy'
-                coreNpyFile = path.join(INCIRCUITDIR, coreNpyFN)
-                numElements, numNodes = export_ras_to_npy(corePairRaster,
-                                                          coreNpyFile)
 
                 arcpy.env.extent = "MINOF"
 
                 # Set circuitscape options and call
                 options = lu.set_cs_options()
                 if cfg.WRITE_VOLT_MAPS == True:
-                    options['write_volt_maps']=True
-                options['habitat_file'] = resNpyFile
-
-                options['point_file'] = coreNpyFile
-                options['set_focal_node_currents_to_zero']=True
+                    options['write_volt_maps'] = True
+                options['habitat_file'] = resFile
+                options['point_file'] = coreFile
+                options['set_focal_node_currents_to_zero'] = True
                 outputFN = 'Circuitscape_link' + linkId + '.out'
                 options['output_file'] = path.join(OUTCIRCUITDIR, outputFN)
                 if numElements > 250000:
@@ -250,16 +277,22 @@ def STEP8_calc_pinchpoints():
                 gprint('Processing link ID #' + str(linkId) + '. Resistance map'
                         ' has ' + str(int(numResistanceNodes)) + ' nodes.')
 
-                memFlag = lu.call_circuitscape(cfg.CSPATH, outConfigFile)
+                if cs_version == 4:
+                    lu.call_circuitscape(cfg.CSPATH, outConfigFile)
+                elif cs_version == 5:
+                    julia_soft = cfg.JULIA_PATH
+                    julia_filename = "test.jl"
+                    julia_file = path.join(cfg.CIRCUITBASEDIR, julia_filename)
+                    outConfigFile = outConfigFile.replace("\\", "\\\\")
+                    lu.create_julia_file(julia_file, outConfigFile)
+                    lu.call_julia(julia_soft, julia_file)
 
-                currentFN = ('Circuitscape_link' + linkId
-                            + '_cum_curmap.npy')
                 currentMap = path.join(OUTCIRCUITDIR, currentFN)
 
                 if not arcpy.Exists(currentMap):
                     print_failure(numResistanceNodes, memFlag, 10)
                     numElements, numNodes = export_ras_to_npy(
-                                                resClipRasterMasked,resNpyFile)
+                                                resClipRasterMasked, resNpyFile)
                     memFlag = lu.call_circuitscape(cfg.CSPATH, outConfigFile)
 
                     currentFN = ('Circuitscape_link' + linkId
@@ -275,7 +308,10 @@ def STEP8_calc_pinchpoints():
                 # Either set core areas to nodata in current map or
                 # divide each by its radius
                 currentRaster = path.join(linkDir, "current" + tif)
-                import_npy_to_ras(currentMap,corePairRaster,currentRaster)
+                if cs_version == 4:
+                    import_npy_to_ras(currentMap, corePairRaster, currentRaster)
+                elif cs_version == 5:
+                    import_asc_to_ras(currentMap, currentRaster)
 
                 if cfg.WRITE_VOLT_MAPS == True:
                     voltFN = ('Circuitscape_link' + linkId + '_voltmap_'
@@ -329,11 +365,11 @@ def STEP8_calc_pinchpoints():
                            cfg.LTB_CWDIST] / linkTable[link,cfg.LTB_EFFRESIST])
                 # Clean up
                 if cfg.SAVE_TEMP_CIRCUIT_FILES == False:
-                    lu.delete_file(coreNpyFile)
-                    coreNpyBase, extension = path.splitext(coreNpyFile)
+                    lu.delete_file(coreFile)
+                    coreNpyBase, extension = path.splitext(coreFile)
                     lu.delete_data(coreNpyBase + '.hdr')
-                    lu.delete_file(resNpyFile)
-                    resNpyBase, extension = path.splitext(resNpyFile)
+                    lu.delete_file(resFile)
+                    resNpyBase, extension = path.splitext(resFile)
                     lu.delete_data(resNpyBase + '.hdr')
                     lu.delete_file(currentMap)
                     curMapBase, extension = path.splitext(currentMap)
@@ -474,7 +510,15 @@ def STEP8_calc_pinchpoints():
         gprint('and ending the cs_run.exe process.')
         lu.dashline(0)
 
-        lu.call_circuitscape(cfg.CSPATH, outConfigFile)
+        if cs_version == 4:
+            lu.call_circuitscape(cfg.CSPATH, outConfigFile)
+        elif cs_version == 5:
+            julia_soft = cfg.JULIA_PATH
+            julia_filename = "test.jl"
+            julia_file = path.join(cfg.CIRCUITBASEDIR, julia_filename)
+            outConfigFile = outConfigFile.replace("\\", "\\\\")
+            lu.create_julia_file(julia_file, outConfigFile)
+            lu.call_julia(julia_soft, julia_file)
 
         if options['scenario']=='pairwise':
             rasterSuffix =  "_current_allPairs_" + cutoffText
@@ -553,6 +597,30 @@ def export_ras_to_npy(raster,npyFile):
 
     return numElements, numNodes
 
+
+# This function has tp modify
+def export_ras_to_asc(raster, AscFile):
+    descData = arcpy.Describe(raster)
+    cellSize = descData.meanCellHeight
+    extent = descData.Extent
+    spatialReference = descData.spatialReference
+    pnt = arcpy.Point(extent.XMin, extent.YMin)
+
+    outData = arcpy.RasterToNumPyArray(raster,"#","#","#",-9999)
+    # Execute RasterToASCII
+    arcpy.RasterToASCII_conversion(raster, AscFile)
+
+    if npy.array_equiv(outData, outData.astype('int32')):
+        outData = outData.astype('int32')
+    # npy.save(npyFile, outData)
+    # write_header(raster,outData,npyFile)
+    numElements = (outData.shape[0] * outData.shape[1])
+    numNodes = (npy.where(outData != -9999, 1, 0)).sum()
+    del outData
+
+    return numElements, numNodes
+
+
 @Retry(10)
 def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
     npyArray = npy.load(npyFile, mmap_mode=None)
@@ -567,6 +635,10 @@ def import_npy_to_ras(npyFile,baseRaster,outRasterPath):
                                          cellSize,cellSize,-9999)
     newRaster.save(outRasterPath)
     return
+
+
+def import_asc_to_ras(in_ascii, out_raster):
+    arcpy.ASCIIToRaster_conversion(in_ascii, out_raster, "FLOAT")
 
 
 @Retry(10)
@@ -592,6 +664,7 @@ def write_header(raster,numpyArray,numpyFile):
     f.write('NODATA_value  ' + str(nodata) + '\n')
 
     f.close()
+
 
 def print_failure(numResistanceNodes, memFlag, sleepTime):
     gprint('\nCircuitscape failed. See error information above.')
