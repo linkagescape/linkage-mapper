@@ -129,10 +129,26 @@ def STEP7_calc_centrality():
         graphList[:,1] = LT[:,cfg.LTB_CORE2]
         graphList[:,2] = LT[:,cfg.LTB_CWDIST]
 
-        write_graph(options['habitat_file'] ,graphList)
+        # Julia raising error for float data, so converted to integers
+        graphList = graphList.astype(npy.int64)
+        write_graph(options['habitat_file'], graphList)
         gprint('\nCalculating current flow centrality using Circuitscape...')
 
-        memFlag = lu.call_circuitscape(cfg.CSPATH, outConfigFile)
+        if cfg.USE_CS5:
+            cs_version = 5
+        else:
+            cs_version = 4
+
+        if cs_version == 4:
+            memFlag = lu.call_circuitscape(cfg.CSPATH, outConfigFile)
+
+        elif cs_version == 5:
+            julia_soft = cfg.JULIA_PATH
+            julia_filename = "test.jl"
+            julia_file = path.join(cfg.CENTRALITYBASEDIR, julia_filename)
+            outConfigFile = outConfigFile.replace("\\", "\\\\")
+            lu.create_julia_file(julia_file, outConfigFile)
+            lu.call_julia(julia_soft, julia_file)
 
         outputFN = 'Circuitscape_network_branch_currents_cum.txt'
         currentList = path.join(OUTCENTRALITYDIR, outputFN)
