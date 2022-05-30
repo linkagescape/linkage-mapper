@@ -416,7 +416,7 @@ def config_circuitscape(config, arg):
             'proj_dir', 'core_lyr', 'core_fld', 'res layer',
             'cwd_cutoff', 'sq_resis', 'adj_pairs',
             'all_pairs', 'all_pairs_mode',
-            'run_cs5', 'julia_path', 'cs4_path']
+            'cs_path']
 
         config.DOPINCH = True
         config.DOCENTRALITY = False
@@ -438,9 +438,7 @@ def config_circuitscape(config, arg):
                 config.ALL_PAIR_SCENARIO = 'pairwise'
             else:
                 config.ALL_PAIR_SCENARIO = 'all-to-one'
-        config.USE_CS5 = util.str2bool(arg[10])
-        if config.USE_CS5:
-            config.JULIA_PATH = arg[11]
+
     config.STEP1 = False
 
     config.SAVECENTRALITYDIR = False
