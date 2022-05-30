@@ -37,6 +37,7 @@ def circuitscape_master(argv=None):
         argv = sys.argv
 
     argv.append(get_cs_path())  # Add Circuitscape path
+
     cfg.configure(cfg.TOOL_CS, argv)
 
     try:

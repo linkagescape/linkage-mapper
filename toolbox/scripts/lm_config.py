@@ -401,14 +401,11 @@ def config_circuitscape(config, arg):
     config.CSPATH = arg[-1]  # Path to Circuitscape
     config.COREFC = arg[2]
     config.COREFN = arg[3]
-    config.USE_CS5 = util.str2bool(arg[4])
-    if config.USE_CS5:
-        config.JULIA_PATH = arg[5]
 
-    if len(arg) == 7:
+    if len(arg) == 5:
         config.PARAM_NAMES = [
             'proj_dir', 'core_lyr', 'core_fld',
-            'run_cs5', 'julia_path', 'cs4_path']
+            'cs_path']
 
         config.DOCENTRALITY = True
         config.DOPINCH = False
