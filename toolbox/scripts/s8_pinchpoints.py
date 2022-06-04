@@ -426,7 +426,7 @@ def STEP8_calc_pinchpoints():
         gprint('Mapping global pinch points among all\n'
                 'core area pairs using Circuitscape.')
 
-        if cfg.ALL_PAIR_SCENARIO=='pairwise':
+        if cfg.ALL_PAIR_SCENARIO == 'pairwise':
             gprint('Circuitscape will be run in PAIRWISE mode.')
 
         else:
@@ -470,9 +470,15 @@ def STEP8_calc_pinchpoints():
                               -9999, arcpy.sa.Raster(s8CoreRasPath))
         outCon.save(s8CoreRasClipped)
 
-        resNpyFN = 'resistances.npy'
-        resNpyFile = path.join(INCIRCUITDIR, resNpyFN)
-        numElements, numResistanceNodes = export_ras_to_npy(resRasClipPath,resNpyFile)
+        if cs_version == 4:
+            resNpyFN = 'resistances.npy'
+            resNpyFile = path.join(INCIRCUITDIR, resNpyFN)
+            numElements, numResistanceNodes = export_ras_to_npy(resRasClipPath, resNpyFile)
+
+        if cs_version == 5:
+            resNpyFN = 'resistances.asc'
+            resNpyFile = path.join(INCIRCUITDIR, resNpyFN)
+            numElements, numResistanceNodes = export_ras_to_asc(resRasClipPath, resNpyFile)
 
         totMem, availMem = lu.get_mem()
         if numResistanceNodes / availMem > 2000000:
@@ -486,9 +492,17 @@ def STEP8_calc_pinchpoints():
                     + str(numResistanceNodes) + ' nodes.')
             lu.dashline(0)
 
-        coreNpyFN = 'cores.npy'
-        coreNpyFile = path.join(INCIRCUITDIR, coreNpyFN)
-        numElements, numNodes = export_ras_to_npy(s8CoreRasClipped,coreNpyFile)
+        if cs_version == 4:
+            coreNpyFN = 'cores.npy'
+            coreNpyFile = path.join(INCIRCUITDIR, coreNpyFN)
+            numElements, numNodes = export_ras_to_npy(s8CoreRasClipped, coreNpyFile)
+            currentFN = 'Circuitscape_cum_curmap.npy'
+
+        if cs_version == 5:
+            coreNpyFN = 'cores.asc'
+            coreNpyFile = path.join(INCIRCUITDIR, coreNpyFN)
+            numElements, numNodes = export_ras_to_asc(s8CoreRasClipped, coreNpyFile)
+            currentFN = 'Circuitscape_cum_curmap.asc'
 
         arcpy.env.extent = "MINOF"
 
@@ -520,19 +534,22 @@ def STEP8_calc_pinchpoints():
             lu.create_julia_file(julia_file, outConfigFile)
             lu.call_julia(julia_soft, julia_file)
 
-        if options['scenario']=='pairwise':
+        if options['scenario'] == 'pairwise':
             rasterSuffix =  "_current_allPairs_" + cutoffText
 
         else:
             rasterSuffix =  "_current_allToOne_" + cutoffText
 
-        currentFN = 'Circuitscape_cum_curmap.npy'
         currentMap = path.join(OUTCIRCUITDIR, currentFN)
         outputRaster = path.join(outputGDB, cfg.PREFIX + rasterSuffix)
         currentRaster = path.join(cfg.SCRATCHDIR, "current")
 
         try:
-            import_npy_to_ras(currentMap,resRasClipPath,outputRaster)
+            if cs_version == 4:
+                import_npy_to_ras(currentMap, resRasClipPath, outputRaster)
+            if cs_version == 5:
+                import_asc_to_ras(currentMap, outputRaster)
+
         except Exception:
             lu.dashline(1)
             msg = ('ERROR: Circuitscape failed. \n'
