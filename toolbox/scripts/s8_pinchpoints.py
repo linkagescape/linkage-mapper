@@ -126,7 +126,7 @@ def STEP8_calc_pinchpoints():
             squaredRaster = path.join(cfg.SCRATCHDIR,'res_sqr')
             arcpy.env.workspace = cfg.SCRATCHDIR
             arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
-            outRas = Raster(resRaster) * Raster(resRaster)
+            outRas = arcpy.sa.Raster(resRaster) * arcpy.sa.Raster(resRaster)
             outRas.save(squaredRaster)
             resRaster = squaredRaster
 
