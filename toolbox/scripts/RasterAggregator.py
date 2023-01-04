@@ -18,8 +18,6 @@ import os.path as path
 import sys
 import traceback
 gp = arcgisscripting.create(9.3)
-gp.CheckOutExtension("Spatial")
-gp.OverwriteOutput = True
 
 gprint = gp.addmessage
 
@@ -27,25 +25,29 @@ def str2bool(pstr):
     """Convert ESRI boolean string to Python boolean type"""
     return pstr == 'true'
     
-def raster_aggregator():
+def raster_aggregator(argv=None):
     """Main function 
 
     Called by ArcMap with parameters or run from command line with parameters
     entered in script below.  
 
     """
+    gp.CheckOutExtension("Spatial")
+    if argv is None:
+        argv = sys.argv  # Get parameters from ArcGIS tool dialog
+
     try:
-        
-        OUTPUTDIR = sys.argv[1]  # Output directory  
-        AG_FACTOR =  int(sys.argv[2])
-        METHOD = sys.argv[3]
-        SMOOTH = str2bool(sys.argv[4])
-        RESRAS = {}#list of resistance rasters       
-        RESRAS[1] = sys.argv[5]
-        RESRAS[2] = sys.argv[6]
-        RESRAS[3] = sys.argv[7]
-        RESRAS[4] = sys.argv[8]
-        RESRAS[5] = sys.argv[9]
+
+        OUTPUTDIR = argv[1]  # Output directory
+        AG_FACTOR =  int(argv[2])
+        METHOD = argv[3]
+        SMOOTH = util.str2bool(argv[4])
+        RESRAS = {}#list of resistance rasters
+        RESRAS[1] = argv[5]
+        RESRAS[2] = argv[6]
+        RESRAS[3] = argv[7]
+        RESRAS[4] = argv[8]
+        RESRAS[5] = argv[9]
         
         if AG_FACTOR < 2 or AG_FACTOR > 99:
             msg = ('ERROR: Cell factor must be between 2 and 99.')
@@ -72,11 +74,13 @@ def raster_aggregator():
         gprint('\nThere are ' + str(numRasters) + ' rasters to aggregate.')
         gprint('\nCell factor is ' + str(AG_FACTOR))
         gprint('\nCell sizes will be multiplied by this amount')
+        gp.ResetEnvironments()
+        gp.OverwriteOutput = True
         for rasterNum in range(1,numRasters+1):
             inputRaster = RESRAS[rasterNum]
             gp.SnapRaster = inputRaster
             oldCellSize = gp.Describe(inputRaster).MeanCellHeight
-            dir,fileName = path.split(inputRaster)  
+            fileName = path.splitext(path.basename(inputRaster))[0]
         
             if SMOOTH == True and METHOD == "MEAN":
                 gprint('\nSmoothing cell values by taking mean of ' + str(AG_FACTOR) +'x' + str(AG_FACTOR) + ' neighborhood')

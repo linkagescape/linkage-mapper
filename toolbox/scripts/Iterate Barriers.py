@@ -20,11 +20,11 @@ gprint = lu.gprint
 
 _SCRIPT_NAME = os.path.basename(__file__)
 
-arcpy.CheckOutExtension("spatial")
+
 
 def main():
     """Iterates over LM, BM, and restoration tasks"""
-
+    arcpy.CheckOutExtension("spatial")
     ## USER SETTINGS ######################################################
     ## Restoration Settings
     ## ALL input data must be in the same projection
@@ -72,6 +72,7 @@ def main():
         logFile = os.path.join(outputGDB,'Iterate Barriers'+str(i)+'.py')
         shutil.copyfile(__file__, logFile) #write a copy of this file to output dir as a record of settings
         
+        arcpy.ResetEnvironments()
         arcpy.env.cellSize = resRast
         arcpy.env.extent = resRast
         arcpy.env.snapRaster = resRast
