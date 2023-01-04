@@ -17,9 +17,6 @@ import arcpy
 import lm_util_config as util
 
 
-arcpy.CheckOutExtension("Spatial")
-arcpy.env.overwriteOutput = True
-
 gprint = arcpy.AddMessage
 
 
@@ -30,11 +27,11 @@ def raster_aggregator(argv=None):
     entered in script below.
 
     """
+    arcpy.CheckOutExtension("Spatial")
     if argv is None:
         argv = sys.argv  # Get parameters from ArcGIS tool dialog
 
     try:
-
         OUTPUTDIR = argv[1]  # Output directory
         AG_FACTOR =  int(argv[2])
         METHOD = argv[3]
@@ -69,11 +66,13 @@ def raster_aggregator(argv=None):
         gprint('\nThere are ' + str(numRasters) + ' rasters to aggregate.')
         gprint('\nCell factor is ' + str(AG_FACTOR))
         gprint('\nCell sizes will be multiplied by this amount')
+        arcpy.ResetEnvironments()
+        arcpy.env.overwriteOutput = True
         for rasterNum in range(1,numRasters+1):
             inputRaster = RESRAS[rasterNum]
             arcpy.env.snapRaster = inputRaster
             oldCellSize = arcpy.Describe(inputRaster).MeanCellHeight
-            dir,fileName = path.split(inputRaster)
+            fileName = path.splitext(path.basename(inputRaster))[0]
 
             if SMOOTH == True and METHOD == "MEAN":
                 gprint('\nSmoothing cell values by taking mean of ' + str(AG_FACTOR) +'x' + str(AG_FACTOR) + ' neighborhood')

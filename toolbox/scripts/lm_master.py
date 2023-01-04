@@ -33,14 +33,24 @@ def lm_master(argv=None):
 
     """
     # Setup global variables
-    if cfg.TOOL != cfg.TOOL_CC:
-        if argv is None:
-            argv = sys.argv
-        cfg.configure(cfg.TOOL_LM, argv)
+    if argv is None:
+        argv = sys.argv
+    cfg.configure(cfg.TOOL_LM, argv)
 
-    gprint = lu.gprint
+    lu.create_dir(cfg.LOGDIR)
+    lu.create_dir(cfg.MESSAGEDIR)
+    cfg.logFilePath = lu.create_log_file(cfg.PARAM_NAMES, argv)
+    lu.write_custom_to_log(cfg.LMCUSTSETTINGS)
+    lu.log_metadata(cfg.COREFC, [cfg.RESRAST_IN])
 
+    lu.delete_dir(cfg.SCRATCHDIR)
+    run_lm()
+
+
+def run_lm():
+    """Run Linkage Mapper."""
     try:
+        gprint = lu.gprint
         # Move results from earlier versions to new directory structure
         lu.move_old_results()
         arcpy.env.pyramid = "NONE"
@@ -48,17 +58,9 @@ def lm_master(argv=None):
 
         # Create output directories if they don't exist
         lu.create_dir(cfg.OUTPUTDIR)
-        lu.create_dir(cfg.LOGDIR)
-        lu.create_dir(cfg.MESSAGEDIR)
         lu.create_dir(cfg.DATAPASSDIR)
-        if cfg.TOOL != cfg.TOOL_CC:
-            lu.delete_dir(cfg.SCRATCHDIR)
-            lu.create_dir(cfg.SCRATCHDIR)
+        lu.create_dir(cfg.SCRATCHDIR)
         lu.create_dir(cfg.ARCSCRATCHDIR)
-        if cfg.TOOL == cfg.TOOL_LM:
-            cfg.logFilePath = lu.create_log_file(cfg.PARAM_NAMES, argv)
-            lu.write_custom_to_log(cfg.LMCUSTSETTINGS)
-            lu.log_metadata(cfg.COREFC, [cfg.RESRAST_IN])
 
         lu.print_drive_warning()
 
