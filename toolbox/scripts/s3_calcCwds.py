@@ -853,22 +853,12 @@ def test_for_intermediate_core(workspace,lcpRas,corePairRas):
                 count,tryAgain = lu.retry_arc_error(count,statement)
                 if not tryAgain: exec statement
             else: break
-        #addRasPath = path.join(workspace,"addRas")
-        # make sure there is a raster, even if empty, and properties
-        # are obtainable
-        propertyType = "TOP"
-        topObject = gp.GetRasterProperties("addRas", propertyType)
 
         # Test to see if raster has data
-        try:
-            propertyType = "MINIMUM"
-            # In Arc 10, next statement fails for empty rasters
-            minObject = gp.GetRasterProperties("addRas", propertyType)
-            # In Arc 9.3, next statement fails for empty rasters
-            minVal = int(minObject.getoutput(0))
-            return True  # If there is data in raster, return True
-        except:
-            return False  # Failure indicates empty raster and no overlap
+        if gp.GetRasterProperties("addRas", "ALLNODATA").getOutput(0) == "0":
+            return True  # Data present and therefore overlap
+        else:
+            return False  # Empty and therefore no overlap
 
     # Return GEOPROCESSING specific errors
     except arcgisscripting.ExecuteError:

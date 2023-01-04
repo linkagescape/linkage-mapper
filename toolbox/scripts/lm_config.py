@@ -262,7 +262,7 @@ def config_lm(config, arg, scratch_dir):
     # config.COREFC = path.join(config.COREDIR, "core_copy.shp")
     # config.COREFN = "GRIDCODE"
     config.CORERAS = path.join(config.SCRATCHDIR, "core_ras")
-    return True
+
 
 def config_barrier(config, arg):
     """Configure global variables for Barrier tool"""
@@ -312,7 +312,7 @@ def config_barrier(config, arg):
 
 def config_climate(config, arg):
     """Configure global variables for Climate Corridor tool"""
-    config.lm_configured = config_lm(config, arg, config.SCRATCHDIR)
+    config_lm(config, arg, config.SCRATCHDIR)
 
 def config_circuitscape(config, arg):
     """Configure global variables for Circuitscape"""
@@ -346,6 +346,14 @@ def config_circuitscape(config, arg):
     
     config.SAVECENTRALITYDIR = False
 
+def check_out_sa_license(config):
+    """Check out the ArcGIS Spatial Analyst extension license."""
+    if config.gp.CheckExtension("Spatial") == "Available":
+        config.gp.CheckOutExtension("Spatial")
+    else:
+        raise RuntimeError("Spatial Analyst license is unavailable")
+
+
 class Configure(object):
     """Class container to hold global variables"""
     TOOL_LM = 'Linkage Mapper'
@@ -357,17 +365,18 @@ class Configure(object):
     def __init__(self):
         """Initialize class and create single geoprocessor object"""
         self.gp = arcgisscripting.create(9.3)
-        self.gp.CheckOutExtension("Spatial")
-        self.gp.OverwriteOutput = True
-        self.lm_configured = False
+        self.TOOL = ''
 
 
     def configure(self, tool, arg):
         """Setup variables for Configure class"""
+        check_out_sa_license(self)
+        self.gp.ResetEnvironments()
+        self.gp.OverwriteOutput = True
         config_global(self, arg)
 
         if tool == Configure.TOOL_LM:
-            self.lm_configured = config_lm(self, arg, self.SCRATCHDIR)
+            config_lm(self, arg, self.SCRATCHDIR)
         elif tool == Configure.TOOL_CC:
             config_climate(self, arg)
         elif tool == Configure.TOOL_BM:

@@ -9,7 +9,6 @@ import traceback
 try:
     import arcpy
     from arcpy.sa import *
-    arcpy.CheckOutExtension("spatial")
     gp = arcpy.gp
     arcgisscripting = arcpy
     arc10 = True
@@ -17,21 +16,23 @@ except:
     arc10 = False
     import arcgisscripting
     gp = arcgisscripting.create()
-    gp.CheckOutExtension("Spatial")
 
 gprint = gp.addmessage
 
 _SCRIPT_NAME = "clip_corridors"
 
 
-def clip_corridor():
+def clip_corridor(argv=None):
     """Truncates corridors at user-specified cutoff width in CWD units.
 
     """
+    if argv is None:
+        argv = sys.argv  # Get parameters from ArcGIS tool dialog
+
     try:
-        inRaster = sys.argv[1]
-        cutoffVal = sys.argv[2]
-        outputGDB = sys.argv[3]
+        inRaster = argv[1]
+        cutoffVal = argv[2]
+        outputGDB = argv[3]
         
         cutoffText = str(cutoffVal)
         if cutoffText[-6:] == '000000':
@@ -48,6 +49,8 @@ def clip_corridor():
         if hasattr(desc, "catalogPath"):
             inRaster = gp.Describe(inRaster).catalogPath
         if arc10:
+            arcpy.CheckOutExtension("spatial")
+            arcpy.ResetEnvironments()
             arcpy.env.overwriteOutput = True  
             arcpy.env.workspace = outputGDB
             arcpy.env.scratchWorkspace = outputGDB
@@ -56,6 +59,8 @@ def clip_corridor():
             output = arcpy.sa.Con(Raster(inRaster) <= float(cutoffVal),inRaster)
             output.save(outRaster)
         else:
+            gp.CheckOutExtension("spatial")
+            gp.ResetEnvironments()
             gp.OverwriteOutput = True  
             gp.extent = gp.Describe(inRaster).extent
             gp.cellSize = gp.Describe(inRaster).MeanCellHeight

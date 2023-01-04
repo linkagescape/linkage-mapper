@@ -18,7 +18,7 @@ def mk_proj_dir(in_dir):
     return new_dir
 
 
-def delete_features(in_features):
+def delete_features(*in_features):
     """Delete temporary feature/s if it exists"""
     for in_feature in in_features:
         if arcpy.Exists(in_feature):
