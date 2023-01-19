@@ -13,7 +13,12 @@ nearest neighboring cluster
 # Could use previous (now discarded) combo code to mosaic CWDS if wanted.
 
 from os import path
-import time
+
+# Add support for Python 2. Try to import Python 3 module first.
+try:
+    from time import perf_counter
+except ImportError:
+    from time import clock as perf_counter
 
 import numpy as npy
 import arcpy
@@ -205,7 +210,7 @@ def STEP4_refine_network():
         linkTableLogFile = path.join(cfg.LOGDIR, "linkTable_s4.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
-        start_time = time.clock()
+        start_time = perf_counter()
         lu.update_lcp_shapefile(linkTable, lastStep=3, thisStep=4)
         start_time = lu.elapsed_time(start_time)
 

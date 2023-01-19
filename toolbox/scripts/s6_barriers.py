@@ -8,7 +8,12 @@ Numpy
 """
 
 from os import path
-import time
+
+# Add support for Python 2. Try to import Python 3 module first.
+try:
+    from time import perf_counter
+except ImportError:
+    from time import clock as perf_counter
 
 import numpy as npy
 import arcpy
@@ -158,7 +163,7 @@ def step6_calc_barriers():
             def do_radius_loop():
                 """Do radius loop."""
                 link_table = link_table_tmp.copy()
-                start_time = time.clock()
+                start_time = perf_counter()
                 link_loop = 0
                 pct_done = 0
                 gprint('\nMapping barriers at a radius of ' + str(radius) +

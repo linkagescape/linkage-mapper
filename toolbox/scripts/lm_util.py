@@ -6,15 +6,18 @@ import os
 import sys
 import subprocess
 from datetime import datetime as dt
-import time
 import traceback
 import platform
 
-# Support configparser in Python 2 and 3
+# Add support for Python 2. Try to import Python 3 modules first.
 try:
-    from configparser import RawConfigParser  # Python 3
+    from configparser import RawConfigParser
 except ImportError:
-    from ConfigParser import RawConfigParser  # Python 2
+    from ConfigParser import RawConfigParser
+try:
+    from time import perf_counter
+except ImportError:
+    from time import clock as perf_counter
 
 import shutil
 import gc
@@ -327,7 +330,7 @@ def run_time(stime):
 
 def elapsed_time(start_time):
     """Print elapsed time given a start time and return a new start time."""
-    now = time.clock()
+    now = perf_counter()
     hours, minutes, seconds = s2hhmmss(now - start_time)
     msg = "Task took:"
     if minutes == 0:
@@ -419,7 +422,7 @@ def get_adj_using_shift_method(alloc):
     arcpy.env.workspace = cfg.SCRATCHDIR
 
     gprint('Calculating adjacencies crossing allocation boundaries...')
-    start_time = time.clock()
+    start_time = perf_counter()
     arcpy.Shift_management(alloc, "alloc_r", posShift, "0")
 
     alloc_r = "alloc_r"

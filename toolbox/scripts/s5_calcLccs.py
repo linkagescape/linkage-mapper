@@ -9,7 +9,12 @@ pairs specified in linkTable and cwd layers
 
 import json
 from os import path
-import time
+
+# Add support for Python 2. Try to import Python 3 module first.
+try:
+    from time import perf_counter
+except ImportError:
+    from time import clock as perf_counter
 
 import numpy as npy
 import arcpy
@@ -142,7 +147,7 @@ def calc_lccs(normalize):
                 continue
 
             linkCount = linkCount + 1
-            start_time = time.clock()
+            start_time = perf_counter()
 
             linkId = str(int(linkTable[x, cfg.LTB_LINKID]))
 
@@ -249,7 +254,7 @@ def calc_lccs(normalize):
                         if not tryAgain:
                             exec(statement)
                     else: break
-            endTime = time.clock()
+            endTime = perf_counter()
             processTime = round((endTime - start_time), 2)
 
             if normalize == True:
