@@ -8,7 +8,12 @@ cost-weighted distance space
 """
 
 from os import path
-import time
+
+# Add support for Python 2. Try to import Python 3 modules first.
+try:
+    from time import perf_counter
+except ImportError:
+    from time import clock as perf_counter
 
 import numpy as npy
 import arcpy
@@ -116,7 +121,7 @@ def cwadjacency():
         arcpy.env.extent = arcpy.Describe(cfg.RESRAST).extent
         if cfg.BUFFERDIST is not None:
             # Clip resistance raster using bounding circle
-            start_time = time.clock()
+            start_time = perf_counter()
             arcpy.env.cellSize = arcpy.Describe(cfg.RESRAST).MeanCellHeight
             arcpy.env.extent = arcpy.Describe(cfg.RESRAST).Extent
             bResistance = arcpy.sa.ExtractByMask(cfg.RESRAST, cfg.BNDCIR)
@@ -126,7 +131,7 @@ def cwadjacency():
         else:
             bResistance = cfg.RESRAST
 
-        start_time = time.clock()
+        start_time = perf_counter()
         gprint('Starting cost-weighted distance allocation...')
 
         if cfg.TMAXCWDIST is not None:
@@ -202,7 +207,7 @@ def euadjacency():
         if cfg.BUFFERDIST is not None:
             arcpy.env.extent = arcpy.Describe(cfg.BNDCIR).extent
 
-        start_time = time.clock()
+        start_time = perf_counter()
 
         arcpy.env.scratchWorkspace = cfg.ARCSCRATCHDIR
         outDistanceRaster = path.join(cfg.ADJACENCYDIR, "euc")

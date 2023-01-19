@@ -10,7 +10,12 @@ extent of cwd calculations and speed computation.
 
 
 from os import path
-import time
+
+# Add support for Python 2. Try to import Python 3 module first.
+try:
+    from time import perf_counter
+except ImportError:
+    from time import clock as perf_counter
 
 import numpy as npy
 import arcpy
@@ -149,7 +154,7 @@ def STEP3_calc_cwds():
         # Bounding boxes
         if (cfg.BUFFERDIST) is not None:
             # create bounding boxes around cores
-            start_time = time.clock()
+            start_time = perf_counter()
             gprint('Calculating bounding boxes for core areas.')
             extentBoxList = npy.zeros((0,5), dtype='float32')
             for x in range(len(coresToMap)):
@@ -163,7 +168,7 @@ def STEP3_calc_cwds():
         # Bounding circle code
         if cfg.BUFFERDIST is not None:
             # Make a set of circles encompassing core areas we'll be connecting
-            start_time = time.clock()
+            start_time = perf_counter()
             gprint('Calculating bounding circles around potential'
                           ' corridors.')
 
@@ -291,7 +296,7 @@ def STEP3_calc_cwds():
         endIndex = len(coresToMap)
         linkTableMod = linkTable.copy()
         while x < endIndex:
-            startTime1 = time.clock()
+            startTime1 = perf_counter()
             # Modification of linkTable in function was causing problems. so
             # make a copy:
             linkTablePassed = linkTableMod.copy()
@@ -338,7 +343,7 @@ def STEP3_calc_cwds():
         linkTableLogFile = path.join(cfg.LOGDIR, "linkTable_s3.csv")
         lu.write_link_table(linkTable, linkTableLogFile)
 
-        start_time = time.clock()
+        start_time = perf_counter()
         gprint('Creating shapefiles with linework for links...')
         try:
             lu.write_link_maps(outlinkTableFile, step=3)
@@ -429,7 +434,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             arcpy.MakeFeatureLayer_management(
                 cfg.BNDCIRS, "fGlobalBoundingFeat")
 
-            start_time = time.clock()
+            start_time = perf_counter()
             # loop through targets and get bounding circles that
             # contain focal core and target cores
             arcpy.SelectLayerByAttribute_management(
@@ -485,7 +490,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
             back_rast = "BACK"
             lu.delete_data(path.join(coreDir, back_rast))
             lu.delete_data(outDistanceRaster)
-            start_time = time.clock()
+            start_time = perf_counter()
 
             # Create raster that just has source core in it
             # Note: this seems faster than setnull with LI grid.
@@ -519,7 +524,7 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 else:
                     exec(statement)
 
-        start_time = time.clock()
+        start_time = perf_counter()
         # Extract cost distances from source core to target cores
         # Fixme: there will be redundant calls to b-a when already
         # done a-b

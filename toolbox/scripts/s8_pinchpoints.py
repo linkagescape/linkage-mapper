@@ -8,7 +8,12 @@ Numpy
 """
 
 from os import path
-import time
+
+# Add support for Python 2. Try to import Python 3 module first.
+try:
+    from time import perf_counter
+except ImportError:
+    from time import clock as perf_counter
 
 import numpy as npy
 import arcpy
@@ -150,7 +155,7 @@ def STEP8_calc_pinchpoints():
                     continue
                 restartFlag = False
                 lu.create_dir(linkDir)
-                start_time1 = time.clock()
+                start_time1 = perf_counter()
 
                 # source and target cores
                 corex=int(coreList[x,0])

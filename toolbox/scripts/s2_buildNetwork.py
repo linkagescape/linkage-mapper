@@ -8,7 +8,12 @@ adjacencies of core areas
 """
 
 from os import path
-import time
+
+# Add support for Python 2. Try to import Python 3 module first.
+try:
+    from time import perf_counter
+except ImportError:
+    from time import clock as perf_counter
 
 import numpy as npy
 import arcpy
@@ -313,7 +318,7 @@ def generate_distance_file():
         gprint('There are ' + str(len(adjList)) + ' adjacent core pairs to '
                'process.')
         pctDone = 0
-        start_time = time.clock()
+        start_time = perf_counter()
         for x in range(0, len(adjList)):
 
             pctDone = lu.report_pct_done(x, len(adjList), pctDone)

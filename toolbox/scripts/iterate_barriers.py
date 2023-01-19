@@ -7,7 +7,12 @@ for max ROI.
 import sys
 import os
 import shutil
-import time
+
+# Add support for Python 2. Try to import Python 3 module first.
+try:
+    from time import perf_counter
+except ImportError:
+    from time import clock as perf_counter
 
 import numpy as npy
 import arcpy
@@ -28,7 +33,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv  # Get parameters from ArcGIS tool dialog
 
-    start_time = time.clock()
+    start_time = perf_counter()
 
     # USER SETTINGS ######################################################
 
@@ -180,7 +185,7 @@ def main(argv=None):
         all_restored_areas_ras = ''
 
         for cur_iter in range(1, iterations + 1):
-            start_time1 = time.clock()
+            start_time1 = perf_counter()
 
             # Some env settings get changed by linkage mapper and must be
             # reset here
