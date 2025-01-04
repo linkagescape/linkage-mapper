@@ -230,7 +230,7 @@ def step6_calc_barriers():
                         outer_radius = radius
 
                         dia = 2 * radius
-                        in_neighborhood = ("ANNULUS " + str(inner_radius)
+                        in_neighborhood = ("Annulus " + str(inner_radius)
                                            + " " + str(outer_radius) + " MAP")
 
                         @Retry(10)
