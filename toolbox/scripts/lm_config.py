@@ -7,7 +7,7 @@ Assigns input parameters from ToolBox to variables, and sets constants.
 """
 
 from os import path
-import imp
+import importlib.util
 import json
 
 import arcpy
@@ -23,7 +23,9 @@ def get_code_path():
 
 def set_custom(settings, config_obj):
     """Add attributes for custom file to configuration object."""
-    cust_settings = imp.load_source("set_mod", settings)
+    spec = importlib.util.spec_from_file_location("set_mod", settings)
+    cust_settings = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cust_settings)
     for setting in dir(cust_settings):
         if setting == setting.upper():
             setting_value = getattr(cust_settings, setting)
