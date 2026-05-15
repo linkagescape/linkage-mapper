@@ -3,12 +3,22 @@
 """Create CWD and Back rasters using GRASS GIS r.walk function."""
 
 import os
+import inspect
 import subprocess
 
 import arcpy
 
 import grass.script as grass
 import grass.script.setup as gsetup
+
+# GRASS 8 dropped the gisbase positional arg from gsetup.init(); detect at
+# runtime so this works with both GRASS 7 (4 positional args) and GRASS 8
+# (3 positional args, grass_path became keyword-only).
+_GRASS8_INIT = sum(
+    1 for p in inspect.signature(gsetup.init).parameters.values()
+    if p.kind in (inspect.Parameter.POSITIONAL_ONLY,
+                  inspect.Parameter.POSITIONAL_OR_KEYWORD)
+) < 4
 
 from cc_config import cc_env
 from lm_config import tool_env as lm_env
@@ -98,7 +108,10 @@ def setup_wrkspace(gisdbase, ccr_grassrc, geo_file):
                     "the tool (see user guide).")
         raise Exception(warn_msg)
 
-    gsetup.init(gisbase, gisdbase, location, mapset)
+    if _GRASS8_INIT:
+        gsetup.init(gisdbase, location, mapset)
+    else:
+        gsetup.init(gisbase, gisdbase, location, mapset)
     run_grass_cmd("g.gisenv", set="OVERWRITE=1")
     os.environ['GRASS_VERBOSE'] = "0"  # Only errors and warnings are printed
 

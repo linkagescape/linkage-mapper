@@ -558,16 +558,16 @@ def do_cwd_calcs(x, linkTable, coresToMap, lcpLoop, failures):
                 link = lu.get_links_from_core_pairs(linkTable,
                                                     sourceCore,
                                                     tableRow.Value)
-                if linkTable[link,cfg.LTB_LINKTYPE] > 0: # valid link
+                if link.size > 0 and linkTable[link[0],cfg.LTB_LINKTYPE] > 0: # valid link
                     linkTable[link,cfg.LTB_CWDIST] = tableRow.Min
                     if cfg.MAXCOSTDIST is not None:
                         if ((tableRow.Min > cfg.MAXCOSTDIST) and
-                           (linkTable[link,cfg.LTB_LINKTYPE] != cfg.LT_KEEP)):
+                           (linkTable[link[0],cfg.LTB_LINKTYPE] != cfg.LT_KEEP)):
                              # Disable link, it's too long
                             linkTable[link,cfg.LTB_LINKTYPE] = cfg.LT_TLLC
                     if cfg.MINCOSTDIST is not None:
                         if (tableRow.Min < cfg.MINCOSTDIST and
-                           (linkTable[link,cfg.LTB_LINKTYPE] != cfg.LT_KEEP)):
+                           (linkTable[link[0],cfg.LTB_LINKTYPE] != cfg.LT_KEEP)):
                             # Disable link, it's too short
                             linkTable[link,cfg.LTB_LINKTYPE] = cfg.LT_TSLC
             tableRow = next(tableRows)
